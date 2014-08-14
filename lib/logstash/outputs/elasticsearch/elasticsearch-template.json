@@ -1,0 +1,1252 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="en" class="   ">
+  <head prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb# object: http://ogp.me/ns/object# article: http://ogp.me/ns/article# profile: http://ogp.me/ns/profile#">
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Content-Language" content="en">
+    
+    
+    <title>logstash/elasticsearch-template.json at master · elasticsearch/logstash · GitHub</title>
+    <link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="GitHub">
+    <link rel="fluid-icon" href="https://github.com/fluidicon.png" title="GitHub">
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-114.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-144.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144.png">
+    <meta property="fb:app_id" content="1401488693436528">
+
+      <meta content="@github" name="twitter:site" /><meta content="summary" name="twitter:card" /><meta content="elasticsearch/logstash" name="twitter:title" /><meta content="logstash - logs/event transport, processing, management, search." name="twitter:description" /><meta content="https://avatars2.githubusercontent.com/u/141304?v=2&amp;s=400" name="twitter:image:src" />
+<meta content="GitHub" property="og:site_name" /><meta content="object" property="og:type" /><meta content="https://avatars2.githubusercontent.com/u/141304?v=2&amp;s=400" property="og:image" /><meta content="elasticsearch/logstash" property="og:title" /><meta content="https://github.com/elasticsearch/logstash" property="og:url" /><meta content="logstash - logs/event transport, processing, management, search." property="og:description" />
+
+    <link rel="assets" href="https://assets-cdn.github.com/">
+    <link rel="conduit-xhr" href="https://ghconduit.com:25035">
+    
+
+    <meta name="msapplication-TileImage" content="/windows-tile.png">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="selected-link" value="repo_source" data-pjax-transient>
+      <meta name="google-analytics" content="UA-3769691-2">
+
+    <meta content="collector.githubapp.com" name="octolytics-host" /><meta content="collector-cdn.github.com" name="octolytics-script-host" /><meta content="github" name="octolytics-app-id" /><meta content="050952EB:7B5D:9BF8E58:53ECC1CB" name="octolytics-dimension-request_id" />
+    
+
+    
+    
+    <link rel="icon" type="image/x-icon" href="https://assets-cdn.github.com/favicon.ico">
+
+
+    <meta content="authenticity_token" name="csrf-param" />
+<meta content="b2Y248Dddmydiwp2mJB99NXoGj+r/1l6uMITn1a5TfiiqmCmVmub1/jZwCNwHNJRtaTLuEJ2Cri2Olp/FcRIEA==" name="csrf-token" />
+
+    <link href="https://assets-cdn.github.com/assets/github-9292d024f6948334bdb496c5e7a55d8df86fb80e.css" media="all" rel="stylesheet" type="text/css" />
+    <link href="https://assets-cdn.github.com/assets/github2-fe2778113a79ed0985eedf979a34188ceea23f97.css" media="all" rel="stylesheet" type="text/css" />
+    
+
+
+    <meta http-equiv="x-pjax-version" content="f4d07a70fe9c693bc8f53c5731e8976d">
+
+      
+  <meta name="description" content="logstash - logs/event transport, processing, management, search.">
+
+
+  <meta content="141304" name="octolytics-dimension-user_id" /><meta content="elasticsearch" name="octolytics-dimension-user_login" /><meta content="1090311" name="octolytics-dimension-repository_id" /><meta content="elasticsearch/logstash" name="octolytics-dimension-repository_nwo" /><meta content="true" name="octolytics-dimension-repository_public" /><meta content="false" name="octolytics-dimension-repository_is_fork" /><meta content="1090311" name="octolytics-dimension-repository_network_root_id" /><meta content="elasticsearch/logstash" name="octolytics-dimension-repository_network_root_nwo" />
+  <link href="https://github.com/elasticsearch/logstash/commits/master.atom" rel="alternate" title="Recent Commits to logstash:master" type="application/atom+xml">
+
+  </head>
+
+
+  <body class="logged_out  env-production  vis-public page-blob">
+    <a href="#start-of-content" tabindex="1" class="accessibility-aid js-skip-to-content">Skip to content</a>
+    <div class="wrapper">
+      
+      
+      
+      
+
+
+      
+      <div class="header header-logged-out">
+  <div class="container clearfix">
+
+    <a class="header-logo-wordmark" href="https://github.com/">
+      <span class="mega-octicon octicon-logo-github"></span>
+    </a>
+
+    <div class="header-actions">
+        <a class="button primary" href="/join">Sign up</a>
+      <a class="button signin" href="/login?return_to=%2Felasticsearch%2Flogstash%2Fblob%2Fmaster%2Flib%2Flogstash%2Foutputs%2Felasticsearch%2Felasticsearch-template.json">Sign in</a>
+    </div>
+
+    <div class="command-bar js-command-bar  in-repository">
+
+      <ul class="top-nav">
+          <li class="explore"><a href="/explore">Explore</a></li>
+          <li class="features"><a href="/features">Features</a></li>
+          <li class="enterprise"><a href="https://enterprise.github.com/">Enterprise</a></li>
+          <li class="blog"><a href="/blog">Blog</a></li>
+      </ul>
+        <form accept-charset="UTF-8" action="/search" class="command-bar-form" id="top_search_form" method="get"><div style="margin:0;padding:0;display:inline"><input name="utf8" type="hidden" value="&#x2713;" /></div>
+
+<div class="commandbar">
+  <span class="message"></span>
+  <input type="text" data-hotkey="s, /" name="q" id="js-command-bar-field" placeholder="Search or type a command" tabindex="1" autocapitalize="off"
+    
+    
+    data-repo="elasticsearch/logstash"
+  >
+  <div class="display hidden"></div>
+</div>
+
+    <input type="hidden" name="nwo" value="elasticsearch/logstash">
+
+    <div class="select-menu js-menu-container js-select-menu search-context-select-menu">
+      <span class="minibutton select-menu-button js-menu-target" role="button" aria-haspopup="true">
+        <span class="js-select-button">This repository</span>
+      </span>
+
+      <div class="select-menu-modal-holder js-menu-content js-navigation-container" aria-hidden="true">
+        <div class="select-menu-modal">
+
+          <div class="select-menu-item js-navigation-item js-this-repository-navigation-item selected">
+            <span class="select-menu-item-icon octicon octicon-check"></span>
+            <input type="radio" class="js-search-this-repository" name="search_target" value="repository" checked="checked">
+            <div class="select-menu-item-text js-select-button-text">This repository</div>
+          </div> <!-- /.select-menu-item -->
+
+          <div class="select-menu-item js-navigation-item js-all-repositories-navigation-item">
+            <span class="select-menu-item-icon octicon octicon-check"></span>
+            <input type="radio" name="search_target" value="global">
+            <div class="select-menu-item-text js-select-button-text">All repositories</div>
+          </div> <!-- /.select-menu-item -->
+
+        </div>
+      </div>
+    </div>
+
+  <span class="help tooltipped tooltipped-s" aria-label="Show command bar help">
+    <span class="octicon octicon-question"></span>
+  </span>
+
+
+  <input type="hidden" name="ref" value="cmdform">
+
+</form>
+    </div>
+
+  </div>
+</div>
+
+
+
+      <div id="start-of-content" class="accessibility-aid"></div>
+          <div class="site" itemscope itemtype="http://schema.org/WebPage">
+    <div id="js-flash-container">
+      
+    </div>
+    <div class="pagehead repohead instapaper_ignore readability-menu">
+      <div class="container">
+        
+<ul class="pagehead-actions">
+
+
+  <li>
+      <a href="/login?return_to=%2Felasticsearch%2Flogstash"
+    class="minibutton with-count star-button tooltipped tooltipped-n"
+    aria-label="You must be signed in to star a repository" rel="nofollow">
+    <span class="octicon octicon-star"></span>
+    Star
+  </a>
+
+    <a class="social-count js-social-count" href="/elasticsearch/logstash/stargazers">
+      2,839
+    </a>
+
+  </li>
+
+    <li>
+      <a href="/login?return_to=%2Felasticsearch%2Flogstash"
+        class="minibutton with-count js-toggler-target fork-button tooltipped tooltipped-n"
+        aria-label="You must be signed in to fork a repository" rel="nofollow">
+        <span class="octicon octicon-repo-forked"></span>
+        Fork
+      </a>
+      <a href="/elasticsearch/logstash/network" class="social-count">
+        1,101
+      </a>
+    </li>
+</ul>
+
+        <h1 itemscope itemtype="http://data-vocabulary.org/Breadcrumb" class="entry-title public">
+          <span class="mega-octicon octicon-repo"></span>
+          <span class="author"><a href="/elasticsearch" class="url fn" itemprop="url" rel="author"><span itemprop="title">elasticsearch</span></a></span><!--
+       --><span class="path-divider">/</span><!--
+       --><strong><a href="/elasticsearch/logstash" class="js-current-repository js-repo-home-link">logstash</a></strong>
+
+          <span class="page-context-loader">
+            <img alt="" height="16" src="https://assets-cdn.github.com/images/spinners/octocat-spinner-32.gif" width="16" />
+          </span>
+
+        </h1>
+      </div><!-- /.container -->
+    </div><!-- /.repohead -->
+
+    <div class="container">
+      <div class="repository-with-sidebar repo-container new-discussion-timeline  ">
+        <div class="repository-sidebar clearfix">
+            
+<div class="sunken-menu vertical-right repo-nav js-repo-nav js-repository-container-pjax js-octicon-loaders" data-issue-count-url="/elasticsearch/logstash/issues/counts">
+  <div class="sunken-menu-contents">
+    <ul class="sunken-menu-group">
+      <li class="tooltipped tooltipped-w" aria-label="Code">
+        <a href="/elasticsearch/logstash" aria-label="Code" class="selected js-selected-navigation-item sunken-menu-item" data-hotkey="g c" data-pjax="true" data-selected-links="repo_source repo_downloads repo_commits repo_releases repo_tags repo_branches /elasticsearch/logstash">
+          <span class="octicon octicon-code"></span> <span class="full-word">Code</span>
+          <img alt="" class="mini-loader" height="16" src="https://assets-cdn.github.com/images/spinners/octocat-spinner-32.gif" width="16" />
+</a>      </li>
+
+        <li class="tooltipped tooltipped-w" aria-label="Issues">
+          <a href="/elasticsearch/logstash/issues" aria-label="Issues" class="js-selected-navigation-item sunken-menu-item js-disable-pjax" data-hotkey="g i" data-selected-links="repo_issues repo_labels repo_milestones /elasticsearch/logstash/issues">
+            <span class="octicon octicon-issue-opened"></span> <span class="full-word">Issues</span>
+            <span class="js-issue-replace-counter"></span>
+            <img alt="" class="mini-loader" height="16" src="https://assets-cdn.github.com/images/spinners/octocat-spinner-32.gif" width="16" />
+</a>        </li>
+
+      <li class="tooltipped tooltipped-w" aria-label="Pull Requests">
+        <a href="/elasticsearch/logstash/pulls" aria-label="Pull Requests" class="js-selected-navigation-item sunken-menu-item js-disable-pjax" data-hotkey="g p" data-selected-links="repo_pulls /elasticsearch/logstash/pulls">
+            <span class="octicon octicon-git-pull-request"></span> <span class="full-word">Pull Requests</span>
+            <span class="js-pull-replace-counter"></span>
+            <img alt="" class="mini-loader" height="16" src="https://assets-cdn.github.com/images/spinners/octocat-spinner-32.gif" width="16" />
+</a>      </li>
+
+
+        <li class="tooltipped tooltipped-w" aria-label="Wiki">
+          <a href="/elasticsearch/logstash/wiki" aria-label="Wiki" class="js-selected-navigation-item sunken-menu-item js-disable-pjax" data-hotkey="g w" data-selected-links="repo_wiki /elasticsearch/logstash/wiki">
+            <span class="octicon octicon-book"></span> <span class="full-word">Wiki</span>
+            <img alt="" class="mini-loader" height="16" src="https://assets-cdn.github.com/images/spinners/octocat-spinner-32.gif" width="16" />
+</a>        </li>
+    </ul>
+    <div class="sunken-menu-separator"></div>
+    <ul class="sunken-menu-group">
+
+      <li class="tooltipped tooltipped-w" aria-label="Pulse">
+        <a href="/elasticsearch/logstash/pulse/weekly" aria-label="Pulse" class="js-selected-navigation-item sunken-menu-item" data-pjax="true" data-selected-links="pulse /elasticsearch/logstash/pulse/weekly">
+          <span class="octicon octicon-pulse"></span> <span class="full-word">Pulse</span>
+          <img alt="" class="mini-loader" height="16" src="https://assets-cdn.github.com/images/spinners/octocat-spinner-32.gif" width="16" />
+</a>      </li>
+
+      <li class="tooltipped tooltipped-w" aria-label="Graphs">
+        <a href="/elasticsearch/logstash/graphs" aria-label="Graphs" class="js-selected-navigation-item sunken-menu-item" data-pjax="true" data-selected-links="repo_graphs repo_contributors /elasticsearch/logstash/graphs">
+          <span class="octicon octicon-graph"></span> <span class="full-word">Graphs</span>
+          <img alt="" class="mini-loader" height="16" src="https://assets-cdn.github.com/images/spinners/octocat-spinner-32.gif" width="16" />
+</a>      </li>
+    </ul>
+
+
+  </div>
+</div>
+
+              <div class="only-with-full-nav">
+                
+  
+<div class="clone-url open"
+  data-protocol-type="http"
+  data-url="/users/set_protocol?protocol_selector=http&amp;protocol_type=clone">
+  <h3><strong>HTTPS</strong> clone URL</h3>
+  <div class="input-group">
+    <input type="text" class="input-mini input-monospace js-url-field"
+           value="https://github.com/elasticsearch/logstash.git" readonly="readonly">
+    <span class="input-group-button">
+      <button aria-label="Copy to clipboard" class="js-zeroclipboard minibutton zeroclipboard-button" data-clipboard-text="https://github.com/elasticsearch/logstash.git" data-copied-hint="Copied!" type="button"><span class="octicon octicon-clippy"></span></button>
+    </span>
+  </div>
+</div>
+
+  
+<div class="clone-url "
+  data-protocol-type="subversion"
+  data-url="/users/set_protocol?protocol_selector=subversion&amp;protocol_type=clone">
+  <h3><strong>Subversion</strong> checkout URL</h3>
+  <div class="input-group">
+    <input type="text" class="input-mini input-monospace js-url-field"
+           value="https://github.com/elasticsearch/logstash" readonly="readonly">
+    <span class="input-group-button">
+      <button aria-label="Copy to clipboard" class="js-zeroclipboard minibutton zeroclipboard-button" data-clipboard-text="https://github.com/elasticsearch/logstash" data-copied-hint="Copied!" type="button"><span class="octicon octicon-clippy"></span></button>
+    </span>
+  </div>
+</div>
+
+
+<p class="clone-options">You can clone with
+      <a href="#" class="js-clone-selector" data-protocol="http">HTTPS</a>
+      or <a href="#" class="js-clone-selector" data-protocol="subversion">Subversion</a>.
+  <a href="https://help.github.com/articles/which-remote-url-should-i-use" class="help tooltipped tooltipped-n" aria-label="Get help on which URL is right for you.">
+    <span class="octicon octicon-question"></span>
+  </a>
+</p>
+
+
+
+                <a href="/elasticsearch/logstash/archive/master.zip"
+                   class="minibutton sidebar-button"
+                   aria-label="Download elasticsearch/logstash as a zip file"
+                   title="Download elasticsearch/logstash as a zip file"
+                   rel="nofollow">
+                  <span class="octicon octicon-cloud-download"></span>
+                  Download ZIP
+                </a>
+              </div>
+        </div><!-- /.repository-sidebar -->
+
+        <div id="js-repo-pjax-container" class="repository-content context-loader-container" data-pjax-container>
+          
+
+<a href="/elasticsearch/logstash/blob/6b20d179aaff2da26cebc9a740e73989a112e200/lib/logstash/outputs/elasticsearch/elasticsearch-template.json" class="hidden js-permalink-shortcut" data-hotkey="y">Permalink</a>
+
+<!-- blob contrib key: blob_contributors:v21:e84e99369aa974d8604ce59a052ee51c -->
+
+<div class="file-navigation">
+  
+<div class="select-menu js-menu-container js-select-menu left">
+  <span class="minibutton select-menu-button js-menu-target css-truncate" data-hotkey="w"
+    data-master-branch="master"
+    data-ref="master"
+    title="master"
+    role="button" aria-label="Switch branches or tags" tabindex="0" aria-haspopup="true">
+    <span class="octicon octicon-git-branch"></span>
+    <i>branch:</i>
+    <span class="js-select-button css-truncate-target">master</span>
+  </span>
+
+  <div class="select-menu-modal-holder js-menu-content js-navigation-container" data-pjax aria-hidden="true">
+
+    <div class="select-menu-modal">
+      <div class="select-menu-header">
+        <span class="select-menu-title">Switch branches/tags</span>
+        <span class="octicon octicon-x js-menu-close" role="button" aria-label="Close"></span>
+      </div> <!-- /.select-menu-header -->
+
+      <div class="select-menu-filters">
+        <div class="select-menu-text-filter">
+          <input type="text" aria-label="Filter branches/tags" id="context-commitish-filter-field" class="js-filterable-field js-navigation-enable" placeholder="Filter branches/tags">
+        </div>
+        <div class="select-menu-tabs">
+          <ul>
+            <li class="select-menu-tab">
+              <a href="#" data-tab-filter="branches" class="js-select-menu-tab">Branches</a>
+            </li>
+            <li class="select-menu-tab">
+              <a href="#" data-tab-filter="tags" class="js-select-menu-tab">Tags</a>
+            </li>
+          </ul>
+        </div><!-- /.select-menu-tabs -->
+      </div><!-- /.select-menu-filters -->
+
+      <div class="select-menu-list select-menu-tab-bucket js-select-menu-tab-bucket" data-tab-filter="branches">
+
+        <div data-filterable-for="context-commitish-filter-field" data-filterable-type="substring">
+
+
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/blob/1.3.x/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="1.3.x"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="1.3.x">1.3.x</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/blob/1.4/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="1.4"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="1.4">1.4</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/blob/1.x/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="1.x"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="1.x">1.x</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/blob/LOGSTASH-1509/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="LOGSTASH-1509"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="LOGSTASH-1509">LOGSTASH-1509</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/blob/bug/fix-es-embedded-startup-delay/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="bug/fix-es-embedded-startup-delay"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="bug/fix-es-embedded-startup-delay">bug/fix-es-embedded-startup-delay</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/blob/es-config/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="es-config"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="es-config">es-config</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/blob/feature/faster_json/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="feature/faster_json"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="feature/faster_json">feature/faster_json</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/blob/feature/filter-flushing-execution/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="feature/filter-flushing-execution"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="feature/filter-flushing-execution">feature/filter-flushing-execution</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/blob/fix/drip/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="fix/drip"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="fix/drip">fix/drip</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/blob/fix/twitter_keys/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="fix/twitter_keys"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="fix/twitter_keys">fix/twitter_keys</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item selected">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/blob/master/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="master"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="master">master</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/blob/s3-input-default-region-bug/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="s3-input-default-region-bug"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="s3-input-default-region-bug">s3-input-default-region-bug</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/blob/some-compressor-patch-i-forgot/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="some-compressor-patch-i-forgot"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="some-compressor-patch-i-forgot">some-compressor-patch-i-forgot</a>
+            </div> <!-- /.select-menu-item -->
+        </div>
+
+          <div class="select-menu-no-results">Nothing to show</div>
+      </div> <!-- /.select-menu-list -->
+
+      <div class="select-menu-list select-menu-tab-bucket js-select-menu-tab-bucket" data-tab-filter="tags">
+        <div data-filterable-for="context-commitish-filter-field" data-filterable-type="substring">
+
+
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.4.2/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.4.2"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.4.2">v1.4.2</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.4.1/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.4.1"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.4.1">v1.4.1</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.4.0.rc1/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.4.0.rc1"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.4.0.rc1">v1.4.0.rc1</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.4.0.beta2/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.4.0.beta2"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.4.0.beta2">v1.4.0.beta2</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.4.0.beta1/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.4.0.beta1"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.4.0.beta1">v1.4.0.beta1</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.4.0/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.4.0"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.4.0">v1.4.0</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.3.3/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.3.3"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.3.3">v1.3.3</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.3.2/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.3.2"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.3.2">v1.3.2</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.3.1/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.3.1"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.3.1">v1.3.1</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.3.0/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.3.0"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.3.0">v1.3.0</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.2.2/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.2.2"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.2.2">v1.2.2</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.2.1/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.2.1"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.2.1">v1.2.1</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.2.0.beta2/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.2.0.beta2"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.2.0.beta2">v1.2.0.beta2</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.2.0.beta1/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.2.0.beta1"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.2.0.beta1">v1.2.0.beta1</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.2.0/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.2.0"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.2.0">v1.2.0</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.13/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.13"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.13">v1.1.13</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.12/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.12"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.12">v1.1.12</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.11/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.11"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.11">v1.1.11</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.10/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.10"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.10">v1.1.10</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.9/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.9"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.9">v1.1.9</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.8/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.8"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.8">v1.1.8</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.7/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.7"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.7">v1.1.7</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.6/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.6"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.6">v1.1.6</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.5/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.5"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.5">v1.1.5</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.4/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.4"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.4">v1.1.4</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.3/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.3"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.3">v1.1.3</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.2/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.2"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.2">v1.1.2</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.1-rc1/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.1-rc1"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.1-rc1">v1.1.1-rc1</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.1/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.1"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.1">v1.1.1</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.0beta9/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.0beta9"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.0beta9">v1.1.0beta9</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.0beta8/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.0beta8"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.0beta8">v1.1.0beta8</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.0beta7/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.0beta7"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.0beta7">v1.1.0beta7</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.0.1/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.0.1"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.0.1">v1.1.0.1</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.1.0/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.1.0"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.1.0">v1.1.0</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.0.17/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.0.17"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.0.17">v1.0.17</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.0.16/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.0.16"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.0.16">v1.0.16</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.0.15/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.0.15"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.0.15">v1.0.15</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.0.14/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.0.14"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.0.14">v1.0.14</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.0.12/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.0.12"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.0.12">v1.0.12</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.0.11/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.0.11"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.0.11">v1.0.11</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.0.10/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.0.10"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.0.10">v1.0.10</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.0.9/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.0.9"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.0.9">v1.0.9</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.0.7/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.0.7"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.0.7">v1.0.7</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.0.6/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.0.6"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.0.6">v1.0.6</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.0.5/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.0.5"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.0.5">v1.0.5</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.0.4/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.0.4"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.0.4">v1.0.4</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.0.1/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.0.1"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.0.1">v1.0.1</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v1.0.0/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v1.0.0"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v1.0.0">v1.0.0</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/v/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="v"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="v">v</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/now/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="now"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="now">now</a>
+            </div> <!-- /.select-menu-item -->
+            <div class="select-menu-item js-navigation-item ">
+              <span class="select-menu-item-icon octicon octicon-check"></span>
+              <a href="/elasticsearch/logstash/tree/1.0.4/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+                 data-name="1.0.4"
+                 data-skip-pjax="true"
+                 rel="nofollow"
+                 class="js-navigation-open select-menu-item-text css-truncate-target"
+                 title="1.0.4">1.0.4</a>
+            </div> <!-- /.select-menu-item -->
+        </div>
+
+        <div class="select-menu-no-results">Nothing to show</div>
+      </div> <!-- /.select-menu-list -->
+
+    </div> <!-- /.select-menu-modal -->
+  </div> <!-- /.select-menu-modal-holder -->
+</div> <!-- /.select-menu -->
+
+  <div class="button-group right">
+    <a href="/elasticsearch/logstash/find/master"
+          class="js-show-file-finder minibutton empty-icon tooltipped tooltipped-s"
+          data-pjax
+          data-hotkey="t"
+          aria-label="Quickly jump between files">
+      <span class="octicon octicon-list-unordered"></span>
+    </a>
+    <button class="js-zeroclipboard minibutton zeroclipboard-button"
+          data-clipboard-text="lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+          aria-label="Copy to clipboard"
+          data-copied-hint="Copied!">
+      <span class="octicon octicon-clippy"></span>
+    </button>
+  </div>
+
+  <div class="breadcrumb">
+    <span class='repo-root js-repo-root'><span itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb"><a href="/elasticsearch/logstash" class="" data-branch="master" data-direction="back" data-pjax="true" itemscope="url"><span itemprop="title">logstash</span></a></span></span><span class="separator"> / </span><span itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb"><a href="/elasticsearch/logstash/tree/master/lib" class="" data-branch="master" data-direction="back" data-pjax="true" itemscope="url"><span itemprop="title">lib</span></a></span><span class="separator"> / </span><span itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb"><a href="/elasticsearch/logstash/tree/master/lib/logstash" class="" data-branch="master" data-direction="back" data-pjax="true" itemscope="url"><span itemprop="title">logstash</span></a></span><span class="separator"> / </span><span itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb"><a href="/elasticsearch/logstash/tree/master/lib/logstash/outputs" class="" data-branch="master" data-direction="back" data-pjax="true" itemscope="url"><span itemprop="title">outputs</span></a></span><span class="separator"> / </span><span itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb"><a href="/elasticsearch/logstash/tree/master/lib/logstash/outputs/elasticsearch" class="" data-branch="master" data-direction="back" data-pjax="true" itemscope="url"><span itemprop="title">elasticsearch</span></a></span><span class="separator"> / </span><strong class="final-path">elasticsearch-template.json</strong>
+  </div>
+</div>
+
+
+  <div class="commit file-history-tease">
+      <img alt="Aaron Mildenstein" class="main-avatar js-avatar" data-user="1020383" height="24" src="https://avatars3.githubusercontent.com/u/1020383?s=140" width="24" />
+      <span class="author"><a href="/untergeek" rel="contributor">untergeek</a></span>
+      <time datetime="2014-02-18T11:49:32-06:00" is="relative-time">February 18, 2014</time>
+      <div class="commit-title">
+          <a href="/elasticsearch/logstash/commit/e8203ed74d531c7b9d0e34037792a27ad55150b5" class="message" data-pjax="true" title="The analyzer section is no longer needed as the defaults cover this now:
+
+http://www.elasticsearch.org/guide/en/elasticsearch/reference/1.x/_stopwords.html
+
+&gt; Previously, the standard and pattern analyzers used the list of English stopwords by default, which caused some hard to debug indexing issues. Now they are set to use the empty stopwords list (ie _none_) instead.">The analyzer section is no longer needed as the defaults cover this now:</a>
+      </div>
+
+    <div class="participation">
+      <p class="quickstat"><a href="#blob_contributors_box" rel="facebox"><strong>2</strong>  contributors</a></p>
+          <a class="avatar tooltipped tooltipped-s" aria-label="untergeek" href="/elasticsearch/logstash/commits/master/lib/logstash/outputs/elasticsearch/elasticsearch-template.json?author=untergeek"><img alt="Aaron Mildenstein" class=" js-avatar" data-user="1020383" height="20" src="https://avatars3.githubusercontent.com/u/1020383?s=140" width="20" /></a>
+    <a class="avatar tooltipped tooltipped-s" aria-label="jordansissel" href="/elasticsearch/logstash/commits/master/lib/logstash/outputs/elasticsearch/elasticsearch-template.json?author=jordansissel"><img alt="Jordan Sissel" class=" js-avatar" data-user="131818" height="20" src="https://avatars3.githubusercontent.com/u/131818?s=140" width="20" /></a>
+
+
+    </div>
+    <div id="blob_contributors_box" style="display:none">
+      <h2 class="facebox-header">Users who have contributed to this file</h2>
+      <ul class="facebox-user-list">
+          <li class="facebox-user-list-item">
+            <img alt="Aaron Mildenstein" class=" js-avatar" data-user="1020383" height="24" src="https://avatars3.githubusercontent.com/u/1020383?s=140" width="24" />
+            <a href="/untergeek">untergeek</a>
+          </li>
+          <li class="facebox-user-list-item">
+            <img alt="Jordan Sissel" class=" js-avatar" data-user="131818" height="24" src="https://avatars3.githubusercontent.com/u/131818?s=140" width="24" />
+            <a href="/jordansissel">jordansissel</a>
+          </li>
+      </ul>
+    </div>
+  </div>
+
+<div class="file-box">
+  <div class="file">
+    <div class="meta clearfix">
+      <div class="info file-name">
+          <span>35 lines (34 sloc)</span>
+          <span class="meta-divider"></span>
+        <span>0.9 kb</span>
+      </div>
+      <div class="actions">
+        <div class="button-group">
+          <a href="/elasticsearch/logstash/raw/master/lib/logstash/outputs/elasticsearch/elasticsearch-template.json" class="minibutton " id="raw-url">Raw</a>
+            <a href="/elasticsearch/logstash/blame/master/lib/logstash/outputs/elasticsearch/elasticsearch-template.json" class="minibutton js-update-url-with-hash">Blame</a>
+          <a href="/elasticsearch/logstash/commits/master/lib/logstash/outputs/elasticsearch/elasticsearch-template.json" class="minibutton " rel="nofollow">History</a>
+        </div><!-- /.button-group -->
+
+
+            <a class="octicon-button disabled tooltipped tooltipped-w" href="#"
+               aria-label="You must be signed in to make or propose changes"><span class="octicon octicon-pencil"></span></a>
+
+          <a class="octicon-button danger disabled tooltipped tooltipped-w" href="#"
+             aria-label="You must be signed in to make or propose changes">
+          <span class="octicon octicon-trashcan"></span>
+        </a>
+      </div><!-- /.actions -->
+    </div>
+      
+  <div class="blob-wrapper data type-json">
+      
+<table class="highlight tab-size-8 js-file-line-container">
+      <tr>
+        <td id="L1" class="blob-line-num js-line-number" data-line-number="1"></td>
+        <td id="LC1" class="blob-line-code js-file-line"><span class="p">{</span></td>
+      </tr>
+      <tr>
+        <td id="L2" class="blob-line-num js-line-number" data-line-number="2"></td>
+        <td id="LC2" class="blob-line-code js-file-line">  <span class="nt">&quot;template&quot;</span> <span class="p">:</span> <span class="s2">&quot;logstash-*&quot;</span><span class="p">,</span></td>
+      </tr>
+      <tr>
+        <td id="L3" class="blob-line-num js-line-number" data-line-number="3"></td>
+        <td id="LC3" class="blob-line-code js-file-line">  <span class="nt">&quot;settings&quot;</span> <span class="p">:</span> <span class="p">{</span></td>
+      </tr>
+      <tr>
+        <td id="L4" class="blob-line-num js-line-number" data-line-number="4"></td>
+        <td id="LC4" class="blob-line-code js-file-line">    <span class="nt">&quot;index.refresh_interval&quot;</span> <span class="p">:</span> <span class="s2">&quot;5s&quot;</span></td>
+      </tr>
+      <tr>
+        <td id="L5" class="blob-line-num js-line-number" data-line-number="5"></td>
+        <td id="LC5" class="blob-line-code js-file-line">  <span class="p">},</span></td>
+      </tr>
+      <tr>
+        <td id="L6" class="blob-line-num js-line-number" data-line-number="6"></td>
+        <td id="LC6" class="blob-line-code js-file-line">  <span class="nt">&quot;mappings&quot;</span> <span class="p">:</span> <span class="p">{</span></td>
+      </tr>
+      <tr>
+        <td id="L7" class="blob-line-num js-line-number" data-line-number="7"></td>
+        <td id="LC7" class="blob-line-code js-file-line">    <span class="nt">&quot;_default_&quot;</span> <span class="p">:</span> <span class="p">{</span></td>
+      </tr>
+      <tr>
+        <td id="L8" class="blob-line-num js-line-number" data-line-number="8"></td>
+        <td id="LC8" class="blob-line-code js-file-line">       <span class="nt">&quot;_all&quot;</span> <span class="p">:</span> <span class="p">{</span><span class="nt">&quot;enabled&quot;</span> <span class="p">:</span> <span class="kc">true</span><span class="p">},</span></td>
+      </tr>
+      <tr>
+        <td id="L9" class="blob-line-num js-line-number" data-line-number="9"></td>
+        <td id="LC9" class="blob-line-code js-file-line">       <span class="nt">&quot;dynamic_templates&quot;</span> <span class="p">:</span> <span class="p">[</span> <span class="p">{</span></td>
+      </tr>
+      <tr>
+        <td id="L10" class="blob-line-num js-line-number" data-line-number="10"></td>
+        <td id="LC10" class="blob-line-code js-file-line">         <span class="nt">&quot;string_fields&quot;</span> <span class="p">:</span> <span class="p">{</span></td>
+      </tr>
+      <tr>
+        <td id="L11" class="blob-line-num js-line-number" data-line-number="11"></td>
+        <td id="LC11" class="blob-line-code js-file-line">           <span class="nt">&quot;match&quot;</span> <span class="p">:</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span></td>
+      </tr>
+      <tr>
+        <td id="L12" class="blob-line-num js-line-number" data-line-number="12"></td>
+        <td id="LC12" class="blob-line-code js-file-line">           <span class="nt">&quot;match_mapping_type&quot;</span> <span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span></td>
+      </tr>
+      <tr>
+        <td id="L13" class="blob-line-num js-line-number" data-line-number="13"></td>
+        <td id="LC13" class="blob-line-code js-file-line">           <span class="nt">&quot;mapping&quot;</span> <span class="p">:</span> <span class="p">{</span></td>
+      </tr>
+      <tr>
+        <td id="L14" class="blob-line-num js-line-number" data-line-number="14"></td>
+        <td id="LC14" class="blob-line-code js-file-line">             <span class="nt">&quot;type&quot;</span> <span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="nt">&quot;index&quot;</span> <span class="p">:</span> <span class="s2">&quot;analyzed&quot;</span><span class="p">,</span> <span class="nt">&quot;omit_norms&quot;</span> <span class="p">:</span> <span class="kc">true</span><span class="p">,</span></td>
+      </tr>
+      <tr>
+        <td id="L15" class="blob-line-num js-line-number" data-line-number="15"></td>
+        <td id="LC15" class="blob-line-code js-file-line">               <span class="nt">&quot;fields&quot;</span> <span class="p">:</span> <span class="p">{</span></td>
+      </tr>
+      <tr>
+        <td id="L16" class="blob-line-num js-line-number" data-line-number="16"></td>
+        <td id="LC16" class="blob-line-code js-file-line">                 <span class="nt">&quot;raw&quot;</span> <span class="p">:</span> <span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="nt">&quot;index&quot;</span> <span class="p">:</span> <span class="s2">&quot;not_analyzed&quot;</span><span class="p">,</span> <span class="nt">&quot;ignore_above&quot;</span> <span class="p">:</span> <span class="mi">256</span><span class="p">}</span></td>
+      </tr>
+      <tr>
+        <td id="L17" class="blob-line-num js-line-number" data-line-number="17"></td>
+        <td id="LC17" class="blob-line-code js-file-line">               <span class="p">}</span></td>
+      </tr>
+      <tr>
+        <td id="L18" class="blob-line-num js-line-number" data-line-number="18"></td>
+        <td id="LC18" class="blob-line-code js-file-line">           <span class="p">}</span></td>
+      </tr>
+      <tr>
+        <td id="L19" class="blob-line-num js-line-number" data-line-number="19"></td>
+        <td id="LC19" class="blob-line-code js-file-line">         <span class="p">}</span></td>
+      </tr>
+      <tr>
+        <td id="L20" class="blob-line-num js-line-number" data-line-number="20"></td>
+        <td id="LC20" class="blob-line-code js-file-line">       <span class="p">}</span> <span class="p">],</span></td>
+      </tr>
+      <tr>
+        <td id="L21" class="blob-line-num js-line-number" data-line-number="21"></td>
+        <td id="LC21" class="blob-line-code js-file-line">       <span class="nt">&quot;properties&quot;</span> <span class="p">:</span> <span class="p">{</span></td>
+      </tr>
+      <tr>
+        <td id="L22" class="blob-line-num js-line-number" data-line-number="22"></td>
+        <td id="LC22" class="blob-line-code js-file-line">         <span class="nt">&quot;@version&quot;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="nt">&quot;index&quot;</span><span class="p">:</span> <span class="s2">&quot;not_analyzed&quot;</span> <span class="p">},</span></td>
+      </tr>
+      <tr>
+        <td id="L23" class="blob-line-num js-line-number" data-line-number="23"></td>
+        <td id="LC23" class="blob-line-code js-file-line">         <span class="nt">&quot;geoip&quot;</span>  <span class="p">:</span> <span class="p">{</span></td>
+      </tr>
+      <tr>
+        <td id="L24" class="blob-line-num js-line-number" data-line-number="24"></td>
+        <td id="LC24" class="blob-line-code js-file-line">           <span class="nt">&quot;type&quot;</span> <span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span></td>
+      </tr>
+      <tr>
+        <td id="L25" class="blob-line-num js-line-number" data-line-number="25"></td>
+        <td id="LC25" class="blob-line-code js-file-line">             <span class="nt">&quot;dynamic&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span></td>
+      </tr>
+      <tr>
+        <td id="L26" class="blob-line-num js-line-number" data-line-number="26"></td>
+        <td id="LC26" class="blob-line-code js-file-line">             <span class="nt">&quot;path&quot;</span><span class="p">:</span> <span class="s2">&quot;full&quot;</span><span class="p">,</span></td>
+      </tr>
+      <tr>
+        <td id="L27" class="blob-line-num js-line-number" data-line-number="27"></td>
+        <td id="LC27" class="blob-line-code js-file-line">             <span class="nt">&quot;properties&quot;</span> <span class="p">:</span> <span class="p">{</span></td>
+      </tr>
+      <tr>
+        <td id="L28" class="blob-line-num js-line-number" data-line-number="28"></td>
+        <td id="LC28" class="blob-line-code js-file-line">               <span class="nt">&quot;location&quot;</span> <span class="p">:</span> <span class="p">{</span> <span class="nt">&quot;type&quot;</span> <span class="p">:</span> <span class="s2">&quot;geo_point&quot;</span> <span class="p">}</span></td>
+      </tr>
+      <tr>
+        <td id="L29" class="blob-line-num js-line-number" data-line-number="29"></td>
+        <td id="LC29" class="blob-line-code js-file-line">             <span class="p">}</span></td>
+      </tr>
+      <tr>
+        <td id="L30" class="blob-line-num js-line-number" data-line-number="30"></td>
+        <td id="LC30" class="blob-line-code js-file-line">         <span class="p">}</span></td>
+      </tr>
+      <tr>
+        <td id="L31" class="blob-line-num js-line-number" data-line-number="31"></td>
+        <td id="LC31" class="blob-line-code js-file-line">       <span class="p">}</span></td>
+      </tr>
+      <tr>
+        <td id="L32" class="blob-line-num js-line-number" data-line-number="32"></td>
+        <td id="LC32" class="blob-line-code js-file-line">    <span class="p">}</span></td>
+      </tr>
+      <tr>
+        <td id="L33" class="blob-line-num js-line-number" data-line-number="33"></td>
+        <td id="LC33" class="blob-line-code js-file-line">  <span class="p">}</span></td>
+      </tr>
+      <tr>
+        <td id="L34" class="blob-line-num js-line-number" data-line-number="34"></td>
+        <td id="LC34" class="blob-line-code js-file-line"><span class="p">}</span></td>
+      </tr>
+</table>
+
+  </div>
+
+  </div>
+</div>
+
+<a href="#jump-to-line" rel="facebox[.linejump]" data-hotkey="l" style="display:none">Jump to Line</a>
+<div id="jump-to-line" style="display:none">
+  <form accept-charset="UTF-8" class="js-jump-to-line-form">
+    <input class="linejump-input js-jump-to-line-field" type="text" placeholder="Jump to line&hellip;" autofocus>
+    <button type="submit" class="button">Go</button>
+  </form>
+</div>
+
+        </div>
+
+      </div><!-- /.repo-container -->
+      <div class="modal-backdrop"></div>
+    </div><!-- /.container -->
+  </div><!-- /.site -->
+
+
+    </div><!-- /.wrapper -->
+
+      <div class="container">
+  <div class="site-footer">
+    <ul class="site-footer-links right">
+      <li><a href="https://status.github.com/">Status</a></li>
+      <li><a href="http://developer.github.com">API</a></li>
+      <li><a href="http://training.github.com">Training</a></li>
+      <li><a href="http://shop.github.com">Shop</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="/about">About</a></li>
+
+    </ul>
+
+    <a href="/" aria-label="Homepage">
+      <span class="mega-octicon octicon-mark-github" title="GitHub"></span>
+    </a>
+
+    <ul class="site-footer-links">
+      <li>&copy; 2014 <span title="0.02180s from github-fe120-cp1-prd.iad.github.net">GitHub</span>, Inc.</li>
+        <li><a href="/site/terms">Terms</a></li>
+        <li><a href="/site/privacy">Privacy</a></li>
+        <li><a href="/security">Security</a></li>
+        <li><a href="/contact">Contact</a></li>
+    </ul>
+  </div><!-- /.site-footer -->
+</div><!-- /.container -->
+
+
+    <div class="fullscreen-overlay js-fullscreen-overlay" id="fullscreen_overlay">
+  <div class="fullscreen-container js-suggester-container">
+    <div class="textarea-wrap">
+      <textarea name="fullscreen-contents" id="fullscreen-contents" class="fullscreen-contents js-fullscreen-contents js-suggester-field" placeholder=""></textarea>
+    </div>
+  </div>
+  <div class="fullscreen-sidebar">
+    <a href="#" class="exit-fullscreen js-exit-fullscreen tooltipped tooltipped-w" aria-label="Exit Zen Mode">
+      <span class="mega-octicon octicon-screen-normal"></span>
+    </a>
+    <a href="#" class="theme-switcher js-theme-switcher tooltipped tooltipped-w"
+      aria-label="Switch themes">
+      <span class="octicon octicon-color-mode"></span>
+    </a>
+  </div>
+</div>
+
+
+
+    <div id="ajax-error-message" class="flash flash-error">
+      <span class="octicon octicon-alert"></span>
+      <a href="#" class="octicon octicon-x close js-ajax-error-dismiss" aria-label="Dismiss error"></a>
+      Something went wrong with that request. Please try again.
+    </div>
+
+
+      <script crossorigin="anonymous" src="https://assets-cdn.github.com/assets/frameworks-12d5fda141e78e513749dddbc56445fe172cbd9a.js" type="text/javascript"></script>
+      <script async="async" crossorigin="anonymous" src="https://assets-cdn.github.com/assets/github-f8cf379f177c2fd3562514979aef2b0ea1ccc9a2.js" type="text/javascript"></script>
+      
+      
+        <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </body>
+</html>
+
