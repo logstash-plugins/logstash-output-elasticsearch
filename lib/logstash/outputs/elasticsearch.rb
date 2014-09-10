@@ -37,7 +37,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config_name "elasticsearch"
   milestone 3
 
-  VERSION='0.1.1'
+  VERSION='0.1.4'
 
   # The index to write events to. This can be dynamic using the %{foo} syntax.
   # The default value will partition your indices by day so you can more easily
@@ -177,6 +177,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # For more details on actions, check out the [Elasticsearch bulk API documentation](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html)
   config :action, :validate => :string, :default => "index"
 
+  # The Elasticsearch plugin to load
+  #
+  config :plugins, :validate => :array
+
+
   public
   def register
     client_settings = {}
@@ -192,6 +197,14 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     if @protocol.nil?
       @protocol = LogStash::Environment.jruby? ? "node" : "http"
+    end
+
+    @plugins.each do | plugin |
+      begin
+        require "logstash/outputs/elasticsearch/#{plugin}"
+      rescue LoadError
+        @logger.warn("Loading of plugin #{plugin} failed. Verify if the name is correct and the plugin is installed")
+      end
     end
 
     if ["node", "transport"].include?(@protocol)
@@ -269,7 +282,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def get_template
     if @template.nil?
       #@template = LogStash::Environment.plugin_path("outputs/elasticsearch/elasticsearch-template.json")
-      @template = ENV["GEM_PATH"]+"logstash-output-elasticsearch-#{VERSION}/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+      @template = ENV["GEM_PATH"]+"gems/logstash-output-elasticsearch-#{VERSION}/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
       if !File.exists?(@template)
         raise "You must specify 'template => ...' in your elasticsearch output (I looked for '#{@template}')"
       end
