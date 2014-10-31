@@ -79,13 +79,18 @@ module LogStash::Outputs::Elasticsearch
       end
 
       def bulk(actions)
-        @client.bulk(:body => actions.collect do |action, args, source|
+        bulk_response = @client.bulk(:body => actions.collect do |action, args, source|
           if source
             next [ { action => args }, source ]
           else
             next { action => args }
           end
         end.flatten)
+        if bulk_response["errors"]
+          return {"errors" => true, "statuses" => bulk_response["items"].map { |i| i["status"] }}
+        else
+          return {"errors" => false}
+        end
       end # def bulk
 
       def template_exists?(name)
@@ -190,7 +195,14 @@ module LogStash::Outputs::Elasticsearch
         end
         response = prep.execute.actionGet()
 
-        # TODO(sissel): What format should the response be in?
+        if response.has_failures()
+          return {"errors" => true,
+                  "statuses" => response.map { |i| (i.is_failed && i.get_failure.get_status.get_status) || 200 }}
+        else
+          return {"errors" => false}
+        end
+        # returns 200 for all successful actions, represents 201 & 200
+        # TODO(talevy): parse item response objects to retrieve correct 200 (OK) or 201(created) status codes
       end # def bulk
 
       def build_request(action, args, source)
