@@ -5,6 +5,7 @@ require "logstash/outputs/base"
 require "logstash/json"
 require "stud/buffer"
 require "socket" # for Socket.gethostname
+require "uri" # for escaping user input
 require 'logstash-output-elasticsearch_jars.rb'
 
 # This output lets you store logs in Elasticsearch and is the most recommended
@@ -185,18 +186,28 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :plugins, :validate => :array
 
 
+  # Username and password (HTTP only)
+  config :user, :validate => :string
+  config :password, :validate => :password
+
+  # SSL Configurations (HTTP only)
+  #
+  # Enable SSL
+  config :ssl, :validate => :boolean, :default => false
+
+  # The .cer or .pem file to validate the server's certificate
+  config :cacert, :validate => :path
+
+  # The JKS truststore to validate the server's certificate
+  # Use either :truststore or :cacert
+  config :truststore, :validate => :path
+
+  # Set the truststore password
+  config :truststore_password, :validate => :password
+
   public
   def register
     client_settings = {}
-    client_settings["cluster.name"] = @cluster if @cluster
-    client_settings["network.host"] = @bind_host if @bind_host
-    client_settings["transport.tcp.port"] = @bind_port if @bind_port
-
-    if @node_name
-      client_settings["node.name"] = @node_name
-    else
-      client_settings["node.name"] = "logstash-#{Socket.gethostname}-#{$$}-#{object_id}"
-    end
 
     if @protocol.nil?
       @protocol = LogStash::Environment.jruby? ? "node" : "http"
@@ -217,6 +228,15 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
       # setup log4j properties for Elasticsearch
  #     LogStash::Logger.setup_log4j(@logger)
+       client_settings["cluster.name"] = @cluster if @cluster
+       client_settings["network.host"] = @bind_host if @bind_host
+       client_settings["transport.tcp.port"] = @bind_port if @bind_port
+ 
+       if @node_name
+         client_settings["node.name"] = @node_name
+       else
+         client_settings["node.name"] = "logstash-#{Socket.gethostname}-#{$$}-#{object_id}"
+       end
     end
 
     require "logstash/outputs/elasticsearch/protocol"
@@ -233,12 +253,45 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       @host = ["localhost"]
     end
 
+    if @ssl
+      if @protocol == "http"
+        @protocol = "https"
+        if @cacert && @truststore
+          raise(LogStash::ConfigurationError, "Use either \"cacert\" or \"truststore\" when configuring the CA certificate") if @truststore
+        end
+        ssl_options = {}
+        if @cacert then
+          @truststore, ssl_options[:truststore_password] = generate_jks @cacert
+        elsif @truststore
+          ssl_options[:truststore_password] = @truststore_password.value if @truststore_password
+        end
+        ssl_options[:truststore] = @truststore
+        client_settings[:ssl] = ssl_options
+      else
+        raise(LogStash::ConfigurationError, "SSL is not supported for '#{@protocol}'. Change the protocol to 'http' if you need SSL.")
+      end
+    end
+
+    common_options = {
+      :protocol => @protocol,
+      :client_settings => client_settings
+    }
+
+    if @user && @password
+      if @protocol =~ /http/
+        common_options[:user] = ::URI.escape(@user, "@:")
+        common_options[:password] = ::URI.escape(@password.value, "@:")
+      else
+        raise(LogStash::ConfigurationError, "User and password parameters are not supported for '#{@protocol}'. Change the protocol to 'http' if you need them.")
+      end
+    end
+
     client_class = case @protocol
       when "transport"
         LogStash::Outputs::Elasticsearch::Protocols::TransportClient
       when "node"
         LogStash::Outputs::Elasticsearch::Protocols::NodeClient
-      when "http"
+      when /http/
         LogStash::Outputs::Elasticsearch::Protocols::HTTPClient
     end
 
@@ -261,8 +314,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       options = {
           :host => @host,
           :port => @port,
-          :client_settings => client_settings
-      }
+      }.merge(common_options)
       @client << client_class.new(options)
     else # if @protocol in ["transport","http"]
       @host.each do |host|
@@ -270,8 +322,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
           options = {
             :host => _host,
             :port => _port || @port,
-            :client_settings => client_settings
-          }
+          }.merge(common_options)
           @logger.info "Create client to elasticsearch server on #{_host}:#{_port}"
           @client << client_class.new(options)
       end # @host.each
@@ -338,6 +389,29 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @embedded_elasticsearch.start
   end # def start_local_elasticsearch
 
+  private
+  def generate_jks cert_path
+
+    require 'securerandom'
+    require 'tempfile'
+    require 'java'
+    import java.io.FileInputStream
+    import java.io.FileOutputStream
+    import java.security.KeyStore
+    import java.security.cert.CertificateFactory
+
+    jks = java.io.File.createTempFile("cert", ".jks")
+
+    ks = KeyStore.getInstance "JKS"
+    ks.load nil, nil
+    cf = CertificateFactory.getInstance "X.509"
+    cert = cf.generateCertificate FileInputStream.new(cert_path)
+    ks.setCertificateEntry "cacert", cert
+    pwd = SecureRandom.urlsafe_base64(9)
+    ks.store FileOutputStream.new(jks), pwd.to_java.toCharArray
+    [jks.path, pwd]
+  end
+
   public
   def receive(event)
     return unless output?(event)
@@ -376,6 +450,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end # def flush
 
   def teardown
+    if @cacert # remove temporary jks store created from the cacert
+      File.delete(@truststore)
+    end
     buffer_flush(:final => true)
   end
 
