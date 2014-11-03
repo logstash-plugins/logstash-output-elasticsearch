@@ -35,10 +35,15 @@ require 'logstash-output-elasticsearch_jars.rb'
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   include Stud::Buffer
 
+  @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }
+
+  @@plugins.each do |plugin|
+    name = plugin.name.split('-')[-1]
+    require "logstash/outputs/elasticsearch/#{name}"
+  end
+
   config_name "elasticsearch"
   milestone 3
-
-  VERSION='0.1.4'
 
   # The index to write events to. This can be dynamic using the %{foo} syntax.
   # The default value will partition your indices by day so you can more easily
@@ -181,11 +186,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # For more details on actions, check out the [Elasticsearch bulk API documentation](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html)
   config :action, :validate => :string, :default => "index"
 
-  # The Elasticsearch plugin to load
-  #
-  config :plugins, :validate => :array
-
-
   # Username and password (HTTP only)
   config :user, :validate => :string
   config :password, :validate => :password
@@ -213,30 +213,24 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       @protocol = LogStash::Environment.jruby? ? "node" : "http"
     end
 
-    @plugins.each do | plugin |
-      begin
-        require "logstash/outputs/elasticsearch/#{plugin}"
-      rescue LoadError
-        @logger.warn("Loading of plugin #{plugin} failed. Verify if the name is correct and the plugin is installed")
-      end
-    end
-
     if ["node", "transport"].include?(@protocol)
       # Node or TransportClient; requires JRuby
       raise(LogStash::PluginLoadingError, "This configuration requires JRuby. If you are not using JRuby, you must set 'protocol' to 'http'. For example: output { elasticsearch { protocol => \"http\" } }") unless LogStash::Environment.jruby?
-#      LogStash::Environment.load_elasticsearch_jars!
 
-      # setup log4j properties for Elasticsearch
- #     LogStash::Logger.setup_log4j(@logger)
-       client_settings["cluster.name"] = @cluster if @cluster
-       client_settings["network.host"] = @bind_host if @bind_host
-       client_settings["transport.tcp.port"] = @bind_port if @bind_port
+      client_settings["cluster.name"] = @cluster if @cluster
+      client_settings["network.host"] = @bind_host if @bind_host
+      client_settings["transport.tcp.port"] = @bind_port if @bind_port
  
-       if @node_name
-         client_settings["node.name"] = @node_name
-       else
-         client_settings["node.name"] = "logstash-#{Socket.gethostname}-#{$$}-#{object_id}"
-       end
+      if @node_name
+        client_settings["node.name"] = @node_name
+      else
+        client_settings["node.name"] = "logstash-#{Socket.gethostname}-#{$$}-#{object_id}"
+      end
+
+      @@plugins.each do |plugin|
+        name = plugin.name.split('-')[-1]
+        client_settings.merge!(LogStash::Outputs::ElasticSearch.const_get(name.capitalize).create_client_config(self))
+      end
     end
 
     require "logstash/outputs/elasticsearch/protocol"
@@ -364,7 +358,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   public
   def get_template
     if @template.nil?
-      @template = ::File.expand_path('/elasticsearch/elasticsearch-template.json', ::File.dirname(__FILE__))
+      @template = ::File.expand_path('elasticsearch/elasticsearch-template.json', ::File.dirname(__FILE__))
       if !File.exists?(@template)
         raise "You must specify 'template => ...' in your elasticsearch output (I looked for '#{@template}')"
       end
