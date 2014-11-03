@@ -1,10 +1,9 @@
-require "test_utils"
+require "spec_helper"
 require "ftw"
 require "logstash/plugin"
 require "logstash/json"
 
 describe "outputs/elasticsearch" do
-  extend LogStash::RSpec
 
   it "should register" do
     output = LogStash::Plugin.lookup("output", "elasticsearch").new("embedded" => "false", "protocol" => "transport", "manage_template" => "false")
@@ -12,6 +11,7 @@ describe "outputs/elasticsearch" do
     # register will try to load jars and raise if it cannot find jars
     expect {output.register}.to_not raise_error
   end
+
 
   describe "ship lots of events w/ default index_type", :elasticsearch => true do
     # Generate a random index name
@@ -255,6 +255,34 @@ describe "outputs/elasticsearch" do
           insist { doc["_type"] } == "generated"
         end
       end
+    end
+  end
+
+  describe "wildcard substitution in index templates", :todo => true do
+    require "logstash/outputs/elasticsearch"
+
+    let(:template) { '{"template" : "not important, will be updated by :index"}' }
+
+    def settings_with_index(index)
+      return {
+        "manage_template" => true,
+        "template_overwrite" => true,
+        "protocol" => "http",
+        "host" => "localhost",
+        "index" => "#{index}"
+      }
+    end
+
+    it "should substitude placeholders" do
+      IO.stub(:read).with(anything) { template }
+      es_output = LogStash::Outputs::ElasticSearch.new(settings_with_index("index-%{YYYY}"))
+      insist { es_output.get_template['template'] } == "index-*"
+    end
+
+    it "should do nothing to an index with no placeholder" do
+      IO.stub(:read).with(anything) { template }
+      es_output = LogStash::Outputs::ElasticSearch.new(settings_with_index("index"))
+      insist { es_output.get_template['template'] } == "index"
     end
   end
 
