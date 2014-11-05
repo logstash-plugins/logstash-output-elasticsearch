@@ -1,10 +1,9 @@
-require "test_utils"
+require "spec_helper"
 require "ftw"
 require "logstash/plugin"
 require "logstash/json"
 
 describe "outputs/elasticsearch" do
-  extend LogStash::RSpec
 
   it "should register" do
     output = LogStash::Plugin.lookup("output", "elasticsearch").new("embedded" => "false", "protocol" => "transport", "manage_template" => "false")
@@ -349,7 +348,7 @@ describe "outputs/elasticsearch" do
 
   describe "elasticsearch protocol" do
     # ElasticSearch related jars
-    LogStash::Environment.load_elasticsearch_jars!
+#LogStash::Environment.load_elasticsearch_jars!
     # Load elasticsearch protocol
     require "logstash/outputs/elasticsearch/protocol"
 
