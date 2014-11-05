@@ -35,13 +35,6 @@ require 'logstash-output-elasticsearch_jars.rb'
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   include Stud::Buffer
 
-  @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }
-
-  @@plugins.each do |plugin|
-    name = plugin.name.split('-')[-1]
-    require "logstash/outputs/elasticsearch/#{name}"
-  end
-
   config_name "elasticsearch"
   milestone 3
 
@@ -448,6 +441,13 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       File.delete(@truststore)
     end
     buffer_flush(:final => true)
+  end
+
+  @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }
+
+  @@plugins.each do |plugin|
+    name = plugin.name.split('-')[-1]
+    require "logstash/outputs/elasticsearch/#{name}"
   end
 
 end # class LogStash::Outputs::Elasticsearch
