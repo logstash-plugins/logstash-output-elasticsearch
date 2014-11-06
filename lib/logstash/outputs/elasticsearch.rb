@@ -19,7 +19,7 @@ require 'logstash-output-elasticsearch_jars.rb'
 # as configuration options, there are two methods:
 #
 # * Create an `elasticsearch.yml` file in the $PWD of the Logstash process
-# * Pass in es.* java properties (java -Des.node.foo= or ruby -J-Des.node.foo=)
+# * Pass in es.* java properties (`java -Des.node.foo=` or `ruby -J-Des.node.foo=`)
 #
 # With the default `protocol` setting ("node"), this plugin will join your
 # Elasticsearch cluster as a client node, so it will show up in Elasticsearch's
@@ -38,32 +38,34 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config_name "elasticsearch"
   milestone 3
 
-  # The index to write events to. This can be dynamic using the %{foo} syntax.
+  # The index to write events to. This can be dynamic using the `%{foo}` syntax.
   # The default value will partition your indices by day so you can more easily
   # delete old data or only search specific date ranges.
   # Indexes may not contain uppercase characters.
   config :index, :validate => :string, :default => "logstash-%{+YYYY.MM.dd}"
 
   # The index type to write events to. Generally you should try to write only
-  # similar events to the same 'type'. String expansion '%{foo}' works here.
+  # similar events to the same 'type'. String expansion `%{foo}` works here.
   config :index_type, :validate => :string
 
-  # Starting in Logstash 1.3 (unless you set option "manage_template" to false)
+  # Starting in Logstash 1.3 (unless you set option `manage_template` to false)
   # a default mapping template for Elasticsearch will be applied, if you do not
   # already have one set to match the index pattern defined (default of
-  # "logstash-%{+YYYY.MM.dd}"), minus any variables.  For example, in this case
-  # the template will be applied to all indices starting with logstash-*
+  # `logstash-%{+YYYY.MM.dd}`), minus any variables.  For example, in this case
+  # the template will be applied to all indices starting with `logstash-*`
   #
   # If you have dynamic templating (e.g. creating indices based on field names)
-  # then you should set "manage_template" to false and use the REST API to upload
+  # then you should set `manage_template` to false and use the REST API to upload
   # your templates manually.
   config :manage_template, :validate => :boolean, :default => true
 
   # This configuration option defines how the template is named inside Elasticsearch.
   # Note that if you have used the template management features and subsequently
   # change this, you will need to prune the old template manually, e.g.
-  # curl -XDELETE <http://localhost:9200/_template/OldTemplateName?pretty>
-  # where OldTemplateName is whatever the former setting was.
+  #
+  # `curl -XDELETE <http://localhost:9200/_template/OldTemplateName?pretty>`
+  #
+  # where `OldTemplateName` is whatever the former setting was.
   config :template_name, :validate => :string, :default => "logstash"
 
   # You can set the path to your own template here, if you so desire.
@@ -71,7 +73,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :template, :validate => :path
 
   # Overwrite the current template with whatever is configured
-  # in the template and template_name directives.
+  # in the `template` and `template_name` directives.
   config :template_overwrite, :validate => :boolean, :default => false
 
   # The document ID for the index. Useful for overwriting existing entries in
@@ -86,8 +88,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # This is only required if the normal multicast/cluster discovery stuff won't
   # work in your environment.
   #
-  #     "127.0.0.1"
-  #     ["127.0.0.1:9300","127.0.0.2:9300"]
+  #     `"127.0.0.1"`
+  #     `["127.0.0.1:9300","127.0.0.2:9300"]`
   config :host, :validate => :array
 
   # The port for Elasticsearch transport to use.
@@ -173,7 +175,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   #
   # What does each action do?
   #
-  # - index: indexes a document (an event from logstash).
+  # - index: indexes a document (an event from Logstash).
   # - delete: deletes a document by id
   #
   # For more details on actions, check out the [Elasticsearch bulk API documentation](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html)
@@ -192,7 +194,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :cacert, :validate => :path
 
   # The JKS truststore to validate the server's certificate
-  # Use either :truststore or :cacert
+  # Use either `:truststore` or `:cacert`
   config :truststore, :validate => :path
 
   # Set the truststore password
