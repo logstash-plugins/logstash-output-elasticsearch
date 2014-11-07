@@ -28,7 +28,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'cabin', ['~> 0.6']
   s.add_runtime_dependency 'ftw', ['>= 0.0.40', '~> 0']
   s.add_runtime_dependency 'logstash', '>= 1.4.0', '< 2.0.0'
-  s.add_runtime_dependency 'jar-dependencies', '~> 0.1'
+  s.add_runtime_dependency 'jar-dependencies'
 
   if RUBY_PLATFORM == 'java'
     gem.add_runtime_dependency "manticore", '~> 0.3'
