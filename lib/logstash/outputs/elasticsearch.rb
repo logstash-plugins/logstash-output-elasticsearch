@@ -242,38 +242,14 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       @host = ["localhost"]
     end
 
-    if @ssl
-      if @protocol == "http"
-        @protocol = "https"
-        if @cacert && @truststore
-          raise(LogStash::ConfigurationError, "Use either \"cacert\" or \"truststore\" when configuring the CA certificate") if @truststore
-        end
-        ssl_options = {}
-        if @cacert then
-          @truststore, ssl_options[:truststore_password] = generate_jks @cacert
-        elsif @truststore
-          ssl_options[:truststore_password] = @truststore_password.value if @truststore_password
-        end
-        ssl_options[:truststore] = @truststore
-        client_settings[:ssl] = ssl_options
-      else
-        raise(LogStash::ConfigurationError, "SSL is not supported for '#{@protocol}'. Change the protocol to 'http' if you need SSL.")
-      end
-    end
+    client_settings.merge! setup_ssl()
 
     common_options = {
       :protocol => @protocol,
       :client_settings => client_settings
     }
 
-    if @user && @password
-      if @protocol =~ /http/
-        common_options[:user] = ::URI.escape(@user, "@:")
-        common_options[:password] = ::URI.escape(@password.value, "@:")
-      else
-        raise(LogStash::ConfigurationError, "User and password parameters are not supported for '#{@protocol}'. Change the protocol to 'http' if you need them.")
-      end
-    end
+    common_options.merge! setup_basic_auth()
 
     client_class = case @protocol
       when "transport"
@@ -348,6 +324,40 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @client_idx = (@client_idx+1) % @client.length
     @current_client = @client[@client_idx]
     @logger.debug? and @logger.debug("Switched current elasticsearch client to ##{@client_idx} at #{@host[@client_idx]}")
+  end
+
+  private
+  def setup_ssl
+    return {} if @ssl
+    if @protocol != "http"
+      raise(LogStash::ConfigurationError, "SSL is not supported for '#{@protocol}'. Change the protocol to 'http' if you need SSL.")
+    end
+    @protocol = "https"
+    if @cacert && @truststore
+      raise(LogStash::ConfigurationError, "Use either \"cacert\" or \"truststore\" when configuring the CA certificate") if @truststore
+    end
+    ssl_options = {}
+    if @cacert then
+      @truststore, ssl_options[:truststore_password] = generate_jks @cacert
+    elsif @truststore
+      ssl_options[:truststore_password] = @truststore_password.value if @truststore_password
+    end
+    ssl_options[:truststore] = @truststore
+    { ssl: ssl_options }
+  end
+
+  private
+  def setup_basic_auth
+    return {} unless @user && @password
+
+    if @protocol =~ /http/
+      {
+        :user => ::URI.escape(@user, "@:"),
+        :password => ::URI.escape(@password.value, "@:")
+      }
+    else
+      raise(LogStash::ConfigurationError, "User and password parameters are not supported for '#{@protocol}'. Change the protocol to 'http' if you need them.")
+    end
   end
 
   public
