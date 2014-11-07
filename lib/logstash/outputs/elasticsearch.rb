@@ -178,7 +178,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # - index: indexes a document (an event from Logstash).
   # - delete: deletes a document by id
   #
-  # For more details on actions, check out the [Elasticsearch bulk API documentation](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html)
+  # For more details on actions, check out the http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
   config :action, :validate => :string, :default => "index"
 
   # Username and password (HTTP only)
