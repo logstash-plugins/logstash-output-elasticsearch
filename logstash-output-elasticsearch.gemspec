@@ -23,15 +23,15 @@ Gem::Specification.new do |s|
   s.requirements << "jar 'org.elasticsearch:elasticsearch', '1.4.0'"
 
   # Gem dependencies
-  s.add_runtime_dependency 'elasticsearch', ['~> 1.0.6']
-  s.add_runtime_dependency 'stud'
-  s.add_runtime_dependency 'cabin', ['>=0.6.0']
-  s.add_runtime_dependency 'ftw', ['~> 0.0.40']
+  s.add_runtime_dependency 'elasticsearch', ['>= 1.0.6', '~> 1.0']
+  s.add_runtime_dependency 'stud', ['>= 0.0.17', '~> 0.0']
+  s.add_runtime_dependency 'cabin', ['~> 0.6']
+  s.add_runtime_dependency 'ftw', ['>= 0.0.40', '~> 0']
   s.add_runtime_dependency 'logstash', '>= 1.4.0', '< 2.0.0'
-  s.add_runtime_dependency 'jar-dependencies'
+  s.add_runtime_dependency 'jar-dependencies', '~> 0.1'
 
   if RUBY_PLATFORM == 'java'
-    s.add_runtime_dependency "manticore"
+    s.add_runtime_dependency "manticore", '~> 0.3'
   end
 end
 
