@@ -31,7 +31,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'jar-dependencies'
 
   if RUBY_PLATFORM == 'java'
-    gem.add_runtime_dependency "manticore"
+    s.add_runtime_dependency "manticore"
   end
 end
 

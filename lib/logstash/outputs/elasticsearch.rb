@@ -337,7 +337,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   private
   def setup_ssl
-    return {} if @ssl
+    return {} unless @ssl
     if @protocol != "http"
       raise(LogStash::ConfigurationError, "SSL is not supported for '#{@protocol}'. Change the protocol to 'http' if you need SSL.")
     end
