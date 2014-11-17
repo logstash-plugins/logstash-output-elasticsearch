@@ -32,7 +32,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'ftw', ['>= 0.0.40', '~> 0']
 
   if RUBY_PLATFORM == 'java'
+    s.platform = RUBY_PLATFORM
     s.add_runtime_dependency "manticore", '~> 0.3'
   end
 end
-
