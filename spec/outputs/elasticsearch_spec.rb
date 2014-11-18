@@ -1,4 +1,4 @@
-require "spec_helper"
+require "logstash/devutils/rspec/spec_helper"
 require "ftw"
 require "logstash/plugin"
 require "logstash/json"
