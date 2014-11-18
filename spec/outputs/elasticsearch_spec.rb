@@ -1,4 +1,4 @@
-require "spec_helper"
+require "logstash/devutils/rspec/spec_helper"
 require "ftw"
 require "logstash/plugin"
 require "logstash/json"
@@ -11,7 +11,6 @@ describe "outputs/elasticsearch" do
     # register will try to load jars and raise if it cannot find jars
     expect {output.register}.to_not raise_error
   end
-
 
   describe "ship lots of events w/ default index_type", :elasticsearch => true do
     # Generate a random index name
@@ -375,7 +374,7 @@ describe "outputs/elasticsearch" do
     end
   end
 
-  describe "elasticsearch protocol" do
+  describe "elasticsearch protocol", :elasticsearch => true do
     # ElasticSearch related jars
 #LogStash::Environment.load_elasticsearch_jars!
     # Load elasticsearch protocol

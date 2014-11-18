@@ -1,4 +1,3 @@
 source 'https://rubygems.org'
-gem 'rake'
-gem 'gem_publisher'
-gem 'archive-tar-minitar'
+gemspec
+gem "logstash", :github => "elasticsearch/logstash", :branch => "1.5"
