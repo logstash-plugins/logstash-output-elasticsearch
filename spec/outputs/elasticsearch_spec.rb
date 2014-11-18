@@ -12,7 +12,6 @@ describe "outputs/elasticsearch" do
     expect {output.register}.to_not raise_error
   end
 
-
   describe "ship lots of events w/ default index_type", :elasticsearch => true do
     # Generate a random index name
     index = 10.times.collect { rand(10).to_s }.join("")
@@ -375,7 +374,7 @@ describe "outputs/elasticsearch" do
     end
   end
 
-  describe "elasticsearch protocol" do
+  describe "elasticsearch protocol", :elasticsearch => true do
     # ElasticSearch related jars
 #LogStash::Environment.load_elasticsearch_jars!
     # Load elasticsearch protocol
