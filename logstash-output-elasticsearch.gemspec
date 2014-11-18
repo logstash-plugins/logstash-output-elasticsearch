@@ -30,7 +30,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'jar-dependencies'
 
   s.add_development_dependency 'ftw', ['>= 0.0.40', '~> 0']
-  s.add_development_dependency 'logstash-codec-plain'
+  s.add_development_dependency 'logstash-input-generator'
 
 
   if RUBY_PLATFORM == 'java'
