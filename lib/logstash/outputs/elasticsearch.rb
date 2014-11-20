@@ -12,8 +12,7 @@ require 'logstash-output-elasticsearch_jars.rb'
 # output for Logstash. If you plan on using the Kibana web interface, you'll
 # need to use this output.
 #
-#   *VERSION NOTE*: Your Elasticsearch cluster must be running Elasticsearch
-#   1.0.0 or later.
+#   *VERSION NOTE*: Your Elasticsearch cluster must be running Elasticsearch 1.0.0 or later.
 #
 # If you want to set other Elasticsearch options that are not exposed directly
 # as configuration options, there are two methods:
