@@ -7,6 +7,7 @@ require "stud/buffer"
 require "socket" # for Socket.gethostname
 require "uri" # for escaping user input
 require 'logstash-output-elasticsearch_jars.rb'
+require "base64"
 
 # This output lets you store logs in Elasticsearch and is the most recommended
 # output for Logstash. If you plan on using the Kibana web interface, you'll
