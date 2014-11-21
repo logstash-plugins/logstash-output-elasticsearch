@@ -1,5 +1,6 @@
 require "logstash/outputs/elasticsearch"
 require "cabin"
+require "base64"
 
 module LogStash::Outputs::Elasticsearch
   module Protocols
