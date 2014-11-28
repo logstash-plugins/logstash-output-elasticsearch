@@ -360,7 +360,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def get_template(event)
     if @template.nil?
       @template = ::File.expand_path('elasticsearch/elasticsearch-template.json', ::File.dirname(__FILE__))
-      if !File.exists?(event.sprintf(@template))
+      if !File.exists?(@template)
         raise "You must specify 'template => ...' in your elasticsearch output (I looked for '#{@template}')"
       end
     end
