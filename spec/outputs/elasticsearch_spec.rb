@@ -521,3 +521,31 @@ describe "outputs/elasticsearch" do
     end
   end
 end
+
+describe "outputs/elasticsearch" do
+  require 'elasticsearch'
+
+  it "set sniffing in transport mode" do
+
+    config = %q[
+      output {
+        elasticsearch {
+          host => "node01"
+          protocol => "transport"
+          sniffing => true
+        }
+      }
+    ]
+
+
+    settings_class = org.elasticsearch.common.settings.ImmutableSettings
+    settings = settings_class.settingsBuilder
+
+    expect(settings_class).to receive(:settingsBuilder).and_return(settings)
+
+    pipeline = LogStash::Pipeline.new(config)
+    pipeline.run
+
+    expect(settings.build.getAsMap["client.transport.sniff"]).to eq("true")
+  end
+end

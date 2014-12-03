@@ -200,6 +200,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Set the truststore password
   config :truststore_password, :validate => :password
 
+  # Enable cluster sniffing (transport only)
+  # Asks host for the list of all cluster nodes and adds them to the hosts list
+  config :sniffing, :validate => :boolean, :default => false
+
   # helper function to replace placeholders
   # in index names to wildcards
   # example:
@@ -223,6 +227,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       client_settings["cluster.name"] = @cluster if @cluster
       client_settings["network.host"] = @bind_host if @bind_host
       client_settings["transport.tcp.port"] = @bind_port if @bind_port
+      client_settings["client.transport.sniff"] = @sniffing
  
       if @node_name
         client_settings["node.name"] = @node_name
