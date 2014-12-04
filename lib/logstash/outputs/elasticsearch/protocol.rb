@@ -41,6 +41,17 @@ module LogStash::Outputs::Elasticsearch
         #])
       end
 
+      # Validate the action has all required args.
+      #
+      # If any action is missing a required arg, then a
+      # Logstash::ConfigurationError is raised.
+      def validate(action, args)
+        if action == "create"
+          # create operations without an _id is pointless and almost certainly unintentional
+          raise(LogStash::ConfigurationError, "Specifying action => 'create' without a document '_id' is not supported.") if args[:_id].nil?
+        end
+      end
+
       public(:initialize, :template_install)
     end
 
@@ -80,6 +91,8 @@ module LogStash::Outputs::Elasticsearch
 
       def bulk(actions)
         @client.bulk(:body => actions.collect do |action, args, source|
+          validate(action, args)
+
           if source
             next [ { action => args }, source ]
           else
@@ -194,8 +207,10 @@ module LogStash::Outputs::Elasticsearch
       end # def bulk
 
       def build_request(action, args, source)
+        validate(action, args)
+
         case action
-          when "index"
+        when "index"
             request = org.elasticsearch.action.index.IndexRequest.new(args[:_index])
             request.id(args[:_id]) if args[:_id]
             request.source(source)
@@ -203,7 +218,11 @@ module LogStash::Outputs::Elasticsearch
             request = org.elasticsearch.action.delete.DeleteRequest.new(args[:_index])
             request.id(args[:_id])
           #when "update"
-          #when "create"
+          when "create"
+            request = org.elasticsearch.action.index.IndexRequest.new(args[:_index])
+            request.id(args[:_id])
+            request.source(source)
+            request.opType(org.elasticsearch.action.index.IndexRequest.OpType.CREATE)
         end # case action
 
         request.type(args[:_type]) if args[:_type]

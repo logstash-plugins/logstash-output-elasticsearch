@@ -12,6 +12,82 @@ describe "outputs/elasticsearch" do
     expect {output.register}.to_not raise_error
   end
 
+  it "create works with _id", :elasticsearch => true do
+    # Generate a random index name
+    index = 10.times.collect { rand(10).to_s }.join("")
+    type = 10.times.collect { rand(10).to_s }.join("")
+    id = 10.times.collect { rand(10).to_s }.join("")
+
+    config <<-CONFIG
+    input {
+      generator {
+        message => "hello world"
+        count => 1
+        type => "#{type}"
+        _id => "#{id}"
+      }
+    }
+    output {
+      elasticsearch {
+        host => "127.0.0.1"
+        index => "#{index}"
+        action => "create"
+        flush_size => 1
+      }
+    }
+    CONFIG
+
+    agent do
+      # No need for a refresh since we can just do a get
+      ftw = FTW::Agent.new
+
+      response = ftw.get!("http://127.0.0.1:9200/#{index}/#{type}/#{id}")
+      data = ""
+      response.read_body { |chunk| data << chunk }
+      result = LogStash::Json.load(data)
+
+      # With no 'index_type' set, the document type should be the type
+      # set on the input
+      insist { result["_type"] } == type
+      insist { result["_index"] } == index
+      insist { result["found"] }
+      insist { result["_source"]["message"] } == "hello world"
+    end
+  end
+
+  describe "create action fails without _id", :elasticsearch => true do
+    # Generate a random index name
+    index = 10.times.collect { rand(10).to_s }.join("")
+
+    ["node", "transport", "http"].each do |protocol|
+      context "with protocol => #{protocol}" do
+
+        config <<-CONFIG
+        input {
+          generator {
+            message => "hello world"
+            count => 1
+          }
+        }
+        output {
+          elasticsearch {
+            host => "127.0.0.1"
+            index => "#{index}"
+            action => "create"
+          }
+        }
+        CONFIG
+
+        # TODO: pickypg -- I have no idea how to check for raise_error
+        agent do
+          it "should fail in bulk" do
+            expect {context}.to raise_error
+          end
+        end
+      end
+    end
+  end
+
   describe "ship lots of events w/ default index_type", :elasticsearch => true do
     # Generate a random index name
     index = 10.times.collect { rand(10).to_s }.join("")
