@@ -2,6 +2,7 @@ require "logstash/devutils/rspec/spec_helper"
 require "ftw"
 require "logstash/plugin"
 require "logstash/json"
+require "stud/try"
 
 describe "outputs/elasticsearch" do
 
@@ -345,13 +346,18 @@ describe "outputs/elasticsearch" do
           reject { values }.include?(1)
         end
 
-        it "creates .raw field fro any string field which is not_analyzed" do
+        it "does not create .raw field for the message field" do
           results = @es.search(:q => "message.raw:\"sample message here\"")
+          insist { results["hits"]["total"] } == 0
+        end
+
+        it "creates .raw field from any string field which is not_analyzed" do
+          results = @es.search(:q => "country.raw:\"us\"")
           insist { results["hits"]["total"] } == 1
-          insist { results["hits"]["hits"][0]["_source"]["message"] } == "sample message here"
+          insist { results["hits"]["hits"][0]["_source"]["country"] } == "us"
 
           # partial or terms should not work.
-          results = @es.search(:q => "message.raw:\"sample\"")
+          results = @es.search(:q => "country.raw:\"u\"")
           insist { results["hits"]["total"] } == 0
         end
 
