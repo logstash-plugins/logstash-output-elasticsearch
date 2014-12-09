@@ -223,7 +223,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       client_settings["cluster.name"] = @cluster if @cluster
       client_settings["network.host"] = @bind_host if @bind_host
       client_settings["transport.tcp.port"] = @bind_port if @bind_port
- 
+
       if @node_name
         client_settings["node.name"] = @node_name
       else
@@ -301,18 +301,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       end # @host.each
     end
 
-    if @manage_template
-      for client in @client
-          begin
-            @logger.info("Automatic template management enabled", :manage_template => @manage_template.to_s)
-            client.template_install(@template_name, get_template, @template_overwrite)
-            break
-          rescue => e
-            @logger.error("Failed to install template: #{e.message}")
-          end
-      end # for @client loop
-    end # if @manage_templates
-
     @logger.info("New Elasticsearch output", :cluster => @cluster,
                  :host => @host, :port => @port, :embedded => @embedded,
                  :protocol => @protocol)
@@ -369,14 +357,15 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   public
-  def get_template
+  def get_template(event)
     if @template.nil?
       @template = ::File.expand_path('elasticsearch/elasticsearch-template.json', ::File.dirname(__FILE__))
       if !File.exists?(@template)
         raise "You must specify 'template => ...' in your elasticsearch output (I looked for '#{@template}')"
       end
     end
-    template_json = IO.read(@template).gsub(/\n/,'')
+    template_json = IO.read(event.sprintf(@template)).gsub(/\n/,'')
+    template_json = event.sprintf(@template_json)
     template = LogStash::Json.load(template_json)
     template['template'] = wildcard_substitute(@index)
     @logger.info("Using mapping template", :template => template)
@@ -424,6 +413,18 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   public
   def receive(event)
     return unless output?(event)
+
+    if @manage_template
+      for client in @client
+          begin
+            @logger.info("Automatic template management enabled", :manage_template => @manage_template.to_s)
+            client.template_install(event.sprintf(@template_name), get_template(event), @template_overwrite)
+            break
+          rescue => e
+            @logger.error("Failed to install template: #{e.message}")
+          end
+      end # for @client loop
+    end # if @manage_templates
 
     # Set the 'type' value for the index.
     if @index_type
