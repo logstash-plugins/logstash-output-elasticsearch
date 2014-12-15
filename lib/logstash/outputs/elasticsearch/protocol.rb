@@ -48,8 +48,9 @@ module LogStash::Outputs::Elasticsearch
       #
       # After validation, this will return the "real" action name (e.g.,
       # "create_unless_exists" once validated is just "create"). If the
-      # incoming action is unrecognized, then it is returned as-is.
-      def validateAction(action, args)
+      # incoming action is unrecognized or not validated, then it is returned
+      # as-is.
+      def validate_action(action, args)
         action_name = action
 
         # This is a specialization of "create" that requires the ID to be specified
@@ -102,7 +103,7 @@ module LogStash::Outputs::Elasticsearch
 
       def bulk(actions)
         @client.bulk(:body => actions.collect do |action, args, source|
-          action_name = validateAction(action, args)
+          action_name = validate_action(action, args)
 
           if source
             next [ { action_name => args }, source ]
@@ -218,7 +219,7 @@ module LogStash::Outputs::Elasticsearch
       end # def bulk
 
       def build_request(action, args, source)
-        action_name = validateAction(action, args)
+        action_name = validate_action(action, args)
 
         case action_name
         when "index"
