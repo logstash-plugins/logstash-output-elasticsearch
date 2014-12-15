@@ -31,7 +31,7 @@ describe "outputs/elasticsearch" do
       elasticsearch {
         host => "127.0.0.1"
         index => "#{index}"
-        action => "create"
+        action => "create_unless_exists"
         flush_size => 1
       }
     }
@@ -73,10 +73,12 @@ describe "outputs/elasticsearch" do
           elasticsearch {
             host => "127.0.0.1"
             index => "#{index}"
-            action => "create"
+            action => "create_unless_exists"
           }
         }
         CONFIG
+
+        # ^^^ SHOULD FAIL AND THE FAILURE SHOULD CAUSE THE TEST TO PASS
 
         # TODO: pickypg -- I have no idea how to check for raise_error
         agent do
