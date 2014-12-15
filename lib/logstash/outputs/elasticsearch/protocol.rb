@@ -222,7 +222,7 @@ module LogStash::Outputs::Elasticsearch
         action_name = validate_action(action, args)
 
         case action_name
-        when "index"
+          when "index"
             request = org.elasticsearch.action.index.IndexRequest.new(args[:_index])
             request.id(args[:_id]) if args[:_id]
             request.source(source)
