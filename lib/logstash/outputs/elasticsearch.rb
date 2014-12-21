@@ -285,7 +285,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     if protocol == "node" or @host.nil? # if @protocol is "node" or @host is not set
       if @host.nil?
-         @host = ["localhost"]
+         @host = "localhost"
       end
       options = {
           :host => @host,
