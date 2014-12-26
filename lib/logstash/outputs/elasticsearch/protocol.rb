@@ -41,6 +41,29 @@ module LogStash::Outputs::Elasticsearch
         #])
       end
 
+      # Validate the action has all required args.
+      #
+      # If any action is missing a required arg, then a
+      # Logstash::ConfigurationError is raised.
+      #
+      # After validation, this will return the "real" action name (e.g.,
+      # "create_unless_exists" once validated is just "create"). If the
+      # incoming action is unrecognized or not validated, then it is returned
+      # as-is.
+      def validate_action(action, args)
+        action_name = action
+
+        # This is a specialization of "create" that requires the ID to be specified
+        if action == "create_unless_exists"
+          # create operations without an _id is pointless and almost certainly unintentional
+          raise(LogStash::ConfigurationError, "Specifying action => 'create_unless_exists' without a document '_id' is not supported.") if args[:_id].nil?
+
+          action_name = "create"
+        end
+
+        return action_name
+      end
+
       public(:initialize, :template_install)
     end
 
@@ -80,10 +103,12 @@ module LogStash::Outputs::Elasticsearch
 
       def bulk(actions)
         @client.bulk(:body => actions.collect do |action, args, source|
+          action_name = validate_action(action, args)
+
           if source
-            next [ { action => args }, source ]
+            next [ { action_name => args }, source ]
           else
-            next { action => args }
+            next { action_name => args }
           end
         end.flatten)
       end # def bulk
@@ -194,7 +219,9 @@ module LogStash::Outputs::Elasticsearch
       end # def bulk
 
       def build_request(action, args, source)
-        case action
+        action_name = validate_action(action, args)
+
+        case action_name
           when "index"
             request = org.elasticsearch.action.index.IndexRequest.new(args[:_index])
             request.id(args[:_id]) if args[:_id]
@@ -203,7 +230,13 @@ module LogStash::Outputs::Elasticsearch
             request = org.elasticsearch.action.delete.DeleteRequest.new(args[:_index])
             request.id(args[:_id])
           #when "update"
-          #when "create"
+          when "create"
+            request = org.elasticsearch.action.index.IndexRequest.new(args[:_index])
+            request.id(args[:_id]) if args[:_id]
+            request.source(source)
+            request.opType(org.elasticsearch.action.index.IndexRequest.OpType.CREATE)
+          else
+            raise(LogStash::ConfigurationError, "action => '#{action_name}' is not currently supported.")
         end # case action
 
         request.type(args[:_type]) if args[:_type]
