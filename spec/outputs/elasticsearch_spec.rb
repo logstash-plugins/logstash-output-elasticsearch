@@ -73,6 +73,103 @@ describe "outputs/elasticsearch" do
     end
   end
 
+  describe "node client create actions", :elasticsearch => true do
+    require "logstash/outputs/elasticsearch"
+    require "elasticsearch"
+    let(:es) { Elasticsearch::Client.new }
+
+    def get_es_output(action, id = nil)
+      settings = {
+        "manage_template" => true,
+        "index" => "logstash-create",
+        "template_overwrite" => true,
+        "protocol" => "node",
+        "host" => "localhost",
+        "action" => action
+      }
+      settings['document_id'] = id unless id.nil?
+      LogStash::Outputs::ElasticSearch.new(settings)
+    end
+
+    before :each do
+      # Delete all templates first.
+      # Clean ES of data before we start.
+      es.indices.delete_template(:name => "*")
+      # This can fail if there are no indexes, ignore failure.
+      es.indices.delete(:index => "*") rescue nil
+    end
+
+    context "when action => create" do
+      it "should create new documents with or without id" do
+        subject = get_es_output("create", "id123")
+        subject.register
+        subject.receive(LogStash::Event.new("message" => "sample message here"))
+        subject.buffer_flush(:final => true)
+        es.indices.refresh
+        # Wait or fail until everything's indexed.
+        Stud::try(3.times) do
+          r = es.search
+          insist { r["hits"]["total"] } == 1
+        end
+      end
+
+      it "should creat new documents without id" do
+        subject = get_es_output("create")
+        subject.register
+        subject.receive(LogStash::Event.new("message" => "sample message here"))
+        subject.buffer_flush(:final => true)
+        es.indices.refresh
+        # Wait or fail until everything's indexed.
+        Stud::try(3.times) do
+          r = es.search
+          insist { r["hits"]["total"] } == 1
+        end
+      end
+    end
+
+    context "when action => create_unless_exists" do
+      it "should create new documents when specific id is specified" do
+        subject = get_es_output("create_unless_exists", "id123")
+        subject.register
+        subject.receive(LogStash::Event.new("message" => "sample message here"))
+        subject.buffer_flush(:final => true)
+        es.indices.refresh
+        # Wait or fail until everything's indexed.
+        Stud::try(3.times) do
+          r = es.search
+          insist { r["hits"]["total"] } == 1
+        end
+      end
+
+      it "should fail to create a document when no id is specified" do
+        subject = get_es_output("create_unless_exists")
+        subject.register
+        subject.receive(LogStash::Event.new("message" => "sample message here"))
+        subject.buffer_flush(:final => true)
+        es.indices.refresh
+        # Wait or fail until everything's indexed.
+        Stud::try(3.times) do
+          r = es.search
+          insist { r["hits"]["total"] } == 0
+        end
+      end
+
+      it "should unsuccesfully submit two records with the same document id" do
+        subject = get_es_output("create_unless_exists", "id123")
+        subject.register
+        subject.receive(LogStash::Event.new("message" => "sample message here"))
+        subject.receive(LogStash::Event.new("message" => "sample message here")) # 400 status failure (same id)
+        subject.buffer_flush(:final => true)
+        es.indices.refresh
+        # Wait or fail until everything's indexed.
+        Stud::try(3.times) do
+          r = es.search
+          insist { r["hits"]["total"] } == 1
+        end
+      end
+    end
+  end
+
   describe "testing index_type", :elasticsearch => true do
     describe "no type value" do
       # Generate a random index name
@@ -381,8 +478,6 @@ describe "outputs/elasticsearch" do
   end
 
   describe "failures in bulk class expected behavior", :elasticsearch => true do
-
-
     let(:template) { '{"template" : "not important, will be updated by :index"}' }
     let(:event1) { LogStash::Event.new("somevalue" => 100, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0}) }
     let(:action1) { ["index", {:_id=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event1] }

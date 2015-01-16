@@ -214,8 +214,23 @@ module LogStash::Outputs::Elasticsearch
           when "delete"
             request = org.elasticsearch.action.delete.DeleteRequest.new(args[:_index])
             request.id(args[:_id])
+          when "create"
+            request = org.elasticsearch.action.index.IndexRequest.new(args[:_index])
+            request.id(args[:_id]) if args[:_id]
+            request.source(source)
+            request.opType("create")
+          when "create_unless_exists"
+            unless args[:_id].nil?
+              request = org.elasticsearch.action.index.IndexRequest.new(args[:_index])
+              request.id(args[:_id])
+              request.source(source)
+              request.opType("create")
+            else
+              raise(LogStash::ConfigurationError, "Specifying action => 'create_unless_exists' without a document '_id' is not supported.")
+            end
+          else
+            raise(LogStash::ConfigurationError, "action => '#{action_name}' is not currently supported.")
           #when "update"
-          #when "create"
         end # case action
 
         request.type(args[:_type]) if args[:_type]
