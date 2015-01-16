@@ -183,6 +183,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   #
   # - index: indexes a document (an event from Logstash).
   # - delete: deletes a document by id
+  # - create: indexes a document, fails if a document by that id already exists in the index.
+  # following action is not supported by HTTP protocol
+  # - create_unless_exists: creates a document, fails if no id is provided
   #
   # For more details on actions, check out the http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
   config :action, :validate => :string, :default => "index"
