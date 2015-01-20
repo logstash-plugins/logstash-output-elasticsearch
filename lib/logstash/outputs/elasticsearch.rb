@@ -209,7 +209,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :max_retries, :validate => :number, :default => 3
 
   # Set retry policy for events that failed to send
-  config :retry_max_items, :validate => :number, :default => 100
+  config :retry_max_items, :validate => :number, :default => 5000
 
   # Set max interval between bulk retries
   config :retry_max_interval, :validate => :number, :default => 5
@@ -340,7 +340,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @retry_timer_thread = Thread.new do
       loop do
         sleep(@retry_max_interval)
-        @retry_queue_needs_flushing.signal
+        @retry_flush_mutex.synchronize { @retry_queue_needs_flushing.signal }
       end
     end
 
@@ -375,7 +375,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     # block until we have not maxed out our 
     # retry queue. This is applying back-pressure
     # to slow down the receive-rate
-    @retry_queue_not_full.wait while @retry_queue.size > @retry_max_items
+    @retry_flush_mutex.synchronize {
+      @retry_queue_not_full.wait(@retry_flush_mutex) while @retry_queue.size > @retry_max_items
+    }
 
     event['@metadata']['retry_count'] = 0
 
@@ -441,7 +443,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @retry_timer_thread.join
     # Signal flushing in the case that #retry_flush is in 
     # the process of waiting for a signal.
-    @retry_queue_needs_flushing.signal
+    @retry_flush_mutex.synchronize { @retry_queue_needs_flushing.signal }
     # Now, #retry_flush is ensured to not be in a state of 
     # waiting and can be safely joined into the main thread
     # for further final execution of an in-process remaining call.
@@ -562,13 +564,18 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
       submit(buffer) unless buffer.empty?
     end
-    @retry_queue_not_full.signal if @retry_queue.size < @retry_max_items
+
+    @retry_flush_mutex.synchronize {
+      @retry_queue_not_full.signal if @retry_queue.size < @retry_max_items
+    }
   end
 
   private
   def retry_push(actions)
     Array(actions).each{|action| @retry_queue << action}
-    @retry_queue_needs_flushing.signal if @retry_queue.size >= @retry_max_items
+    @retry_flush_mutex.synchronize {
+      @retry_queue_needs_flushing.signal if @retry_queue.size >= @retry_max_items
+    }
   end
 
   # helper function to replace placeholders
