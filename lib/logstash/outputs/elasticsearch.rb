@@ -89,6 +89,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # This is only required if the normal multicast/cluster discovery stuff won't
   # work in your environment.
   #
+  # The plugin will use multicast discovery to connect to Elasticsearch
+  # when using `protocol => node` without setting a host.
+  #
+  # http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-discovery-zen.html#multicast[Multicast Discovery Docs]
+  #
   #     `"127.0.0.1"`
   #     `["127.0.0.1:9300","127.0.0.2:9300"]`
   config :host, :validate => :array
