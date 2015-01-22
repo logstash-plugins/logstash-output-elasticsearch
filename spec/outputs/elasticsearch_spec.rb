@@ -716,32 +716,51 @@ describe "outputs/elasticsearch" do
       }.to_not raise_error
     end
   end
-end
 
-describe "outputs/elasticsearch", :elasticsearch => true do
-  require 'elasticsearch'
+  describe "transport protocol" do
 
-  it "set sniffing in transport mode" do
+    context "sniffing => true" do
 
-    config = %q[
-      output {
-        elasticsearch {
-          host => "localhost"
-          protocol => "transport"
-          sniffing => true
+      subject do
+        require "logstash/outputs/elasticsearch"
+        settings = {
+          "host" => "node01",
+          "protocol" => "transport",
+          "sniffing" => true
         }
-      }
-    ]
+        next LogStash::Outputs::ElasticSearch.new(settings)
+      end
 
+      it "should set the sniffing property to true" do
+        expect_any_instance_of(LogStash::Outputs::Elasticsearch::Protocols::TransportClient).to receive(:client).and_return(nil)
+        subject.register
+        client = subject.instance_eval("@current_client")
+        settings = client.instance_eval("@settings")
 
-    settings_class = org.elasticsearch.common.settings.ImmutableSettings
-    settings = settings_class.settingsBuilder
+        expect(settings.build.getAsMap["client.transport.sniff"]).to eq("true")
+      end
+    end
 
-    expect(settings_class).to receive(:settingsBuilder).and_return(settings)
+    context "sniffing => false" do
 
-    pipeline = LogStash::Pipeline.new(config)
-    pipeline.run
+      subject do
+        require "logstash/outputs/elasticsearch"
+        settings = {
+          "host" => "node01",
+          "protocol" => "transport",
+          "sniffing" => false
+        }
+        next LogStash::Outputs::ElasticSearch.new(settings)
+      end
 
-    expect(settings.build.getAsMap["client.transport.sniff"]).to eq("true")
+      it "should set the sniffing property to true" do
+        expect_any_instance_of(LogStash::Outputs::Elasticsearch::Protocols::TransportClient).to receive(:client).and_return(nil)
+        subject.register
+        client = subject.instance_eval("@current_client")
+        settings = client.instance_eval("@settings")
+
+        expect(settings.build.getAsMap["client.transport.sniff"]).to eq("false")
+      end
+    end
   end
 end
