@@ -576,7 +576,7 @@ describe "outputs/elasticsearch" do
     end
   end
 
-  describe "elasticsearch protocol" do
+  describe "elasticsearch protocol", :elasticsearch => true do
     # ElasticSearch related jars
 #LogStash::Environment.load_elasticsearch_jars!
     # Load elasticsearch protocol
@@ -718,7 +718,7 @@ describe "outputs/elasticsearch" do
   end
 end
 
-describe "outputs/elasticsearch" do
+describe "outputs/elasticsearch", :elasticsearch => true do
   require 'elasticsearch'
 
   it "set sniffing in transport mode" do
@@ -726,7 +726,7 @@ describe "outputs/elasticsearch" do
     config = %q[
       output {
         elasticsearch {
-          host => "node01"
+          host => "localhost"
           protocol => "transport"
           sniffing => true
         }
