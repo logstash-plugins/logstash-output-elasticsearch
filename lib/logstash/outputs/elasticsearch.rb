@@ -462,14 +462,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     buffer_flush(:final => true)
     retry_flush
   end
-
-  @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }
-
-  @@plugins.each do |plugin|
-    name = plugin.name.split('-')[-1]
-    require "logstash/outputs/elasticsearch/#{name}"
-  end
-
   protected
   def start_local_elasticsearch
     @logger.info("Starting embedded Elasticsearch local node.")
@@ -594,4 +586,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def wildcard_substitute(name)
     name.gsub(/%\{[^}]+\}/, "*")
   end
+
+  @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }
+
+  @@plugins.each do |plugin|
+    name = plugin.name.split('-')[-1]
+    require "logstash/outputs/elasticsearch/#{name}"
+  end
+
 end # class LogStash::Outputs::Elasticsearch
