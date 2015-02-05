@@ -419,9 +419,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     end
   end
 
-  # Does not raise an exception to prevent Stud::Buffer from 
-  # attempting to resubmit successful actions within the bulk 
-  # request.
+  # When there are exceptions raised upon submission, we raise an exception so that
+  # Stud::Buffer will retry to flush
   public
   def flush(actions, teardown = false)
     begin
@@ -429,6 +428,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       submit(actions)
     rescue => e
       @logger.error "Got error to send bulk of actions to elasticsearch server at #{@host[@client_idx]} : #{e.message}"
+      raise e
     ensure
       unless @protocol == "node"
         @logger.debug? and @logger.debug "Shifting current elasticsearch client"

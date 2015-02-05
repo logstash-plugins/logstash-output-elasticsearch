@@ -113,7 +113,7 @@ describe "outputs/elasticsearch" do
         end
       end
 
-      it "should creat new documents without id" do
+      it "should create new documents without id" do
         subject = get_es_output("create")
         subject.register
         subject.receive(LogStash::Event.new("message" => "sample message here"))
@@ -142,16 +142,11 @@ describe "outputs/elasticsearch" do
       end
 
       it "should fail to create a document when no id is specified" do
-        subject = get_es_output("create_unless_exists")
+        event = LogStash::Event.new("somevalue" => 100, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0})
+        action = ["create_unless_exists", {:_id=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event]
+        subject = get_es_output(action[0])
         subject.register
-        subject.receive(LogStash::Event.new("message" => "sample message here"))
-        subject.buffer_flush(:final => true)
-        es.indices.refresh
-        # Wait or fail until everything's indexed.
-        Stud::try(3.times) do
-          r = es.search
-          insist { r["hits"]["total"] } == 0
-        end
+        expect { subject.flush([action]) }.to raise_error
       end
 
       it "should unsuccesfully submit two records with the same document id" do
@@ -530,6 +525,20 @@ describe "outputs/elasticsearch" do
           subject.receive(event2)
           subject.buffer_flush(:final => true)
           sleep(2)
+        end
+
+        it "should raise exception and be retried by stud::buffer" do
+          call_count = 0
+          expect(subject).to receive(:submit).with([action1]).exactly(3).times do
+            if (call_count += 1) <= 2
+              raise "error first two times"
+            else
+              {"errors" => false}
+            end
+          end
+          subject.register
+          subject.receive(event1)
+          subject.buffer_flush(:final => true)
         end
 
         it "should retry actions with response status of 503" do
