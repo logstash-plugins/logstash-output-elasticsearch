@@ -37,6 +37,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   include Stud::Buffer
 
   config_name "elasticsearch"
+  milestone 3
 
   # The index to write events to. This can be dynamic using the `%{foo}` syntax.
   # The default value will partition your indices by day so you can more easily
