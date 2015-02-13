@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   s.metadata = { "logstash_plugin" => "true", "logstash_group" => "output" }
 
   # Jar dependencies
-  s.requirements << "jar 'org.elasticsearch:elasticsearch', '1.4.0'"
+  s.requirements << "jar 'org.elasticsearch:elasticsearch', '1.4.3'"
 
   # Gem dependencies
   s.add_runtime_dependency 'concurrent-ruby'
