@@ -117,7 +117,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Run the Elasticsearch server embedded in this process.
   # This option is useful if you want to run a single Logstash process that
   # handles log processing and indexing; it saves you from needing to run
-  # a separate Elasticsearch process.
+  # a separate Elasticsearch process. An example use case is 
+  # proof-of-concept testing.
+  # WARNING: This is not recommended for production use!
   config :embedded, :validate => :boolean, :default => false
 
   # If you are running the embedded Elasticsearch server, you can set the http
