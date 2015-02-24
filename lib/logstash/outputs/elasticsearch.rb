@@ -35,6 +35,8 @@ require 'logstash-output-elasticsearch_jars.rb'
 # Elasticsearch to Logstash)
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   include Stud::Buffer
+  RETRYABLE_CODES = [429, 503]
+  SUCCESS_CODES = [200, 201]
 
   config_name "elasticsearch"
 
@@ -413,11 +415,17 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       @submit_mutex.unlock
     end
     if bulk_response["errors"]
-      failed_actions = actions.select.with_index {|_,i| [429, 503].include?(bulk_response['statuses'][i]) }
-      unless failed_actions.empty?
-        @logger.debug "#{failed_actions.size}/#{actions.size} events were unsuccessful in sending"
-        retry_push(failed_actions)
+      actions_with_responses = actions.zip(bulk_response['statuses'])
+      actions_to_retry = []
+      actions_with_responses.each do |action, resp_code|
+        if RETRYABLE_CODES.include?(resp_code)
+          @logger.warn "retrying failed action with response code: #{resp_code}"
+          actions_to_retry << action
+        elsif not SUCCESS_CODES.include?(resp_code)
+          @logger.warn "failed action with response of #{resp_code}, dropping action: #{action}"
+        end
       end
+      retry_push(actions_to_retry)
     end
   end
 
