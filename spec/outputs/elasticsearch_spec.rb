@@ -78,8 +78,7 @@ describe "outputs/elasticsearch" do
     index = 10.times.collect { rand(10).to_s }.join("")
     type = 10.times.collect { rand(10).to_s }.join("")
 
-    # Write about 10000 events. Add jitter to increase likeliness of finding
-    # boundary-related bugs.
+    # Write 900 events so that we can verify these have been routed correctly.
     event_count = 900
     flush_size = rand(200) + 1
 
