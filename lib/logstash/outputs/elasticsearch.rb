@@ -81,6 +81,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Elasticsearch with the same ID.
   config :document_id, :validate => :string, :default => nil
 
+  # The routing value for the event.
+  config :routing, :validate => :string, :default => nil
+
   # The name of your cluster if you set it on the Elasticsearch side. Useful
   # for discovery.
   config :cluster, :validate => :string
@@ -397,7 +400,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     index = event.sprintf(@index)
 
     document_id = @document_id ? event.sprintf(@document_id) : nil
-    buffer_receive([event.sprintf(@action), { :_id => document_id, :_index => index, :_type => type }, event])
+    routing = @routing ? event.sprintf(@routing) : nil
+    buffer_receive([event.sprintf(@action), { :_id => document_id, :_index => index, :_type => type, :_routing => routing }, event])
   end # def receive
 
   public
