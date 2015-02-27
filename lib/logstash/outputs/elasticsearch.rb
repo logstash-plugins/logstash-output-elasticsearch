@@ -81,7 +81,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Elasticsearch with the same ID.
   config :document_id, :validate => :string, :default => nil
 
-  # The routing value for the event.
+  # A routing override to be applied to all processed events.
+  # This can be dynamic using the `%{foo}` syntax.
   config :routing, :validate => :string, :default => nil
 
   # The name of your cluster if you set it on the Elasticsearch side. Useful
