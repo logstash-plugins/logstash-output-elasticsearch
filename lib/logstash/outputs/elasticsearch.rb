@@ -49,6 +49,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # similar events to the same 'type'. String expansion `%{foo}` works here.
   config :index_type, :validate => :string
 
+  # A routing override to be applied to all processed events.
+  # This can be dynamic using the `%{foo}` syntax.
+  config :routing, :validate => :string
+
   # Starting in Logstash 1.3 (unless you set option `manage_template` to false)
   # a default mapping template for Elasticsearch will be applied, if you do not
   # already have one set to match the index pattern defined (default of
@@ -393,11 +397,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     # Set the 'type' value for the index.
     type = @index_type ? event.sprintf(@index_type) : (event["type"] || "logs")
-
     index = event.sprintf(@index)
-
     document_id = @document_id ? event.sprintf(@document_id) : nil
-    buffer_receive([event.sprintf(@action), { :_id => document_id, :_index => index, :_type => type }, event])
+    routing = @routing ? event.sprintf(@routing) : nil
+
+    buffer_receive([event.sprintf(@action), { :_id => document_id, :_index => index, :_type => type, :_routing => routing }, event])
   end # def receive
 
   public
