@@ -194,11 +194,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # For more details on actions, check out the http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
   config :action, :validate => :string, :default => "index"
 
-  # Username and password (HTTP only)
+  # Username and password (only valid when protocol is HTTP; this setting works with HTTP or HTTPS auth)
   config :user, :validate => :string
   config :password, :validate => :password
 
-  # SSL Configurations (HTTP only)
+  # SSL Configurations (only valid when protocol is HTTP)
   #
   # Enable SSL
   config :ssl, :validate => :boolean, :default => false
