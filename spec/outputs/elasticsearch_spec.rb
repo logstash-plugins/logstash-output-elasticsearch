@@ -56,7 +56,7 @@ describe "outputs/elasticsearch" do
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         count = result["count"]
-        insist { count } == event_count
+        expect { count } == event_count
       end
 
       response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000")
@@ -66,9 +66,9 @@ describe "outputs/elasticsearch" do
       result["hits"]["hits"].each do |doc|
         # With no 'index_type' set, the document type should be the type
         # set on the input
-        insist { doc["_type"] } == type
-        insist { doc["_index"] } == index
-        insist { doc["_source"]["message"] } == "hello world"
+        expect { doc["_type"] } == type
+        expect { doc["_index"] } == index
+        expect { doc["_source"]["message"] } == "hello world"
       end
     end
   end
@@ -117,7 +117,7 @@ describe "outputs/elasticsearch" do
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         count = result["count"]
-        insist { count } == event_count
+        expect { count } == event_count
       end
 
       response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=test")
@@ -125,13 +125,13 @@ describe "outputs/elasticsearch" do
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       count = result["count"]
-      insist { count } == event_count
+      expect { count } == event_count
       result["hits"]["hits"].each do |doc|
         # With no 'index_type' set, the document type should be the type
         # set on the input
-        insist { doc["_type"] } == type
-        insist { doc["_index"] } == index
-        insist { doc["_source"]["message"] } == "hello world"
+        expect { doc["_type"] } == type
+        expect { doc["_index"] } == index
+        expect { doc["_source"]["message"] } == "hello world"
       end
 
       response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=not_test")
@@ -139,7 +139,7 @@ describe "outputs/elasticsearch" do
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       count = result["count"]
-      insist { count } == 0
+      expect { count } == 0
     end
   end
 
@@ -187,7 +187,7 @@ describe "outputs/elasticsearch" do
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         count = result["count"]
-        insist { count } == event_count
+        expect { count } == event_count
       end
 
       response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=test")
@@ -195,13 +195,13 @@ describe "outputs/elasticsearch" do
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       count = result["count"]
-      insist { count } == event_count
+      expect { count } == event_count
       result["hits"]["hits"].each do |doc|
         # With no 'index_type' set, the document type should be the type
         # set on the input
-        insist { doc["_type"] } == type
-        insist { doc["_index"] } == index
-        insist { doc["_source"]["message"] } == "hello world"
+        expect { doc["_type"] } == type
+        expect { doc["_index"] } == index
+        expect { doc["_source"]["message"] } == "hello world"
       end
 
       response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=not_test")
@@ -209,7 +209,7 @@ describe "outputs/elasticsearch" do
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       count = result["count"]
-      insist { count } == 0
+      expect { count } == 0
     end
   end
 
@@ -257,7 +257,7 @@ describe "outputs/elasticsearch" do
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         count = result["count"]
-        insist { count } == event_count
+        expect { count } == event_count
       end
 
       response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=test")
@@ -265,13 +265,13 @@ describe "outputs/elasticsearch" do
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       count = result["count"]
-      insist { count } == event_count
+      expect { count } == event_count
       result["hits"]["hits"].each do |doc|
         # With no 'index_type' set, the document type should be the type
         # set on the input
-        insist { doc["_type"] } == type
-        insist { doc["_index"] } == index
-        insist { doc["_source"]["message"] } == "hello world"
+        expect { doc["_type"] } == type
+        expect { doc["_index"] } == index
+        expect { doc["_source"]["message"] } == "hello world"
       end
 
       response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=not_test")
@@ -279,7 +279,7 @@ describe "outputs/elasticsearch" do
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       count = result["count"]
-      insist { count } == 0
+      expect { count } == 0
     end
   end
 
@@ -319,7 +319,7 @@ describe "outputs/elasticsearch" do
         # Wait or fail until everything's indexed.
         Stud::try(3.times) do
           r = es.search
-          insist { r["hits"]["total"] } == 1
+          expect { r["hits"]["total"] } == 1
         end
       end
 
@@ -332,7 +332,7 @@ describe "outputs/elasticsearch" do
         # Wait or fail until everything's indexed.
         Stud::try(3.times) do
           r = es.search
-          insist { r["hits"]["total"] } == 1
+          expect { r["hits"]["total"] } == 1
         end
       end
     end
@@ -347,7 +347,7 @@ describe "outputs/elasticsearch" do
         # Wait or fail until everything's indexed.
         Stud::try(3.times) do
           r = es.search
-          insist { r["hits"]["total"] } == 1
+          expect { r["hits"]["total"] } == 1
         end
       end
 
@@ -369,7 +369,7 @@ describe "outputs/elasticsearch" do
         # Wait or fail until everything's indexed.
         Stud::try(3.times) do
           r = es.search
-          insist { r["hits"]["total"] } == 1
+          expect { r["hits"]["total"] } == 1
         end
       end
     end
@@ -409,7 +409,7 @@ describe "outputs/elasticsearch" do
           response.read_body { |chunk| data << chunk }
           result = LogStash::Json.load(data)
           count = result["count"]
-          insist { count } == event_count
+          expect { count } == event_count
         end
 
         response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000")
@@ -417,7 +417,7 @@ describe "outputs/elasticsearch" do
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         result["hits"]["hits"].each do |doc|
-          insist { doc["_type"] } == "logs"
+          expect { doc["_type"] } == "logs"
         end
       end
     end
@@ -456,7 +456,7 @@ describe "outputs/elasticsearch" do
           response.read_body { |chunk| data << chunk }
           result = LogStash::Json.load(data)
           count = result["count"]
-          insist { count } == event_count
+          expect { count } == event_count
         end
 
         response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000")
@@ -464,7 +464,7 @@ describe "outputs/elasticsearch" do
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         result["hits"]["hits"].each do |doc|
-          insist { doc["_type"] } == "generated"
+          expect { doc["_type"] } == "generated"
         end
       end
     end
@@ -500,7 +500,7 @@ describe "outputs/elasticsearch" do
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         count = result["count"]
-        insist { count } == 100
+        expect { count } == 100
       end
 
       response = ftw.get!("http://127.0.0.1:9200/#{index_name}/_search?q=*&size=1000")
@@ -508,7 +508,7 @@ describe "outputs/elasticsearch" do
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       result["hits"]["hits"].each do |doc|
-        insist { doc["_type"] } == "logs"
+        expect { doc["_type"] } == "logs"
       end
     end
 
@@ -546,7 +546,7 @@ describe "outputs/elasticsearch" do
           response.read_body { |chunk| data << chunk }
           result = LogStash::Json.load(data)
           count = result["count"]
-          insist { count } == event_count
+          expect { count } == event_count
         end
 
         response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000")
@@ -554,7 +554,7 @@ describe "outputs/elasticsearch" do
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         result["hits"]["hits"].each do |doc|
-          insist { doc["_type"] } == "generated"
+          expect { doc["_type"] } == "generated"
         end
       end
     end
@@ -578,13 +578,13 @@ describe "outputs/elasticsearch" do
     it "should substitude placeholders" do
       IO.stub(:read).with(anything) { template }
       es_output = LogStash::Outputs::ElasticSearch.new(settings_with_index("index-%{YYYY}"))
-      insist { es_output.get_template['template'] } == "index-*"
+      expect { es_output.get_template['template'] } == "index-*"
     end
 
     it "should do nothing to an index with no placeholder" do
       IO.stub(:read).with(anything) { template }
       es_output = LogStash::Outputs::ElasticSearch.new(settings_with_index("index"))
-      insist { es_output.get_template['template'] } == "index"
+      expect { es_output.get_template['template'] } == "index"
     end
   end
 
@@ -628,55 +628,55 @@ describe "outputs/elasticsearch" do
           # Wait or fail until everything's indexed.
           Stud::try(20.times) do
             r = @es.search
-            insist { r["hits"]["total"] } == 7
+            expect { r["hits"]["total"] } == 7
           end
         end
 
         it "permits phrase searching on string fields" do
           results = @es.search(:q => "message:\"sample message\"")
-          insist { results["hits"]["total"] } == 1
-          insist { results["hits"]["hits"][0]["_source"]["message"] } == "sample message here"
+          expect { results["hits"]["total"] } == 1
+          expect { results["hits"]["hits"][0]["_source"]["message"] } == "sample message here"
         end
 
         it "numbers dynamically map to a numeric type and permit range queries" do
           results = @es.search(:q => "somevalue:[5 TO 105]")
-          insist { results["hits"]["total"] } == 2
+          expect { results["hits"]["total"] } == 2
 
           values = results["hits"]["hits"].collect { |r| r["_source"]["somevalue"] }
-          insist { values }.include?(10)
-          insist { values }.include?(100)
+          expect { values }.include?(10)
+          expect { values }.include?(100)
           reject { values }.include?(1)
         end
 
         it "does not create .raw field for the message field" do
           results = @es.search(:q => "message.raw:\"sample message here\"")
-          insist { results["hits"]["total"] } == 0
+          expect { results["hits"]["total"] } == 0
         end
 
         it "creates .raw field from any string field which is not_analyzed" do
           results = @es.search(:q => "country.raw:\"us\"")
-          insist { results["hits"]["total"] } == 1
-          insist { results["hits"]["hits"][0]["_source"]["country"] } == "us"
+          expect { results["hits"]["total"] } == 1
+          expect { results["hits"]["hits"][0]["_source"]["country"] } == "us"
 
           # partial or terms should not work.
           results = @es.search(:q => "country.raw:\"u\"")
-          insist { results["hits"]["total"] } == 0
+          expect { results["hits"]["total"] } == 0
         end
 
         it "make [geoip][location] a geo_point" do
           results = @es.search(:body => { "filter" => { "geo_distance" => { "distance" => "1000km", "geoip.location" => { "lat" => 0.5, "lon" => 0.5 } } } })
-          insist { results["hits"]["total"] } == 1
-          insist { results["hits"]["hits"][0]["_source"]["geoip"]["location"] } == [ 0.0, 0.0 ]
+          expect { results["hits"]["total"] } == 1
+          expect { results["hits"]["hits"][0]["_source"]["geoip"]["location"] } == [ 0.0, 0.0 ]
         end
 
         it "should index stopwords like 'at' " do
           results = @es.search(:body => { "facets" => { "t" => { "terms" => { "field" => "country" } } } })["facets"]["t"]
           terms = results["terms"].collect { |t| t["term"] }
 
-          insist { terms }.include?("us")
+          expect { terms }.include?("us")
 
           # 'at' is a stopword, make sure stopwords are not ignored.
-          insist { terms }.include?("at")
+          expect { terms }.include?("at")
         end
       end
     end
@@ -812,25 +812,25 @@ describe "outputs/elasticsearch" do
 
         # Node client should support host in string
         # Case 1: default :host in string
-        insist { client.send :hosts, :host => "host",:port => 9300 } == "host:9300"
+        expect { client.send :hosts, :host => "host",:port => 9300 } == "host:9300"
         # Case 2: :port =~ /^\d+_\d+$/
-        insist { client.send :hosts, :host => "host",:port => "9300-9302"} == "host:9300,host:9301,host:9302"
+        expect { client.send :hosts, :host => "host",:port => "9300-9302"} == "host:9300,host:9301,host:9302"
         # Case 3: :host =~ /^.+:.+$/
-        insist { client.send :hosts, :host => "host:9303",:port => 9300 } == "host:9303"
+        expect { client.send :hosts, :host => "host:9303",:port => 9300 } == "host:9303"
         # Case 4:  :host =~ /^.+:.+$/ and :port =~ /^\d+_\d+$/
-        insist { client.send :hosts, :host => "host:9303",:port => "9300-9302"} == "host:9303"
+        expect { client.send :hosts, :host => "host:9303",:port => "9300-9302"} == "host:9303"
 
         # Node client should support host in array
         # Case 5: :host in array with single item
-        insist { client.send :hosts, :host => ["host"],:port => 9300 } == ("host:9300")
+        expect { client.send :hosts, :host => ["host"],:port => 9300 } == ("host:9300")
         # Case 6: :host in array with more than one items
-        insist { client.send :hosts, :host => ["host1","host2"],:port => 9300 } == "host1:9300,host2:9300"
+        expect { client.send :hosts, :host => ["host1","host2"],:port => 9300 } == "host1:9300,host2:9300"
         # Case 7: :host in array with more than one items and :port =~ /^\d+_\d+$/
-        insist { client.send :hosts, :host => ["host1","host2"],:port => "9300-9302" } == "host1:9300,host1:9301,host1:9302,host2:9300,host2:9301,host2:9302"
+        expect { client.send :hosts, :host => ["host1","host2"],:port => "9300-9302" } == "host1:9300,host1:9301,host1:9302,host2:9300,host2:9301,host2:9302"
         # Case 8: :host in array with more than one items and some :host =~ /^.+:.+$/
-        insist { client.send :hosts, :host => ["host1","host2:9303"],:port => 9300 } == "host1:9300,host2:9303"
+        expect { client.send :hosts, :host => ["host1","host2:9303"],:port => 9300 } == "host1:9300,host2:9303"
         # Case 9: :host in array with more than one items, :port =~ /^\d+_\d+$/ and some :host =~ /^.+:.+$/
-        insist { client.send :hosts, :host => ["host1","host2:9303"],:port => "9300-9302" } == "host1:9300,host1:9301,host1:9302,host2:9303"
+        expect { client.send :hosts, :host => ["host1","host2:9303"],:port => "9300-9302" } == "host1:9300,host1:9301,host1:9302,host2:9303"
       end
     end
   end
