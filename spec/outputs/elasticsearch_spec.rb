@@ -143,6 +143,76 @@ describe "outputs/elasticsearch" do
     end
   end
 
+describe "ship lots of events w/ default index_type and dynamic routing key using http protocol", :elasticsearch => true do
+    # Generate a random index name
+    index = 10.times.collect { rand(10).to_s }.join("")
+    type = 10.times.collect { rand(10).to_s }.join("")
+
+    # Write 900 events so that we can verify these have been routed correctly.
+    event_count = 900
+    flush_size = rand(200) + 1
+
+    config <<-CONFIG
+      input {
+        generator {
+          message => "test"
+          count => #{event_count}
+          type => "#{type}"
+        }
+      }
+      output {
+        elasticsearch {
+          host => "127.0.0.1"
+          index => "#{index}"
+          flush_size => #{flush_size}
+          routing => "%{message}"
+          protocol => "http"
+        }
+      }
+    CONFIG
+
+    agent do
+      # Try a few times to check if we have the correct number of events stored
+      # in ES.
+      #
+      # We try multiple times to allow final agent flushes as well as allowing
+      # elasticsearch to finish processing everything.
+      ftw = FTW::Agent.new
+      ftw.post!("http://localhost:9200/#{index}/_refresh")
+
+      # Wait until all events are available.
+      Stud::try(10.times) do
+        data = ""
+        response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*")
+        response.read_body { |chunk| data << chunk }
+        result = LogStash::Json.load(data)
+        count = result["count"]
+        expect { count } == event_count
+      end
+
+      response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=test")
+      data = ""
+      response.read_body { |chunk| data << chunk }
+      result = LogStash::Json.load(data)
+      count = result["count"]
+      expect { count } == event_count
+      result["hits"]["hits"].each do |doc|
+        # With no 'index_type' set, the document type should be the type
+        # set on the input
+        expect { doc["_type"] } == type
+        expect { doc["_index"] } == index
+        expect { doc["_source"]["message"] } == "test"
+      end
+
+      response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=not_test")
+      data = ""
+      response.read_body { |chunk| data << chunk }
+      result = LogStash::Json.load(data)
+      count = result["count"]
+      expect { count } == 0
+    end
+  end
+
   describe "ship lots of events w/ default index_type and fixed routing key using transport protocol", :elasticsearch => true do
     # Generate a random index name
     index = 10.times.collect { rand(10).to_s }.join("")
