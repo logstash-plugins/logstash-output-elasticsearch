@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
 
   s.name            = 'logstash-output-elasticsearch'
-  s.version         = '0.1.18'
+  s.version         = '0.1.19'
   s.licenses        = ['apache-2.0']
   s.summary         = "Logstash Output to Elasticsearch"
   s.description     = "Output events to elasticsearch"
@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   s.metadata = { "logstash_plugin" => "true", "logstash_group" => "output" }
 
   # Jar dependencies
-  s.requirements << "jar 'org.elasticsearch:elasticsearch', '1.4.0'"
+  s.requirements << "jar 'org.elasticsearch:elasticsearch', '1.5.0'"
 
   # Gem dependencies
   s.add_runtime_dependency 'concurrent-ruby'
