@@ -478,6 +478,7 @@ describe "outputs/elasticsearch" do
     let(:action1) { ["index", {:_id=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event1] }
     let(:event2) { LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0] }, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0}) }
     let(:action2) { ["index", {:_id=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event2] }
+    let(:invalid_event) { LogStash::Event.new("geoip" => { "location" => "notlatlon" }, "@timestamp" => "2014-11-17T20:37:17.223Z") }
     let(:max_retries) { 3 }
 
     def mock_actions_with_response(*resp)
@@ -580,6 +581,32 @@ describe "outputs/elasticsearch" do
           subject.receive(event1)
           subject.buffer_flush(:final => true)
           sleep(3)
+        end
+
+        it "non-retryable errors like mapping errors (400) should be dropped and not be retried (unfortunetly)" do
+          subject.register
+          subject.receive(invalid_event)
+          expect(subject).not_to receive(:retry_push)
+          subject.buffer_flush(:final => true)
+
+          @es.indices.refresh
+          Stud::try(10.times) do
+            r = @es.search
+            insist { r["hits"]["total"] } == 0
+          end
+        end
+
+        it "successful requests should not be appended to retry queue" do
+          subject.register
+          subject.receive(event1)
+          expect(subject).not_to receive(:retry_push)
+          subject.buffer_flush(:final => true)
+
+          @es.indices.refresh
+          Stud::try(10.times) do
+            r = @es.search
+            insist { r["hits"]["total"] } == 1
+          end
         end
       end
     end
