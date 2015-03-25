@@ -425,7 +425,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
           @logger.warn "failed action with response of #{resp_code}, dropping action: #{action}"
         end
       end
-      retry_push(actions_to_retry)
+      retry_push(actions_to_retry) unless actions_to_retry.empty?
     end
   end
 
