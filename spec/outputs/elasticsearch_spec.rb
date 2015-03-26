@@ -120,26 +120,12 @@ describe "outputs/elasticsearch" do
         expect { count } == event_count
       end
 
-      response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=test")
+      response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*&routing=test")
       data = ""
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       count = result["count"]
       expect { count } == event_count
-      result["hits"]["hits"].each do |doc|
-        # With no 'index_type' set, the document type should be the type
-        # set on the input
-        expect { doc["_type"] } == type
-        expect { doc["_index"] } == index
-        expect { doc["_source"]["message"] } == "hello world"
-      end
-
-      response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=not_test")
-      data = ""
-      response.read_body { |chunk| data << chunk }
-      result = LogStash::Json.load(data)
-      count = result["count"]
-      expect { count } == 0
     end
   end
 
@@ -190,26 +176,12 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
         expect { count } == event_count
       end
 
-      response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=test")
+      response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*&routing=test")
       data = ""
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       count = result["count"]
       expect { count } == event_count
-      result["hits"]["hits"].each do |doc|
-        # With no 'index_type' set, the document type should be the type
-        # set on the input
-        expect { doc["_type"] } == type
-        expect { doc["_index"] } == index
-        expect { doc["_source"]["message"] } == "test"
-      end
-
-      response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=not_test")
-      data = ""
-      response.read_body { |chunk| data << chunk }
-      result = LogStash::Json.load(data)
-      count = result["count"]
-      expect { count } == 0
     end
   end
 
@@ -260,26 +232,12 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
         expect { count } == event_count
       end
 
-      response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=test")
+      response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*&routing=test")
       data = ""
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       count = result["count"]
       expect { count } == event_count
-      result["hits"]["hits"].each do |doc|
-        # With no 'index_type' set, the document type should be the type
-        # set on the input
-        expect { doc["_type"] } == type
-        expect { doc["_index"] } == index
-        expect { doc["_source"]["message"] } == "hello world"
-      end
-
-      response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=not_test")
-      data = ""
-      response.read_body { |chunk| data << chunk }
-      result = LogStash::Json.load(data)
-      count = result["count"]
-      expect { count } == 0
     end
   end
 
@@ -330,26 +288,12 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
         expect { count } == event_count
       end
 
-      response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=test")
+      response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*&routing=test")
       data = ""
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       count = result["count"]
       expect { count } == event_count
-      result["hits"]["hits"].each do |doc|
-        # With no 'index_type' set, the document type should be the type
-        # set on the input
-        expect { doc["_type"] } == type
-        expect { doc["_index"] } == index
-        expect { doc["_source"]["message"] } == "hello world"
-      end
-
-      response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000&?routing=not_test")
-      data = ""
-      response.read_body { |chunk| data << chunk }
-      result = LogStash::Json.load(data)
-      count = result["count"]
-      expect { count } == 0
     end
   end
 
