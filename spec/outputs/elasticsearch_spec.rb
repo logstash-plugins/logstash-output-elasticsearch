@@ -56,7 +56,7 @@ describe "outputs/elasticsearch" do
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         count = result["count"]
-        expect { count } == event_count
+        insist { count } == event_count
       end
 
       response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000")
@@ -66,9 +66,9 @@ describe "outputs/elasticsearch" do
       result["hits"]["hits"].each do |doc|
         # With no 'index_type' set, the document type should be the type
         # set on the input
-        expect { doc["_type"] } == type
-        expect { doc["_index"] } == index
-        expect { doc["_source"]["message"] } == "hello world"
+        insist { doc["_type"] } == type
+        insist { doc["_index"] } == index
+        insist { doc["_source"]["message"] } == "hello world"
       end
     end
   end
@@ -117,7 +117,7 @@ describe "outputs/elasticsearch" do
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         count = result["count"]
-        expect { count } == event_count
+        insist { count } == event_count
       end
 
       response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*&routing=test")
@@ -125,7 +125,7 @@ describe "outputs/elasticsearch" do
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       count = result["count"]
-      expect { count } == event_count
+      insist { count } == event_count
     end
   end
 
@@ -173,7 +173,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         count = result["count"]
-        expect { count } == event_count
+        insist { count } == event_count
       end
 
       response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*&routing=test")
@@ -181,7 +181,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       count = result["count"]
-      expect { count } == event_count
+      insist { count } == event_count
     end
   end
 
@@ -229,7 +229,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         count = result["count"]
-        expect { count } == event_count
+        insist { count } == event_count
       end
 
       response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*&routing=test")
@@ -237,7 +237,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       count = result["count"]
-      expect { count } == event_count
+      insist { count } == event_count
     end
   end
 
@@ -285,7 +285,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         count = result["count"]
-        expect { count } == event_count
+        insist { count } == event_count
       end
 
       response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*&routing=test")
@@ -293,7 +293,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       count = result["count"]
-      expect { count } == event_count
+      insist { count } == event_count
     end
   end
 
@@ -333,7 +333,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
         # Wait or fail until everything's indexed.
         Stud::try(3.times) do
           r = es.search
-          expect { r["hits"]["total"] } == 1
+          insist { r["hits"]["total"] } == 1
         end
       end
 
@@ -346,7 +346,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
         # Wait or fail until everything's indexed.
         Stud::try(3.times) do
           r = es.search
-          expect { r["hits"]["total"] } == 1
+          insist { r["hits"]["total"] } == 1
         end
       end
     end
@@ -361,7 +361,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
         # Wait or fail until everything's indexed.
         Stud::try(3.times) do
           r = es.search
-          expect { r["hits"]["total"] } == 1
+          insist { r["hits"]["total"] } == 1
         end
       end
 
@@ -383,7 +383,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
         # Wait or fail until everything's indexed.
         Stud::try(3.times) do
           r = es.search
-          expect { r["hits"]["total"] } == 1
+          insist { r["hits"]["total"] } == 1
         end
       end
     end
@@ -423,7 +423,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
           response.read_body { |chunk| data << chunk }
           result = LogStash::Json.load(data)
           count = result["count"]
-          expect { count } == event_count
+          insist { count } == event_count
         end
 
         response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000")
@@ -431,7 +431,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         result["hits"]["hits"].each do |doc|
-          expect { doc["_type"] } == "logs"
+          insist { doc["_type"] } == "logs"
         end
       end
     end
@@ -470,7 +470,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
           response.read_body { |chunk| data << chunk }
           result = LogStash::Json.load(data)
           count = result["count"]
-          expect { count } == event_count
+          insist { count } == event_count
         end
 
         response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000")
@@ -478,7 +478,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         result["hits"]["hits"].each do |doc|
-          expect { doc["_type"] } == "generated"
+          insist { doc["_type"] } == "generated"
         end
       end
     end
@@ -514,7 +514,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         count = result["count"]
-        expect { count } == 100
+        insist { count } == 100
       end
 
       response = ftw.get!("http://127.0.0.1:9200/#{index_name}/_search?q=*&size=1000")
@@ -522,7 +522,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
       response.read_body { |chunk| data << chunk }
       result = LogStash::Json.load(data)
       result["hits"]["hits"].each do |doc|
-        expect { doc["_type"] } == "logs"
+        insist { doc["_type"] } == "logs"
       end
     end
 
@@ -560,7 +560,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
           response.read_body { |chunk| data << chunk }
           result = LogStash::Json.load(data)
           count = result["count"]
-          expect { count } == event_count
+          insist { count } == event_count
         end
 
         response = ftw.get!("http://127.0.0.1:9200/#{index}/_search?q=*&size=1000")
@@ -568,7 +568,7 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         result["hits"]["hits"].each do |doc|
-          expect { doc["_type"] } == "generated"
+          insist { doc["_type"] } == "generated"
         end
       end
     end
@@ -592,13 +592,13 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
     it "should substitude placeholders" do
       IO.stub(:read).with(anything) { template }
       es_output = LogStash::Outputs::ElasticSearch.new(settings_with_index("index-%{YYYY}"))
-      expect { es_output.get_template['template'] } == "index-*"
+      insist { es_output.get_template['template'] } == "index-*"
     end
 
     it "should do nothing to an index with no placeholder" do
       IO.stub(:read).with(anything) { template }
       es_output = LogStash::Outputs::ElasticSearch.new(settings_with_index("index"))
-      expect { es_output.get_template['template'] } == "index"
+      insist { es_output.get_template['template'] } == "index"
     end
   end
 
@@ -642,55 +642,55 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
           # Wait or fail until everything's indexed.
           Stud::try(20.times) do
             r = @es.search
-            expect { r["hits"]["total"] } == 7
+            insist { r["hits"]["total"] } == 7
           end
         end
 
         it "permits phrase searching on string fields" do
           results = @es.search(:q => "message:\"sample message\"")
-          expect { results["hits"]["total"] } == 1
-          expect { results["hits"]["hits"][0]["_source"]["message"] } == "sample message here"
+          insist { results["hits"]["total"] } == 1
+          insist { results["hits"]["hits"][0]["_source"]["message"] } == "sample message here"
         end
 
         it "numbers dynamically map to a numeric type and permit range queries" do
           results = @es.search(:q => "somevalue:[5 TO 105]")
-          expect { results["hits"]["total"] } == 2
+          insist { results["hits"]["total"] } == 2
 
           values = results["hits"]["hits"].collect { |r| r["_source"]["somevalue"] }
-          expect { values }.include?(10)
-          expect { values }.include?(100)
+          insist { values }.include?(10)
+          insist { values }.include?(100)
           reject { values }.include?(1)
         end
 
         it "does not create .raw field for the message field" do
           results = @es.search(:q => "message.raw:\"sample message here\"")
-          expect { results["hits"]["total"] } == 0
+          insist { results["hits"]["total"] } == 0
         end
 
         it "creates .raw field from any string field which is not_analyzed" do
           results = @es.search(:q => "country.raw:\"us\"")
-          expect { results["hits"]["total"] } == 1
-          expect { results["hits"]["hits"][0]["_source"]["country"] } == "us"
+          insist { results["hits"]["total"] } == 1
+          insist { results["hits"]["hits"][0]["_source"]["country"] } == "us"
 
           # partial or terms should not work.
           results = @es.search(:q => "country.raw:\"u\"")
-          expect { results["hits"]["total"] } == 0
+          insist { results["hits"]["total"] } == 0
         end
 
         it "make [geoip][location] a geo_point" do
           results = @es.search(:body => { "filter" => { "geo_distance" => { "distance" => "1000km", "geoip.location" => { "lat" => 0.5, "lon" => 0.5 } } } })
-          expect { results["hits"]["total"] } == 1
-          expect { results["hits"]["hits"][0]["_source"]["geoip"]["location"] } == [ 0.0, 0.0 ]
+          insist { results["hits"]["total"] } == 1
+          insist { results["hits"]["hits"][0]["_source"]["geoip"]["location"] } == [ 0.0, 0.0 ]
         end
 
         it "should index stopwords like 'at' " do
           results = @es.search(:body => { "facets" => { "t" => { "terms" => { "field" => "country" } } } })["facets"]["t"]
           terms = results["terms"].collect { |t| t["term"] }
 
-          expect { terms }.include?("us")
+          insist { terms }.include?("us")
 
           # 'at' is a stopword, make sure stopwords are not ignored.
-          expect { terms }.include?("at")
+          insist { terms }.include?("at")
         end
       end
     end
@@ -826,25 +826,25 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
 
         # Node client should support host in string
         # Case 1: default :host in string
-        expect { client.send :hosts, :host => "host",:port => 9300 } == "host:9300"
+        insist { client.send :hosts, :host => "host",:port => 9300 } == "host:9300"
         # Case 2: :port =~ /^\d+_\d+$/
-        expect { client.send :hosts, :host => "host",:port => "9300-9302"} == "host:9300,host:9301,host:9302"
+        insist { client.send :hosts, :host => "host",:port => "9300-9302"} == "host:9300,host:9301,host:9302"
         # Case 3: :host =~ /^.+:.+$/
-        expect { client.send :hosts, :host => "host:9303",:port => 9300 } == "host:9303"
+        insist { client.send :hosts, :host => "host:9303",:port => 9300 } == "host:9303"
         # Case 4:  :host =~ /^.+:.+$/ and :port =~ /^\d+_\d+$/
-        expect { client.send :hosts, :host => "host:9303",:port => "9300-9302"} == "host:9303"
+        insist { client.send :hosts, :host => "host:9303",:port => "9300-9302"} == "host:9303"
 
         # Node client should support host in array
         # Case 5: :host in array with single item
-        expect { client.send :hosts, :host => ["host"],:port => 9300 } == ("host:9300")
+        insist { client.send :hosts, :host => ["host"],:port => 9300 } == ("host:9300")
         # Case 6: :host in array with more than one items
-        expect { client.send :hosts, :host => ["host1","host2"],:port => 9300 } == "host1:9300,host2:9300"
+        insist { client.send :hosts, :host => ["host1","host2"],:port => 9300 } == "host1:9300,host2:9300"
         # Case 7: :host in array with more than one items and :port =~ /^\d+_\d+$/
-        expect { client.send :hosts, :host => ["host1","host2"],:port => "9300-9302" } == "host1:9300,host1:9301,host1:9302,host2:9300,host2:9301,host2:9302"
+        insist { client.send :hosts, :host => ["host1","host2"],:port => "9300-9302" } == "host1:9300,host1:9301,host1:9302,host2:9300,host2:9301,host2:9302"
         # Case 8: :host in array with more than one items and some :host =~ /^.+:.+$/
-        expect { client.send :hosts, :host => ["host1","host2:9303"],:port => 9300 } == "host1:9300,host2:9303"
+        insist { client.send :hosts, :host => ["host1","host2:9303"],:port => 9300 } == "host1:9300,host2:9303"
         # Case 9: :host in array with more than one items, :port =~ /^\d+_\d+$/ and some :host =~ /^.+:.+$/
-        expect { client.send :hosts, :host => ["host1","host2:9303"],:port => "9300-9302" } == "host1:9300,host1:9301,host1:9302,host2:9303"
+        insist { client.send :hosts, :host => ["host1","host2:9303"],:port => "9300-9302" } == "host1:9300,host1:9301,host1:9302,host2:9303"
       end
     end
   end
