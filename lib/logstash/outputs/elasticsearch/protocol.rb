@@ -78,6 +78,24 @@ module LogStash::Outputs::Elasticsearch
         Elasticsearch::Client.new client_options
       end
 
+      def self.normalize_bulk_response(bulk_response)
+        if bulk_response["errors"]
+          # The structure of the response from the REST Bulk API is follows:
+          # {"took"=>74, "errors"=>true, "items"=>[{"create"=>{"_index"=>"logstash-2014.11.17",
+          #                                                    "_type"=>"logs",
+          #                                                    "_id"=>"AUxTS2C55Jrgi-hC6rQF",
+          #                                                    "_version"=>1,
+          #                                                    "status"=>400,
+          #                                                    "error"=>"MapperParsingException[failed to parse]..."}}]}
+          # where each `item` is a hash of {OPTYPE => Hash[]}. calling first, will retrieve 
+          # this hash as a single array with two elements, where the value is the second element (i.first[1])
+          # then the status of that item is retrieved.
+          {"errors" => true, "statuses" => bulk_response["items"].map { |i| i.first[1]['status'] }}
+        else
+          {"errors" => false}
+        end
+      end
+
       def bulk(actions)
         bulk_response = @client.bulk(:body => actions.collect do |action, args, source|
           if source
@@ -86,11 +104,8 @@ module LogStash::Outputs::Elasticsearch
             next { action => args }
           end
         end.flatten)
-        if bulk_response["errors"]
-          return {"errors" => true, "statuses" => bulk_response["items"].map { |i| i["status"] }}
-        else
-          return {"errors" => false}
-        end
+
+        self.class.normalize_bulk_response(bulk_response)
       end # def bulk
 
       def template_exists?(name)
@@ -187,6 +202,16 @@ module LogStash::Outputs::Elasticsearch
         return nodebuilder.settings(@settings).node.client
       end # def build_client
 
+      def self.normalize_bulk_response(bulk_response)
+        # TODO(talevy): parse item response objects to retrieve correct 200 (OK) or 201(created) status codes
+        if bulk_response.has_failures()
+          {"errors" => true,
+           "statuses" => bulk_response.map { |i| (i.is_failed && i.get_failure.get_status.get_status) || 200 }}
+        else
+          {"errors" => false}
+        end
+      end
+
       def bulk(actions)
         # Actions an array of [ action, action_metadata, source ]
         prep = @client.prepareBulk
@@ -195,14 +220,7 @@ module LogStash::Outputs::Elasticsearch
         end
         response = prep.execute.actionGet()
 
-        if response.has_failures()
-          return {"errors" => true,
-                  "statuses" => response.map { |i| (i.is_failed && i.get_failure.get_status.get_status) || 200 }}
-        else
-          return {"errors" => false}
-        end
-        # returns 200 for all successful actions, represents 201 & 200
-        # TODO(talevy): parse item response objects to retrieve correct 200 (OK) or 201(created) status codes
+        self.class.normalize_bulk_response(response)
       end # def bulk
 
       def build_request(action, args, source)
