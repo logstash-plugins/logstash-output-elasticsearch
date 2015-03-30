@@ -486,8 +486,13 @@ describe "outputs/elasticsearch" do
         .any_instance.stub(:bulk).and_return(*resp)
       LogStash::Outputs::Elasticsearch::Protocols::NodeClient
         .any_instance.stub(:bulk).and_return(*resp)
-      LogStash::Outputs::Elasticsearch::Protocols::TransportClient
-        .any_instance.stub(:bulk).and_return(*resp)
+    end
+
+    def unmock_actions()
+      LogStash::Outputs::Elasticsearch::Protocols::HTTPClient
+        .any_instance.unstub(:bulk)
+      LogStash::Outputs::Elasticsearch::Protocols::NodeClient
+        .any_instance.unstub(:bulk)
     end
 
     ["node", "transport", "http"].each do |protocol|
@@ -526,6 +531,7 @@ describe "outputs/elasticsearch" do
           subject.receive(event2)
           subject.buffer_flush(:final => true)
           sleep(2)
+          unmock_actions
         end
 
         it "should raise exception and be retried by stud::buffer" do
@@ -557,6 +563,7 @@ describe "outputs/elasticsearch" do
           subject.receive(event2)
           subject.buffer_flush(:final => true)
           sleep(3)
+          unmock_actions
         end
         
         it "should retry actions with response status of 429" do
@@ -567,6 +574,7 @@ describe "outputs/elasticsearch" do
           subject.receive(event1)
           subject.buffer_flush(:final => true)
           sleep(3)
+          unmock_actions
         end
 
         it "should retry an event until max_retries reached" do
@@ -581,9 +589,16 @@ describe "outputs/elasticsearch" do
           subject.receive(event1)
           subject.buffer_flush(:final => true)
           sleep(3)
+          unmock_actions
         end
 
         it "non-retryable errors like mapping errors (400) should be dropped and not be retried (unfortunetly)" do
+          # insist indices are empty
+          Stud::try(10.times) do
+            r = @es.search
+            insist { r["hits"]["total"] } == 0
+          end
+
           subject.register
           subject.receive(invalid_event)
           expect(subject).not_to receive(:retry_push)
@@ -597,6 +612,12 @@ describe "outputs/elasticsearch" do
         end
 
         it "successful requests should not be appended to retry queue" do
+          # insist indices are empty
+          Stud::try(10.times) do
+            r = @es.search
+            insist { r["hits"]["total"] } == 0
+          end
+
           subject.register
           subject.receive(event1)
           expect(subject).not_to receive(:retry_push)
@@ -613,9 +634,6 @@ describe "outputs/elasticsearch" do
   end
 
   describe "elasticsearch protocol", :elasticsearch => true do
-    # ElasticSearch related jars
-#LogStash::Environment.load_elasticsearch_jars!
-    # Load elasticsearch protocol
     require "logstash/outputs/elasticsearch/protocol"
 
     describe "elasticsearch node client" do
