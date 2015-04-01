@@ -486,8 +486,6 @@ describe "outputs/elasticsearch" do
         .any_instance.stub(:bulk).and_return(*resp)
       LogStash::Outputs::Elasticsearch::Protocols::NodeClient
         .any_instance.stub(:bulk).and_return(*resp)
-      LogStash::Outputs::Elasticsearch::Protocols::TransportClient
-        .any_instance.stub(:bulk).and_return(*resp)
     end
 
     ["node", "transport", "http"].each do |protocol|
@@ -539,7 +537,7 @@ describe "outputs/elasticsearch" do
           end
           subject.register
           subject.receive(event1)
-          subject.buffer_flush(:final => true)
+          subject.teardown
         end
 
         it "should retry actions with response status of 503" do
@@ -587,9 +585,10 @@ describe "outputs/elasticsearch" do
           subject.register
           subject.receive(invalid_event)
           expect(subject).not_to receive(:retry_push)
-          subject.buffer_flush(:final => true)
+          subject.teardown
 
           @es.indices.refresh
+          sleep(5)
           Stud::try(10.times) do
             r = @es.search
             insist { r["hits"]["total"] } == 0
@@ -600,9 +599,10 @@ describe "outputs/elasticsearch" do
           subject.register
           subject.receive(event1)
           expect(subject).not_to receive(:retry_push)
-          subject.buffer_flush(:final => true)
+          subject.teardown
 
           @es.indices.refresh
+          sleep(5)
           Stud::try(10.times) do
             r = @es.search
             insist { r["hits"]["total"] } == 1
