@@ -699,9 +699,9 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
   describe "failures in bulk class expected behavior", :elasticsearch => true do
     let(:template) { '{"template" : "not important, will be updated by :index"}' }
     let(:event1) { LogStash::Event.new("somevalue" => 100, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0}) }
-    let(:action1) { ["index", {:_id=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event1] }
+    let(:action1) { ["index", {:_id=>nil, :_routing=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event1] }
     let(:event2) { LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0] }, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0}) }
-    let(:action2) { ["index", {:_id=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event2] }
+    let(:action2) { ["index", {:_id=>nil, :_routing=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event2] }
     let(:invalid_event) { LogStash::Event.new("geoip" => { "location" => "notlatlon" }, "@timestamp" => "2014-11-17T20:37:17.223Z") }
     let(:max_retries) { 3 }
 
