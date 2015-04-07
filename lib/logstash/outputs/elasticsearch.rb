@@ -299,6 +299,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     if @embedded
       raise(LogStash::ConfigurationError, "The 'embedded => true' setting is only valid for the elasticsearch output under JRuby. You are running #{RUBY_DESCRIPTION}") unless LogStash::Environment.jruby?
+      @logger.warn("The 'embedded => true' setting is enabled. This is not recommended for production use!!!")
 #      LogStash::Environment.load_elasticsearch_jars!
 
       # Default @host with embedded to localhost. This should help avoid
