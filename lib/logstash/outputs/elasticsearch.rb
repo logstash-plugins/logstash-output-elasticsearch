@@ -81,7 +81,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # The document ID for the index. Useful for overwriting existing entries in
   # Elasticsearch with the same ID.
-  config :document_id, :validate => :string, :default => nil
+  config :document_id, :validate => :string
+
+  # A routing override to be applied to all processed events.
+  # This can be dynamic using the `%{foo}` syntax.
+  config :routing, :validate => :string
 
   # The name of your cluster if you set it on the Elasticsearch side. Useful
   # for discovery.
@@ -400,7 +404,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     index = event.sprintf(@index)
 
     document_id = @document_id ? event.sprintf(@document_id) : nil
-    buffer_receive([event.sprintf(@action), { :_id => document_id, :_index => index, :_type => type }, event])
+    routing = @routing ? event.sprintf(@routing) : nil
+    buffer_receive([event.sprintf(@action), { :_id => document_id, :_index => index, :_type => type, :_routing => routing }, event])
   end # def receive
 
   public

@@ -73,6 +73,230 @@ describe "outputs/elasticsearch" do
     end
   end
 
+  describe "ship lots of events w/ default index_type and fixed routing key using http protocol", :elasticsearch => true do
+    # Generate a random index name
+    index = 10.times.collect { rand(10).to_s }.join("")
+    type = 10.times.collect { rand(10).to_s }.join("")
+
+    # Write 900 events so that we can verify these have been routed correctly.
+    event_count = 900
+    flush_size = rand(200) + 1
+
+    config <<-CONFIG
+      input {
+        generator {
+          message => "hello world"
+          count => #{event_count}
+          type => "#{type}"
+        }
+      }
+      output {
+        elasticsearch {
+          host => "127.0.0.1"
+          index => "#{index}"
+          flush_size => #{flush_size}
+          routing => "test"
+          protocol => "http"
+        }
+      }
+    CONFIG
+
+    agent do
+      # Try a few times to check if we have the correct number of events stored
+      # in ES.
+      #
+      # We try multiple times to allow final agent flushes as well as allowing
+      # elasticsearch to finish processing everything.
+      ftw = FTW::Agent.new
+      ftw.post!("http://localhost:9200/#{index}/_refresh")
+
+      # Wait until all events are available.
+      Stud::try(10.times) do
+        data = ""
+        response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*")
+        response.read_body { |chunk| data << chunk }
+        result = LogStash::Json.load(data)
+        count = result["count"]
+        insist { count } == event_count
+      end
+
+      response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*&routing=test")
+      data = ""
+      response.read_body { |chunk| data << chunk }
+      result = LogStash::Json.load(data)
+      count = result["count"]
+      insist { count } == event_count
+    end
+  end
+
+describe "ship lots of events w/ default index_type and dynamic routing key using http protocol", :elasticsearch => true do
+    # Generate a random index name
+    index = 10.times.collect { rand(10).to_s }.join("")
+    type = 10.times.collect { rand(10).to_s }.join("")
+
+    # Write 900 events so that we can verify these have been routed correctly.
+    event_count = 900
+    flush_size = rand(200) + 1
+
+    config <<-CONFIG
+      input {
+        generator {
+          message => "test"
+          count => #{event_count}
+          type => "#{type}"
+        }
+      }
+      output {
+        elasticsearch {
+          host => "127.0.0.1"
+          index => "#{index}"
+          flush_size => #{flush_size}
+          routing => "%{message}"
+          protocol => "http"
+        }
+      }
+    CONFIG
+
+    agent do
+      # Try a few times to check if we have the correct number of events stored
+      # in ES.
+      #
+      # We try multiple times to allow final agent flushes as well as allowing
+      # elasticsearch to finish processing everything.
+      ftw = FTW::Agent.new
+      ftw.post!("http://localhost:9200/#{index}/_refresh")
+
+      # Wait until all events are available.
+      Stud::try(10.times) do
+        data = ""
+        response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*")
+        response.read_body { |chunk| data << chunk }
+        result = LogStash::Json.load(data)
+        count = result["count"]
+        insist { count } == event_count
+      end
+
+      response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*&routing=test")
+      data = ""
+      response.read_body { |chunk| data << chunk }
+      result = LogStash::Json.load(data)
+      count = result["count"]
+      insist { count } == event_count
+    end
+  end
+
+  describe "ship lots of events w/ default index_type and fixed routing key using transport protocol", :elasticsearch => true do
+    # Generate a random index name
+    index = 10.times.collect { rand(10).to_s }.join("")
+    type = 10.times.collect { rand(10).to_s }.join("")
+
+    # Write 900 events so that we can verify these have been routed correctly.
+    event_count = 900
+    flush_size = rand(200) + 1
+
+    config <<-CONFIG
+      input {
+        generator {
+          message => "hello world"
+          count => #{event_count}
+          type => "#{type}"
+        }
+      }
+      output {
+        elasticsearch {
+          host => "127.0.0.1"
+          index => "#{index}"
+          flush_size => #{flush_size}
+          routing => "test"
+          protocol => "transport"
+        }
+      }
+    CONFIG
+
+    agent do
+      # Try a few times to check if we have the correct number of events stored
+      # in ES.
+      #
+      # We try multiple times to allow final agent flushes as well as allowing
+      # elasticsearch to finish processing everything.
+      ftw = FTW::Agent.new
+      ftw.post!("http://localhost:9200/#{index}/_refresh")
+
+      # Wait until all events are available.
+      Stud::try(10.times) do
+        data = ""
+        response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*")
+        response.read_body { |chunk| data << chunk }
+        result = LogStash::Json.load(data)
+        count = result["count"]
+        insist { count } == event_count
+      end
+
+      response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*&routing=test")
+      data = ""
+      response.read_body { |chunk| data << chunk }
+      result = LogStash::Json.load(data)
+      count = result["count"]
+      insist { count } == event_count
+    end
+  end
+
+  describe "ship lots of events w/ default index_type and fixed routing key using node protocol", :elasticsearch => true do
+    # Generate a random index name
+    index = 10.times.collect { rand(10).to_s }.join("")
+    type = 10.times.collect { rand(10).to_s }.join("")
+
+    # Write 900 events so that we can verify these have been routed correctly.
+    event_count = 900
+    flush_size = rand(200) + 1
+
+    config <<-CONFIG
+      input {
+        generator {
+          message => "hello world"
+          count => #{event_count}
+          type => "#{type}"
+        }
+      }
+      output {
+        elasticsearch {
+          host => "127.0.0.1"
+          index => "#{index}"
+          flush_size => #{flush_size}
+          routing => "test"
+          protocol => "node"
+        }
+      }
+    CONFIG
+
+    agent do
+      # Try a few times to check if we have the correct number of events stored
+      # in ES.
+      #
+      # We try multiple times to allow final agent flushes as well as allowing
+      # elasticsearch to finish processing everything.
+      ftw = FTW::Agent.new
+      ftw.post!("http://localhost:9200/#{index}/_refresh")
+
+      # Wait until all events are available.
+      Stud::try(10.times) do
+        data = ""
+        response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*")
+        response.read_body { |chunk| data << chunk }
+        result = LogStash::Json.load(data)
+        count = result["count"]
+        insist { count } == event_count
+      end
+
+      response = ftw.get!("http://127.0.0.1:9200/#{index}/_count?q=*&routing=test")
+      data = ""
+      response.read_body { |chunk| data << chunk }
+      result = LogStash::Json.load(data)
+      count = result["count"]
+      insist { count } == event_count
+    end
+  end
+
   describe "node client create actions", :elasticsearch => true do
     require "logstash/outputs/elasticsearch"
     require "elasticsearch"
@@ -475,9 +699,9 @@ describe "outputs/elasticsearch" do
   describe "failures in bulk class expected behavior", :elasticsearch => true do
     let(:template) { '{"template" : "not important, will be updated by :index"}' }
     let(:event1) { LogStash::Event.new("somevalue" => 100, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0}) }
-    let(:action1) { ["index", {:_id=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event1] }
+    let(:action1) { ["index", {:_id=>nil, :_routing=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event1] }
     let(:event2) { LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0] }, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0}) }
-    let(:action2) { ["index", {:_id=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event2] }
+    let(:action2) { ["index", {:_id=>nil, :_routing=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event2] }
     let(:invalid_event) { LogStash::Event.new("geoip" => { "location" => "notlatlon" }, "@timestamp" => "2014-11-17T20:37:17.223Z") }
     let(:max_retries) { 3 }
 

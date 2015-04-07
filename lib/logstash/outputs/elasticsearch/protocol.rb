@@ -228,19 +228,23 @@ module LogStash::Outputs::Elasticsearch
           when "index"
             request = org.elasticsearch.action.index.IndexRequest.new(args[:_index])
             request.id(args[:_id]) if args[:_id]
+            request.routing(args[:_routing]) if args[:_routing]
             request.source(source)
           when "delete"
             request = org.elasticsearch.action.delete.DeleteRequest.new(args[:_index])
             request.id(args[:_id])
+            request.routing(args[:_routing]) if args[:_routing]
           when "create"
             request = org.elasticsearch.action.index.IndexRequest.new(args[:_index])
             request.id(args[:_id]) if args[:_id]
+            request.routing(args[:_routing]) if args[:_routing]
             request.source(source)
             request.opType("create")
           when "create_unless_exists"
             unless args[:_id].nil?
               request = org.elasticsearch.action.index.IndexRequest.new(args[:_index])
               request.id(args[:_id])
+              request.routing(args[:_routing]) if args[:_routing]
               request.source(source)
               request.opType("create")
             else
