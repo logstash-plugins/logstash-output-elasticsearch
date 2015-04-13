@@ -102,7 +102,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # work in your environment.
   #
   # The plugin will use multicast discovery to connect to Elasticsearch
-  # when using `protocol => node` without setting a host.
+  # when using `protocol => node` without setting a host. When setting unicast 
+  # hosts for `node` protocol, it is important to confirm that at least one non-client
+  # node is listed in the `:host` list. client nodes are filtered by default in zen-discovery.
+  # You need to set `discovery.zen.master_election.filter_client` to `false` to override this behavior.
   #
   # http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-discovery-zen.html#multicast[Multicast Discovery Docs]
   #
