@@ -49,7 +49,13 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # The index type to write events to. Generally you should try to write only
   # similar events to the same 'type'. String expansion `%{foo}` works here.
-  config :index_type, :validate => :string
+  # 
+  # Deprecated in favor of `document_type` field.
+  config :index_type, :validate => :string, :deprecated => true
+
+  # The document type to write events to. Generally you should try to write only
+  # similar events to the same 'type'. String expansion `%{foo}` works here.
+  config :document_type, :validate => :string
 
   # Starting in Logstash 1.3 (unless you set option `manage_template` to false)
   # a default mapping template for Elasticsearch will be applied, if you do not
@@ -399,7 +405,13 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     event['@metadata']['retry_count'] = 0
 
     # Set the 'type' value for the index.
-    type = @index_type ? event.sprintf(@index_type) : (event["type"] || "logs")
+    type = if @document_type
+             event.sprintf(@document_type)
+           elsif @index_type # deprecated
+             event.sprintf(@index_type)
+           else
+             event["type"] || "logs"
+           end
 
     index = event.sprintf(@index)
 
