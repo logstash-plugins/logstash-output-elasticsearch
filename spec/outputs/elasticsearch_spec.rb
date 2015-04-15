@@ -6,11 +6,20 @@ require "stud/try"
 
 describe "outputs/elasticsearch" do
 
-  it "should register" do
-    output = LogStash::Plugin.lookup("output", "elasticsearch").new("embedded" => "false", "protocol" => "transport", "manage_template" => "false")
+  context "registration" do
 
-    # register will try to load jars and raise if it cannot find jars
-    expect {output.register}.to_not raise_error
+    it "should register" do
+      output = LogStash::Plugin.lookup("output", "elasticsearch").new("embedded" => "false", "protocol" => "transport", "manage_template" => "false")
+
+      # register will try to load jars and raise if it cannot find jars
+      expect {output.register}.to_not raise_error
+    end
+
+    it "should fail to register when protocol => http, action => create_unless_exists" do
+      output = LogStash::Plugin.lookup("output", "elasticsearch").new("protocol" => "http", "action" => "create_unless_exists")
+
+      expect {output.register}.to raise_error
+    end
   end
 
   describe "ship lots of events w/ default index_type", :elasticsearch => true do

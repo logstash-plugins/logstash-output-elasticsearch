@@ -257,6 +257,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       @protocol = LogStash::Environment.jruby? ? "node" : "http"
     end
 
+    if @protocol == "http" && @action == "create_unless_exists"
+      raise(LogStash::ConfigurationError, "action => 'create_unless_exists' is not supported under the HTTP protocol");
+    end
+
     if ["node", "transport"].include?(@protocol)
       # Node or TransportClient; requires JRuby
       raise(LogStash::PluginLoadingError, "This configuration requires JRuby. If you are not using JRuby, you must set 'protocol' to 'http'. For example: output { elasticsearch { protocol => \"http\" } }") unless LogStash::Environment.jruby?
