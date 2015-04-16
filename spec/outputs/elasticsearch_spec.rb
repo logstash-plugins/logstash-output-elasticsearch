@@ -886,24 +886,40 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
   end
 
   describe "Authentication option" do
-    ["node", "transport"].each do |protocol|
-      context "with protocol => #{protocol}" do
-        subject do
-          require "logstash/outputs/elasticsearch"
-          settings = {
-            "protocol" => protocol,
-            "node_name" => "logstash",
-            "cluster" => "elasticsearch",
-            "host" => "node01",
-            "user" => "test",
-            "password" => "test"
-          }
-          next LogStash::Outputs::ElasticSearch.new(settings)
-        end
+    context "with protocol => node" do
+      subject do
+        require "logstash/outputs/elasticsearch"
+        settings = {
+          "protocol" => "node",
+          "node_name" => "logstash",
+          "cluster" => "elasticsearch",
+          "host" => "node01",
+          "user" => "test",
+          "password" => "test"
+        }
+        next LogStash::Outputs::ElasticSearch.new(settings)
+      end
 
-        it "should fail in register" do
-          expect {subject.register}.to raise_error
-        end
+      it "should fail in register" do
+        expect {subject.register}.nil?
+      end
+    end
+    context "with protocol => transport" do
+      subject do
+        require "logstash/outputs/elasticsearch"
+        settings = {
+          "protocol" => "transport",
+          "node_name" => "logstash",
+          "cluster" => "elasticsearch",
+          "host" => "node01",
+          "user" => "test",
+          "password" => "test"
+        }
+        next LogStash::Outputs::ElasticSearch.new(settings)
+      end
+
+      it "should fail in register" do
+        expect {subject.register}.to raise_error
       end
     end
   end
