@@ -5,8 +5,8 @@ Gem::Specification.new do |s|
   s.licenses        = ['apache-2.0']
   s.summary         = "Logstash Output to Elasticsearch"
   s.description     = "Output events to elasticsearch"
-  s.authors         = ["Elasticsearch"]
-  s.email           = 'info@elasticsearch.com'
+  s.authors         = ["Elastic"]
+  s.email           = 'info@elastic.co'
   s.homepage        = "http://logstash.net/"
   s.require_paths = ["lib"]
 
