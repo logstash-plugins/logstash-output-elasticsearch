@@ -261,6 +261,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       raise(LogStash::ConfigurationError, "action => 'create_unless_exists' is not supported under the HTTP protocol");
     end
 
+    # Node protocol supports auth with the shield.user option
+    if @protocol == "node" && @user && @password
+      client_settings["shield.user"] = @user + ":" + @password.value
+    end
+
     if ["node", "transport"].include?(@protocol)
       # Node or TransportClient; requires JRuby
       raise(LogStash::PluginLoadingError, "This configuration requires JRuby. If you are not using JRuby, you must set 'protocol' to 'http'. For example: output { elasticsearch { protocol => \"http\" } }") unless LogStash::Environment.jruby?
@@ -541,6 +546,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   private
   def setup_basic_auth
     return {} unless @user && @password
+    return {} if @protocol == "node" # Authentication already setup for "node" protocol
 
     if @protocol =~ /http/
       {
