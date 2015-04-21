@@ -393,7 +393,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     end
     template_json = IO.read(@template).gsub(/\n/,'')
     template = LogStash::Json.load(template_json)
-    template['template'] = wildcard_substitute(@index)
     @logger.info("Using mapping template", :template => template)
     return template
   end # def get_template
@@ -611,15 +610,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @retry_flush_mutex.synchronize {
       @retry_queue_needs_flushing.signal if @retry_queue.size >= @retry_max_items
     }
-  end
-
-  # helper function to replace placeholders
-  # in index names to wildcards
-  # example:
-  #    "logs-%{YYYY}" -> "logs-*"
-  private
-  def wildcard_substitute(name)
-    name.gsub(/%\{[^}]+\}/, "*")
   end
 
   @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }

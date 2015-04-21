@@ -583,34 +583,6 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
     end
   end
 
-  describe "wildcard substitution in index templates", :elasticsearch => true do
-    require "logstash/outputs/elasticsearch"
-
-    let(:template) { '{"template" : "not important, will be updated by :index"}' }
-
-    def settings_with_index(index)
-      return {
-        "manage_template" => true,
-        "template_overwrite" => true,
-        "protocol" => "http",
-        "host" => "localhost",
-        "index" => "#{index}"
-      }
-    end
-
-    it "should substitude placeholders" do
-      IO.stub(:read).with(anything) { template }
-      es_output = LogStash::Outputs::ElasticSearch.new(settings_with_index("index-%{YYYY}"))
-      insist { es_output.get_template['template'] } == "index-*"
-    end
-
-    it "should do nothing to an index with no placeholder" do
-      IO.stub(:read).with(anything) { template }
-      es_output = LogStash::Outputs::ElasticSearch.new(settings_with_index("index"))
-      insist { es_output.get_template['template'] } == "index"
-    end
-  end
-
   describe "index template expected behavior", :elasticsearch => true do
     ["node", "transport", "http"].each do |protocol|
       context "with protocol => #{protocol}" do
