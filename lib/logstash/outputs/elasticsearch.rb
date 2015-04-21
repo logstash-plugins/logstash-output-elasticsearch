@@ -48,7 +48,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   attr_reader :client
 
   include Stud::Buffer
-  RETRYABLE_CODES = [429, 503]
+  RETRYABLE_CODES = [409, 429, 503]
   SUCCESS_CODES = [200, 201]
 
   config_name "elasticsearch"
@@ -211,6 +211,14 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Note, this is NOT a SOCKS proxy, but a plain HTTP proxy
   config :proxy
 
+  # Enable doc_as_upsert for update mode
+  # create a new document with source if document_id doesn't exists
+  config :doc_as_upsert, :validate => :boolean, :default => false
+
+  # Set upsert content for update mode
+  # create a new document with this parameter as json string if document_id doesn't exists
+  config :upsert, :validate => :string, :default => ""
+
   public
   def register
     @submit_mutex = Mutex.new
@@ -245,6 +253,14 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     common_options = {:client_settings => client_settings}
 
     common_options.merge! setup_basic_auth()
+
+
+    # Update API setup
+    update_options = {
+      :upsert => @upsert,
+      :doc_as_upsert => @doc_as_upsert
+    }
+    common_options.merge! update_options
 
     @client = Array.new
     @client = @host.map do |host|
@@ -334,7 +350,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     document_id = @document_id ? event.sprintf(@document_id) : nil
     routing = @routing ? event.sprintf(@routing) : nil
-    buffer_receive([event.sprintf(@action), { :_id => document_id, :_index => index, :_type => type, :_routing => routing }, event])
+    upsert = if @upsert != ""
+                LogStash::Json.load(event.sprintf(@upsert))
+              else
+                nil
+              end
+    buffer_receive([event.sprintf(@action), { :_id => document_id, :_index => index, :_type => type, :_routing => routing, :_upsert => upsert }, event])
   end # def receive
 
   public

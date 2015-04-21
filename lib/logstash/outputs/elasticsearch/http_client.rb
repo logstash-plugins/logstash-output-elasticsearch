@@ -27,6 +27,19 @@ module LogStash::Outputs::Elasticsearch
 
     def bulk(actions)
       bulk_body = actions.collect do |action, args, source|
+        if action == 'update'
+          if args[:_id]
+            source = { 'doc' => source }
+            if @options[:doc_as_upsert]
+              source['doc_as_upsert'] = true
+            else
+              source['upsert'] = args[:_upsert] if args[:_upsert]
+            end
+          else
+            raise(LogStash::ConfigurationError, "Specifying action => 'update' without a document '_id' is not supported.")
+          end
+        end
+
         if source
           next [ { action => args }, source ]
         else
