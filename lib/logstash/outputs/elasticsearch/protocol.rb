@@ -102,6 +102,18 @@ module LogStash::Outputs::Elasticsearch
 
       def bulk(actions)
         bulk_response = @client.bulk(:body => actions.collect do |action, args, source|
+          if action == 'update'
+            if args[:_id]
+              source = { 'doc' => source }
+              if @options[:doc_as_upsert]
+                source['doc_as_upsert'] = true
+              else
+                source['upsert'] = args[:_upsert] if args[:_upsert]
+              end
+            else
+              raise(LogStash::ConfigurationError, "Specifying action => 'update' without a document '_id' is not supported.")
+            end
+          end
           if source
             next [ { action => args }, source ]
           else
@@ -254,9 +266,20 @@ module LogStash::Outputs::Elasticsearch
             else
               raise(LogStash::ConfigurationError, "Specifying action => 'create_unless_exists' without a document '_id' is not supported.")
             end
+          when "update"
+            unless args[:_id].nil?
+              request = org.elasticsearch.action.update.UpdateRequest.new(args[:_index], args[:_type], args[:_id])
+              request.doc(source)
+              if @options[:doc_as_upsert]
+                request.docAsUpsert(true)
+              else
+                request.upsert(args[:_upsert]) if args[:_upsert]
+              end
+            else
+              raise(LogStash::ConfigurationError, "Specifying action => 'update' without a document '_id' is not supported.")
+            end
           else
             raise(LogStash::ConfigurationError, "action => '#{action_name}' is not currently supported.")
-          #when "update"
         end # case action
 
         request.type(args[:_type]) if args[:_type]
