@@ -291,7 +291,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       end
     end
 
-    if @host.nil? && @protocol == "http"
+    if @host.nil? && @protocol != "node" # node can use zen discovery
       @logger.info("No 'host' set in elasticsearch output. Defaulting to localhost")
       @host = ["localhost"]
     end
