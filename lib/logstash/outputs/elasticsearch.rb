@@ -148,6 +148,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # - index: indexes a document (an event from Logstash).
   # - delete: deletes a document by id
   # - create: indexes a document, fails if a document by that id already exists in the index.
+  # - update: updates a document by id
   # following action is not supported by HTTP protocol
   # - create_unless_exists: creates a document, fails if no id is provided
   #
