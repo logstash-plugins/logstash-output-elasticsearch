@@ -269,6 +269,7 @@ module LogStash::Outputs::Elasticsearch
           when "update"
             unless args[:_id].nil?
               request = org.elasticsearch.action.update.UpdateRequest.new(args[:_index], args[:_type], args[:_id])
+              request.routing(args[:_routing]) if args[:_routing]
               request.doc(source)
               if @options[:doc_as_upsert]
                 request.docAsUpsert(true)
