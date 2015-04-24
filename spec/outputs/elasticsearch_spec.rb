@@ -960,6 +960,30 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
 
   describe "transport protocol" do
 
+    context "host not configured" do
+      subject do
+        require "logstash/outputs/elasticsearch"
+        settings = {
+          "protocol" => "transport",
+          "node_name" => "mynode"
+        }
+        next LogStash::Outputs::ElasticSearch.new(settings)
+      end
+
+      it "should set host to localhost" do
+        expect(LogStash::Outputs::Elasticsearch::Protocols::TransportClient).to receive(:new).with({
+          :host => "localhost",
+          :port => "9300-9305",
+          :protocol => "transport",
+          :client_settings => {
+            "client.transport.sniff" => false,
+            "node.name" => "mynode"
+          }
+        })
+        subject.register
+      end
+    end
+
     context "sniffing => true" do
 
       subject do
