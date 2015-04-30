@@ -458,10 +458,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   public
   def flush(actions, teardown = false)
     begin
-      @logger.debug? and @logger.debug "Sending bulk of actions to client[#{@client_idx}]: #{@host[@client_idx]}"
       submit(actions)
     rescue => e
-      @logger.error "Got error to send bulk of actions to elasticsearch server at #{@host[@client_idx]} : #{e.message}"
+      @logger.error "Got error to send bulk of actions: #{e.message}"
       raise e
     ensure
       unless @protocol == "node"
