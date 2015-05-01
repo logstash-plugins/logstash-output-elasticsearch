@@ -94,23 +94,39 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :routing, :validate => :string
 
   # The name of your cluster if you set it on the Elasticsearch side. Useful
-  # for discovery.
+  # for discovery when using `node` or `transport` protocols.
+  # By default, it looks for a cluster named 'elasticsearch'.
   config :cluster, :validate => :string
 
-  # The hostname or IP address of the host to use for Elasticsearch unicast discovery
-  # This is only required if the normal multicast/cluster discovery stuff won't
-  # work in your environment.
-  #
-  # The plugin will use multicast discovery to connect to Elasticsearch
-  # when using `protocol => node` without setting a host. When setting unicast 
-  # hosts for `node` protocol, it is important to confirm that at least one non-client
-  # node is listed in the `:host` list. client nodes are filtered by default in zen-discovery.
-  # You need to set `discovery.zen.master_election.filter_client` to `false` to override this behavior.
-  #
-  # http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-discovery-zen.html#multicast[Multicast Discovery Docs]
-  #
+  # For the `node` protocol, if you do not specify `host` parameter, it will attempt to use
+  # multicast discovery to connect to Elasticsearch.  If multicast is disabled in Elasticsearch (http://www.elastic.co/guide/en/elasticsearch/guide/current/_important_configuration_changes.html#_prefer_unicast_over_multicast), 
+  # you must include the hostname or IP address of the host(s) to use for Elasticsearch unicast discovery.
+  # Remember the `node` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-transport.html#modules-transport[transport] address (eg. 9300, not 9200).
   #     `"127.0.0.1"`
   #     `["127.0.0.1:9300","127.0.0.2:9300"]`
+  # When setting hosts for `node` protocol, it is important to confirm that at least one non-client
+  # node is listed in the `host` list.  Also keep in mind that the `host` parameter when used with the `node` protocol
+  # is for *discovery purposes only* (not for load balancing).  When multiple hosts are specified, it will contact the first host to see if 
+  # it can use it to discover the cluster.  If not, then it will contact the second host in the list and so forth.
+  # With the `node` protocol, LS will join the Elasticsearch cluster as a node client (which has a copy of the cluster
+  # state) and this node client is the one that will automatically handle the load balancing of requests across data nodes in the cluster.
+  #
+  # For the `transport` protocol, it will load balance requests across the hosts specified in the `host` parameter.
+  # Remember the `transport` protocol also uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-transport.html#modules-transport[transport] address (eg. 9300, not 9200).
+  #     `"127.0.0.1"`
+  #     `["127.0.0.1:9300","127.0.0.2:9300"]`
+  # There is also a `sniffing` option (see below) that can be used with the transport protocol to instruct it to use the host to sniff for
+  # "alive" nodes in the cluster and automatically use it as the hosts list.  If you do not use the sniffing option, it is important to
+  # exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `host` list
+  # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes.
+  #
+  # For the `http` protocol, it will load balance requests across the hosts specified in the `host` parameter.
+  # Remember the `http` protocol also uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http[http] address (eg. 9200, not 9300).
+  #     `"127.0.0.1"`
+  #     `["127.0.0.1:9200","127.0.0.2:9200"]`
+  # It is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `host` list
+  # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes.
+
   config :host, :validate => :array
 
   # The port for Elasticsearch transport to use.
@@ -171,11 +187,15 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Choose the protocol used to talk to Elasticsearch.
   #
-  # The 'node' protocol will connect to the cluster as a normal Elasticsearch
-  # node (but will not store data). This allows you to use things like
-  # multicast discovery. If you use the `node` protocol, you must permit
+  # The 'node' protocol (default) will connect to the cluster as a normal Elasticsearch
+  # node (but will not store data). If you use the `node` protocol, you must permit
   # bidirectional communication on the port 9300 (or whichever port you have
   # configured).
+  #
+  # If you do not specify the `host` parameter, it will use  multicast for http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-discovery-zen.html[Elasticsearch discovery].  While this may work in a test/dev environment where multicast is enabled in 
+  # Elasticsearch, we strongly recommend http://www.elastic.co/guide/en/elasticsearch/guide/current/_important_configuration_changes.html#_prefer_unicast_over_multicast[disabling multicast]
+  # in Elasticsearch.  To connect to an Elasticsearch cluster with multicast disabled,
+  # you must include the `host` parameter (see relevant section above).  
   #
   # The 'transport' protocol will connect to the host you specify and will
   # not show up as a 'node' in the Elasticsearch cluster. This is useful
