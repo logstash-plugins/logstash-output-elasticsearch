@@ -98,30 +98,35 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # By default, it looks for a cluster named 'elasticsearch'.
   config :cluster, :validate => :string
 
-  # For the `node` protocol, if you do not specify `host` parameter, it will attempt to use
-  # multicast discovery to connect to Elasticsearch.  If multicast is disabled in Elasticsearch (http://www.elastic.co/guide/en/elasticsearch/guide/current/_important_configuration_changes.html#_prefer_unicast_over_multicast), 
+  # For the `node` protocol, if you do not specify `host`, it will attempt to use
+  # multicast discovery to connect to Elasticsearch.  If http://www.elastic.co/guide/en/elasticsearch/guide/current/_important_configuration_changes.html#_prefer_unicast_over_multicast[multicast is disabled] in Elasticsearch, 
   # you must include the hostname or IP address of the host(s) to use for Elasticsearch unicast discovery.
   # Remember the `node` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-transport.html#modules-transport[transport] address (eg. 9300, not 9200).
   #     `"127.0.0.1"`
   #     `["127.0.0.1:9300","127.0.0.2:9300"]`
   # When setting hosts for `node` protocol, it is important to confirm that at least one non-client
-  # node is listed in the `host` list.  Also keep in mind that the `host` parameter when used with the `node` protocol
-  # is for *discovery purposes only* (not for load balancing).  When multiple hosts are specified, it will contact the first host to see if 
-  # it can use it to discover the cluster.  If not, then it will contact the second host in the list and so forth.
-  # With the `node` protocol, LS will join the Elasticsearch cluster as a node client (which has a copy of the cluster
-  # state) and this node client is the one that will automatically handle the load balancing of requests across data nodes in the cluster.
-  #
+  # node is listed in the `host` list.  Also keep in mind that the `host` parameter when used with 
+  # the `node` protocol is for *discovery purposes only* (not for load balancing).  When multiple hosts 
+  # are specified, it will contact the first host to see if it can use it to discover the cluster.  If not, 
+  # then it will contact the second host in the list and so forth. With the `node` protocol, 
+  # Logstash will join the Elasticsearch cluster as a node client (which has a copy of the cluster
+  # state) and this node client is the one that will automatically handle the load balancing of requests 
+  # across data nodes in the cluster.  
+  # If you are looking for a high availability setup, our recommendation is to use the `transport` protocol (below), 
+  # set up multiple http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[client nodes] and list the client nodes in the `host` parameter.
+  # 
   # For the `transport` protocol, it will load balance requests across the hosts specified in the `host` parameter.
-  # Remember the `transport` protocol also uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-transport.html#modules-transport[transport] address (eg. 9300, not 9200).
+  # Remember the `transport` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-transport.html#modules-transport[transport] address (eg. 9300, not 9200).
   #     `"127.0.0.1"`
   #     `["127.0.0.1:9300","127.0.0.2:9300"]`
   # There is also a `sniffing` option (see below) that can be used with the transport protocol to instruct it to use the host to sniff for
-  # "alive" nodes in the cluster and automatically use it as the hosts list.  If you do not use the sniffing option, it is important to
-  # exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `host` list
-  # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes.
+  # "alive" nodes in the cluster and automatically use it as the hosts list (but will skip the dedicated master nodes.  
+  # If you do not use the sniffing option, it is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `host` list
+  # to prevent Logstash from sending bulk requests to the master nodes (not recommended).  
+  # So this parameter should only reference either data or client nodes.
   #
   # For the `http` protocol, it will load balance requests across the hosts specified in the `host` parameter.
-  # Remember the `http` protocol also uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http[http] address (eg. 9200, not 9300).
+  # Remember the `http` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http[http] address (eg. 9200, not 9300).
   #     `"127.0.0.1"`
   #     `["127.0.0.1:9200","127.0.0.2:9200"]`
   # It is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `host` list
