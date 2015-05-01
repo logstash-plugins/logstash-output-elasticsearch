@@ -120,10 +120,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   #     `"127.0.0.1"`
   #     `["127.0.0.1:9300","127.0.0.2:9300"]`
   # There is also a `sniffing` option (see below) that can be used with the transport protocol to instruct it to use the host to sniff for
-  # "alive" nodes in the cluster and automatically use it as the hosts list (but will skip the dedicated master nodes.  
+  # "alive" nodes in the cluster and automatically use it as the hosts list (but will skip the dedicated master nodes).  
   # If you do not use the sniffing option, it is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `host` list
-  # to prevent Logstash from sending bulk requests to the master nodes (not recommended).  
-  # So this parameter should only reference either data or client nodes.
+  # to prevent Logstash from sending bulk requests to the master nodes. So this parameter should only reference either data or client nodes.
   #
   # For the `http` protocol, it will load balance requests across the hosts specified in the `host` parameter.
   # Remember the `http` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http[http] address (eg. 9200, not 9300).
