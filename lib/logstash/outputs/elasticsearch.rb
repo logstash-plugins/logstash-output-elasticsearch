@@ -51,7 +51,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # similar events to the same 'type'. String expansion `%{foo}` works here.
   # 
   # Deprecated in favor of `document_type` field.
-  config :index_type, :validate => :string, :deprecated => true
+  config :index_type, :validate => :string, :deprecated => "Please use the 'document_type' setting instead. It has the same effect, but is more appropriately named."
 
   # The document type to write events to. Generally you should try to write only
   # similar events to the same 'type'. String expansion `%{foo}` works here.
