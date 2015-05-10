@@ -114,6 +114,7 @@ module LogStash::Outputs::Elasticsearch
               raise(LogStash::ConfigurationError, "Specifying action => 'update' without a document '_id' is not supported.")
             end
           end
+          args.delete(:_upsert)
           if source
             next [ { action => args }, source ]
           else
