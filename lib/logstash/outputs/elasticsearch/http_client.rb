@@ -40,6 +40,8 @@ module LogStash::Outputs::Elasticsearch
           end
         end
 
+        args.delete(:_upsert)
+
         if source
           next [ { action => args }, source ]
         else
