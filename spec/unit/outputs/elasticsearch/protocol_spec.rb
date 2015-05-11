@@ -49,4 +49,3 @@ describe LogStash::Outputs::Elasticsearch::Protocols::HTTPClient do
     end
   end
 end
-
