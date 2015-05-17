@@ -191,7 +191,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # `protocol` on non-java rubies is "http"
   config :protocol, :validate => [ "node", "transport", "http" ]
 
-  # The Elasticsearch action to perform. Valid actions are: `index`, `delete`.
+  # The Elasticsearch action to perform. Valid actions are: `index`, `delete`,
+  # `create`, `create_unless_exists`
   #
   # Use of this setting *REQUIRES* you also configure the `document_id` setting
   # because `delete` actions all require a document id.
