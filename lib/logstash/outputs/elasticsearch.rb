@@ -87,6 +87,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # The document ID for the index. Useful for overwriting existing entries in
   # Elasticsearch with the same ID.
+  # Unless specified, Elasticsearch will generate it's own ID.
+  # When passing a document from couchdb to Elasticsearch (via logstash), 
+  # use: '''document_id => "%{[@metadata][_id]}"''' to preserve the couchDB provided _id.
   config :document_id, :validate => :string
 
   # A routing override to be applied to all processed events.
