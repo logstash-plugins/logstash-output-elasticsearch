@@ -65,12 +65,13 @@ module LogStash::Outputs::Elasticsearch
 
         client_options = {
           :host => [uri],
-          :socket_timeout => 0,  # do not timeout socket reads
-          :request_timeout => 0, # and requests
-          :transport_options => options[:client_settings]
+          :ssl => options[:client_settings][:ssl],
+          :transport_options => {  # manticore settings so we
+            :socket_timeout => 0,  # do not timeout socket reads
+            :request_timeout => 0  # and requests
+          },
+          :transport_class => ::Elasticsearch::Transport::Transport::HTTP::Manticore
         }
-        client_options[:transport_class] = ::Elasticsearch::Transport::Transport::HTTP::Manticore
-        client_options[:ssl] = client_options[:transport_options].delete(:ssl)
 
         if options[:user] && options[:password] then
           token = Base64.strict_encode64(options[:user] + ":" + options[:password])
