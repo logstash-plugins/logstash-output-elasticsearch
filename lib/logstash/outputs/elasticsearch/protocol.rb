@@ -65,6 +65,8 @@ module LogStash::Outputs::Elasticsearch
 
         client_options = {
           :host => [uri],
+          :socket_timeout => 0,  # do not timeout socket reads
+          :request_timeout => 0, # and requests
           :transport_options => options[:client_settings]
         }
         client_options[:transport_class] = ::Elasticsearch::Transport::Transport::HTTP::Manticore
