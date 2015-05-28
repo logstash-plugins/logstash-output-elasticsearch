@@ -21,7 +21,7 @@ Gem::Specification.new do |s|
 
   # Gem dependencies
   s.add_runtime_dependency 'concurrent-ruby'
-  s.add_runtime_dependency 'elasticsearch', ['>= 1.0.6', '~> 1.0']
+  s.add_runtime_dependency 'elasticsearch', ['>= 1.0.9', '~> 1.0']
   s.add_runtime_dependency 'stud', ['>= 0.0.17', '~> 0.0']
   s.add_runtime_dependency 'cabin', ['~> 0.6']
   s.add_runtime_dependency "logstash-core", '>= 1.4.0', '< 2.0.0'
