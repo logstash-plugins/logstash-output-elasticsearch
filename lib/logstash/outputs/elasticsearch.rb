@@ -216,6 +216,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Enable SSL
   config :ssl, :validate => :boolean, :default => false
 
+  # Validate the server's certificate
+  # Disabling this severely compromises security
+  # For more information read https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
+  config :ssl_certificate_verification, :validate => :boolean, :default => true
+
   # The .cer or .pem file to validate the server's certificate
   config :cacert, :validate => :path
 
@@ -533,7 +538,15 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     elsif @truststore
       ssl_options[:truststore_password] = @truststore_password.value if @truststore_password
     end
-    ssl_options[:truststore] = @truststore
+    ssl_options[:truststore] = @truststore if @truststore
+    if @ssl_certificate_verification == false
+      @logger.warn [
+        "** WARNING ** Detected UNSAFE options in elasticsearch output configuration!",
+        "** WARNING ** You have enabled encryption but DISABLED certificate verification.",
+        "** WARNING ** To make sure your data is secure change :ssl_certificate_verification to true"
+      ].join("\n")
+      ssl_options[:verify] = false
+    end
     { ssl: ssl_options }
   end
 
