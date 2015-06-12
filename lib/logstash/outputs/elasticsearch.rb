@@ -33,6 +33,34 @@ require 'logstash-output-elasticsearch_jars.rb'
 # If using the default `protocol` setting ("node"), your firewalls might need
 # to permit port 9300 in *both* directions (from Logstash to Elasticsearch, and
 # Elasticsearch to Logstash)
+#
+# ## Retry Policy
+#
+# By default all bulk requests to ES are synchronous. Not all events in the bulk requests
+# always make it successfully. For example, there could be events which are not formatted
+# correctly for the index they are targeting (type mismatch in mapping). So that we minimize loss of 
+# events, we have a specific retry policy in place. We retry all events which fail to be reached by 
+# Elasticsearch for network related issues. We retry specific events which exhibit errors under a separate 
+# policy described below. Events of this nature are ones which experience ES error codes described as 
+# retryable errors.
+#
+# Retryable Errors:
+#
+# - 429, Too Many Requests (RFC6585)
+# - 503, The server is currently unable to handle the request due to a temporary overloading or maintenance of the server.
+# 
+# Here are the rules of what is retried when:
+#
+# - Block and retry all events in bulk response that experiences transient network exceptions until
+#   a successful submission is received by Elasticsearch.
+# - Retry subset of sent events which resulted in ES errors of a retryable nature which can be found 
+#   in RETRYABLE_CODES
+# - For events which returned retryable error codes, they will be pushed onto a separate queue for 
+#   retrying events. events in this queue will be retried a maximum of 5 times by default (configurable through :max_retries). The size of 
+#   this queue is capped by the value set in :retry_max_items.
+# - Events from the retry queue are submitted again either when the queue reaches its max size or when
+#   the max interval time is reached, which is set in :retry_max_interval.
+# - Events which are not retryable or have reached their max retry count are logged to stderr.
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   include Stud::Buffer
   RETRYABLE_CODES = [429, 503]
