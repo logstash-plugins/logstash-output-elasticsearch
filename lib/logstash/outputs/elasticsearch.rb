@@ -121,6 +121,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # This can be dynamic using the `%{foo}` syntax.
   config :routing, :validate => :string
 
+  # For child documents, ID of the associated parent
+  # This can be dynamic using the `%{foo}` syntax.
+  parent :parent, :validate => :string, :default => nil
+
   # The name of your cluster if you set it on the Elasticsearch side. Useful
   # for discovery when using `node` or `transport` protocols.
   # By default, it looks for a cluster named 'elasticsearch'.
@@ -480,7 +484,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     document_id = @document_id ? event.sprintf(@document_id) : nil
     routing = @routing ? event.sprintf(@routing) : nil
-    buffer_receive([event.sprintf(@action), { :_id => document_id, :_index => index, :_type => type, :_routing => routing }, event])
+    parent = @parent ? event.sprintf(@parent) : nil
+    buffer_receive([event.sprintf(@action), { :_id => document_id, :_index => index, :_type => type, :_routing => routing, :parent => parent }, event])
   end # def receive
 
   public
