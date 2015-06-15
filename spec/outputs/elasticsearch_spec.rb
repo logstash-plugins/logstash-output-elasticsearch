@@ -306,6 +306,56 @@ describe "ship lots of events w/ default index_type and dynamic routing key usin
     end
   end
 
+  describe "http client create" do
+    require "logstash/outputs/elasticsearch"
+    require "elasticsearch"
+
+    let(:options) {
+      {
+        "protocol" => "http",
+        "index" => "my-index",
+        "host" => "localhost",
+        "path" => "some-path"
+      }
+    }
+
+    let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
+
+    let(:manticore_host) {
+      eso.client.first.send(:client).transport.options[:host].first
+    }
+
+    around(:each) do |block|
+      thread = eso.register
+      block.call()
+      thread.kill()
+    end
+
+    describe "with path" do
+      it "should properly create a URI with the path" do
+        expect(eso.path).to eql(options["path"])
+      end
+
+
+      it "should properly set the path on the HTTP client adding slashes" do
+        expect(manticore_host).to include("/" + options["path"] + "/")
+      end
+
+      context "with extra slashes" do
+        let(:path) { "/slashed-path/ "}
+        let(:eso) {
+          LogStash::Outputs::ElasticSearch.new(options.merge("path" => "/some-path/"))
+        }
+
+        it "should properly set the path on the HTTP client without adding slashes" do
+          expect(manticore_host).to include(options["path"])
+        end
+      end
+
+
+    end
+  end
+
   describe "node client create actions", :elasticsearch => true do
     require "logstash/outputs/elasticsearch"
     require "elasticsearch"
