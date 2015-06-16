@@ -325,7 +325,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         raise(LogStash::ConfigurationError, "action => 'create_unless_exists' is not supported under the HTTP protocol");
       end
 
-      client_settings[:path] = "/#{@path}/".gsub(/\/\//, "/") # Normalize slashes
+      client_settings[:path] = "/#{@path}/".gsub(/\/+/, "/") # Normalize slashes
       @logger.debug? && @logger.debug("Normalizing http path", :path => @path, :normalized => client_settings[:path])
     end
 
@@ -563,6 +563,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     buffer_flush(:final => true)
     retry_flush
   end
+
   protected
   def start_local_elasticsearch
     @logger.info("Starting embedded Elasticsearch local node.")
