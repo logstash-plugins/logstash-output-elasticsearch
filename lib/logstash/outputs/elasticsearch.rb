@@ -326,6 +326,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       end
 
       client_settings[:path] = "/#{@path}/".gsub(/\/\//, "/") # Normalize slashes
+      @logger.debug? && @logger.debug("Normalizing http path", :path => @path, :normalized => client_settings[:path])
     end
 
     if ["node", "transport"].include?(@protocol)
