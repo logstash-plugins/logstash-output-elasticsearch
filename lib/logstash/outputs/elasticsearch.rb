@@ -485,6 +485,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   public
   def submit(actions)
+    require 'pry'
+    binding.pry
+    raise "whut"
     resp = submit_bulk_request(actions)
     handle_bulk_errors(resp)
     resp
@@ -493,7 +496,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   private
   # Return the type of retry this status requires
   def bin_for_status(status)
-    if SUCCESS_OCDES.include?(status)
+    if SUCCESS_CODES.include?(status)
       :success
     elsif RETRYABLE_CODES.include?(status)
       :retryable
@@ -511,14 +514,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     # Hashify the event for ES API
     es_actions = actions.map { |a, doc, event| [a, doc, event.to_hash] }
 
-    submit_bulk_request(actions)
-    @submit_mutex.lock
-    begin
-      bulk_response = @current_client.bulk(es_actions)
-    ensure
-      @submit_mutex.unlock
-    end
-    bulk_response
+    @submit_mutex.synchronize {
+      @current_client.bulk(es_actions)
+    }
   end
 
   private
@@ -546,7 +544,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       each.
       with_index.
       map {|status,i| ActionResponse.new(actions[i], status, bin_for_status(status)) }.
-      group_by {|ActionResponse| ActionResponse.bin }
+      group_by {|action_response| action_response.bin }
   end
 
   # When there are exceptions raised upon submission, we raise an exception so that
