@@ -36,4 +36,5 @@ Gem::Specification.new do |s|
   end
 
   s.add_development_dependency 'logstash-devutils'
+  s.add_development_dependency 'longshoreman'
 end
