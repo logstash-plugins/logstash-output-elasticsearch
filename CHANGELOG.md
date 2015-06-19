@@ -1,3 +1,6 @@
+## 0.2.9
+ - Add 'path' parameter for ES HTTP hosts behind a proxy on a subpath
+
 ## 0.2.8 (June 12, 2015)
  - Add option to enable and disable SSL certificate verification during handshake (#160)
  - Doc improvements for clarifying round robin behavior using hosts config
