@@ -62,6 +62,8 @@ require 'logstash-output-elasticsearch_jars.rb'
 #   the max interval time is reached, which is set in :retry_max_interval.
 # - Events which are not retryable or have reached their max retry count are logged to stderr.
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
+  attr_reader :client
+
   include Stud::Buffer
   RETRYABLE_CODES = [429, 503]
   SUCCESS_CODES = [200, 201]
@@ -263,6 +265,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :user, :validate => :string
   config :password, :validate => :password
 
+  # HTTP Path at which the Elasticsearch server lives. Use this if you must run ES behind a proxy that remaps
+  # the root path for the Elasticsearch HTTP API lives. This option is ignored for non-HTTP transports.
+  config :path, :validate => :string, :default => "/"
+
   # SSL Configurations (only valid when protocol is HTTP)
   #
   # Enable SSL
@@ -314,8 +320,13 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       @protocol = LogStash::Environment.jruby? ? "node" : "http"
     end
 
-    if @protocol == "http" && @action == "create_unless_exists"
-      raise(LogStash::ConfigurationError, "action => 'create_unless_exists' is not supported under the HTTP protocol");
+    if @protocol == "http"
+      if @action == "create_unless_exists"
+        raise(LogStash::ConfigurationError, "action => 'create_unless_exists' is not supported under the HTTP protocol");
+      end
+
+      client_settings[:path] = "/#{@path}/".gsub(/\/+/, "/") # Normalize slashes
+      @logger.debug? && @logger.debug("Normalizing http path", :path => @path, :normalized => client_settings[:path])
     end
 
     if ["node", "transport"].include?(@protocol)
@@ -552,6 +563,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     buffer_flush(:final => true)
     retry_flush
   end
+
   protected
   def start_local_elasticsearch
     @logger.info("Starting embedded Elasticsearch local node.")

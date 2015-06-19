@@ -61,7 +61,7 @@ module LogStash::Outputs::Elasticsearch
       end
 
       def build_client(options)
-        uri = "#{options[:protocol]}://#{options[:host]}:#{options[:port]}"
+        uri = "#{options[:protocol]}://#{options[:host]}:#{options[:port]}#{options[:client_settings][:path]}"
 
         client_options = {
           :host => [uri],
