@@ -5,7 +5,7 @@ describe "elasticsearch node client", :integration => true do
   # Test ElasticSearch Node Client
   # Reference: http://www.elasticsearch.org/guide/reference/modules/discovery/zen/
   
-  subject { LogStash::Outputs::Elasticsearch::Protocols::NodeClient.new(:host => get_host()) }
+  subject { LogStash::Outputs::Elasticsearch::Protocols::NodeClient }
 
   it "should support hosts in both string and array" do
     # Because we defined *hosts* method in NodeClient as private,

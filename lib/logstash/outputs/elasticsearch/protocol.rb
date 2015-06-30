@@ -148,7 +148,7 @@ module LogStash::Outputs::Elasticsearch
         @settings = org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder
         if options[:host]
           @settings.put("discovery.zen.ping.multicast.enabled", false)
-          @settings.put("discovery.zen.ping.unicast.hosts", hosts(options))
+          @settings.put("discovery.zen.ping.unicast.hosts", NodeClient.hosts(options))
         end
 
         @settings.put("node.client", true)
@@ -163,7 +163,7 @@ module LogStash::Outputs::Elasticsearch
         return @settings
       end
 
-      def hosts(options)
+      def self.hosts(options)
         # http://www.elasticsearch.org/guide/reference/modules/discovery/zen/
         result = Array.new
         if options[:host].class == Array
@@ -198,7 +198,7 @@ module LogStash::Outputs::Elasticsearch
           end
         end
         result.flatten.join(",")
-      end # def hosts
+      end # def self.hosts
 
       def build_client(options)
         nodebuilder = org.elasticsearch.node.NodeBuilder.nodeBuilder
