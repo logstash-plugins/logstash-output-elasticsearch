@@ -491,7 +491,28 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     document_id = @document_id ? event.sprintf(@document_id) : nil
     routing = @routing ? event.sprintf(@routing) : nil
-    buffer_receive([event.sprintf(@action), { :_id => document_id, :_index => index, :_type => type, :_routing => routing }, event])
+
+    data = { :_id => document_id, :_index => index, :_type => type, :_routing => routing }
+    action = @action ? event.sprintf(@action) : nil
+
+    if action == 'update'
+      if event['script']
+        data[:_script] = event.sprintf('%{script}')
+        event.remove('script')
+        if event['scriptParams']
+          data[:_scriptParams] = event['scriptParams'] 
+          event.remove('scriptParams')
+        end
+      end
+      if event['retry_on_conflict']
+        data[:_retry_on_conflict] = event.sprintf('%{retry_on_conflict}')
+        event.remove('retry_on_conflict')
+      end
+    end
+
+    buffer_receive([event.sprintf(@action), data , event])
+    
+    # buffer_receive([event.sprintf(@action), { :_id => document_id, :_index => index, :_type => type, :_routing => routing }, event])
   end # def receive
 
   public
