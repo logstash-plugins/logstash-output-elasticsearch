@@ -1,3 +1,9 @@
+## 1.0.2
+ - Upgrade Manticore HTTP Client
+
+## 1.0.1
+ - Allow client certificates
+
 ## 0.2.9
  - Add 'path' parameter for ES HTTP hosts behind a proxy on a subpath
 
