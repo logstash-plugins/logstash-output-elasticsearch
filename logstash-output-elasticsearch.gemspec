@@ -32,7 +32,7 @@ Gem::Specification.new do |s|
 
   if RUBY_PLATFORM == 'java'
     s.platform = RUBY_PLATFORM
-    s.add_runtime_dependency "manticore", '~> 0.3'
+    s.add_runtime_dependency "manticore", '~> 0.4.2'
   end
 
   s.add_development_dependency 'logstash-devutils'
