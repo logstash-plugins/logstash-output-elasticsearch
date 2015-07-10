@@ -1,4 +1,5 @@
 require_relative "../../../spec/es_spec_helper"
+require 'stud/temporary'
 
 describe "SSL option" do
   ["node", "transport"].each do |protocol|
@@ -46,6 +47,36 @@ describe "SSL option" do
         expect(subject.logger).to receive(:warn)
         subject.register
       end
+    end
+
+    context "when using ssl with client certificates" do
+
+      let(:keystore_path) { Stud::Temporary.file.path }
+
+      after :each do
+        File.delete(keystore_path)
+      end
+
+      subject do
+        require "logstash/outputs/elasticsearch"
+        settings = {
+          "protocol" => protocol,
+          "host" => "node01",
+          "ssl" => true,
+          "keystore" => keystore_path,
+          "keystore_password" => "test"
+        }
+        next LogStash::Outputs::ElasticSearch.new(settings)
+      end
+
+
+      it "should pass the keystore parameters to the ES client" do
+        expect(::Elasticsearch::Client).to receive(:new) do |args|
+          expect(args[:ssl]).to include(:keystore => keystore_path, :keystore_password => "test")
+        end
+        subject.register
+      end
+
     end
   end
 end

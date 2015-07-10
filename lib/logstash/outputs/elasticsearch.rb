@@ -289,6 +289,13 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Set the truststore password
   config :truststore_password, :validate => :password
 
+  # The keystore used to present a certificate to the server
+  # It can be either .jks or .p12
+  config :keystore, :validate => :path
+
+  # Set the truststore password
+  config :keystore_password, :validate => :password
+
   # Enable cluster sniffing (transport only)
   # Asks host for the list of all cluster nodes and adds them to the hosts list
   config :sniffing, :validate => :boolean, :default => false
@@ -603,6 +610,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       ssl_options[:truststore_password] = @truststore_password.value if @truststore_password
     end
     ssl_options[:truststore] = @truststore if @truststore
+    if @keystore
+      ssl_options[:keystore] = @keystore
+      ssl_options[:keystore_password] = @keystore_password.value if @keystore_password
+    end
     if @ssl_certificate_verification == false
       @logger.warn [
         "** WARNING ** Detected UNSAFE options in elasticsearch output configuration!",
