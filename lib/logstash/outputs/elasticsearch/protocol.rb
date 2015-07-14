@@ -68,7 +68,8 @@ module LogStash::Outputs::Elasticsearch
           :ssl => options[:client_settings][:ssl],
           :transport_options => {  # manticore settings so we
             :socket_timeout => 0,  # do not timeout socket reads
-            :request_timeout => 0  # and requests
+            :request_timeout => 0,  # and requests
+            :proxy => options[:client_settings][:proxy]
           },
           :transport_class => ::Elasticsearch::Transport::Transport::HTTP::Manticore
         }

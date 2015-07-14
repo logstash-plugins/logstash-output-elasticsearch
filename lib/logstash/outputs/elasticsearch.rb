@@ -309,6 +309,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Set max interval between bulk retries
   config :retry_max_interval, :validate => :number, :default => 5
 
+  # Set the address of a forward HTTP proxy. Must be used with the 'http' protocol
+  # Can be either a string, such as 'http://localhost:123' or a hash in the form
+  # {host: 'proxy.org' port: 80 scheme: 'http'}
+  # Note, this is NOT a SOCKS proxy, but a plain HTTP proxy
+  config :proxy
+
   public
   def register
     @submit_mutex = Mutex.new
@@ -372,6 +378,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     end
 
     client_settings.merge! setup_ssl()
+    client_settings.merge! setup_proxy()
 
     common_options = {
       :protocol => @protocol,
@@ -591,6 +598,26 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @client_idx = (@client_idx+1) % @client.length
     @current_client = @client[@client_idx]
     @logger.debug? and @logger.debug("Switched current elasticsearch client to ##{@client_idx} at #{@host[@client_idx]}")
+  end
+
+  private
+  def setup_proxy
+    return {} unless @proxy
+
+    if @protocol != "http"
+      raise(LogStash::ConfigurationError, "Proxy is not supported for '#{@protocol}'. Change the protocol to 'http' if you need HTTP proxy.")
+    end
+
+    # Symbolize keys
+    proxy = if @proxy.is_a?(Hash)
+              Hash[@proxy.map {|k,v| [k.to_sym, v]}]
+            elsif @proxy.is_a?(String)
+              @proxy
+            else
+              raise LogStash::ConfigurationError, "Expected 'proxy' to be a string or hash, not '#{@proxy}''!"
+            end
+
+    return {:proxy => proxy}
   end
 
   private
