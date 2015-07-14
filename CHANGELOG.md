@@ -1,3 +1,6 @@
+## 1.0.3
+ - Add HTTP proxy support 
+
 ## 1.0.2
  - Upgrade Manticore HTTP Client
 
