@@ -1,3 +1,6 @@
+## 1.0.4
+ - Update to Elasticsearch 1.7
+
 ## 1.0.3
  - Add HTTP proxy support 
 
