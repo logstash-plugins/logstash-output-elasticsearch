@@ -85,7 +85,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # The document type to write events to. Generally you should try to write only
   # similar events to the same 'type'. String expansion `%{foo}` works here.
-  # When no value is provided, the event 'type' in corresponding Logstash input will be used.
+  # if a 'type' has been set for the related 'input' definition then its value will be used to 'document_type',
+  # otherwise 'document_type' will be assigned the default value of 'logs'
   config :document_type, :validate => :string
 
   # Starting in Logstash 1.3 (unless you set option `manage_template` to false)
