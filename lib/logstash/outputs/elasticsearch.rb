@@ -14,7 +14,7 @@ require 'logstash-output-elasticsearch_jars.rb'
 # output for Logstash. If you plan on using the Kibana web interface, you'll
 # need to use this output.
 #
-#   *VERSION NOTE*: Your Elasticsearch cluster must be running Elasticsearch 1.0.0 or later.
+# *VERSION NOTE*: Your Elasticsearch cluster must be running Elasticsearch 1.0.0 or later.
 #
 # If you want to set other Elasticsearch options that are not exposed directly
 # as configuration options, there are two methods:
@@ -26,15 +26,15 @@ require 'logstash-output-elasticsearch_jars.rb'
 # Elasticsearch cluster as a client node, so it will show up in Elasticsearch's
 # cluster status.
 #
-# You can learn more about Elasticsearch at <http://www.elasticsearch.org>
+# You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
 #
-# ## Operational Notes
+# ==== Operational Notes
 #
 # If using the default `protocol` setting ("node"), your firewalls might need
 # to permit port 9300 in *both* directions (from Logstash to Elasticsearch, and
 # Elasticsearch to Logstash)
 #
-# ## Retry Policy
+# ==== Retry Policy
 #
 # By default all bulk requests to ES are synchronous. Not all events in the bulk requests
 # always make it successfully. For example, there could be events which are not formatted
@@ -44,7 +44,7 @@ require 'logstash-output-elasticsearch_jars.rb'
 # policy described below. Events of this nature are ones which experience ES error codes described as 
 # retryable errors.
 #
-# Retryable Errors:
+# *Retryable Errors:*
 #
 # - 429, Too Many Requests (RFC6585)
 # - 503, The server is currently unable to handle the request due to a temporary overloading or maintenance of the server.
