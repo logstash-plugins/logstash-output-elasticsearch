@@ -48,7 +48,6 @@ describe "(http protocol) index events with static routing", :integration => tru
         elasticsearch {
           host => "#{get_host()}"
           port => "#{get_port('http')}"
-          protocol => "http"
           index => "#{index}"
           flush_size => #{flush_size}
           routing => "#{routing}"
@@ -75,7 +74,6 @@ describe "(http_protocol) index events with fieldref in routing value", :integra
         elasticsearch {
           host => "#{get_host()}"
           port => "#{get_port('http')}"
-          protocol => "http"
           index => "#{index}"
           flush_size => #{flush_size}
           routing => "%{message}"
@@ -102,7 +100,6 @@ describe "(transport protocol) index events with fieldref in routing value", :in
         elasticsearch {
           host => "#{get_host()}"
           port => "#{get_port('transport')}"
-          protocol => "transport"
           index => "#{index}"
           flush_size => #{flush_size}
           routing => "%{message}"

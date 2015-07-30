@@ -9,7 +9,6 @@ describe "transport client create actions", :integration => true do
       "manage_template" => true,
       "index" => "logstash-create",
       "template_overwrite" => true,
-      "protocol" => "transport",
       "host" => get_host(),
       "port" => get_port('transport'),
       "action" => action

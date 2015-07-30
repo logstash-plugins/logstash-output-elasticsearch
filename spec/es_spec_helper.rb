@@ -15,19 +15,14 @@ module ESHelper
     Longshoreman.new.get_host_ip
   end
 
-  def get_port(protocol)
+  def get_port
     container = Longshoreman::Container.new
     container.get(CONTAINER_NAME)
-    case protocol
-    when "http"
-      container.rport(9200)
-    when "transport", "node"
-      container.rport(9300)
-    end
+    container.rport(9200)
   end
 
   def get_client
-    Elasticsearch::Client.new(:host => "#{get_host}:#{get_port('http')}")
+    Elasticsearch::Client.new(:host => "#{get_host}:#{get_port}")
   end
 end
 
@@ -36,6 +31,7 @@ RSpec.configure do |config|
 
   # this :all hook gets run before every describe block that is tagged with :integration => true.
   config.before(:all, :integration => true) do
+    require 'pry'; binding.pry
     # check if container exists already before creating new one.
     begin
       ls = Longshoreman::new

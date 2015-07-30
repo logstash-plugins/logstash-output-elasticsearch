@@ -6,7 +6,6 @@ require "logstash/outputs/elasticsearch"
 describe "Proxy option" do
   let(:settings) {
     {
-      "protocol" => "http",
       "host" => "node01",
       "proxy" => proxy
     }
