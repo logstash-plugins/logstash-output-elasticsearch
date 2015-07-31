@@ -14,25 +14,7 @@ require "logstash/outputs/elasticsearch/protocol"
 # output for Logstash. If you plan on using the Kibana web interface, you'll
 # need to use this output.
 #
-# *VERSION NOTE*: Your Elasticsearch cluster must be running Elasticsearch 1.0.0 or later.
-#
-# If you want to set other Elasticsearch options that are not exposed directly
-# as configuration options, there are two methods:
-#
-# * Create an `elasticsearch.yml` file in the $PWD of the Logstash process
-# * Pass in es.* java properties (`java -Des.node.foo=` or `ruby -J-Des.node.foo=`)
-#
-# With the default `protocol` setting ("node"), this plugin will join your
-# Elasticsearch cluster as a client node, so it will show up in Elasticsearch's
-# cluster status.
-#
 # You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
-#
-# ==== Operational Notes
-#
-# If using the default `protocol` setting ("node"), your firewalls might need
-# to permit port 9300 in *both* directions (from Logstash to Elasticsearch, and
-# Elasticsearch to Logstash)
 #
 # ==== Retry Policy
 #
@@ -125,38 +107,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # This can be dynamic using the `%{foo}` syntax.
   config :routing, :validate => :string
 
-  # The name of your cluster if you set it on the Elasticsearch side. Useful
-  # for discovery when using `node` or `transport` protocols.
-  # By default, it looks for a cluster named 'elasticsearch'.
-  config :cluster, :validate => :string
-
-  # For the `node` protocol, if you do not specify `host`, it will attempt to use
-  # multicast discovery to connect to Elasticsearch.  If http://www.elastic.co/guide/en/elasticsearch/guide/current/_important_configuration_changes.html#_prefer_unicast_over_multicast[multicast is disabled] in Elasticsearch, 
-  # you must include the hostname or IP address of the host(s) to use for Elasticsearch unicast discovery.
-  # Remember the `node` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-transport.html#modules-transport[transport] address (eg. 9300, not 9200).
-  #     `"127.0.0.1"`
-  #     `["127.0.0.1:9300","127.0.0.2:9300"]`
-  # When setting hosts for `node` protocol, it is important to confirm that at least one non-client
-  # node is listed in the `host` list.  Also keep in mind that the `host` parameter when used with 
-  # the `node` protocol is for *discovery purposes only* (not for load balancing).  When multiple hosts 
-  # are specified, it will contact the first host to see if it can use it to discover the cluster.  If not, 
-  # then it will contact the second host in the list and so forth. With the `node` protocol, 
-  # Logstash will join the Elasticsearch cluster as a node client (which has a copy of the cluster
-  # state) and this node client is the one that will automatically handle the load balancing of requests 
-  # across data nodes in the cluster.  
-  # If you are looking for a high availability setup, our recommendation is to use the `transport` protocol (below), 
-  # set up multiple http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[client nodes] and list the client nodes in the `host` parameter.
-  # 
-  # For the `transport` protocol, it will load balance requests across the hosts specified in the `host` parameter.
-  # Remember the `transport` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-transport.html#modules-transport[transport] address (eg. 9300, not 9200).
-  #     `"127.0.0.1"`
-  #     `["127.0.0.1:9300","127.0.0.2:9300"]`
-  # There is also a `sniffing` option (see below) that can be used with the transport protocol to instruct it to use the host to sniff for
-  # "alive" nodes in the cluster and automatically use it as the hosts list (but will skip the dedicated master nodes).  
-  # If you do not use the sniffing option, it is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `host` list
-  # to prevent Logstash from sending bulk requests to the master nodes. So this parameter should only reference either data or client nodes.
-  #
-  # For the `http` protocol, it will load balance requests across the hosts specified in the `host` parameter.
+  # Sets the host of the remote instance. If given an array it will load balance requests across the hosts specified in the `host` parameter.
   # Remember the `http` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http[http] address (eg. 9200, not 9300).
   #     `"127.0.0.1"`
   #     `["127.0.0.1:9200","127.0.0.2:9200"]`
@@ -165,17 +116,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   config :host, :validate => :array
 
-  # The port for Elasticsearch transport to use.
-  #
-  # If you do not set this, the following defaults are used:
-  # * `protocol => http` - port 9200
-  # * `protocol => transport` - port 9300-9305
-  # * `protocol => node` - port 9300-9305
+  # You can set the remote port as part of the host, or explicitly here as well
   config :port, :validate => :string
-
-  # This setting no longer does anything. It exists to keep config validation
-  # from failing. It will be removed in future versions.
-  config :max_inflight_requests, :validate => :number, :default => 50, :deprecated => true
 
   # This plugin uses the bulk index api for improved indexing performance.
   # To make efficient bulk api calls, we will buffer a certain number of
@@ -246,8 +188,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Set the truststore password
   config :keystore_password, :validate => :password
 
-  # Enable cluster sniffing (transport only)
+  # Enable cluster sniffing
   # Asks host for the list of all cluster nodes and adds them to the hosts list
+  # Will return ALL nodes with HTTP enabled (including master nodes!). If you use
+  # this with master nodes, you probably want to disable HTTP on them by setting
+  # `http.enabled` to false in their elasticsearch.yml.
   config :sniffing, :validate => :boolean, :default => false
 
   # Set max retry for each event
@@ -306,7 +251,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       options = { :host => _host, :port => _port || @port }.merge(common_options)
 
       @logger.info "Create client to elasticsearch server on #{_host}:#{_port}"
-      LogStash::Outputs::Elasticsearch::Protocols::HTTPClient.new(options)
+      LogStash::Outputs::Elasticsearch::HTTPClient.new(options)
     end
 
     if @manage_template
