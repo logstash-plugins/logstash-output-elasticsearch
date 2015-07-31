@@ -6,19 +6,16 @@ require "elasticsearch/transport/transport/http/manticore"
 
 module LogStash::Outputs::Elasticsearch
   module Protocols
-    class Base
-      private
+    class HTTPClient
+      DEFAULT_OPTIONS = {
+        :port => 9200
+      }
+
       def initialize(options={})
-        # host(s), port, cluster
         @logger = Cabin::Channel.get
-      end
-
-      def client
-        return @client if @client
+        @options = DEFAULT_OPTIONS.merge(options)
         @client = build_client(@options)
-        return @client
-      end # def client
-
+      end
 
       def template_install(name, template, force=false)
         if template_exists?(name) && !force
@@ -28,36 +25,19 @@ module LogStash::Outputs::Elasticsearch
         template_put(name, template)
       end
 
-      # Do a bulk request with the given actions.
-      #
-      # 'actions' is expected to be an array of bulk requests as string json
-      # values.
-      #
-      # Each 'action' becomes a single line in the bulk api call. For more
-      # details on the format of each.
       def bulk(actions)
-        raise NotImplemented, "You must implement this yourself"
-        # bulk([
-        # '{ "index" : { "_index" : "test", "_type" : "type1", "_id" : "1" } }',
-        # '{ "field1" : "value1" }'
-        #])
+        bulk_response = @client.bulk(:body => actions.collect do |action, args, source|
+                                       if source
+                                         next [ { action => args }, source ]
+                                       else
+                                         next { action => args }
+                                       end
+                                     end.flatten)
+
+        self.class.normalize_bulk_response(bulk_response)
       end
 
-      public(:initialize, :template_install)
-    end
-
-    class HTTPClient < Base
       private
-
-      DEFAULT_OPTIONS = {
-        :port => 9200
-      }
-
-      def initialize(options={})
-        super
-        @options = DEFAULT_OPTIONS.merge(options)
-        @client = client
-      end
 
       def build_client(options)
         uri = "http://#{options[:host]}:#{options[:port]}#{options[:client_settings][:path]}"
@@ -99,18 +79,6 @@ module LogStash::Outputs::Elasticsearch
         end
       end
 
-      def bulk(actions)
-        bulk_response = @client.bulk(:body => actions.collect do |action, args, source|
-          if source
-            next [ { action => args }, source ]
-          else
-            next { action => args }
-          end
-        end.flatten)
-
-        self.class.normalize_bulk_response(bulk_response)
-      end # def bulk
-
       def template_exists?(name)
         @client.indices.get_template(:name => name)
         return true
@@ -121,8 +89,6 @@ module LogStash::Outputs::Elasticsearch
       def template_put(name, template)
         @client.indices.put_template(:name => name, :body => template)
       end # template_put
-
-      public(:bulk)
     end # class HTTPClient
   end # module Protocols
 
