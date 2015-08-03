@@ -8,7 +8,6 @@ require "stud/buffer"
 require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
 require "uri" # for escaping user input
-require "logstash/outputs/elasticsearch/protocol"
 
 # This output lets you store logs in Elasticsearch and is the most recommended
 # output for Logstash. If you plan on using the Kibana web interface, you'll
