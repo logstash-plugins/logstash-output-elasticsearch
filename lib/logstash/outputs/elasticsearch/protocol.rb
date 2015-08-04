@@ -26,13 +26,15 @@ module LogStash::Outputs::Elasticsearch
     end
 
     def bulk(actions)
-      bulk_response = @client.bulk(:body => actions.collect do |action, args, source|
-                                     if source
-                                       next [ { action => args }, source ]
-                                     else
-                                       next { action => args }
-                                     end
-                                   end.flatten)
+      bulk_body = actions.collect do |action, args, source|
+        if source
+          next [ { action => args }, source ]
+        else
+          next { action => args }
+        end
+      end.flatten
+
+      bulk_response = @client.bulk(:body => bulk_body)
 
       self.class.normalize_bulk_response(bulk_response)
     end
