@@ -6,6 +6,7 @@ require "elasticsearch/transport/transport/http/manticore"
 
 module LogStash::Outputs::Elasticsearch
   class HTTPClient
+    attr_reader :client
     DEFAULT_OPTIONS = {
       :port => 9200
     }
