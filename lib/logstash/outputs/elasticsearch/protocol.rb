@@ -6,7 +6,7 @@ require "elasticsearch/transport/transport/http/manticore"
 
 module LogStash::Outputs::Elasticsearch
   class HTTPClient
-    attr_reader :client
+    attr_reader :client, :options, :client_options
     DEFAULT_OPTIONS = {
       :port => 9200
     }
@@ -44,7 +44,7 @@ module LogStash::Outputs::Elasticsearch
     def build_client(options)
       uri = "http://#{options[:host]}:#{options[:port]}#{options[:client_settings][:path]}"
 
-      client_options = {
+      @client_options = {
         :host => [uri],
         :ssl => options[:client_settings][:ssl],
         :transport_options => {  # manticore settings so we
@@ -57,7 +57,7 @@ module LogStash::Outputs::Elasticsearch
 
       if options[:user] && options[:password] then
         token = Base64.strict_encode64(options[:user] + ":" + options[:password])
-        client_options[:headers] = { "Authorization" => "Basic #{token}" }
+        @client_options[:headers] = { "Authorization" => "Basic #{token}" }
       end
 
       Elasticsearch::Client.new client_options
