@@ -234,6 +234,24 @@ module LogStash::Outputs::Elasticsearch
             request.id(args[:_id]) if args[:_id]
             request.routing(args[:_routing]) if args[:_routing]
             request.source(source)
+          when "update"
+            unless args[:_id].nil?
+              request = org.elasticsearch.action.update.UpdateRequest.new(args[:_index], args[:_type], args[:_id])
+              request.id(args[:_id])
+              request.routing(args[:_routing]) if args[:_routing]
+              request.retryOnConflict(Integer(args[:_retry_on_conflict])) if args[:_retry_on_conflict]
+              if args[:_script]
+                request.script(args[:_script])
+                if args[:_scriptParams]
+                  request.addScriptParam(args[:_scriptParams]['label'], args[:_scriptParams]['params'])
+                end
+              else
+                request.doc(source)
+                request.docAsUpsert(true)
+              end
+            else
+              raise(LogStash::ConfigurationError, "Specifying action => 'udpate' without a document '_id' is not supported.")
+            end
           when "delete"
             request = org.elasticsearch.action.delete.DeleteRequest.new(args[:_index])
             request.id(args[:_id])
@@ -256,7 +274,6 @@ module LogStash::Outputs::Elasticsearch
             end
           else
             raise(LogStash::ConfigurationError, "action => '#{action_name}' is not currently supported.")
-          #when "update"
         end # case action
 
         request.type(args[:_type]) if args[:_type]
