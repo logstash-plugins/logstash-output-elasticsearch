@@ -1,3 +1,6 @@
+## 1.0.7
+ - Add update API support
+
 ## 1.0.6
  - Fix warning about Concurrent lib deprecation
 
