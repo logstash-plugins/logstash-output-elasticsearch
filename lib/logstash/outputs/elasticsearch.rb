@@ -532,30 +532,67 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end # def receive
 
   public
+  def submit(actions)
+    require 'pry'
+    binding.pry
+    raise "whut"
+    resp = submit_bulk_request(actions)
+    handle_bulk_errors(resp)
+    resp
+  end
+
+  private
+  # Return the type of retry this status requires
+  def bin_for_status(status)
+    if SUCCESS_CODES.include?(status)
+      :success
+    elsif RETRYABLE_CODES.include?(status)
+      :retryable
+    else
+      :fatal
+    end
+  end
+
+  private
+  # Threadsafe (via mutex) way to issue a bulk request of actions
   # synchronize the @current_client.bulk call to avoid concurrency/thread safety issues with the
   # # client libraries which might not be thread safe. the submit method can be called from both the
   # # Stud::Buffer flush thread and from our own retry thread.
-  def submit(actions)
+  def submit_bulk_request(actions)
+    # Hashify the event for ES API
     es_actions = actions.map { |a, doc, event| [a, doc, event.to_hash] }
-    @submit_mutex.lock
-    begin
-      bulk_response = @current_client.bulk(es_actions)
-    ensure
-      @submit_mutex.unlock
-    end
-    if bulk_response["errors"]
-      actions_with_responses = actions.zip(bulk_response['statuses'])
-      actions_to_retry = []
-      actions_with_responses.each do |action, resp_code|
-        if RETRYABLE_CODES.include?(resp_code)
-          @logger.warn "retrying failed action with response code: #{resp_code}"
-          actions_to_retry << action
-        elsif not SUCCESS_CODES.include?(resp_code)
-          @logger.warn "failed action with response of #{resp_code}, dropping action: #{action}"
-        end
-      end
-      retry_push(actions_to_retry) unless actions_to_retry.empty?
-    end
+
+    @submit_mutex.synchronize {
+      @current_client.bulk(es_actions)
+    }
+  end
+
+  private
+  def handle_bulk_errors(bulk_response)
+    return unless errors
+
+    retryable, fatal = group_statuses(actions,bulk_response['statuses']).values_at(:retryable,:fatal)
+
+    retryable.each {|action_response|
+      @logger.warn("retrying failed action with response code #{action_response.status}")
+    }
+    retry_push(retryable.map(&:action))
+
+    fatal.each {|action_response|
+      @logger.warn("failed action with response of #{action_response.status}, dropping action: #{action_response.action}")
+    }
+  end
+
+  # Convenient representation of an action coupled with its response and the bin it belongs in
+  ActionResponse = Struct.new(:action, :status, :bin)
+
+  # Return ActionResponse instances for a bulk request grouped in a hash by #bin_for_status
+  def group_statuses(actions, statuses)
+    statuses.
+      each.
+      with_index.
+      map {|status,i| ActionResponse.new(actions[i], status, bin_for_status(status)) }.
+      group_by {|action_response| action_response.bin }
   end
 
   # When there are exceptions raised upon submission, we raise an exception so that
