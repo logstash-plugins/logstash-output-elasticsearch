@@ -115,7 +115,7 @@ module LogStash::Outputs::Elasticsearch
             end
           end
           args.delete(:_upsert)
-          if source
+          if source and action != 'delete'
             next [ { action => args }, source ]
           else
             next { action => args }
@@ -246,15 +246,21 @@ module LogStash::Outputs::Elasticsearch
             request = org.elasticsearch.action.index.IndexRequest.new(args[:_index])
             request.id(args[:_id]) if args[:_id]
             request.routing(args[:_routing]) if args[:_routing]
+            request.version(args[:_version].to_i) if args[:_version]
+            request.versionType(org.elasticsearch.index.VersionType.fromString(args[:_version_type])) if args[:_version_type]
             request.source(source)
           when "delete"
             request = org.elasticsearch.action.delete.DeleteRequest.new(args[:_index])
             request.id(args[:_id])
             request.routing(args[:_routing]) if args[:_routing]
+            request.version(args[:_version].to_i) if args[:_version]
+            request.versionType(org.elasticsearch.index.VersionType.fromString(args[:_version_type])) if args[:_version_type]
           when "create"
             request = org.elasticsearch.action.index.IndexRequest.new(args[:_index])
             request.id(args[:_id]) if args[:_id]
             request.routing(args[:_routing]) if args[:_routing]
+            request.version(args[:_version].to_i) if args[:_version]
+            request.versionType(org.elasticsearch.index.VersionType.fromString(args[:_version_type])) if args[:_version_type]
             request.source(source)
             request.opType("create")
           when "create_unless_exists"
@@ -262,6 +268,8 @@ module LogStash::Outputs::Elasticsearch
               request = org.elasticsearch.action.index.IndexRequest.new(args[:_index])
               request.id(args[:_id])
               request.routing(args[:_routing]) if args[:_routing]
+              request.version(args[:_version].to_i) if args[:_version]
+              request.versionType(org.elasticsearch.index.VersionType.fromString(args[:_version_type])) if args[:_version_type]
               request.source(source)
               request.opType("create")
             else
@@ -271,6 +279,8 @@ module LogStash::Outputs::Elasticsearch
             unless args[:_id].nil?
               request = org.elasticsearch.action.update.UpdateRequest.new(args[:_index], args[:_type], args[:_id])
               request.routing(args[:_routing]) if args[:_routing]
+              request.version(args[:_version].to_i) if args[:_version]
+              request.versionType(org.elasticsearch.index.VersionType.fromString(args[:_version_type])) if args[:_version_type]
               request.doc(source)
               if @options[:doc_as_upsert]
                 request.docAsUpsert(true)

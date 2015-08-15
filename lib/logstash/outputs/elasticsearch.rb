@@ -326,6 +326,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # create a new document with this parameter as json string if document_id doesn't exists
   config :upsert, :validate => :string, :default => ""
 
+  # The version for the event, useful when using an external version scheme
+  config :version, :validate => :string
+
+  # The version type for the event, see the versioning section in the https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html[Index API Documention]
+  config :version_type, :validate => :string
+
   public
   def register
     @submit_mutex = Mutex.new
@@ -523,7 +529,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       :_id => @document_id ? event.sprintf(@document_id) : nil,
       :_index => event.sprintf(@index),
       :_type => type,
-      :_routing => @routing ? event.sprintf(@routing) : nil
+      :_routing => @routing ? event.sprintf(@routing) : nil,
+      :_version => @version ? event.sprintf(@version) : nil,
+      :_version_type => @version_type ? event.sprintf(@version_type) : nil
     }
     
     params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @action == 'update' && @upsert != ""
