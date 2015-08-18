@@ -36,7 +36,7 @@ describe "all protocols update actions", :integration => true do
     @es.indices.refresh
   end
 
-  ["node", "transport", "http"].each do |protocol|
+  ["transport", "http"].each do |protocol|
     context "update only with #{protocol} protocol" do
       it "should failed without a document_id" do
         event = LogStash::Event.new("somevalue" => 100, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0})

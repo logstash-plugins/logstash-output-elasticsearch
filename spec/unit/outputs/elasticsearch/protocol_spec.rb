@@ -19,7 +19,7 @@ describe LogStash::Outputs::Elasticsearch::Protocols::NodeClient do
 
   context "contains failures" do
     it "should map correctly" do
-      failure = org.elasticsearch.action.bulk.BulkItemResponse::Failure.new("my_index", "my_type", "my_id", "error message", org.elasticsearch.rest.RestStatus::BAD_REQUEST)
+      failure = org.elasticsearch.action.bulk.BulkItemResponse::Failure.new("my_index", "my_type", "my_id", java.lang.IllegalArgumentException.new("bad_request"))
       bulk_item_response_index = org.elasticsearch.action.bulk.BulkItemResponse.new(32, "index", failure)
       bulk_item_response_update = org.elasticsearch.action.bulk.BulkItemResponse.new(32, "update", failure)
       bulk_item_response_delete = org.elasticsearch.action.bulk.BulkItemResponse.new(32, "delete", failure)
