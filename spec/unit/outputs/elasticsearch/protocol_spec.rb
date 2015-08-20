@@ -1,5 +1,5 @@
 require "logstash/devutils/rspec/spec_helper"
-require "logstash/outputs/elasticsearch/protocol"
+require "logstash/outputs/elasticsearch/http_client"
 require "java"
 
 describe LogStash::Outputs::Elasticsearch::HTTPClient do

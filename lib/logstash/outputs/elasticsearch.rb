@@ -8,6 +8,8 @@ require "stud/buffer"
 require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
 require "uri" # for escaping user input
+require "logstash/outputs/elasticsearch/http_client"
+
 
 # This output lets you store logs in Elasticsearch and is the most recommended
 # output for Logstash. If you plan on using the Kibana web interface, you'll
@@ -249,8 +251,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       (_host,_port) = host.split ":"
       options = { :host => _host, :port => _port || @port }.merge(common_options)
 
-      @logger.info "Create client to elasticsearch server on #{_host}:#{_port}"
-      LogStash::Outputs::Elasticsearch::HTTPClient.new(options)
+      @logger.info "Create client for elasticsearch server on #{_host}:#{_port}"
+      LogStash::Outputs::Elasticsearch::HttpClient.new(options)
     end
 
     if @manage_template
@@ -368,9 +370,31 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def flush(actions, teardown = false)
     begin
       submit(actions)
+    rescue Manticore::SocketException => e
+      # If we can't even connect to the server let's just print out the URL (:host is actually a URL)
+      # and let the user sort it out from there
+      @logger.error(
+        "Attempted to send a bulk request to Elasticsearch configured at '#{@current_client.client_options[:host]}',"+
+          " but Elasticsearch appears to be unreachable or down!",
+        :client_config => @current_client.client_options,
+        :error_message => e.message,
+        :error_class => e.class.name,
+        :backtrace => e.backtrace
+      )
+      @logger.debug("Failed actions for last bad bulk request!", actions: actions)
     rescue => e
-      @logger.error "Got error to send bulk of actions: #{e.message}"
-      raise e
+      # For all other errors print out full connection issues
+      @logger.error(
+        "Attempted to send a bulk request to Elasticsearch configured at '#{@current_client.client_options[:host]}'," +
+            " but an error occurred and it failed! Are you sure you can reach elasticsearch from this machine using " +
+          "the configuration provided?",
+        :client_config => @current_client.client_options,
+        :error_message => e.message,
+        :error_class => e.class.name,
+        :backtrace => e.backtrace
+      )
+
+      @logger.debug("Failed actions for last bad bulk request!", actions: actions)
     ensure
       @logger.debug? and @logger.debug "Shifting current elasticsearch client"
       shift_client
