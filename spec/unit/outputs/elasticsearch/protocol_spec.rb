@@ -2,13 +2,13 @@ require "logstash/devutils/rspec/spec_helper"
 require "logstash/outputs/elasticsearch/http_client"
 require "java"
 
-describe LogStash::Outputs::Elasticsearch::HTTPClient do
+describe LogStash::Outputs::Elasticsearch::HttpClient do
   context "successful" do
     it "should map correctly" do
       bulk_response = {"took"=>74, "errors"=>false, "items"=>[{"create"=>{"_index"=>"logstash-2014.11.17",
                                                                           "_type"=>"logs", "_id"=>"AUxTS2C55Jrgi-hC6rQF",
                                                                           "_version"=>1, "status"=>201}}]} 
-      actual = LogStash::Outputs::Elasticsearch::HTTPClient.normalize_bulk_response(bulk_response)
+      actual = LogStash::Outputs::Elasticsearch::HttpClient.normalize_bulk_response(bulk_response)
       insist { actual } == {"errors"=> false}
     end
   end
@@ -19,7 +19,7 @@ describe LogStash::Outputs::Elasticsearch::HTTPClient do
                        "items"=>[{"create"=>{"_index"=>"logstash-2014.11.17",
                                              "_type"=>"logs", "_id"=>"AUxTQ_OI5Jrgi-hC6rQB", "status"=>400,
                                              "error"=>"MapperParsingException[failed to parse]..."}}]}
-      actual = LogStash::Outputs::Elasticsearch::HTTPClient.normalize_bulk_response(bulk_response)
+      actual = LogStash::Outputs::Elasticsearch::HttpClient.normalize_bulk_response(bulk_response)
       insist { actual } == {"errors"=> true, "statuses"=> [400]}
     end
   end

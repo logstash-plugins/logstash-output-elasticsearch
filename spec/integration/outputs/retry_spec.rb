@@ -11,7 +11,7 @@ describe "failures in bulk class expected behavior", :integration => true do
   let(:max_retries) { 3 }
 
   def mock_actions_with_response(*resp)
-    LogStash::Outputs::Elasticsearch::HTTPClient
+    LogStash::Outputs::Elasticsearch::HttpClient
       .any_instance.stub(:bulk).and_return(*resp)
   end
 
