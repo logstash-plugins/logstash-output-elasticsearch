@@ -403,7 +403,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         :error_class => e.class.name,
         :backtrace => e.backtrace
       )
-      @logger.debug("Failed actions for last bad bulk request!", actions: actions)
+      @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
     rescue => e
       # For all other errors print out full connection issues
       @logger.error(
@@ -416,7 +416,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         :backtrace => e.backtrace
       )
 
-      @logger.debug("Failed actions for last bad bulk request!", actions: actions)
+      @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
     ensure
       @logger.debug? and @logger.debug "Shifting current elasticsearch client"
       shift_client
