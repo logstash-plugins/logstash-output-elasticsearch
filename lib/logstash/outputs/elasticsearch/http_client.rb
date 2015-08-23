@@ -43,18 +43,29 @@ module LogStash; module Outputs; class ElasticSearch;
       bulk_body = actions.collect do |action, args, source|
         if action == 'update'
           if args[:_id]
-            source = { 'doc' => source }
-            if @options[:doc_as_upsert]
-              source['doc_as_upsert'] = true
+            if args[:_script]
+              # Use the event as a hash from your script with variable name defined by script_var_name (default: "event")
+              # Ex: event["@timestamp"]
+              source = { 'params' => { @options[:script_var_name] => source } }
+              if @options[:scripted_upsert]
+                source['scripted_upsert'] = true
+                source['upsert'] = '{}'
+              else
+                source['upsert'] = args.delete(:_upsert) if args[:_upsert]
+              end
+              source['script'] = args.delete(:_script)
             else
-              source['upsert'] = args[:_upsert] if args[:_upsert]
+              source = { 'doc' => source }
+              if @options[:doc_as_upsert]
+                source['doc_as_upsert'] = true
+              else
+                source['upsert'] = args.delete(:_upsert) if args[:_upsert]
+              end
             end
           else
             raise(LogStash::ConfigurationError, "Specifying action => 'update' without a document '_id' is not supported.")
           end
         end
-
-        args.delete(:_upsert)
 
         if source && action != 'delete'
           next [ { action => args }, source ]

@@ -132,7 +132,10 @@ module LogStash; module Outputs; class ElasticSearch;
       }
 
       params[:parent] = event.sprintf(@parent) if @parent
-      params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @action == 'update' && @upsert != ""
+      if @action == 'update'
+        params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
+        params[:_script] = event.sprintf(@script) if @script != ""
+      end
       params
     end
 
