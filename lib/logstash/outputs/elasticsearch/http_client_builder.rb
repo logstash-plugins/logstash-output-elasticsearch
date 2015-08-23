@@ -20,7 +20,9 @@ module LogStash; module Outputs; class ElasticSearch;
       # Update API setup
       update_options = {
         :upsert => params["upsert"],
-        :doc_as_upsert => params["doc_as_upsert"]
+        :doc_as_upsert => params["doc_as_upsert"],
+        :script_var_name => params["script_var_name"],
+        :scripted_upsert => params["scripted_upsert"]
       }
       common_options.merge! update_options if params["action"] == 'update'
 

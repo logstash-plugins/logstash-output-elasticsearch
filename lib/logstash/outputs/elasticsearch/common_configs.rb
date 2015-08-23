@@ -105,6 +105,15 @@ module LogStash; module Outputs; class ElasticSearch
       # DEPRECATED This setting no longer does anything. It will be marked obsolete in a future version.
       mod.config :max_retries, :validate => :number, :default => 3
 
+      # Set script name for scripted update mode
+      mod.config :script, :validate => :string, :default => ""
+
+      # Set variable name passed to script (scripted update)
+      mod.config :script_var_name, :validate => :string, :default => "event"
+
+      # if enabled, script is in charge of creating non-existent document (scripted update)
+      mod.config :scripted_upsert, :validate => :boolean, :default => false
+
       # Set max interval between bulk retries.
       mod.config :retry_max_interval, :validate => :number, :default => 2
 

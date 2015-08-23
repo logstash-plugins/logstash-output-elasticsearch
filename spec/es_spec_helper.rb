@@ -45,7 +45,13 @@ RSpec.configure do |config|
         ls = Longshoreman::new
         ls.container.get(CONTAINER_NAME)
       rescue Docker::Error::NotFoundError
-        Longshoreman.new("#{CONTAINER_IMAGE}:#{CONTAINER_TAG}", CONTAINER_NAME)
+        scriptDir = File.expand_path File.dirname(__FILE__) + '/fixtures/scripts'
+        Longshoreman.new("#{CONTAINER_IMAGE}:#{CONTAINER_TAG}", CONTAINER_NAME, {
+          'HostConfig' => {
+            'Binds' => ["#{scriptDir}:/usr/share/elasticsearch/config/scripts"],
+            'PublishAllPorts' => true
+          }
+        })
         # TODO(talevy): verify ES is running instead of static timeout
         sleep 10
       end
