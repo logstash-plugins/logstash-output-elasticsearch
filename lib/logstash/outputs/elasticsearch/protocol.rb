@@ -159,7 +159,8 @@ module LogStash::Outputs::Elasticsearch
       end
 
       def setup(options={})
-        @settings = org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder
+        @settings = org.elasticsearch.common.settings.Settings.builder
+        @settings.put("path.home", "/tmp")
         if options[:host]
           @settings.put("discovery.zen.ping.multicast.enabled", false)
           @settings.put("discovery.zen.ping.unicast.hosts", NodeClient.hosts(options))
@@ -289,13 +290,13 @@ module LogStash::Outputs::Elasticsearch
       end # def build_request
 
       def template_exists?(name)
-        request = org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesRequestBuilder.new(@client.admin.indices, name)
+        request = @client.admin.indices.prepareGetTemplates(name)
         response = request.get
         return !response.getIndexTemplates.isEmpty
       end # def template_exists?
 
       def template_put(name, template)
-        request = org.elasticsearch.action.admin.indices.template.put.PutIndexTemplateRequestBuilder.new(@client.admin.indices, name)
+        request = @client.admin.indices.preparePutTemplate(name)
         request.setSource(LogStash::Json.dump(template))
 
         # execute the request and get the response, if it fails, we'll get an exception.
@@ -308,7 +309,9 @@ module LogStash::Outputs::Elasticsearch
     class TransportClient < NodeClient
       private
       def build_client(options)
-        client = org.elasticsearch.client.transport.TransportClient.new(settings.build)
+        client_builder = org.elasticsearch.client.transport.TransportClient.builder
+        client_builder.settings(settings)
+        client = client_builder.build
 
         if options[:host]
           client.addTransportAddress(
