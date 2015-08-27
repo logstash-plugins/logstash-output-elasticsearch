@@ -155,10 +155,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # - create: indexes a document, fails if a document by that id already exists in the index.
   # - update: updates a document by id
   # following action is not supported by HTTP protocol
-  # - create_unless_exists: creates a document, fails if no id is provided
   #
   # For more details on actions, check out the http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
-  config :action, :validate => :string, :default => "index"
+  config :action, :validate => %w(index delete create update), :default => "index"
 
   # Username and password (only valid when protocol is HTTP; this setting works with HTTP or HTTPS auth)
   config :user, :validate => :string
@@ -238,10 +237,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     client_settings = {}
     common_options = {:client_settings => client_settings}
-
-    if @action == "create_unless_exists"
-      raise(LogStash::ConfigurationError, "action => 'create_unless_exists' is not supported under the HTTP protocol");
-    end
 
     client_settings[:path] = "/#{@path}/".gsub(/\/+/, "/") # Normalize slashes
     @logger.debug? && @logger.debug("Normalizing http path", :path => @path, :normalized => client_settings[:path])
