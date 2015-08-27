@@ -123,7 +123,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :host, :validate => :array
 
   # You can set the remote port as part of the host, or explicitly here as well
-  config :port, :validate => :string
+  config :port, :validate => :string, :default => 9200
 
   # This plugin uses the bulk index api for improved indexing performance.
   # To make efficient bulk api calls, we will buffer a certain number of
@@ -245,8 +245,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     client_settings[:path] = "/#{@path}/".gsub(/\/+/, "/") # Normalize slashes
     @logger.debug? && @logger.debug("Normalizing http path", :path => @path, :normalized => client_settings[:path])
-
-    @port ||= "9200"
 
     if @host.nil?
       @logger.info("No 'host' set in elasticsearch output. Defaulting to localhost")
