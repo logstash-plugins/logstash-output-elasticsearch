@@ -62,6 +62,7 @@ module LogStash::Outputs::Elasticsearch
       @client_options = {
         :host => [uri],
         :ssl => options[:client_settings][:ssl],
+        :reload_connections => options[:client_settings][:reload_connections],
         :transport_options => {  # manticore settings so we
           :socket_timeout => 0,  # do not timeout socket reads
           :request_timeout => 0,  # and requests
