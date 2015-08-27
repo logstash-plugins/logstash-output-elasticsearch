@@ -1,13 +1,6 @@
 require_relative "../../../spec/es_spec_helper"
 
 describe "outputs/elasticsearch" do
-  context "registration" do
-    it "should fail to register when protocol => http, action => create_unless_exists" do
-      output = LogStash::Plugin.lookup("output", "elasticsearch").new("action" => "create_unless_exists")
-      expect {output.register}.to raise_error
-    end
-  end
-
   describe "http client create" do
     require "logstash/outputs/elasticsearch"
     require "elasticsearch"
