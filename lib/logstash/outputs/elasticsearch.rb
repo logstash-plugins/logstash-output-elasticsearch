@@ -227,7 +227,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   public
   def register
     @hosts = Array(@hosts)
-    @submit_mutex = Mutex.new
     # retry-specific variables
     @retry_flush_mutex = Mutex.new
     @retry_teardown_requested = Concurrent::AtomicBoolean.new(false)
