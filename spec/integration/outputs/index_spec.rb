@@ -52,7 +52,7 @@ describe "an indexer with custom index_type", :integration => true do
       }
       output {
         elasticsearch {
-          host => "#{get_host()}"
+          hosts => "#{get_host()}"
           port => "#{get_port}"
           index => "#{index}"
           flush_size => #{flush_size}
@@ -76,7 +76,7 @@ describe "an indexer with no type value set (default to logs)", :integration => 
       }
       output {
         elasticsearch {
-          host => "#{get_host()}"
+          hosts => "#{get_host()}"
           port => "#{get_port}"
           index => "#{index}"
           flush_size => #{flush_size}

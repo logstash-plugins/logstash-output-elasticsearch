@@ -6,7 +6,7 @@ describe "send messages to ElasticSearch using HTTPS", :elasticsearch_secure => 
     settings = {
       "node_name" => "logstash",
       "cluster" => "elasticsearch",
-      "host" => "node01",
+      "hosts" => "node01",
       "user" => "user",
       "password" => "changeme",
       "ssl" => true,
@@ -35,7 +35,7 @@ describe "connect using HTTP Authentication", :elasticsearch_secure => true do
     require "logstash/outputs/elasticsearch"
     settings = {
       "cluster" => "elasticsearch",
-      "host" => "node01",
+      "hosts" => "node01",
       "user" => "user",
       "password" => "changeme",
     }
@@ -60,7 +60,7 @@ describe "send messages to ElasticSearch using HTTPS", :elasticsearch_secure => 
     settings = {
       "node_name" => "logstash",
       "cluster" => "elasticsearch",
-      "host" => "node01",
+      "hosts" => "node01",
       "user" => "user",
       "password" => "changeme",
       "ssl" => true,
@@ -88,7 +88,7 @@ describe "connect using HTTP Authentication", :elasticsearch_secure => true do
   subject do
     require "logstash/outputs/elasticsearch"
     settings = {
-      "host" => "node01",
+      "hosts" => "node01",
       "user" => "user",
       "password" => "changeme",
     }

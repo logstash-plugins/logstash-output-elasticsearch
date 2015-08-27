@@ -9,7 +9,7 @@ describe "client create actions", :integration => true do
       "manage_template" => true,
       "index" => "logstash-create",
       "template_overwrite" => true,
-      "host" => get_host(),
+      "hosts" => get_host(),
       "port" => get_port(),
       "action" => action
     }

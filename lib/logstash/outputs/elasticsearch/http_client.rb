@@ -57,10 +57,10 @@ module LogStash::Outputs::Elasticsearch
     private
 
     def build_client(options)
-      uri = "http://#{options[:host]}:#{options[:port]}#{options[:client_settings][:path]}"
+      #uri = "http://#{options[:host]}:#{options[:port]}#{options[:client_settings][:path]}"
 
       @client_options = {
-        :host => [uri],
+        :hosts => options[:hosts],
         :ssl => options[:client_settings][:ssl],
         :reload_connections => options[:client_settings][:reload_connections],
         :transport_options => {  # manticore settings so we
@@ -76,7 +76,8 @@ module LogStash::Outputs::Elasticsearch
         @client_options[:headers] = { "Authorization" => "Basic #{token}" }
       end
 
-      c = Elasticsearch::Client.new client_options
+      puts "COPT #{client_options}"
+      c = Elasticsearch::Client.new(client_options)
       c.transport.reload_connections! if options[:client_settings][:reload_connections]
       c
     end

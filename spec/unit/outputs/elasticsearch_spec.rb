@@ -8,7 +8,7 @@ describe "outputs/elasticsearch" do
     let(:options) {
       {
         "index" => "my-index",
-        "host" => "localhost",
+        "hosts" => "localhost",
         "path" => "some-path"
       }
     }
@@ -16,7 +16,7 @@ describe "outputs/elasticsearch" do
     let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
 
     let(:manticore_host) {
-      eso.client.first.send(:client).transport.options[:host].first
+      eso.client.send(:client).transport.options[:hosts].first
     }
 
     around(:each) do |block|

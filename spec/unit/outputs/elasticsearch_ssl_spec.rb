@@ -6,7 +6,7 @@ describe "SSL option" do
     subject do
       require "logstash/outputs/elasticsearch"
       settings = {
-        "host" => "node01",
+        "hosts" => "node01",
         "ssl" => true,
         "ssl_certificate_verification" => false
       }
@@ -37,7 +37,7 @@ describe "SSL option" do
     subject do
       require "logstash/outputs/elasticsearch"
       settings = {
-        "host" => "node01",
+        "hosts" => "node01",
         "ssl" => true,
         "keystore" => keystore_path,
         "keystore_password" => "test"
