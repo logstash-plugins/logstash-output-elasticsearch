@@ -263,8 +263,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       { :host => host_name, :port => (port || @port).to_i }
     end
 
-    puts "WILL REG #{option_hosts}"
-
     @client = LogStash::Outputs::Elasticsearch::HttpClient.new(
       common_options.merge(:hosts => @hosts)
     )
