@@ -10,10 +10,15 @@ require "thread" # for safe queueing
 require "uri" # for escaping user input
 require "logstash/outputs/elasticsearch/http_client"
 
-
 # This output lets you store logs in Elasticsearch and is the most recommended
 # output for Logstash. If you plan on using the Kibana web interface, you'll
-# need to use this output.
+# want to use this output.
+#
+# This output only speaks the HTTP, which is the preferred protocol for interacting with elasticsearch. By default
+# Elasticsearch exposes HTTP on port 9200.
+#
+# We strongly encourage the use of HTTP over the node protocol. It is just as
+# fast and far easier to administer. For those wishing to use the java protocol please see the 'elasticsearch_java' gem.
 #
 # You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
 #
@@ -232,7 +237,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @retry_queue = Queue.new
 
     client_settings = {}
-
+    common_options = {:client_settings => client_settings}
 
     if @action == "create_unless_exists"
       raise(LogStash::ConfigurationError, "action => 'create_unless_exists' is not supported under the HTTP protocol");
@@ -250,11 +255,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     client_settings.merge! setup_ssl()
     client_settings.merge! setup_proxy()
-
-    common_options = {:client_settings => client_settings}
-
+    client_settings.merge! setup_sniffing()
     common_options.merge! setup_basic_auth()
-
 
     # Update API setup
     update_options = {
@@ -417,6 +419,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       )
 
       @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
+
+      raise e
     ensure
       @logger.debug? and @logger.debug "Shifting current elasticsearch client"
       shift_client
@@ -470,6 +474,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
             end
 
     return {:proxy => proxy}
+  end
+
+  private
+  def setup_sniffing
+    { :reload_connections => true }
   end
 
   private

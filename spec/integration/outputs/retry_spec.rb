@@ -105,7 +105,7 @@ describe "failures in bulk class expected behavior", :integration => true do
     sleep(3)
   end
 
-  it "non-retryable errors like mapping errors (400) should be dropped and not be retried (unfortunetly)" do
+  it "non-retryable errors like mapping errors (400) should be dropped and not be retried (unfortunately)" do
     subject.register
     subject.receive(invalid_event)
     expect(subject).not_to receive(:retry_push)
@@ -124,7 +124,6 @@ describe "failures in bulk class expected behavior", :integration => true do
     subject.receive(event1)
     expect(subject).not_to receive(:retry_push)
     subject.teardown
-
     @es.indices.refresh
     sleep(5)
     Stud::try(10.times) do
