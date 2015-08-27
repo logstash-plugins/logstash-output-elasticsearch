@@ -76,7 +76,9 @@ module LogStash::Outputs::Elasticsearch
         @client_options[:headers] = { "Authorization" => "Basic #{token}" }
       end
 
-      Elasticsearch::Client.new client_options
+      c = Elasticsearch::Client.new client_options
+      c.transport.reload_connections! if options[:client_settings][:reload_connections]
+      c
     end
 
     def self.normalize_bulk_response(bulk_response)

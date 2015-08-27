@@ -14,7 +14,7 @@ require "logstash/outputs/elasticsearch/http_client"
 # output for Logstash. If you plan on using the Kibana web interface, you'll
 # want to use this output.
 #
-# This output only speaks the HTTP, which is the preferred protocol for interacting with elasticsearch. By default
+# This output only speaks the HTTP, which is the preferred protocol for interacting with Elasticsearch. By default
 # Elasticsearch exposes HTTP on port 9200.
 #
 # We strongly encourage the use of HTTP over the node protocol. It is just as
@@ -304,7 +304,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       end
     end
   end # def register
-
 
   public
   def get_template
