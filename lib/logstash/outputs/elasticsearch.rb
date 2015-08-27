@@ -1,5 +1,5 @@
 # encoding: utf-8
-require "logstash/pipeline"
+require "logstash/namespace"
 require "logstash/environment"
 require "logstash/outputs/base"
 require "logstash/json"
