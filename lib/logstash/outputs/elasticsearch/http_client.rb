@@ -57,10 +57,12 @@ module LogStash::Outputs::Elasticsearch
     private
 
     def build_client(options)
-      #uri = "http://#{options[:host]}:#{options[:port]}#{options[:client_settings][:path]}"
+      uris = options[:hosts].map do |host|
+        "http://#{host}:#{options[:port]}#{options[:client_settings][:path]}"
+      end
 
       @client_options = {
-        :hosts => options[:hosts],
+        :hosts => uris,
         :ssl => options[:client_settings][:ssl],
         :reload_connections => options[:client_settings][:reload_connections],
         :transport_options => {  # manticore settings so we
