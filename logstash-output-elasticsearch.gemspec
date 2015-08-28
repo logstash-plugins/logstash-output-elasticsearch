@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
 
   s.name            = 'logstash-output-elasticsearch'
-  s.version         = '1.0.7'
+  s.version         = '1.1.0'
   s.licenses        = ['apache-2.0']
   s.summary         = "Logstash Output to Elasticsearch"
   s.description     = "Output events to elasticsearch"
@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   # Files
-  s.files = `git ls-files`.split($\)
+  s.files = Dir.glob(["*.gemspec", "lib/**/*.rb", "spec/**/*.rb", "vendor/*"])
 
   # Tests
   s.test_files = s.files.grep(%r{^(test|spec|features)/})
@@ -33,8 +33,12 @@ Gem::Specification.new do |s|
   if RUBY_PLATFORM == 'java'
     s.platform = RUBY_PLATFORM
     s.add_runtime_dependency "manticore", '~> 0.4.2'
+    s.add_runtime_dependency 'jar-dependencies'
+    # jar dependencies
+    s.requirements << "jar 'org.elasticsearch:elasticsearch', '1.7.0'"
   end
 
   s.add_development_dependency 'logstash-devutils'
+  s.add_development_dependency "rspec", "~> 3.1.0" # MIT License
   s.add_development_dependency 'longshoreman'
 end

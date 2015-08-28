@@ -3,3 +3,5 @@ Gemfile.lock
 .bundle
 .idea
 *~
+vendor/
+lib/logstash-output-elasticsearch_jars.rb
