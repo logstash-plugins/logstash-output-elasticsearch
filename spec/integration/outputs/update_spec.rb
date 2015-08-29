@@ -1,6 +1,6 @@
 require_relative "../../../spec/es_spec_helper"
 
-describe "Update action", :integration => true do
+describe "Update actions", :integration => true do
   require "logstash/outputs/elasticsearch"
   require "elasticsearch"
 
@@ -39,68 +39,31 @@ describe "Update action", :integration => true do
     expect { subject.flush([action]) }.to raise_error
   end
 
-  it "should not create new document" do
-    subject = get_es_output({ 'document_id' => "456" } )
-    subject.register
-    subject.receive(LogStash::Event.new("message" => "sample message here"))
-    subject.flush
-    expect {@es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
-  end
-
-  it "should update existing document" do
-    subject = get_es_output({ 'document_id' => "123" })
-    subject.register
-    subject.receive(LogStash::Event.new("message" => "updated message here"))
-    subject.flush
-    r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-    insist { r["_source"]["message"] } == 'updated message here'
-  end
-
-  context "upsert" do
-    it "should create new documents with upsert content" do
-      subject = get_es_output({ 'document_id' => "456", 'upsert' => '{"message": "upsert message"}' })
+  context "when update only" do
+    it "should not create new document" do
+      subject = get_es_output({ 'document_id' => "456" } )
       subject.register
       subject.receive(LogStash::Event.new("message" => "sample message here"))
       subject.flush
-      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-      insist { r["_source"]["message"] } == 'upsert message'
+      expect {@es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
     end
 
-    it "should create new documents with event/doc as upsert" do
-      subject = get_es_output({ 'document_id' => "456", 'doc_as_upsert' => true })
+    it "should update existing document" do
+      subject = get_es_output({ 'document_id' => "123" })
       subject.register
-      subject.receive(LogStash::Event.new("message" => "sample message here"))
+      subject.receive(LogStash::Event.new("message" => "updated message here"))
       subject.flush
-      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-      insist { r["_source"]["message"] } == 'sample message here'
+      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
+      insist { r["_source"]["message"] } == 'updated message here'
     end
   end
-
-  context "scripted update" do
-
-    it "should create new documents with upsert content" do
-      subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_update', 'upsert' => '{"message": "upsert message"}' })
-      subject.register
-      subject.receive(LogStash::Event.new("message" => "sample message here"))
-      subject.buffer_flush(:final => true)
-      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-      insist { r["_source"]["message"] } == 'upsert message'
-    end
-
-    it "should create new documents with event/doc as script params" do
-      subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_upsert', 'scripted_upsert' => true })
-      subject.register
-      subject.receive(LogStash::Event.new("counter" => 1))
-      subject.buffer_flush(:final => true)
-      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-      insist { r["_source"]["counter"] } == 1
-    end
-
+    
+  context "when using script" do
     it "should increment a counter with event/doc 'count' variable" do
       subject = get_es_output({ 'document_id' => "123", 'script' => 'scripted_update' })
       subject.register
       subject.receive(LogStash::Event.new("count" => 2))
-      subject.buffer_flush(:final => true)
+      subject.flush(:final => true)
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
       insist { r["_source"]["counter"] } == 3
     end
@@ -109,15 +72,63 @@ describe "Update action", :integration => true do
       subject = get_es_output({ 'document_id' => "123", 'script' => 'scripted_update_nested' })
       subject.register
       subject.receive(LogStash::Event.new("data" => { "count" => 3 }))
-      subject.buffer_flush(:final => true)
+      subject.flush(:final => true)
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
       insist { r["_source"]["counter"] } == 4
     end
 
-    it "should raise a configuration error" do
-      subject = get_es_output({ 'document_id' => "123", 'script' => 'scripted_update' })
-      expect { subject.register }.to raise_error
+    it "should increment a counter with event/doc 'count' variable with inline script" do
+      subject = get_es_output({
+        'document_id' => "123",
+        'script' => 'ctx._source.counter += event["count"]',
+        'script_lang' => 'groovy',
+        'script_type' => 'inline'
+      })
+      subject.register
+      subject.receive(LogStash::Event.new("count" => 3 ))
+      subject.flush(:final => true)
+      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
+      insist { r["_source"]["counter"] } == 4
+    end
+  end
+
+  context "when update with upsert" do
+    it "should create new documents with provided upsert" do
+      subject = get_es_output({ 'document_id' => "456", 'upsert' => '{"message": "upsert message"}' })
+      subject.register
+      subject.receive(LogStash::Event.new("message" => "sample message here"))
+      subject.flush(:final => true)
+      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+      insist { r["_source"]["message"] } == 'upsert message'
     end
 
+    it "should create new documents with event/doc as upsert" do
+      subject = get_es_output({ 'document_id' => "456", 'doc_as_upsert' => true })
+      subject.register
+      subject.receive(LogStash::Event.new("message" => "sample message here"))
+      subject.flush(:final => true)
+      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+      insist { r["_source"]["message"] } == 'sample message here'
+    end
+
+    context "when using script" do
+      it "should create new documents with upsert content" do
+        subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_update', 'upsert' => '{"message": "upsert message"}' })
+        subject.register
+        subject.receive(LogStash::Event.new("message" => "sample message here"))
+        subject.flush(:final => true)
+        r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+        insist { r["_source"]["message"] } == 'upsert message'
+      end
+
+      it "should create new documents with event/doc as script params" do
+        subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_upsert', 'scripted_upsert' => true })
+        subject.register
+        subject.receive(LogStash::Event.new("counter" => 1))
+        subject.flush(:final => true)
+        r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+        insist { r["_source"]["counter"] } == 1
+      end
+    end
   end
 end
