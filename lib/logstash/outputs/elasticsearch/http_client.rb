@@ -53,7 +53,12 @@ module LogStash; module Outputs; class ElasticSearch;
               else
                 source['upsert'] = args.delete(:_upsert) if args[:_upsert]
               end
-              source['script'] = args.delete(:_script)
+              if @options[:script_type] == "indexed"
+                source['script_id'] = args.delete(:_script)
+              else
+                source['script'] = args.delete(:_script)
+              end
+              source['script_lang'] = @options[:script_lang] if @options[:script_lang] != ''
             else
               source = { 'doc' => source }
               if @options[:doc_as_upsert]
