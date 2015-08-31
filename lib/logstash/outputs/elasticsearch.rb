@@ -201,6 +201,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # `http.enabled` to false in their elasticsearch.yml.
   config :sniffing, :validate => :boolean, :default => false
 
+  # How long to wait, in seconds, between sniffing attempts
+  config :sniffing_delay, :validate => :number, :default => 30
+
   # Set max retry for each event
   config :max_retries, :validate => :number, :default => 3
 
@@ -236,7 +239,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @retry_queue = Queue.new
 
     client_settings = {}
-    common_options = {:client_settings => client_settings}
+    common_options = {
+      :client_settings => client_settings,
+      :sniffing => @sniffing,
+      :sniffing_delay => @sniffing_delay
+    }
 
     client_settings[:path] = "/#{@path}/".gsub(/\/+/, "/") # Normalize slashes
     @logger.debug? && @logger.debug("Normalizing http path", :path => @path, :normalized => client_settings[:path])
@@ -248,7 +255,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     client_settings.merge! setup_ssl()
     client_settings.merge! setup_proxy()
-    client_settings.merge! setup_sniffing()
     common_options.merge! setup_basic_auth()
 
     # Update API setup
@@ -408,6 +414,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   public
   def teardown
+    @client.stop_sniffing!
+
     if @cacert # remove temporary jks store created from the cacert
       File.delete(@truststore)
     end
@@ -446,11 +454,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
             end
 
     return {:proxy => proxy}
-  end
-
-  private
-  def setup_sniffing
-    { :reload_connections => @reload_connections }
   end
 
   private

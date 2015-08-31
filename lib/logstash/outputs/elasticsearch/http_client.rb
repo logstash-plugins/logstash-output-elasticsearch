@@ -15,6 +15,7 @@ module LogStash::Outputs::Elasticsearch
       @logger = Cabin::Channel.get
       @options = DEFAULT_OPTIONS.merge(options)
       @client = build_client(@options)
+      start_sniffing!
     end
 
     def template_install(name, template, force=false)
@@ -64,7 +65,6 @@ module LogStash::Outputs::Elasticsearch
       @client_options = {
         :hosts => uris,
         :ssl => options[:client_settings][:ssl],
-        :reload_connections => options[:client_settings][:reload_connections],
         :transport_options => {  # manticore settings so we
           :socket_timeout => 0,  # do not timeout socket reads
           :request_timeout => 0,  # and requests
@@ -78,9 +78,11 @@ module LogStash::Outputs::Elasticsearch
         @client_options[:headers] = { "Authorization" => "Basic #{token}" }
       end
 
-      c = Elasticsearch::Client.new(client_options)
-      c.transport.reload_connections! if options[:client_settings][:reload_connections]
-      c
+      Elasticsearch::Client.new(client_options)
+    end
+
+    def sniff!
+      c.transport.reload_connections! if options[:sniffing]
     end
 
     def self.normalize_bulk_response(bulk_response)
@@ -110,6 +112,19 @@ module LogStash::Outputs::Elasticsearch
 
     def template_put(name, template)
       @client.indices.put_template(:name => name, :body => template)
+    end
+
+    def start_sniffing!
+      if options[:sniffing]
+        @sniffer_thread = Thread.new do
+          sniff!
+          sleep options[:sniffing_delay]
+        end
+      end
+    end
+
+    def stop_sniffing!
+      @sniffer_thread.kill() if @sniffer_thread
     end
   end
 end
