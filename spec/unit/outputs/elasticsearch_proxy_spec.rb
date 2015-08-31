@@ -37,7 +37,7 @@ describe "Proxy option" do
       let(:proxy) { {"hosts" => "127.0.0.1", "protocol" => "http"} }
 
       it "should pass through the proxy values as symbols" do
-        expected = {:host => proxy["hosts"], :protocol => proxy["protocol"]}
+        expected = {:hosts => proxy["hosts"], :protocol => proxy["protocol"]}
         expect(::Elasticsearch::Client).to have_received(:new) do |options|
           expect(options[:transport_options][:proxy]).to eql(expected)
         end
