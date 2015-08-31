@@ -403,7 +403,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       :upsert => @upsert,
       :doc_as_upsert => @doc_as_upsert
     }
-    common_options.merge! update_options if @action == 'update'
+    common_options.merge! update_options
 
     client_class = case @protocol
       when "transport"
@@ -526,9 +526,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       :_routing => @routing ? event.sprintf(@routing) : nil
     }
     
-    params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @action == 'update' && @upsert != ""
+    action = event.sprintf(@action)
 
-    buffer_receive([event.sprintf(@action), params, event])
+    params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if action == 'update' && @upsert != ""
+
+    buffer_receive([action, params, event])
   end # def receive
 
   public
