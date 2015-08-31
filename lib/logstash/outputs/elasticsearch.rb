@@ -130,7 +130,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # events before flushing that out to Elasticsearch. This setting
   # controls how many events will be buffered before sending a batch
   # of events.
-  config :flush_size, :validate => :number, :default => 5000
+  config :flush_size, :validate => :number, :default => 500
 
   # The amount of time since last flush before a flush is forced.
   #
