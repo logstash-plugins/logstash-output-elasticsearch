@@ -264,11 +264,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     }
     common_options.merge! update_options if @action == 'update'
 
-    option_hosts = @hosts.map do |host|
-      host_name, port = host.split(":")
-      { :host => host_name, :port => (port || @port).to_i }
-    end
-
     @client = LogStash::Outputs::Elasticsearch::HttpClient.new(
       common_options.merge(:hosts => @hosts)
     )
