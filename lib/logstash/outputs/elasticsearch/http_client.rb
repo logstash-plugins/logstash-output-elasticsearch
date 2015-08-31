@@ -6,7 +6,7 @@ require "elasticsearch/transport/transport/http/manticore"
 
 module LogStash::Outputs::Elasticsearch
   class HttpClient
-    attr_reader :client, :options, :client_options
+    attr_reader :client, :options, :client_options, :sniffer_thread
     DEFAULT_OPTIONS = {
       :port => 9200
     }
@@ -55,20 +55,47 @@ module LogStash::Outputs::Elasticsearch
       self.class.normalize_bulk_response(bulk_response)
     end
 
+    def start_sniffing!
+      if options[:sniffing]
+        @sniffer_thread = Thread.new do
+          loop do
+            sniff!
+            sleep (options[:sniffing_delay] || 30)
+          end
+        end
+      end
+    end
+
+    def stop_sniffing!
+      @sniffer_thread.kill() if @sniffer_thread
+    end
+
+    def sniff!
+      client.transport.reload_connections! if options[:sniffing]
+    rescue StandardError => e
+      @logger.error("Error while sniffing connection",
+                    :message => e.message,
+                    :class => e.class.name)
+    end
+
     private
 
     def build_client(options)
-      uris = options[:hosts].map do |host|
-        "http://#{host}:#{options[:port]}#{options[:client_settings][:path]}"
+      hosts = options[:hosts] || ["127.0.0.1"]
+      port = options[:port] || 9200
+      client_settings = options[:client_settings] || {}
+
+      uris = hosts.map do |host|
+        "http://#{host}:#{port}#{client_settings[:path]}"
       end
 
       @client_options = {
         :hosts => uris,
-        :ssl => options[:client_settings][:ssl],
+        :ssl => client_settings[:ssl],
         :transport_options => {  # manticore settings so we
           :socket_timeout => 0,  # do not timeout socket reads
           :request_timeout => 0,  # and requests
-          :proxy => options[:client_settings][:proxy]
+          :proxy => client_settings[:proxy]
         },
         :transport_class => ::Elasticsearch::Transport::Transport::HTTP::Manticore
       }
@@ -79,10 +106,6 @@ module LogStash::Outputs::Elasticsearch
       end
 
       Elasticsearch::Client.new(client_options)
-    end
-
-    def sniff!
-      c.transport.reload_connections! if options[:sniffing]
     end
 
     def self.normalize_bulk_response(bulk_response)
@@ -112,19 +135,6 @@ module LogStash::Outputs::Elasticsearch
 
     def template_put(name, template)
       @client.indices.put_template(:name => name, :body => template)
-    end
-
-    def start_sniffing!
-      if options[:sniffing]
-        @sniffer_thread = Thread.new do
-          sniff!
-          sleep options[:sniffing_delay]
-        end
-      end
-    end
-
-    def stop_sniffing!
-      @sniffer_thread.kill() if @sniffer_thread
     end
   end
 end

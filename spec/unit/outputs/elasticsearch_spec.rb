@@ -45,8 +45,6 @@ describe "outputs/elasticsearch" do
           expect(manticore_host).to include(options["path"])
         end
       end
-
-
     end
   end
 end
