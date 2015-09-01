@@ -1,3 +1,13 @@
+## 2.0.0-beta2
+ - Massive internal refactor of client handling
+ - Background HTTP sniffing support
+ - Reduced bulk request size to 500 from 5000 (better memory utilization)
+ - Removed 'host' config option. Now use 'hosts'
+
+## 2.0.0-beta
+ - Only support HTTP Protocol
+ - Removed support for node and transport protocols (now in logstash-output-elasticsearch_java)
+ 
 ## 1.0.7
  - Add update API support
 
