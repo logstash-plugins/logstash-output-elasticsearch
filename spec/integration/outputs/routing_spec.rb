@@ -15,7 +15,7 @@ shared_examples "a routing indexer" do
       pipeline = LogStash::Pipeline.new(config)
       pipeline.run
 
-      index_url = "http://#{get_host()}:#{get_port('http')}/#{index}"
+      index_url = "http://#{get_host()}:#{get_port()}/#{index}"
 
       ftw = FTW::Agent.new
       ftw.post!("#{index_url}/_refresh")
@@ -46,9 +46,8 @@ describe "(http protocol) index events with static routing", :integration => tru
       }
       output {
         elasticsearch {
-          host => "#{get_host()}"
-          port => "#{get_port('http')}"
-          protocol => "http"
+          hosts => "#{get_host()}"
+          port => "#{get_port()}"
           index => "#{index}"
           flush_size => #{flush_size}
           routing => "#{routing}"
@@ -73,9 +72,8 @@ describe "(http_protocol) index events with fieldref in routing value", :integra
       }
       output {
         elasticsearch {
-          host => "#{get_host()}"
-          port => "#{get_port('http')}"
-          protocol => "http"
+          hosts => "#{get_host()}"
+          port => "#{get_port()}"
           index => "#{index}"
           flush_size => #{flush_size}
           routing => "%{message}"
@@ -86,29 +84,3 @@ describe "(http_protocol) index events with fieldref in routing value", :integra
   end
 end
 
-describe "(transport protocol) index events with fieldref in routing value", :integration => true do
-  it_behaves_like 'a routing indexer' do
-    let(:routing) { "test" }
-    let(:config) {
-      <<-CONFIG
-      input {
-        generator {
-          message => "#{routing}"
-          count => #{event_count}
-          type => "#{type}"
-        }
-      }
-      output {
-        elasticsearch {
-          host => "#{get_host()}"
-          port => "#{get_port('transport')}"
-          protocol => "transport"
-          index => "#{index}"
-          flush_size => #{flush_size}
-          routing => "%{message}"
-        }
-      }
-      CONFIG
-    }
-  end
-end
