@@ -9,7 +9,7 @@ describe "all protocols update actions", :integration => true do
       "manage_template" => true,
       "index" => "logstash-update",
       "template_overwrite" => true,
-      "host" => get_host(),
+      "hosts" => get_host(),
       "port" => get_port(),
       "action" => "update"
     }
@@ -35,30 +35,29 @@ describe "all protocols update actions", :integration => true do
     @es.indices.refresh
   end
 
-    it "should fail without a document_id" do
-      event = LogStash::Event.new("somevalue" => 100, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0})
-      action = ["update", {:_id=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event]
-      subject = get_es_output
-      subject.register
-      expect { subject.flush([action]) }.to raise_error
-    end
+  it "should fail without a document_id" do
+    event = LogStash::Event.new("somevalue" => 100, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0})
+    action = ["update", {:_id=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event]
+    subject = get_es_output
+    subject.register
+    expect { subject.flush([action]) }.to raise_error
+  end
 
-    it "should not create new document" do
-      subject = get_es_output("456")
-      subject.register
-      subject.receive(LogStash::Event.new("message" => "sample message here"))
-      subject.buffer_flush(:final => true)
-      expect {@es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
-    end
+  it "should not create new document" do
+    subject = get_es_output("456")
+    subject.register
+    subject.receive(LogStash::Event.new("message" => "sample message here"))
+    subject.buffer_flush(:final => true)
+    expect {@es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+  end
 
-    it "should update existing document" do
-      subject = get_es_output("123")
-      subject.register
-      subject.receive(LogStash::Event.new("message" => "updated message here"))
-      subject.buffer_flush(:final => true)
-      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-      insist { r["_source"]["message"] } == 'updated message here'
-    end
+  it "should update existing document" do
+    subject = get_es_output("123")
+    subject.register
+    subject.receive(LogStash::Event.new("message" => "updated message here"))
+    subject.buffer_flush(:final => true)
+    r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
+    insist { r["_source"]["message"] } == 'updated message here'
   end
 
   context "upsert with protocol" do
@@ -78,5 +77,6 @@ describe "all protocols update actions", :integration => true do
       subject.buffer_flush(:final => true)
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
       insist { r["_source"]["message"] } == 'sample message here'
+    end
   end
 end

@@ -23,4 +23,40 @@ describe LogStash::Outputs::Elasticsearch::HttpClient do
       insist { actual } == {"errors"=> true, "statuses"=> [400]}
     end
   end
+
+  describe "sniffing" do
+    let(:base_options) { {:hosts => ["127.0.0.1"] }}
+    let(:client) { LogStash::Outputs::Elasticsearch::HttpClient.new(base_options.merge(client_opts)) }
+    let(:transport) { client.client.transport }
+
+    before do
+      allow(transport).to receive(:reload_connections!)
+    end
+
+    context "with sniffing enabled" do
+      let(:client_opts) { {:sniffing => true, :sniffing_delay => 1 } }
+
+      after do
+        client.stop_sniffing!
+      end
+
+      it "should start the sniffer" do
+        expect(client.sniffer_thread).to be_a(Thread)
+      end
+
+      it "should periodically sniff the client" do
+        sleep 2
+        expect(transport).to have_received(:reload_connections!)
+      end
+    end
+
+    context "with sniffing disabled" do
+      let(:client_opts) { {:sniffing => false} }
+
+      it "should not start the sniffer" do
+        expect(client.sniffer_thread).to be_nil
+      end
+    end
+
+  end
 end

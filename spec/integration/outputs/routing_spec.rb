@@ -46,7 +46,7 @@ describe "(http protocol) index events with static routing", :integration => tru
       }
       output {
         elasticsearch {
-          host => "#{get_host()}"
+          hosts => "#{get_host()}"
           port => "#{get_port()}"
           index => "#{index}"
           flush_size => #{flush_size}
@@ -72,7 +72,7 @@ describe "(http_protocol) index events with fieldref in routing value", :integra
       }
       output {
         elasticsearch {
-          host => "#{get_host()}"
+          hosts => "#{get_host()}"
           port => "#{get_port()}"
           index => "#{index}"
           flush_size => #{flush_size}

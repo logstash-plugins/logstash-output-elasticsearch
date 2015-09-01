@@ -113,14 +113,14 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # This can be dynamic using the `%{foo}` syntax.
   config :routing, :validate => :string
 
-  # Sets the host of the remote instance. If given an array it will load balance requests across the hosts specified in the `host` parameter.
+  # Sets the host(s) of the remote instance. If given an array it will load balance requests across the hosts specified in the `host` parameter.
   # Remember the `http` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http[http] address (eg. 9200, not 9300).
   #     `"127.0.0.1"`
   #     `["127.0.0.1:9200","127.0.0.2:9200"]`
   # It is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `host` list
   # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes.
 
-  config :host, :validate => :array
+  config :hosts, :validate => :array
 
   # You can set the remote port as part of the host, or explicitly here as well
   config :port, :validate => :string, :default => 9200
@@ -130,7 +130,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # events before flushing that out to Elasticsearch. This setting
   # controls how many events will be buffered before sending a batch
   # of events.
-  config :flush_size, :validate => :number, :default => 5000
+  config :flush_size, :validate => :number, :default => 500
 
   # The amount of time since last flush before a flush is forced.
   #
@@ -201,6 +201,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # `http.enabled` to false in their elasticsearch.yml.
   config :sniffing, :validate => :boolean, :default => false
 
+  # How long to wait, in seconds, between sniffing attempts
+  config :sniffing_delay, :validate => :number, :default => 30
+
   # Set max retry for each event
   config :max_retries, :validate => :number, :default => 3
 
@@ -226,7 +229,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   public
   def register
-    @submit_mutex = Mutex.new
+    @hosts = Array(@hosts)
     # retry-specific variables
     @retry_flush_mutex = Mutex.new
     @retry_teardown_requested = Concurrent::AtomicBoolean.new(false)
@@ -234,9 +237,14 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @retry_queue_needs_flushing = ConditionVariable.new
     @retry_queue_not_full = ConditionVariable.new
     @retry_queue = Queue.new
+    @submit_mutex = Mutex.new
 
     client_settings = {}
-    common_options = {:client_settings => client_settings}
+    common_options = {
+      :client_settings => client_settings,
+      :sniffing => @sniffing,
+      :sniffing_delay => @sniffing_delay
+    }
 
     client_settings[:path] = "/#{@path}/".gsub(/\/+/, "/") # Normalize slashes
     @logger.debug? && @logger.debug("Normalizing http path", :path => @path, :normalized => client_settings[:path])
@@ -248,7 +256,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     client_settings.merge! setup_ssl()
     client_settings.merge! setup_proxy()
-    client_settings.merge! setup_sniffing()
     common_options.merge! setup_basic_auth()
 
     # Update API setup
@@ -258,31 +265,22 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     }
     common_options.merge! update_options if @action == 'update'
 
-    @client = Array.new
-    @client = @host.map do |host|
-      (_host,_port) = host.split ":"
-      options = { :host => _host, :port => _port || @port }.merge(common_options)
-
-      @logger.info "Create client for elasticsearch server on #{_host}:#{_port}"
-      LogStash::Outputs::Elasticsearch::HttpClient.new(options)
-    end
+    @client = LogStash::Outputs::Elasticsearch::HttpClient.new(
+      common_options.merge(:hosts => @hosts)
+    )
 
     if @manage_template
-      for client in @client
-        begin
-          @logger.info("Automatic template management enabled", :manage_template => @manage_template.to_s)
-          client.template_install(@template_name, get_template, @template_overwrite)
-          break
-        rescue => e
-          @logger.error("Failed to install template: #{e.message}")
-        end
-      end # for @client loop
-    end # if @manage_templates
+      begin
+        @logger.info("Automatic template management enabled", :manage_template => @manage_template.to_s)
+        @client.template_install(@template_name, get_template, @template_overwrite)
+      rescue => e
+        @logger.error("Failed to install template: #{e.message}")
+      end
+    end
 
-    @logger.info("New Elasticsearch output", :host => @host, :port => @port)
+    @logger.info("New Elasticsearch output", :hosts => @hosts, :port => @port)
 
     @client_idx = 0
-    @current_client = @client[@client_idx]
 
     buffer_initialize(
       :max_items => @flush_size,
@@ -354,29 +352,27 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end # def receive
 
   public
-  # synchronize the @current_client.bulk call to avoid concurrency/thread safety issues with the
-  # # client libraries which might not be thread safe. the submit method can be called from both the
-  # # Stud::Buffer flush thread and from our own retry thread.
+  # The submit method can be called from both the
+  # Stud::Buffer flush thread and from our own retry thread.
   def submit(actions)
-    es_actions = actions.map { |a, doc, event| [a, doc, event.to_hash] }
-    @submit_mutex.lock
-    begin
-      bulk_response = @current_client.bulk(es_actions)
-    ensure
-      @submit_mutex.unlock
-    end
-    if bulk_response["errors"]
-      actions_with_responses = actions.zip(bulk_response['statuses'])
-      actions_to_retry = []
-      actions_with_responses.each do |action, resp_code|
-        if RETRYABLE_CODES.include?(resp_code)
-          @logger.warn "retrying failed action with response code: #{resp_code}"
-          actions_to_retry << action
-        elsif not SUCCESS_CODES.include?(resp_code)
-          @logger.warn "failed action with response of #{resp_code}, dropping action: #{action}"
+    @submit_mutex.synchronize do
+      es_actions = actions.map { |a, doc, event| [a, doc, event.to_hash] }
+
+      bulk_response = @client.bulk(es_actions)
+
+      if bulk_response["errors"]
+        actions_with_responses = actions.zip(bulk_response['statuses'])
+        actions_to_retry = []
+        actions_with_responses.each do |action, resp_code|
+          if RETRYABLE_CODES.include?(resp_code)
+            @logger.warn "retrying failed action with response code: #{resp_code}"
+            actions_to_retry << action
+          elsif not SUCCESS_CODES.include?(resp_code)
+            @logger.warn "failed action with response of #{resp_code}, dropping action: #{action}"
+          end
         end
+        retry_push(actions_to_retry) unless actions_to_retry.empty?
       end
-      retry_push(actions_to_retry) unless actions_to_retry.empty?
     end
   end
 
@@ -387,24 +383,22 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     begin
       submit(actions)
     rescue Manticore::SocketException => e
-      # If we can't even connect to the server let's just print out the URL (:host is actually a URL)
+      # If we can't even connect to the server let's just print out the URL (:hosts is actually a URL)
       # and let the user sort it out from there
       @logger.error(
-        "Attempted to send a bulk request to Elasticsearch configured at '#{@current_client.client_options[:host]}',"+
+        "Attempted to send a bulk request to Elasticsearch configured at '#{@client.client_options[:hosts]}',"+
           " but Elasticsearch appears to be unreachable or down!",
-        :client_config => @current_client.client_options,
-        :error_message => e.message,
-        :error_class => e.class.name,
-        :backtrace => e.backtrace
+        :client_config => @client.client_options,
+        :error_message => e.message
       )
       @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
     rescue => e
       # For all other errors print out full connection issues
       @logger.error(
-        "Attempted to send a bulk request to Elasticsearch configured at '#{@current_client.client_options[:host]}'," +
+        "Attempted to send a bulk request to Elasticsearch configured at '#{@client.client_options[:hosts]}'," +
             " but an error occurred and it failed! Are you sure you can reach elasticsearch from this machine using " +
           "the configuration provided?",
-        :client_config => @current_client.client_options,
+        :client_config => @client.client_options,
         :error_message => e.message,
         :error_class => e.class.name,
         :backtrace => e.backtrace
@@ -413,14 +407,13 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
 
       raise e
-    ensure
-      @logger.debug? and @logger.debug "Shifting current elasticsearch client"
-      shift_client
     end
   end # def flush
 
   public
   def teardown
+    @client.stop_sniffing!
+
     if @cacert # remove temporary jks store created from the cacert
       File.delete(@truststore)
     end
@@ -445,13 +438,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     retry_flush
   end
 
-  protected
-  def shift_client
-    @client_idx = (@client_idx+1) % @client.length
-    @current_client = @client[@client_idx]
-    @logger.debug? and @logger.debug("Switched current elasticsearch client to ##{@client_idx} at #{@host[@client_idx]}")
-  end
-
   private
   def setup_proxy
     return {} unless @proxy
@@ -466,11 +452,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
             end
 
     return {:proxy => proxy}
-  end
-
-  private
-  def setup_sniffing
-    { :reload_connections => true }
   end
 
   private
