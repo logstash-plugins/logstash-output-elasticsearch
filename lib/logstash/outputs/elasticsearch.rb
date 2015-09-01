@@ -8,31 +8,19 @@ require "stud/buffer"
 require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
 require "uri" # for escaping user input
-require 'logstash-output-elasticsearch_jars.rb'
+require "logstash/outputs/elasticsearch/http_client"
 
 # This output lets you store logs in Elasticsearch and is the most recommended
 # output for Logstash. If you plan on using the Kibana web interface, you'll
-# need to use this output.
+# want to use this output.
 #
-# *VERSION NOTE*: Your Elasticsearch cluster must be running Elasticsearch 1.0.0 or later.
+# This output only speaks the HTTP, which is the preferred protocol for interacting with Elasticsearch. By default
+# Elasticsearch exposes HTTP on port 9200.
 #
-# If you want to set other Elasticsearch options that are not exposed directly
-# as configuration options, there are two methods:
-#
-# * Create an `elasticsearch.yml` file in the $PWD of the Logstash process
-# * Pass in es.* java properties (`java -Des.node.foo=` or `ruby -J-Des.node.foo=`)
-#
-# With the default `protocol` setting ("node"), this plugin will join your
-# Elasticsearch cluster as a client node, so it will show up in Elasticsearch's
-# cluster status.
+# We strongly encourage the use of HTTP over the node protocol. It is just as
+# fast and far easier to administer. For those wishing to use the java protocol please see the 'elasticsearch_java' gem.
 #
 # You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
-#
-# ==== Operational Notes
-#
-# If using the default `protocol` setting ("node"), your firewalls might need
-# to permit port 9300 in *both* directions (from Logstash to Elasticsearch, and
-# Elasticsearch to Logstash)
 #
 # ==== Retry Policy
 #
@@ -125,90 +113,24 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # This can be dynamic using the `%{foo}` syntax.
   config :routing, :validate => :string
 
-  # The name of your cluster if you set it on the Elasticsearch side. Useful
-  # for discovery when using `node` or `transport` protocols.
-  # By default, it looks for a cluster named 'elasticsearch'.
-  config :cluster, :validate => :string
-
-  # For the `node` protocol, if you do not specify `host`, it will attempt to use
-  # multicast discovery to connect to Elasticsearch.  If http://www.elastic.co/guide/en/elasticsearch/guide/current/_important_configuration_changes.html#_prefer_unicast_over_multicast[multicast is disabled] in Elasticsearch, 
-  # you must include the hostname or IP address of the host(s) to use for Elasticsearch unicast discovery.
-  # Remember the `node` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-transport.html#modules-transport[transport] address (eg. 9300, not 9200).
-  #     `"127.0.0.1"`
-  #     `["127.0.0.1:9300","127.0.0.2:9300"]`
-  # When setting hosts for `node` protocol, it is important to confirm that at least one non-client
-  # node is listed in the `host` list.  Also keep in mind that the `host` parameter when used with 
-  # the `node` protocol is for *discovery purposes only* (not for load balancing).  When multiple hosts 
-  # are specified, it will contact the first host to see if it can use it to discover the cluster.  If not, 
-  # then it will contact the second host in the list and so forth. With the `node` protocol, 
-  # Logstash will join the Elasticsearch cluster as a node client (which has a copy of the cluster
-  # state) and this node client is the one that will automatically handle the load balancing of requests 
-  # across data nodes in the cluster.  
-  # If you are looking for a high availability setup, our recommendation is to use the `transport` protocol (below), 
-  # set up multiple http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[client nodes] and list the client nodes in the `host` parameter.
-  # 
-  # For the `transport` protocol, it will load balance requests across the hosts specified in the `host` parameter.
-  # Remember the `transport` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-transport.html#modules-transport[transport] address (eg. 9300, not 9200).
-  #     `"127.0.0.1"`
-  #     `["127.0.0.1:9300","127.0.0.2:9300"]`
-  # There is also a `sniffing` option (see below) that can be used with the transport protocol to instruct it to use the host to sniff for
-  # "alive" nodes in the cluster and automatically use it as the hosts list (but will skip the dedicated master nodes).  
-  # If you do not use the sniffing option, it is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `host` list
-  # to prevent Logstash from sending bulk requests to the master nodes. So this parameter should only reference either data or client nodes.
-  #
-  # For the `http` protocol, it will load balance requests across the hosts specified in the `host` parameter.
+  # Sets the host(s) of the remote instance. If given an array it will load balance requests across the hosts specified in the `host` parameter.
   # Remember the `http` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http[http] address (eg. 9200, not 9300).
   #     `"127.0.0.1"`
   #     `["127.0.0.1:9200","127.0.0.2:9200"]`
   # It is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `host` list
   # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes.
 
-  config :host, :validate => :array
+  config :hosts, :validate => :array
 
-  # The port for Elasticsearch transport to use.
-  #
-  # If you do not set this, the following defaults are used:
-  # * `protocol => http` - port 9200
-  # * `protocol => transport` - port 9300-9305
-  # * `protocol => node` - port 9300-9305
-  config :port, :validate => :string
-
-  # The name/address of the host to bind to for Elasticsearch clustering
-  config :bind_host, :validate => :string
-
-  # This is only valid for the 'node' protocol.
-  #
-  # The port for the node to listen on.
-  config :bind_port, :validate => :number
-
-  # Run the Elasticsearch server embedded in this process.
-  # This option is useful if you want to run a single Logstash process that
-  # handles log processing and indexing; it saves you from needing to run
-  # a separate Elasticsearch process. An example use case is 
-  # proof-of-concept testing.
-  # WARNING: This is not recommended for production use!
-  config :embedded, :validate => :boolean, :default => false
-
-  # If you are running the embedded Elasticsearch server, you can set the http
-  # port it listens on here; it is not common to need this setting changed from
-  # default.
-  config :embedded_http_port, :validate => :string, :default => "9200-9300"
-
-  # This setting no longer does anything. It exists to keep config validation
-  # from failing. It will be removed in future versions.
-  config :max_inflight_requests, :validate => :number, :default => 50, :deprecated => true
-
-  # The node name Elasticsearch will use when joining a cluster.
-  #
-  # By default, this is generated internally by the ES client.
-  config :node_name, :validate => :string
+  # You can set the remote port as part of the host, or explicitly here as well
+  config :port, :validate => :string, :default => 9200
 
   # This plugin uses the bulk index api for improved indexing performance.
   # To make efficient bulk api calls, we will buffer a certain number of
   # events before flushing that out to Elasticsearch. This setting
   # controls how many events will be buffered before sending a batch
   # of events.
-  config :flush_size, :validate => :number, :default => 5000
+  config :flush_size, :validate => :number, :default => 500
 
   # The amount of time since last flush before a flush is forced.
   #
@@ -220,32 +142,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # This helps keep both fast and slow log streams moving along in
   # near-real-time.
   config :idle_flush_time, :validate => :number, :default => 1
-
-  # Choose the protocol used to talk to Elasticsearch.
-  #
-  # The 'node' protocol (default) will connect to the cluster as a normal Elasticsearch
-  # node (but will not store data). If you use the `node` protocol, you must permit
-  # bidirectional communication on the port 9300 (or whichever port you have
-  # configured).
-  #
-  # If you do not specify the `host` parameter, it will use  multicast for http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-discovery-zen.html[Elasticsearch discovery].  While this may work in a test/dev environment where multicast is enabled in 
-  # Elasticsearch, we strongly recommend http://www.elastic.co/guide/en/elasticsearch/guide/current/_important_configuration_changes.html#_prefer_unicast_over_multicast[disabling multicast]
-  # in Elasticsearch.  To connect to an Elasticsearch cluster with multicast disabled,
-  # you must include the `host` parameter (see relevant section above).  
-  #
-  # The 'transport' protocol will connect to the host you specify and will
-  # not show up as a 'node' in the Elasticsearch cluster. This is useful
-  # in situations where you cannot permit connections outbound from the
-  # Elasticsearch cluster to this Logstash server.
-  #
-  # The 'http' protocol will use the Elasticsearch REST/HTTP interface to talk
-  # to elasticsearch.
-  #
-  # All protocols will use bulk requests when talking to Elasticsearch.
-  #
-  # The default `protocol` setting under java/jruby is "node". The default
-  # `protocol` on non-java rubies is "http"
-  config :protocol, :validate => [ "node", "transport", "http" ]
 
   # The Elasticsearch action to perform. Valid actions are: `index`, `delete`.
   #
@@ -259,10 +155,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # - create: indexes a document, fails if a document by that id already exists in the index.
   # - update: updates a document by id
   # following action is not supported by HTTP protocol
-  # - create_unless_exists: creates a document, fails if no id is provided
   #
   # For more details on actions, check out the http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
-  config :action, :validate => :string, :default => "index"
+  config :action, :validate => %w(index delete create update), :default => "index"
 
   # Username and password (only valid when protocol is HTTP; this setting works with HTTP or HTTPS auth)
   config :user, :validate => :string
@@ -299,9 +194,15 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Set the truststore password
   config :keystore_password, :validate => :password
 
-  # Enable cluster sniffing (transport only)
+  # Enable cluster sniffing
   # Asks host for the list of all cluster nodes and adds them to the hosts list
+  # Will return ALL nodes with HTTP enabled (including master nodes!). If you use
+  # this with master nodes, you probably want to disable HTTP on them by setting
+  # `http.enabled` to false in their elasticsearch.yml.
   config :sniffing, :validate => :boolean, :default => false
+
+  # How long to wait, in seconds, between sniffing attempts
+  config :sniffing_delay, :validate => :number, :default => 30
 
   # Set max retry for each event
   config :max_retries, :validate => :number, :default => 3
@@ -328,7 +229,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   public
   def register
-    @submit_mutex = Mutex.new
+    @hosts = Array(@hosts)
     # retry-specific variables
     @retry_flush_mutex = Mutex.new
     @retry_teardown_requested = Concurrent::AtomicBoolean.new(false)
@@ -336,66 +237,25 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @retry_queue_needs_flushing = ConditionVariable.new
     @retry_queue_not_full = ConditionVariable.new
     @retry_queue = Queue.new
+    @submit_mutex = Mutex.new
 
     client_settings = {}
+    common_options = {
+      :client_settings => client_settings,
+      :sniffing => @sniffing,
+      :sniffing_delay => @sniffing_delay
+    }
 
+    client_settings[:path] = "/#{@path}/".gsub(/\/+/, "/") # Normalize slashes
+    @logger.debug? && @logger.debug("Normalizing http path", :path => @path, :normalized => client_settings[:path])
 
-    if @protocol.nil?
-      @protocol = LogStash::Environment.jruby? ? "node" : "http"
-    end
-
-    if @protocol == "http"
-      if @action == "create_unless_exists"
-        raise(LogStash::ConfigurationError, "action => 'create_unless_exists' is not supported under the HTTP protocol");
-      end
-
-      client_settings[:path] = "/#{@path}/".gsub(/\/+/, "/") # Normalize slashes
-      @logger.debug? && @logger.debug("Normalizing http path", :path => @path, :normalized => client_settings[:path])
-    end
-
-    if ["node", "transport"].include?(@protocol)
-      # Node or TransportClient; requires JRuby
-      raise(LogStash::PluginLoadingError, "This configuration requires JRuby. If you are not using JRuby, you must set 'protocol' to 'http'. For example: output { elasticsearch { protocol => \"http\" } }") unless LogStash::Environment.jruby?
-
-      client_settings["cluster.name"] = @cluster if @cluster
-      client_settings["network.host"] = @bind_host if @bind_host
-      client_settings["transport.tcp.port"] = @bind_port if @bind_port
-      client_settings["client.transport.sniff"] = @sniffing
- 
-      if @node_name
-        client_settings["node.name"] = @node_name
-      else
-        client_settings["node.name"] = "logstash-#{Socket.gethostname}-#{$$}-#{object_id}"
-      end
-
-      @@plugins.each do |plugin|
-        name = plugin.name.split('-')[-1]
-        client_settings.merge!(LogStash::Outputs::ElasticSearch.const_get(name.capitalize).create_client_config(self))
-      end
-    end
-
-    require "logstash/outputs/elasticsearch/protocol"
-
-    if @port.nil?
-      @port = case @protocol
-        when "http"; "9200"
-        when "transport", "node"; "9300-9305"
-      end
-    end
-
-    if @host.nil? && @protocol != "node" # node can use zen discovery
+    if @host.nil?
       @logger.info("No 'host' set in elasticsearch output. Defaulting to localhost")
       @host = ["localhost"]
     end
 
     client_settings.merge! setup_ssl()
     client_settings.merge! setup_proxy()
-
-    common_options = {
-      :protocol => @protocol,
-      :client_settings => client_settings
-    }
-
     common_options.merge! setup_basic_auth()
 
     # Update API setup
@@ -405,61 +265,22 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     }
     common_options.merge! update_options if @action == 'update'
 
-    client_class = case @protocol
-      when "transport"
-        LogStash::Outputs::Elasticsearch::Protocols::TransportClient
-      when "node"
-        LogStash::Outputs::Elasticsearch::Protocols::NodeClient
-      when /http/
-        LogStash::Outputs::Elasticsearch::Protocols::HTTPClient
-    end
-
-    if @embedded
-      raise(LogStash::ConfigurationError, "The 'embedded => true' setting is only valid for the elasticsearch output under JRuby. You are running #{RUBY_DESCRIPTION}") unless LogStash::Environment.jruby?
-      @logger.warn("The 'embedded => true' setting is enabled. This is not recommended for production use!!!")
-#      LogStash::Environment.load_elasticsearch_jars!
-
-      # Default @host with embedded to localhost. This should help avoid
-      # newbies tripping on ubuntu and other distros that have a default
-      # firewall that blocks multicast.
-      @host ||= ["localhost"]
-
-      # Start Elasticsearch local.
-      start_local_elasticsearch
-    end
-
-    @client = Array.new
-
-    if protocol == "node" || @host.nil? # if @protocol is "node" or @host is not set
-      options = { :host => @host, :port => @port }.merge(common_options)
-      @client = [client_class.new(options)]
-    else # if @protocol in ["transport","http"]
-      @client = @host.map do |host|
-        (_host,_port) = host.split ":"
-        options = { :host => _host, :port => _port || @port }.merge(common_options)
-        @logger.info "Create client to elasticsearch server on #{_host}:#{_port}"
-        client_class.new(options)
-      end # @host.map
-    end
+    @client = LogStash::Outputs::Elasticsearch::HttpClient.new(
+      common_options.merge(:hosts => @hosts)
+    )
 
     if @manage_template
-      for client in @client
-        begin
-          @logger.info("Automatic template management enabled", :manage_template => @manage_template.to_s)
-          client.template_install(@template_name, get_template, @template_overwrite)
-          break
-        rescue => e
-          @logger.error("Failed to install template: #{e.message}")
-        end
-      end # for @client loop
-    end # if @manage_templates
+      begin
+        @logger.info("Automatic template management enabled", :manage_template => @manage_template.to_s)
+        @client.template_install(@template_name, get_template, @template_overwrite)
+      rescue => e
+        @logger.error("Failed to install template: #{e.message}")
+      end
+    end
 
-    @logger.info("New Elasticsearch output", :cluster => @cluster,
-                 :host => @host, :port => @port, :embedded => @embedded,
-                 :protocol => @protocol)
+    @logger.info("New Elasticsearch output", :hosts => @hosts, :port => @port)
 
     @client_idx = 0
-    @current_client = @client[@client_idx]
 
     buffer_initialize(
       :max_items => @flush_size,
@@ -481,7 +302,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       end
     end
   end # def register
-
 
   public
   def get_template
@@ -532,29 +352,27 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end # def receive
 
   public
-  # synchronize the @current_client.bulk call to avoid concurrency/thread safety issues with the
-  # # client libraries which might not be thread safe. the submit method can be called from both the
-  # # Stud::Buffer flush thread and from our own retry thread.
+  # The submit method can be called from both the
+  # Stud::Buffer flush thread and from our own retry thread.
   def submit(actions)
-    es_actions = actions.map { |a, doc, event| [a, doc, event.to_hash] }
-    @submit_mutex.lock
-    begin
-      bulk_response = @current_client.bulk(es_actions)
-    ensure
-      @submit_mutex.unlock
-    end
-    if bulk_response["errors"]
-      actions_with_responses = actions.zip(bulk_response['statuses'])
-      actions_to_retry = []
-      actions_with_responses.each do |action, resp_code|
-        if RETRYABLE_CODES.include?(resp_code)
-          @logger.warn "retrying failed action with response code: #{resp_code}"
-          actions_to_retry << action
-        elsif not SUCCESS_CODES.include?(resp_code)
-          @logger.warn "failed action with response of #{resp_code}, dropping action: #{action}"
+    @submit_mutex.synchronize do
+      es_actions = actions.map { |a, doc, event| [a, doc, event.to_hash] }
+
+      bulk_response = @client.bulk(es_actions)
+
+      if bulk_response["errors"]
+        actions_with_responses = actions.zip(bulk_response['statuses'])
+        actions_to_retry = []
+        actions_with_responses.each do |action, resp_code|
+          if RETRYABLE_CODES.include?(resp_code)
+            @logger.warn "retrying failed action with response code: #{resp_code}"
+            actions_to_retry << action
+          elsif not SUCCESS_CODES.include?(resp_code)
+            @logger.warn "failed action with response of #{resp_code}, dropping action: #{action}"
+          end
         end
+        retry_push(actions_to_retry) unless actions_to_retry.empty?
       end
-      retry_push(actions_to_retry) unless actions_to_retry.empty?
     end
   end
 
@@ -564,19 +382,38 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def flush(actions, teardown = false)
     begin
       submit(actions)
+    rescue Manticore::SocketException => e
+      # If we can't even connect to the server let's just print out the URL (:hosts is actually a URL)
+      # and let the user sort it out from there
+      @logger.error(
+        "Attempted to send a bulk request to Elasticsearch configured at '#{@client.client_options[:hosts]}',"+
+          " but Elasticsearch appears to be unreachable or down!",
+        :client_config => @client.client_options,
+        :error_message => e.message
+      )
+      @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
     rescue => e
-      @logger.error "Got error to send bulk of actions: #{e.message}"
+      # For all other errors print out full connection issues
+      @logger.error(
+        "Attempted to send a bulk request to Elasticsearch configured at '#{@client.client_options[:hosts]}'," +
+            " but an error occurred and it failed! Are you sure you can reach elasticsearch from this machine using " +
+          "the configuration provided?",
+        :client_config => @client.client_options,
+        :error_message => e.message,
+        :error_class => e.class.name,
+        :backtrace => e.backtrace
+      )
+
+      @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
+
       raise e
-    ensure
-      unless @protocol == "node"
-        @logger.debug? and @logger.debug "Shifting current elasticsearch client"
-        shift_client
-      end
     end
   end # def flush
 
   public
   def teardown
+    @client.stop_sniffing!
+
     if @cacert # remove temporary jks store created from the cacert
       File.delete(@truststore)
     end
@@ -601,35 +438,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     retry_flush
   end
 
-  protected
-  def start_local_elasticsearch
-    @logger.info("Starting embedded Elasticsearch local node.")
-    builder = org.elasticsearch.node.NodeBuilder.nodeBuilder
-    # Disable 'local only' - LOGSTASH-277
-    #builder.local(true)
-    builder.settings.put("cluster.name", @cluster) if @cluster
-    builder.settings.put("node.name", @node_name) if @node_name
-    builder.settings.put("network.host", @bind_host) if @bind_host
-    builder.settings.put("http.port", @embedded_http_port)
-
-    @embedded_elasticsearch = builder.node
-    @embedded_elasticsearch.start
-  end # def start_local_elasticsearch
-
-  protected
-  def shift_client
-    @client_idx = (@client_idx+1) % @client.length
-    @current_client = @client[@client_idx]
-    @logger.debug? and @logger.debug("Switched current elasticsearch client to ##{@client_idx} at #{@host[@client_idx]}")
-  end
-
   private
   def setup_proxy
     return {} unless @proxy
-
-    if @protocol != "http"
-      raise(LogStash::ConfigurationError, "Proxy is not supported for '#{@protocol}'. Change the protocol to 'http' if you need HTTP proxy.")
-    end
 
     # Symbolize keys
     proxy = if @proxy.is_a?(Hash)
@@ -646,10 +457,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   private
   def setup_ssl
     return {} unless @ssl
-    if @protocol != "http"
-      raise(LogStash::ConfigurationError, "SSL is not supported for '#{@protocol}'. Change the protocol to 'http' if you need SSL.")
-    end
-    @protocol = "https"
+
     if @cacert && @truststore
       raise(LogStash::ConfigurationError, "Use either \"cacert\" or \"truststore\" when configuring the CA certificate") if @truststore
     end
@@ -679,14 +487,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def setup_basic_auth
     return {} unless @user && @password
 
-    if @protocol =~ /http/
-      {
-        :user => ::URI.escape(@user, "@:"),
-        :password => ::URI.escape(@password.value, "@:")
-      }
-    else
-      raise(LogStash::ConfigurationError, "User and password parameters are not supported for '#{@protocol}'. Change the protocol to 'http' if you need them.")
-    end
+    {
+      :user => ::URI.escape(@user, "@:"),
+      :password => ::URI.escape(@password.value, "@:")
+    }
   end
 
   private

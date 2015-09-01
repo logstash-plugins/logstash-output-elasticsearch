@@ -6,8 +6,7 @@ require "logstash/outputs/elasticsearch"
 describe "Proxy option" do
   let(:settings) {
     {
-      "protocol" => "http",
-      "host" => "node01",
+      "hosts" => "node01",
       "proxy" => proxy
     }
   }
@@ -35,10 +34,10 @@ describe "Proxy option" do
     end
 
     context "when specified as a hash" do
-      let(:proxy) { {"host" => "127.0.0.1", "protocol" => "http"} }
+      let(:proxy) { {"hosts" => "127.0.0.1", "protocol" => "http"} }
 
       it "should pass through the proxy values as symbols" do
-        expected = {:host => proxy["host"], :protocol => proxy["protocol"]}
+        expected = {:hosts => proxy["hosts"], :protocol => proxy["protocol"]}
         expect(::Elasticsearch::Client).to have_received(:new) do |options|
           expect(options[:transport_options][:proxy]).to eql(expected)
         end
