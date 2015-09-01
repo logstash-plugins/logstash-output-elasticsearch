@@ -60,7 +60,7 @@ module LogStash::Outputs::Elasticsearch
         @sniffer_thread = Thread.new do
           loop do
             sniff!
-            sleep (options[:sniffing_delay] || 30)
+            sleep (options[:sniffing_delay].to_f || 30)
           end
         end
       end
