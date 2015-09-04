@@ -3,3 +3,4 @@ Gemfile.lock
 .bundle
 .idea
 *~
+.ruby-version

@@ -249,9 +249,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     client_settings[:path] = "/#{@path}/".gsub(/\/+/, "/") # Normalize slashes
     @logger.debug? && @logger.debug("Normalizing http path", :path => @path, :normalized => client_settings[:path])
 
-    if @host.nil?
+    if @hosts.nil? || @hosts.empty?
       @logger.info("No 'host' set in elasticsearch output. Defaulting to localhost")
-      @host = ["localhost"]
+      @hosts = ["localhost"]
     end
 
     client_settings.merge! setup_ssl()
