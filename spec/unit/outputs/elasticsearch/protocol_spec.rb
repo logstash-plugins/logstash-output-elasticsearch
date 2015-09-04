@@ -15,12 +15,13 @@ describe LogStash::Outputs::Elasticsearch::HttpClient do
 
   context "contains failures" do
     it "should map correctly" do
+      item_response = {"_index"=>"logstash-2014.11.17",
+                       "_type"=>"logs", "_id"=>"AUxTQ_OI5Jrgi-hC6rQB", "status"=>400,
+                       "error"=>"MapperParsingException[failed to parse]..."}
       bulk_response = {"took"=>71, "errors"=>true,
-                       "items"=>[{"create"=>{"_index"=>"logstash-2014.11.17",
-                                             "_type"=>"logs", "_id"=>"AUxTQ_OI5Jrgi-hC6rQB", "status"=>400,
-                                             "error"=>"MapperParsingException[failed to parse]..."}}]}
+                       "items"=>[{"create"=>item_response}]}
       actual = LogStash::Outputs::Elasticsearch::HttpClient.normalize_bulk_response(bulk_response)
-      insist { actual } == {"errors"=> true, "statuses"=> [400]}
+      insist { actual } == {"errors"=> true, "statuses"=> [400], "details" => [item_response]}
     end
   end
 

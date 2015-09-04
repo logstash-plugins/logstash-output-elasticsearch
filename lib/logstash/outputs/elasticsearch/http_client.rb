@@ -120,7 +120,11 @@ module LogStash::Outputs::Elasticsearch
         # where each `item` is a hash of {OPTYPE => Hash[]}. calling first, will retrieve
         # this hash as a single array with two elements, where the value is the second element (i.first[1])
         # then the status of that item is retrieved.
-        {"errors" => true, "statuses" => bulk_response["items"].map { |i| i.first[1]['status'] }}
+        {
+          "errors" => true,
+          "statuses" => bulk_response["items"].map { |i| i.first[1]['status'] },
+          "details" => bulk_response["items"].select {|i| i.first[1]["error"] }.map {|i| i.first[1]}
+        }
       else
         {"errors" => false}
       end
