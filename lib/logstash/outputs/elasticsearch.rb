@@ -409,10 +409,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def teardown
     @client.stop_sniffing!
 
-    if @cacert # remove temporary jks store created from the cacert
-      File.delete(@truststore)
-    end
-
     @retry_teardown_requested.make_true
     # First, make sure retry_timer_thread is stopped
     # to ensure we do not signal a retry based on 
@@ -456,12 +452,15 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     if @cacert && @truststore
       raise(LogStash::ConfigurationError, "Use either \"cacert\" or \"truststore\" when configuring the CA certificate") if @truststore
     end
+
     ssl_options = {}
-    if @cacert then
-      @truststore, ssl_options[:truststore_password] = generate_jks @cacert
+
+    if @cacert
+      ssl_options[:ca_file] = @cacert
     elsif @truststore
       ssl_options[:truststore_password] = @truststore_password.value if @truststore_password
     end
+
     ssl_options[:truststore] = @truststore if @truststore
     if @keystore
       ssl_options[:keystore] = @keystore
@@ -486,29 +485,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       :user => ::URI.escape(@user, "@:"),
       :password => ::URI.escape(@password.value, "@:")
     }
-  end
-
-  private
-  def generate_jks cert_path
-
-    require 'securerandom'
-    require 'tempfile'
-    require 'java'
-    import java.io.FileInputStream
-    import java.io.FileOutputStream
-    import java.security.KeyStore
-    import java.security.cert.CertificateFactory
-
-    jks = java.io.File.createTempFile("cert", ".jks")
-
-    ks = KeyStore.getInstance "JKS"
-    ks.load nil, nil
-    cf = CertificateFactory.getInstance "X.509"
-    cert = cf.generateCertificate FileInputStream.new(cert_path)
-    ks.setCertificateEntry "cacert", cert
-    pwd = SecureRandom.urlsafe_base64(9)
-    ks.store FileOutputStream.new(jks), pwd.to_java.toCharArray
-    [jks.path, pwd]
   end
 
   private
