@@ -86,7 +86,8 @@ module LogStash::Outputs::Elasticsearch
       client_settings = options[:client_settings] || {}
 
       uris = hosts.map do |host|
-        "http://#{host}:#{port}#{client_settings[:path]}"
+        proto = client_settings[:ssl] ? "https"  : "http"
+        "#{proto}://#{host}:#{port}#{client_settings[:path]}"
       end
 
       @client_options = {
@@ -104,6 +105,8 @@ module LogStash::Outputs::Elasticsearch
         token = Base64.strict_encode64(options[:user] + ":" + options[:password])
         @client_options[:headers] = { "Authorization" => "Basic #{token}" }
       end
+
+      @logger.debug? && @logger.debug("Elasticsearch HTTP client options", client_options)
 
       Elasticsearch::Client.new(client_options)
     end
