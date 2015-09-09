@@ -11,8 +11,18 @@ describe "failures in bulk class expected behavior", :integration => true do
   let(:max_retries) { 3 }
 
   def mock_actions_with_response(*resp)
-    LogStash::Outputs::Elasticsearch::HttpClient
-      .any_instance.stub(:bulk).and_return(*resp)
+    expanded_responses = resp.map do |resp|
+      items = resp["statuses"] && resp["statuses"].map do |status|
+        {"create" => {"status" => status, "error" => "Error for #{status}"}}
+      end
+
+      {
+        "errors" => resp["errors"],
+        "items" => items
+      }
+    end
+
+    allow_any_instance_of(LogStash::Outputs::Elasticsearch::HttpClient).to receive(:bulk).and_return(*expanded_responses)
   end
 
   subject! do
@@ -22,7 +32,7 @@ describe "failures in bulk class expected behavior", :integration => true do
       "template_overwrite" => true,
       "hosts" => get_host(),
       "port" => get_port(),
-      "retry_max_items" => 10,
+      "retry_max_items" => 2,
       "retry_max_interval" => 1,
       "max_retries" => max_retries
     }
@@ -78,7 +88,8 @@ describe "failures in bulk class expected behavior", :integration => true do
     subject.receive(event1)
     subject.receive(event2)
     subject.buffer_flush(:final => true)
-    sleep(3)
+    puts "SLEEPING"
+    sleep(10)
   end
 
   it "should retry actions with response status of 429" do

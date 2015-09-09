@@ -50,9 +50,7 @@ module LogStash::Outputs::Elasticsearch
         end
       end.flatten
 
-      bulk_response = @client.bulk(:body => bulk_body)
-
-      self.class.normalize_bulk_response(bulk_response)
+      @client.bulk(:body => bulk_body)
     end
 
     def start_sniffing!
@@ -109,28 +107,6 @@ module LogStash::Outputs::Elasticsearch
       @logger.debug? && @logger.debug("Elasticsearch HTTP client options", client_options)
 
       Elasticsearch::Client.new(client_options)
-    end
-
-    def self.normalize_bulk_response(bulk_response)
-      if bulk_response["errors"]
-        # The structure of the response from the REST Bulk API is follows:
-        # {"took"=>74, "errors"=>true, "items"=>[{"create"=>{"_index"=>"logstash-2014.11.17",
-        #                                                    "_type"=>"logs",
-        #                                                    "_id"=>"AUxTS2C55Jrgi-hC6rQF",
-        #                                                    "_version"=>1,
-        #                                                    "status"=>400,
-        #                                                    "error"=>"MapperParsingException[failed to parse]..."}}]}
-        # where each `item` is a hash of {OPTYPE => Hash[]}. calling first, will retrieve
-        # this hash as a single array with two elements, where the value is the second element (i.first[1])
-        # then the status of that item is retrieved.
-        {
-          "errors" => true,
-          "statuses" => bulk_response["items"].map { |i| i.first[1]['status'] },
-          "details" => bulk_response["items"].select {|i| i.first[1]["error"] }.map {|i| i.first[1]}
-        }
-      else
-        {"errors" => false}
-      end
     end
 
     def template_exists?(name)
