@@ -10,44 +10,32 @@ require "thread" # for safe queueing
 require "uri" # for escaping user input
 require "logstash/outputs/elasticsearch/http_client"
 
-# This output lets you store logs in Elasticsearch and is the most recommended
-# output for Logstash. If you plan on using the Kibana web interface, you'll
-# want to use this output.
+# This plugin is the recommended method of storing logs in Elasticsearch.
+# If you plan on using the Kibana web interface, you'll want to use this output.
 #
-# This output only speaks the HTTP, which is the preferred protocol for interacting with Elasticsearch. By default
-# Elasticsearch exposes HTTP on port 9200.
-#
-# We strongly encourage the use of HTTP over the node protocol. It is just as
-# fast and far easier to administer. For those wishing to use the java protocol please see the 'elasticsearch_java' gem.
+# This output only speaks the HTTP protocol. HTTP is the preferred protocol for interacting with Elasticsearch as of Logstash 2.0.
+# We strongly encourage the use of HTTP over the node protocol for a number of reasons. HTTP is only marginally slower,
+# yet far easier to administer and work with. When using the HTTP protocol one may upgrade Elasticsearch versions without having
+# to upgrade Logstash in lock-step. For those wishing to use the node or transport protocols please see the 'elasticsearch_java' gem.
 #
 # You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
 #
 # ==== Retry Policy
 #
-# By default all bulk requests to ES are synchronous. Not all events in the bulk requests
-# always make it successfully. For example, there could be events which are not formatted
-# correctly for the index they are targeting (type mismatch in mapping). So that we minimize loss of 
-# events, we have a specific retry policy in place. We retry all events which fail to be reached by 
-# Elasticsearch for network related issues. We retry specific events which exhibit errors under a separate 
-# policy described below. Events of this nature are ones which experience ES error codes described as 
-# retryable errors.
+# This plugin uses the Elasticsearch bulk API to optimize its imports into Elasticsearch. These requests may experience
+# either partial or total failures. Events are retried if they fail due to either a network error or the status codes
+# 429 (the server is busy), 409 (Version Conflict), or 503 (temporary overloading/maintenance).
 #
-# *Retryable Errors:*
+# The retry policy's logic can be described as follows:
 #
-# - 429, Too Many Requests (RFC6585)
-# - 503, The server is currently unable to handle the request due to a temporary overloading or maintenance of the server.
-# 
-# Here are the rules of what is retried when:
-#
-# - Block and retry all events in bulk response that experiences transient network exceptions until
+# - Block and retry all events in the bulk response that experience transient network exceptions until
 #   a successful submission is received by Elasticsearch.
-# - Retry subset of sent events which resulted in ES errors of a retryable nature which can be found 
-#   in RETRYABLE_CODES
-# - For events which returned retryable error codes, they will be pushed onto a separate queue for 
-#   retrying events. events in this queue will be retried a maximum of 5 times by default (configurable through :max_retries). The size of 
-#   this queue is capped by the value set in :retry_max_items.
-# - Events from the retry queue are submitted again either when the queue reaches its max size or when
-#   the max interval time is reached, which is set in :retry_max_interval.
+# - Retry the subset of sent events which resulted in ES errors of a retryable nature.
+# - Events which returned retryable error codes will be pushed onto a separate queue for
+#   retrying events. Events in this queue will be retried a maximum of 5 times by default (configurable through :max_retries).
+#   The size of this queue is capped by the value set in :retry_max_items.
+# - Events from the retry queue are submitted again when the queue reaches its max size or when
+#   the max interval time is reached. The max interval time is configurable via :retry_max_interval.
 # - Events which are not retryable or have reached their max retry count are logged to stderr.
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   attr_reader :client
@@ -361,16 +349,23 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       bulk_response = @client.bulk(es_actions)
 
       if bulk_response["errors"]
-        actions_with_responses = actions.zip(bulk_response['statuses'])
         actions_to_retry = []
-        actions_with_responses.each do |action, resp_code|
-          if RETRYABLE_CODES.include?(resp_code)
-            @logger.warn "retrying failed action with response code: #{resp_code}"
+
+        bulk_response['items'].each_with_index do |item,idx|
+          action = es_actions[idx]
+          action_type, props = item.first # These are all hashes with one value, so we destructure them here
+
+          status = props['status']
+          error = props['error']
+
+          if RETRYABLE_CODES.include?(status)
+            @logger.warn "retrying failed action with response code: #{status}"
             actions_to_retry << action
-          elsif not SUCCESS_CODES.include?(resp_code)
-            @logger.warn "failed action with response of #{resp_code}, dropping action: #{action}"
+          elsif not SUCCESS_CODES.include?(status)
+            @logger.warn "failed action", status: status, error: error, action: action
           end
         end
+
         retry_push(actions_to_retry) unless actions_to_retry.empty?
       end
     end
