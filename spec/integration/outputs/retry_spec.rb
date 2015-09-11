@@ -88,7 +88,6 @@ describe "failures in bulk class expected behavior", :integration => true do
     subject.receive(event1)
     subject.receive(event2)
     subject.buffer_flush(:final => true)
-    puts "SLEEPING"
     sleep(10)
   end
 
