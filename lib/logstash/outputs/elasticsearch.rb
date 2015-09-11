@@ -16,7 +16,8 @@ require "logstash/outputs/elasticsearch/http_client"
 # This output only speaks the HTTP protocol. HTTP is the preferred protocol for interacting with Elasticsearch as of Logstash 2.0.
 # We strongly encourage the use of HTTP over the node protocol for a number of reasons. HTTP is only marginally slower,
 # yet far easier to administer and work with. When using the HTTP protocol one may upgrade Elasticsearch versions without having
-# to upgrade Logstash in lock-step. For those wishing to use the node or transport protocols please see the 'elasticsearch_java' gem.
+# to upgrade Logstash in lock-step. For those still wishing to use the node or transport protocols please see
+# the `logstash-output-elasticsearch_java` plugin.
 #
 # You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
 #
@@ -101,23 +102,25 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # This can be dynamic using the `%{foo}` syntax.
   config :routing, :validate => :string
 
-  # Sets the host(s) of the remote instance. If given an array it will load balance requests across the hosts specified in the `host` parameter.
+  # Sets the host(s) of the remote instance. If given an array it will load balance requests across the hosts specified in the `hosts` parameter.
   # Remember the `http` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http[http] address (eg. 9200, not 9300).
   #     `"127.0.0.1"`
   #     `["127.0.0.1:9200","127.0.0.2:9200"]`
-  # It is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `host` list
-  # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes.
+  # It is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `hosts` list
+  # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes in Elasticsearch.
 
   config :hosts, :validate => :array
 
   # You can set the remote port as part of the host, or explicitly here as well
   config :port, :validate => :string, :default => 9200
 
-  # This plugin uses the bulk index api for improved indexing performance.
-  # To make efficient bulk api calls, we will buffer a certain number of
+  # This plugin uses the bulk index API for improved indexing performance.
+  # To make efficient bulk API calls, we will buffer a certain number of
   # events before flushing that out to Elasticsearch. This setting
   # controls how many events will be buffered before sending a batch
-  # of events.
+  # of events. Increasing the `flush_size` has an effect on Logstash's heapsize. 
+  # Remember to also increase the heapsize if you are sending big documents or have increased the
+  # `flush_size` to a higher value.
   config :flush_size, :validate => :number, :default => 500
 
   # The amount of time since last flush before a flush is forced.
@@ -131,62 +134,56 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # near-real-time.
   config :idle_flush_time, :validate => :number, :default => 1
 
-  # The Elasticsearch action to perform. Valid actions are: `index`, `delete`.
-  #
-  # Use of this setting *REQUIRES* you also configure the `document_id` setting
-  # because `delete` actions all require a document id.
-  #
-  # What does each action do?
+  # The Elasticsearch action to perform. Valid actions are: 
   #
   # - index: indexes a document (an event from Logstash).
-  # - delete: deletes a document by id
+  # - delete: deletes a document by id (An id is required for this action)
   # - create: indexes a document, fails if a document by that id already exists in the index.
-  # - update: updates a document by id
-  # following action is not supported by HTTP protocol
+  # - update: updates a document by id. Update has a special case where you can upsert -- update a 
+  #   document if not already present. See the `upsert` option
   #
-  # For more details on actions, check out the http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
+  # For more details on actions, check out the http://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
   config :action, :validate => %w(index delete create update), :default => "index"
 
-  # Username and password (only valid when protocol is HTTP; this setting works with HTTP or HTTPS auth)
+  # Username to authenticate to a secure Elasticsearch cluster
   config :user, :validate => :string
+  # Password to authenticate to a secure Elasticsearch cluster
   config :password, :validate => :password
 
-  # HTTP Path at which the Elasticsearch server lives. Use this if you must run ES behind a proxy that remaps
-  # the root path for the Elasticsearch HTTP API lives. This option is ignored for non-HTTP transports.
+  # HTTP Path at which the Elasticsearch server lives. Use this if you must run Elasticsearch behind a proxy that remaps
+  # the root path for the Elasticsearch HTTP API lives.
   config :path, :validate => :string, :default => "/"
 
-  # SSL Configurations (only valid when protocol is HTTP)
-  #
-  # Enable SSL
+  # Enable SSL/TLS secured communication to Elasticsearch cluster
   config :ssl, :validate => :boolean, :default => false
 
-  # Validate the server's certificate
-  # Disabling this severely compromises security
-  # For more information read https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
+  # Option to validate the server's certificate. Disabling this severely compromises security.
+  # For more information on disabling certificate verification please read
+  # https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
   config :ssl_certificate_verification, :validate => :boolean, :default => true
 
   # The .cer or .pem file to validate the server's certificate
   config :cacert, :validate => :path
 
-  # The JKS truststore to validate the server's certificate
+  # The JKS truststore to validate the server's certificate.
   # Use either `:truststore` or `:cacert`
   config :truststore, :validate => :path
 
   # Set the truststore password
   config :truststore_password, :validate => :password
 
-  # The keystore used to present a certificate to the server
+  # The keystore used to present a certificate to the server.
   # It can be either .jks or .p12
   config :keystore, :validate => :path
 
   # Set the truststore password
   config :keystore_password, :validate => :password
 
-  # Enable cluster sniffing
-  # Asks host for the list of all cluster nodes and adds them to the hosts list
-  # Will return ALL nodes with HTTP enabled (including master nodes!). If you use
+  # This setting asks Elasticsearch for the list of all cluster nodes and adds them to the hosts list.
+  # Note: This will return ALL nodes with HTTP enabled (including master nodes!). If you use
   # this with master nodes, you probably want to disable HTTP on them by setting
-  # `http.enabled` to false in their elasticsearch.yml.
+  # `http.enabled` to false in their elasticsearch.yml. You can either use the `sniffing` option or
+  # manually enter multiple Elasticsearch hosts using the `hosts` paramater.
   config :sniffing, :validate => :boolean, :default => false
 
   # How long to wait, in seconds, between sniffing attempts
@@ -201,18 +198,18 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Set max interval between bulk retries
   config :retry_max_interval, :validate => :number, :default => 5
 
-  # Set the address of a forward HTTP proxy. Must be used with the 'http' protocol
-  # Can be either a string, such as 'http://localhost:123' or a hash in the form
-  # {host: 'proxy.org' port: 80 scheme: 'http'}
+  # Set the address of a forward HTTP proxy. 
+  # Can be either a string, such as `http://localhost:123` or a hash in the form
+  # of `{host: 'proxy.org' port: 80 scheme: 'http'}`.
   # Note, this is NOT a SOCKS proxy, but a plain HTTP proxy
   config :proxy
 
-  # Enable doc_as_upsert for update mode
-  # create a new document with source if document_id doesn't exists
+  # Enable `doc_as_upsert` for update mode.
+  # Create a new document with source if `document_id` doesn't exist in Elasticsearch
   config :doc_as_upsert, :validate => :boolean, :default => false
 
-  # Set upsert content for update mode
-  # create a new document with this parameter as json string if document_id doesn't exists
+  # Set upsert content for update mode.
+  # Create a new document with this parameter as json string if `document_id` doesn't exists
   config :upsert, :validate => :string, :default => ""
 
   public
