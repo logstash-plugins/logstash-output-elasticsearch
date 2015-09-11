@@ -356,13 +356,13 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         action_type, action_props = resp.first
 
         status = action_props["status"]
-        action = es_actions[idx]
+        action = actions[idx]
 
         if RETRYABLE_CODES.include?(status)
           @logger.warn "retrying failed action with response code: #{status}"
           actions_to_retry << action
         elsif not SUCCESS_CODES.include?(status)
-          @logger.warn "failed action with response of #{status}, dropping action: #{action}"
+          @logger.warn "Failed action. ", status: status, action: action, response: resp
         end
       end
 
