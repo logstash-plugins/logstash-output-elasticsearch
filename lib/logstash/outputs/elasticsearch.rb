@@ -348,26 +348,25 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
       bulk_response = @client.bulk(es_actions)
 
-      if bulk_response["errors"]
-        actions_to_retry = []
+      next unless bulk_response["errors"]
 
-        bulk_response['items'].each_with_index do |item,idx|
-          action = es_actions[idx]
-          action_type, props = item.first # These are all hashes with one value, so we destructure them here
+      actions_to_retry = []
 
-          status = props['status']
-          error = props['error']
+      bulk_response["items"].each_with_index do |resp,idx|
+        action_type, action_props = resp.first
 
-          if RETRYABLE_CODES.include?(status)
-            @logger.warn "retrying failed action with response code: #{status}"
-            actions_to_retry << action
-          elsif not SUCCESS_CODES.include?(status)
-            @logger.warn "failed action", status: status, error: error, action: action
-          end
+        status = action_props["status"]
+        action = es_actions[idx]
+
+        if RETRYABLE_CODES.include?(status)
+          @logger.warn "retrying failed action with response code: #{status}"
+          actions_to_retry << action
+        elsif not SUCCESS_CODES.include?(status)
+          @logger.warn "failed action with response of #{status}, dropping action: #{action}"
         end
-
-        retry_push(actions_to_retry) unless actions_to_retry.empty?
       end
+
+      retry_push(actions_to_retry) unless actions_to_retry.empty?
     end
   end
 
