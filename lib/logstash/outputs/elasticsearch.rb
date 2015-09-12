@@ -17,7 +17,7 @@ require "logstash/outputs/elasticsearch/http_client"
 # We strongly encourage the use of HTTP over the node protocol for a number of reasons. HTTP is only marginally slower,
 # yet far easier to administer and work with. When using the HTTP protocol one may upgrade Elasticsearch versions without having
 # to upgrade Logstash in lock-step. For those still wishing to use the node or transport protocols please see
-# the `logstash-output-elasticsearch_java` plugin.
+# the https://www.elastic.co/guide/en/logstash/2.0/plugins-outputs-elasticsearch_java.html[logstash-output-elasticsearch_java] plugin.
 #
 # You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
 #
@@ -118,9 +118,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # To make efficient bulk API calls, we will buffer a certain number of
   # events before flushing that out to Elasticsearch. This setting
   # controls how many events will be buffered before sending a batch
-  # of events. Increasing the `flush_size` has an effect on Logstash's heapsize. 
-  # Remember to also increase the heapsize if you are sending big documents or have increased the
-  # `flush_size` to a higher value.
+  # of events. Increasing the `flush_size` has an effect on Logstash's heap size. 
+  # Remember to also increase the heap size using `LS_HEAP_SIZE` if you are sending big documents
+  # or have increased the `flush_size` to a higher value.
   config :flush_size, :validate => :number, :default => 500
 
   # The amount of time since last flush before a flush is forced.
