@@ -12,7 +12,7 @@ module LogStash::Outputs::Elasticsearch
     }
 
     def initialize(options={})
-      @logger = Cabin::Channel.get
+      @logger = options[:logger]
       @options = DEFAULT_OPTIONS.merge(options)
       @client = build_client(@options)
       start_sniffing!
@@ -70,10 +70,13 @@ module LogStash::Outputs::Elasticsearch
 
     def sniff!
       client.transport.reload_connections! if options[:sniffing]
+      hosts_by_name = client.transport.hosts.map {|h| h["name"]}.sort
+      @logger.debug({"count" => hosts_by_name.count, "hosts" => hosts_by_name})
     rescue StandardError => e
       @logger.error("Error while sniffing connection",
                     :message => e.message,
-                    :class => e.class.name)
+                    :class => e.class.name,
+                    :backtrace => e.backtrace)
     end
 
     private
