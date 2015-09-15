@@ -4,7 +4,7 @@ require "java"
 
 describe LogStash::Outputs::Elasticsearch::HttpClient do
   describe "sniffing" do
-    let(:base_options) { {:hosts => ["127.0.0.1"] }}
+    let(:base_options) { {:hosts => ["127.0.0.1"], :logger => Cabin::Channel.get }}
     let(:client) { LogStash::Outputs::Elasticsearch::HttpClient.new(base_options.merge(client_opts)) }
     let(:transport) { client.client.transport }
 

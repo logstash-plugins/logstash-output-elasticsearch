@@ -32,7 +32,7 @@ describe "failures in bulk class expected behavior", :integration => true do
       "template_overwrite" => true,
       "hosts" => get_host(),
       "port" => get_port(),
-      "retry_max_items" => 2,
+      "retry_max_items" => 10,
       "retry_max_interval" => 1,
       "max_retries" => max_retries
     }
@@ -88,7 +88,7 @@ describe "failures in bulk class expected behavior", :integration => true do
     subject.receive(event1)
     subject.receive(event2)
     subject.buffer_flush(:final => true)
-    sleep(10)
+    sleep(3)
   end
 
   it "should retry actions with response status of 429" do
