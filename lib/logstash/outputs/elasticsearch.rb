@@ -254,7 +254,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     common_options.merge! update_options if @action == 'update'
 
     @client = LogStash::Outputs::Elasticsearch::HttpClient.new(
-      common_options.merge(:hosts => @hosts, :port => @port)
+      common_options.merge(:hosts => @hosts, :port => @port, :logger => @logger)
     )
 
     if @manage_template
