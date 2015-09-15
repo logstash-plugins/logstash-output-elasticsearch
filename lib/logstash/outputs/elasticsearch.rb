@@ -190,7 +190,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :sniffing, :validate => :boolean, :default => false
 
   # How long to wait, in seconds, between sniffing attempts
-  config :sniffing_delay, :validate => :number, :default => 30
+  config :sniffing_delay, :validate => :number, :default => 5
 
   # Set max retry for each event
   config :max_retries, :validate => :number, :default => 3
