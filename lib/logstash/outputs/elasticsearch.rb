@@ -220,7 +220,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @hosts = Array(@hosts)
     # retry-specific variables
     @retry_flush_mutex = Mutex.new
-    @retry_teardown_requested = Concurrent::AtomicBoolean.new(false)
+    @retry_close_requested = Concurrent::AtomicBoolean.new(false)
     # needs flushing when interval
     @retry_queue_needs_flushing = ConditionVariable.new
     @retry_queue_not_full = ConditionVariable.new
@@ -284,7 +284,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     end
 
     @retry_thread = Thread.new do
-      while @retry_teardown_requested.false?
+      while @retry_close_requested.false?
         @retry_flush_mutex.synchronize { @retry_queue_needs_flushing.wait(@retry_flush_mutex) }
         retry_flush
       end
@@ -373,7 +373,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # When there are exceptions raised upon submission, we raise an exception so that
   # Stud::Buffer will retry to flush
   public
-  def flush(actions, teardown = false)
+  def flush(actions, close = false)
     begin
       submit(actions)
     rescue Manticore::SocketException => e
@@ -405,10 +405,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end # def flush
 
   public
-  def teardown
+  def close
     @client.stop_sniffing!
 
-    @retry_teardown_requested.make_true
+    @retry_close_requested.make_true
     # First, make sure retry_timer_thread is stopped
     # to ensure we do not signal a retry based on 
     # the retry interval.
@@ -491,8 +491,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # retried
   #
   # This method is not called concurrently. It is only called by @retry_thread
-  # and once that thread is ended during the teardown process, a final call 
-  # to this method is done upon teardown in the main thread.
+  # and once that thread is ended during the close process, a final call 
+  # to this method is done upon close in the main thread.
   def retry_flush()
     unless @retry_queue.empty?
       buffer = @retry_queue.size.times.map do
