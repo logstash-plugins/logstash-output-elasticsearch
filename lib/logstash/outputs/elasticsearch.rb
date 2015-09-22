@@ -53,12 +53,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # For weekly indexes ISO 8601 format is recommended, eg. logstash-%{+xxxx.ww}
   config :index, :validate => :string, :default => "logstash-%{+YYYY.MM.dd}"
 
-  # The index type to write events to. Generally you should try to write only
-  # similar events to the same 'type'. String expansion `%{foo}` works here.
-  # 
-  # Deprecated in favor of `document_type` field.
-  config :index_type, :validate => :string, :deprecated => "Please use the 'document_type' setting instead. It has the same effect, but is more appropriately named."
-
   # The document type to write events to. Generally you should try to write only
   # similar events to the same 'type'. String expansion `%{foo}` works here.
   # Unless you set 'document_type', the event 'type' will be used if it exists 
