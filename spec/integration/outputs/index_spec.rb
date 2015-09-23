@@ -6,13 +6,16 @@ shared_examples "an indexer" do
     let(:event_count) { 10000 + rand(500) }
     let(:flush_size) { rand(200) + 1 }
     let(:config) { "not implemented" }
+    subject { LogStash::Outputs::ElasticSearch.new(config) }
+
+    before do
+      subject.register
+      event_count.times do
+        subject.receive(LogStash::Event.new("message" => "Hello World!", "type" => type))
+      end
+    end
 
     it "ships events" do
-      insist { config } != "not implemented"
-
-      pipeline = LogStash::Pipeline.new(config)
-      pipeline.run
-
       index_url = "http://#{get_host}:#{get_port}/#{index}"
 
       ftw = FTW::Agent.new
@@ -42,23 +45,12 @@ end
 describe "an indexer with custom index_type", :integration => true do
   it_behaves_like "an indexer" do
     let(:config) {
-      <<-CONFIG
-      input {
-        generator {
-          message => "hello world"
-          count => #{event_count}
-          type => "#{type}"
-        }
+      {
+        "hosts" => get_host,
+        "port" => get_port,
+        "index" => index,
+        "flush_size" => flush_size
       }
-      output {
-        elasticsearch {
-          hosts => "#{get_host()}"
-          port => "#{get_port}"
-          index => "#{index}"
-          flush_size => #{flush_size}
-        }
-      }
-      CONFIG
     }
   end
 end
@@ -67,22 +59,12 @@ describe "an indexer with no type value set (default to logs)", :integration => 
   it_behaves_like "an indexer" do
     let(:type) { "logs" }
     let(:config) {
-      <<-CONFIG
-      input {
-        generator {
-          message => "hello world"
-          count => #{event_count}
-        }
+      {
+        "hosts" => get_host,
+        "port" => get_port,
+        "index" => index,
+        "flush_size" => flush_size
       }
-      output {
-        elasticsearch {
-          hosts => "#{get_host()}"
-          port => "#{get_port}"
-          index => "#{index}"
-          flush_size => #{flush_size}
-        }
-      }
-      CONFIG
     }
   end
 end

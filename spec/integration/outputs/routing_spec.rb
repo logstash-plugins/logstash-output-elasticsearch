@@ -7,14 +7,17 @@ shared_examples "a routing indexer" do
     let(:flush_size) { rand(200) + 1 }
     let(:routing) { "not_implemented" }
     let(:config) { "not_implemented" }
+    subject { LogStash::Outputs::ElasticSearch.new(config) }
+
+    before do
+      subject.register
+      event_count.times do
+        subject.receive(LogStash::Event.new("message" => "Hello World!", "type" => type))
+      end
+    end
+
 
     it "ships events" do
-      insist { routing } != "not_implemented"
-      insist { config } != "not_implemented"
-
-      pipeline = LogStash::Pipeline.new(config)
-      pipeline.run
-
       index_url = "http://#{get_host()}:#{get_port()}/#{index}"
 
       ftw = FTW::Agent.new
@@ -36,24 +39,13 @@ describe "(http protocol) index events with static routing", :integration => tru
   it_behaves_like 'a routing indexer' do
     let(:routing) { "test" }
     let(:config) {
-      <<-CONFIG
-      input {
-        generator {
-          message => "hello world"
-          count => #{event_count}
-          type => "#{type}"
-        }
+      {
+        "hosts" => get_host,
+        "port" => get_port,
+        "index" => index,
+        "flush_size" => flush_size,
+        "routing" => routing
       }
-      output {
-        elasticsearch {
-          hosts => "#{get_host()}"
-          port => "#{get_port()}"
-          index => "#{index}"
-          flush_size => #{flush_size}
-          routing => "#{routing}"
-        }
-      }
-      CONFIG
     }
   end
 end
@@ -62,24 +54,13 @@ describe "(http_protocol) index events with fieldref in routing value", :integra
   it_behaves_like 'a routing indexer' do
     let(:routing) { "test" }
     let(:config) {
-      <<-CONFIG
-      input {
-        generator {
-          message => "#{routing}"
-          count => #{event_count}
-          type => "#{type}"
-        }
+      {
+        "hosts" => get_host,
+        "port" => get_port,
+        "index" => index,
+        "flush_size" => flush_size,
+        "routing" => "%{message}"
       }
-      output {
-        elasticsearch {
-          hosts => "#{get_host()}"
-          port => "#{get_port()}"
-          index => "#{index}"
-          flush_size => #{flush_size}
-          routing => "%{message}"
-        }
-      }
-      CONFIG
     }
   end
 end
