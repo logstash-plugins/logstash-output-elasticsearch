@@ -147,8 +147,14 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # For more details on actions, check out the http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
   config :action, :validate => %w(index delete create update), :default => "index"
 
-  # Username and password (only valid when protocol is HTTP; this setting works with HTTP or HTTPS auth)
+  # Username for HTTP(S) auth. See also password setting.
+  #
+  # This setting is only valid when protocol is HTTP.
   config :user, :validate => :string
+  
+  # Password for HTTP(S) auth. See also user setting.
+  #
+  # This setting is only valid when protocol is HTTP.
   config :password, :validate => :password
 
   # HTTP Path at which the Elasticsearch server lives. Use this if you must run ES behind a proxy that remaps
