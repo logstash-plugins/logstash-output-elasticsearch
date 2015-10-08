@@ -7,13 +7,16 @@ require "elasticsearch/transport/transport/http/manticore"
 module LogStash::Outputs::Elasticsearch
   class HttpClient
     attr_reader :client, :options, :client_options, :sniffer_thread
-    DEFAULT_OPTIONS = {
-      :port => 9200
-    }
+    # This is here in case we use DEFAULT_OPTIONS in the future
+    # DEFAULT_OPTIONS = {
+    #   :setting => value
+    # }
 
     def initialize(options={})
       @logger = options[:logger]
-      @options = DEFAULT_OPTIONS.merge(options)
+      # Again, in case we use DEFAULT_OPTIONS in the future, uncomment this.
+      # @options = DEFAULT_OPTIONS.merge(options)
+      @options = options
       @client = build_client(@options)
       start_sniffing!
     end
@@ -83,12 +86,16 @@ module LogStash::Outputs::Elasticsearch
 
     def build_client(options)
       hosts = options[:hosts] || ["127.0.0.1"]
-      port = options[:port] || 9200
       client_settings = options[:client_settings] || {}
 
       uris = hosts.map do |host|
         proto = client_settings[:ssl] ? "https"  : "http"
-        "#{proto}://#{host}:#{port}#{client_settings[:path]}"
+        if !(host =~ /:/).nil?
+          "#{proto}://#{host}#{client_settings[:path]}"
+        else
+          # Use default port of 9200 if none provided with host.
+          "#{proto}://#{host}:9200#{client_settings[:path]}"
+        end
       end
 
       @client_options = {
