@@ -56,13 +56,13 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # The index type to write events to. Generally you should try to write only
   # similar events to the same 'type'. String expansion `%{foo}` works here.
-  # 
+  #
   # Deprecated in favor of `document_type` field.
   config :index_type, :validate => :string, :deprecated => "Please use the 'document_type' setting instead. It has the same effect, but is more appropriately named."
 
   # The document type to write events to. Generally you should try to write only
   # similar events to the same 'type'. String expansion `%{foo}` works here.
-  # Unless you set 'document_type', the event 'type' will be used if it exists 
+  # Unless you set 'document_type', the event 'type' will be used if it exists
   # otherwise the document type will be assigned the value of 'logs'
   config :document_type, :validate => :string
 
@@ -111,14 +111,15 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   config :hosts, :validate => :array
 
-  # You can set the remote port as part of the host, or explicitly here as well
-  config :port, :validate => :string, :default => 9200
+  # The port setting is obsolete.  Please use the 'hosts' setting instead.
+  # Hosts entries can be in "host:port" format.
+  config :port, :obsolete => "Please use the 'hosts' setting instead. Hosts entries can be in 'host:port' format."
 
   # This plugin uses the bulk index API for improved indexing performance.
   # To make efficient bulk API calls, we will buffer a certain number of
   # events before flushing that out to Elasticsearch. This setting
   # controls how many events will be buffered before sending a batch
-  # of events. Increasing the `flush_size` has an effect on Logstash's heap size. 
+  # of events. Increasing the `flush_size` has an effect on Logstash's heap size.
   # Remember to also increase the heap size using `LS_HEAP_SIZE` if you are sending big documents
   # or have increased the `flush_size` to a higher value.
   config :flush_size, :validate => :number, :default => 500
@@ -134,12 +135,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # near-real-time.
   config :idle_flush_time, :validate => :number, :default => 1
 
-  # The Elasticsearch action to perform. Valid actions are: 
+  # The Elasticsearch action to perform. Valid actions are:
   #
   # - index: indexes a document (an event from Logstash).
   # - delete: deletes a document by id (An id is required for this action)
   # - create: indexes a document, fails if a document by that id already exists in the index.
-  # - update: updates a document by id. Update has a special case where you can upsert -- update a 
+  # - update: updates a document by id. Update has a special case where you can upsert -- update a
   #   document if not already present. See the `upsert` option
   #
   # For more details on actions, check out the http://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
@@ -198,7 +199,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Set max interval between bulk retries
   config :retry_max_interval, :validate => :number, :default => 5
 
-  # Set the address of a forward HTTP proxy. 
+  # Set the address of a forward HTTP proxy.
   # Can be either a string, such as `http://localhost:123` or a hash in the form
   # of `{host: 'proxy.org' port: 80 scheme: 'http'}`.
   # Note, this is NOT a SOCKS proxy, but a plain HTTP proxy
@@ -251,7 +252,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     common_options.merge! update_options if @action == 'update'
 
     @client = LogStash::Outputs::Elasticsearch::HttpClient.new(
-      common_options.merge(:hosts => @hosts, :port => @port, :logger => @logger)
+      common_options.merge(:hosts => @hosts, :logger => @logger)
     )
 
     if @manage_template
@@ -263,7 +264,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       end
     end
 
-    @logger.info("New Elasticsearch output", :hosts => @hosts, :port => @port)
+    @logger.info("New Elasticsearch output", :hosts => @hosts)
 
     @client_idx = 0
 
@@ -304,9 +305,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   public
   def receive(event)
-    
 
-    # block until we have not maxed out our 
+    # block until we have not maxed out our
     # retry queue. This is applying back-pressure
     # to slow down the receive-rate
     @retry_flush_mutex.synchronize {
@@ -330,7 +330,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       :_type => type,
       :_routing => @routing ? event.sprintf(@routing) : nil
     }
-    
+
     params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @action == 'update' && @upsert != ""
 
     buffer_receive([event.sprintf(@action), params, event])
@@ -407,19 +407,19 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     @retry_close_requested.make_true
     # First, make sure retry_timer_thread is stopped
-    # to ensure we do not signal a retry based on 
+    # to ensure we do not signal a retry based on
     # the retry interval.
     Thread.kill(@retry_timer_thread)
     @retry_timer_thread.join
-    # Signal flushing in the case that #retry_flush is in 
+    # Signal flushing in the case that #retry_flush is in
     # the process of waiting for a signal.
     @retry_flush_mutex.synchronize { @retry_queue_needs_flushing.signal }
-    # Now, #retry_flush is ensured to not be in a state of 
+    # Now, #retry_flush is ensured to not be in a state of
     # waiting and can be safely joined into the main thread
     # for further final execution of an in-process remaining call.
     @retry_thread.join
 
-    # execute any final actions along with a proceeding retry for any 
+    # execute any final actions along with a proceeding retry for any
     # final actions that did not succeed.
     buffer_flush(:final => true)
     retry_flush
@@ -484,11 +484,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   private
-  # in charge of submitting any actions in @retry_queue that need to be 
+  # in charge of submitting any actions in @retry_queue that need to be
   # retried
   #
   # This method is not called concurrently. It is only called by @retry_thread
-  # and once that thread is ended during the close process, a final call 
+  # and once that thread is ended during the close process, a final call
   # to this method is done upon close in the main thread.
   def retry_flush()
     unless @retry_queue.empty?
