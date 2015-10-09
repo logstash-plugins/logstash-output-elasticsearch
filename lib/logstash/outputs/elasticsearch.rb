@@ -215,7 +215,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Set the timeout for network operations and requests sent Elasticsearch. If
   # a timeout occurs, the request will be retried.
-  config :timeout, :valudate => :number
+  config :timeout, :validate => :number
 
   public
   def register
