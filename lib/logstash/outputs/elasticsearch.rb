@@ -326,6 +326,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # create a new document with this parameter as json string if document_id doesn't exists
   config :upsert, :validate => :string, :default => ""
 
+
+  # Set the timeout for network operations and requests sent Elasticsearch. If
+  # a timeout occurs, the request will be retried.
+  config :timeout, :validate => :number
+
   public
   def register
     @submit_mutex = Mutex.new
@@ -396,6 +401,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       :client_settings => client_settings
     }
 
+    common_options[:timeout] = @timeout if @timeout
     common_options.merge! setup_basic_auth()
 
     # Update API setup

@@ -1,4 +1,5 @@
 require_relative "../../../spec/es_spec_helper"
+require "flores/random"
 
 describe "outputs/elasticsearch" do
   context "registration" do
@@ -152,6 +153,47 @@ describe "outputs/elasticsearch" do
 
         expect(settings.build.getAsMap["client.transport.sniff"]).to eq("false")
       end
+    end
+  end
+
+
+  # TODO(sissel): Improve this. I'm not a fan of using message expectations (expect().to receive...)
+  # especially with respect to logging to verify a failure/retry has occurred. For now, this 
+  # should suffice, though.
+  context "with timeout set" do
+    let(:listener) { Flores::Random.tcp_listener }
+    let(:port) { listener[2] }
+    let(:options) do
+      {
+        "protocol" => "http",
+        "manage_template" => false,
+        "host" => "localhost",
+        "port" => port,
+        "flush_size" => 1,
+        "timeout" => 1,
+      }
+    end
+    let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
+    
+    before do
+      eso.logger = Cabin::Channel.get
+      eso.register 
+
+      # Expect a timeout to be logged.
+      expect(eso.logger).to receive(:warn).with("Failed to flush outgoing items",
+                                                hash_including(:exception => "Manticore::SocketTimeout"))
+    end
+
+    after do
+      listener[0].close
+      eso.close
+    end
+
+    it "should fail after the timeout" do
+      Thread.new { eso.receive(LogStash::Event.new) }
+
+      # Allow the timeout to occur.
+      sleep(options["timeout"] + 0.5)
     end
   end
 end

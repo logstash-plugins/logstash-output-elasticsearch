@@ -62,13 +62,14 @@ module LogStash::Outputs::Elasticsearch
 
       def build_client(options)
         uri = "#{options[:protocol]}://#{options[:host]}:#{options[:port]}#{options[:client_settings][:path]}"
+        timeout = options[:timeout] || 0
 
         client_options = {
           :host => [uri],
           :ssl => options[:client_settings][:ssl],
           :transport_options => {  # manticore settings so we
-            :socket_timeout => 0,  # do not timeout socket reads
-            :request_timeout => 0,  # and requests
+            :socket_timeout => timeout,  # do not timeout socket reads
+            :request_timeout => timeout,  # and requests
             :proxy => options[:client_settings][:proxy]
           },
           :transport_class => ::Elasticsearch::Transport::Transport::HTTP::Manticore
