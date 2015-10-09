@@ -1,3 +1,6 @@
+## 1.1.0
+  - Add timeout setting.
+  
 ## 1.0.7
  - Add update API support
 
