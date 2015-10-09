@@ -84,9 +84,29 @@ module LogStash::Outputs::Elasticsearch
 
     private
 
+    # Builds a client and returns an Elasticsearch::Client
+    #
+    # The `options` is a hash where the following symbol keys have meaning:
+    #
+    # * `:hosts` - array of String. Set a list of hosts to use for communication.
+    # * `:port` - number. set the port to use to communicate with Elasticsearch
+    # * `:user` - String. The user to use for authentication.
+    # * `:password` - String. The password to use for authentication.
+    # * `:timeout` - Float. A duration value, in seconds, after which a socket
+    #    operation or request will be aborted if not yet successfull
+    # * `:client_settings` - a hash; see below for keys.
+    #
+    # The `client_settings` key is a has that can contain other settings:
+    #
+    # * `:ssl` - Boolean. Enable or disable SSL/TLS.
+    # * `:proxy` - String. Choose a HTTP HTTProxy to use.
+    # * `:path` - String. The leading path for prefixing Elasticsearch
+    #   requests. This is sometimes used if you are proxying Elasticsearch access
+    #   through a special http path, such as using mod_rewrite.
     def build_client(options)
       hosts = options[:hosts] || ["127.0.0.1"]
       client_settings = options[:client_settings] || {}
+      timeout = options[:timeout] || 0
 
       uris = hosts.map do |host|
         proto = client_settings[:ssl] ? "https"  : "http"
@@ -101,9 +121,9 @@ module LogStash::Outputs::Elasticsearch
       @client_options = {
         :hosts => uris,
         :ssl => client_settings[:ssl],
-        :transport_options => {  # manticore settings so we
-          :socket_timeout => 0,  # do not timeout socket reads
-          :request_timeout => 0,  # and requests
+        :transport_options => {
+          :socket_timeout => timeout,
+          :request_timeout => timeout,
           :proxy => client_settings[:proxy]
         },
         :transport_class => ::Elasticsearch::Transport::Transport::HTTP::Manticore

@@ -1,4 +1,5 @@
 require_relative "../../../spec/es_spec_helper"
+require "flores/random"
 
 describe "outputs/elasticsearch" do
   describe "http client create" do
@@ -57,6 +58,43 @@ describe "outputs/elasticsearch" do
       it "should properly set the specified port on the HTTP client" do
         expect(manticore_host).to include("9202")
       end
+    end
+  end
+
+  # TODO(sissel): Improve this. I'm not a fan of using message expectations (expect().to receive...)
+  # especially with respect to logging to verify a failure/retry has occurred. For now, this 
+  # should suffice, though.
+  context "with timeout set" do
+    let(:listener) { Flores::Random.tcp_listener }
+    let(:port) { listener[2] }
+    let(:options) do
+      {
+        "manage_template" => false,
+        "hosts" => "localhost:#{port}",
+        "flush_size" => 1,
+        "timeout" => 0.1, # fast timeout
+      }
+    end
+    let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
+    
+    before do
+      eso.register 
+
+      # Expect a timeout to be logged.
+      expect(eso.logger).to receive(:warn).with("Failed to flush outgoing items",
+                                                hash_including(:exception => "Manticore::SocketTimeout"))
+    end
+
+    after do
+      listener[0].close
+      eso.close
+    end
+
+    it "should fail after the timeout" do
+      Thread.new { eso.receive(LogStash::Event.new) }
+
+      # Allow the timeout to occur.
+      sleep(options["timeout"] + 0.3)
     end
   end
 end
