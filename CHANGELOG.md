@@ -1,3 +1,8 @@
+## 2.1.0
+ - New setting: timeout. This lets you control the behavior of a slow/stuck
+   request to Elasticsearch that could be, for example, caused by network,
+   firewall, or load balancer issues.
+
 ## 2.0.0
  - Plugins were updated to follow the new shutdown semantic, this mainly allows Logstash to instruct input plugins to terminate gracefully, 
    instead of using Thread.raise on the plugins' threads. Ref: https://github.com/elastic/logstash/pull/3895
