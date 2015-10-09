@@ -90,7 +90,7 @@ module LogStash::Outputs::Elasticsearch
 
       uris = hosts.map do |host|
         proto = client_settings[:ssl] ? "https"  : "http"
-        if !(host =~ /:/).nil?
+        if host =~ /:\d+\z/
           "#{proto}://#{host}#{client_settings[:path]}"
         else
           # Use default port of 9200 if none provided with host.
