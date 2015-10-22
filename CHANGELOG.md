@@ -1,3 +1,6 @@
+## 2.1.1
+ - Made host config obsolete.
+
 ## 2.1.0
  - New setting: timeout. This lets you control the behavior of a slow/stuck
    request to Elasticsearch that could be, for example, caused by network,
