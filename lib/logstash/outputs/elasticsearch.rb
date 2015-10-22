@@ -111,6 +111,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   config :hosts, :validate => :array
 
+  config :host, :obsolete => "Please use the 'hosts' setting instead. You can specify multiple entries separated by comma in 'host:port' format."
+
   # The port setting is obsolete.  Please use the 'hosts' setting instead.
   # Hosts entries can be in "host:port" format.
   config :port, :obsolete => "Please use the 'hosts' setting instead. Hosts entries can be in 'host:port' format."
