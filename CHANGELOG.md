@@ -1,7 +1,5 @@
-## 2.1.2
- - Improved the default template to use doc_values wherever possible.
- - Template contains example mappings for every numeric type.  You _must_ map
-   your own fields to make use of anything other than `long` and `double`.
+## 2.1.1
+ - Made host config obsolete.
 
 ## 2.1.0
  - New setting: timeout. This lets you control the behavior of a slow/stuck
