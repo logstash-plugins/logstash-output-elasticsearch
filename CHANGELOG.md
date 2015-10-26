@@ -1,5 +1,7 @@
-## 2.1.1
- - Made host config obsolete.
+## 2.1.3
+ - Improved the default template to use doc_values wherever possible.
+ - Template contains example mappings for every numeric type.  You _must_ map
+   your own fields to make use of anything other than `long` and `double`.
 
 ## 2.1.0
  - New setting: timeout. This lets you control the behavior of a slow/stuck
@@ -7,7 +9,7 @@
    firewall, or load balancer issues.
 
 ## 2.0.0
- - Plugins were updated to follow the new shutdown semantic, this mainly allows Logstash to instruct input plugins to terminate gracefully, 
+ - Plugins were updated to follow the new shutdown semantic, this mainly allows Logstash to instruct input plugins to terminate gracefully,
    instead of using Thread.raise on the plugins' threads. Ref: https://github.com/elastic/logstash/pull/3895
  - Dependency on logstash-core update to 2.0
 
@@ -20,7 +22,7 @@
 ## 2.0.0-beta
  - Only support HTTP Protocol
  - Removed support for node and transport protocols (now in logstash-output-elasticsearch_java)
- 
+
 ## 1.0.7
  - Add update API support
 
@@ -31,7 +33,7 @@
  - Update to Elasticsearch 1.7
 
 ## 1.0.3
- - Add HTTP proxy support 
+ - Add HTTP proxy support
 
 ## 1.0.2
  - Upgrade Manticore HTTP Client
