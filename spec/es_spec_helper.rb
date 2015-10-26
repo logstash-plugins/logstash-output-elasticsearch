@@ -13,8 +13,9 @@ CONTAINER_TAG = "1.6"
 DOCKER_INTEGRATION = ENV["DOCKER_INTEGRATION"]
 
 module ESHelper
-  def get_host
-    DOCKER_INTEGRATION ? Longshoreman.new.get_host_ip : "127.0.0.1"
+  def get_host_port
+    addr = DOCKER_INTEGRATION ? Longshoreman.new.get_host_ip : "127.0.0.1"
+    "#{addr}:#{get_port}"
   end
 
   def get_port
@@ -26,7 +27,7 @@ module ESHelper
   end
 
   def get_client
-    Elasticsearch::Client.new(:host => "#{get_host}:#{get_port}")
+    Elasticsearch::Client.new(:hosts => [get_host_port])
   end
 end
 

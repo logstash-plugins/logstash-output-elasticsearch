@@ -18,7 +18,7 @@ shared_examples "a routing indexer" do
 
 
     it "ships events" do
-      index_url = "http://#{get_host()}:#{get_port()}/#{index}"
+      index_url = "http://#{get_host_port()}/#{index}"
 
       ftw = FTW::Agent.new
       ftw.post!("#{index_url}/_refresh")
@@ -40,8 +40,7 @@ describe "(http protocol) index events with static routing", :integration => tru
     let(:routing) { "test" }
     let(:config) {
       {
-        "hosts" => get_host,
-        "port" => get_port,
+        "hosts" => get_host_port,
         "index" => index,
         "flush_size" => flush_size,
         "routing" => routing
@@ -55,8 +54,7 @@ describe "(http_protocol) index events with fieldref in routing value", :integra
     let(:routing) { "test" }
     let(:config) {
       {
-        "hosts" => get_host,
-        "port" => get_port,
+        "hosts" => get_host_port,
         "index" => index,
         "flush_size" => flush_size,
         "routing" => "%{message}"

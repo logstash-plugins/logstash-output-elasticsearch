@@ -16,7 +16,7 @@ shared_examples "an indexer" do
     end
 
     it "ships events" do
-      index_url = "http://#{get_host}:#{get_port}/#{index}"
+      index_url = "http://#{get_host_port}/#{index}"
 
       ftw = FTW::Agent.new
       ftw.post!("#{index_url}/_refresh")
@@ -46,8 +46,7 @@ describe "an indexer with custom index_type", :integration => true do
   it_behaves_like "an indexer" do
     let(:config) {
       {
-        "hosts" => get_host,
-        "port" => get_port,
+        "hosts" => get_host_port,
         "index" => index,
         "flush_size" => flush_size
       }
@@ -60,8 +59,7 @@ describe "an indexer with no type value set (default to logs)", :integration => 
     let(:type) { "logs" }
     let(:config) {
       {
-        "hosts" => get_host,
-        "port" => get_port,
+        "hosts" => get_host_port,
         "index" => index,
         "flush_size" => flush_size
       }
