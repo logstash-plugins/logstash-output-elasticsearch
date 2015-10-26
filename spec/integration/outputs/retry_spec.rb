@@ -107,11 +107,11 @@ describe "failures in bulk class expected behavior", :integration => true do
                                {"errors" => true, "statuses" => [429]},
                                {"errors" => true, "statuses" => [429]},
                                {"errors" => true, "statuses" => [429]})
-    expect(subject).to receive(:submit).with([action1]).exactly(max_retries).times.and_call_original
+    expect(subject).to receive(:submit).with([action1]).exactly(max_retries+1).times.and_call_original
     subject.register
     subject.receive(event1)
     subject.buffer_flush(:final => true)
-    sleep(3)
+    sleep(5)
   end
 
   it "non-retryable errors like mapping errors (400) should be dropped and not be retried (unfortunately)" do
