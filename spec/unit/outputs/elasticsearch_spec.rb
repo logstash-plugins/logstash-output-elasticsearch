@@ -1,11 +1,9 @@
 require_relative "../../../spec/es_spec_helper"
 require "flores/random"
+require "logstash/outputs/elasticsearch"
 
 describe "outputs/elasticsearch" do
-  describe "http client create" do
-    require "logstash/outputs/elasticsearch"
-    require "elasticsearch"
-
+  context "with an active instance" do
     let(:options) {
       {
         "index" => "my-index",
@@ -21,9 +19,33 @@ describe "outputs/elasticsearch" do
     }
 
     around(:each) do |block|
-      thread = eso.register
+      eso.register
       block.call()
-      thread.kill()
+      eso.close
+    end
+
+    describe "getting a document type" do
+      it "should default to 'logs'" do
+        expect(eso.get_event_type(LogStash::Event.new)).to eql("logs")
+      end
+
+      it "should get the type from the event if nothing else specified in the config" do
+        expect(eso.get_event_type(LogStash::Event.new("type" => "foo"))).to eql("foo")
+      end
+
+      context "with 'document type set'" do
+        let(:options) { super.merge("document_type" => "bar")}
+        it "should get the event type from the 'document_type' setting" do
+          expect(eso.get_event_type(LogStash::Event.new())).to eql("bar")
+        end
+      end
+
+      context "with a bad type" do
+        it "should call @logger.warn and return nil" do
+          expect(eso.instance_variable_get(:@logger)).to receive(:warn).with(/Bad event type!/, anything).once
+          expect(eso.get_event_type(LogStash::Event.new("type" => ["foo"]))).to eql(nil)
+        end
+      end
     end
 
     describe "with path" do
