@@ -9,8 +9,7 @@ describe "all protocols update actions", :integration => true do
       "manage_template" => true,
       "index" => "logstash-update",
       "template_overwrite" => true,
-      "hosts" => get_host(),
-      "port" => get_port(),
+      "hosts" => get_host_port(),
       "action" => "update"
     }
     settings['upsert'] = upsert unless upsert.nil?

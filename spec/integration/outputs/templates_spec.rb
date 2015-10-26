@@ -6,8 +6,7 @@ describe "index template expected behavior", :integration => true do
     settings = {
       "manage_template" => true,
       "template_overwrite" => true,
-      "hosts" => "#{get_host()}",
-      "port" => "#{get_port()}"
+      "hosts" => "#{get_host_port()}"
     }
     next LogStash::Outputs::ElasticSearch.new(settings)
   end
