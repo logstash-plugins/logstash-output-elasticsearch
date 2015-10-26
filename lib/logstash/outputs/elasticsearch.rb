@@ -69,7 +69,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # similar events to the same 'type'. String expansion `%{foo}` works here.
   #
   # Deprecated in favor of `document_type` field.
-  config :index_type, :validate => :string, :deprecated => "Please use the 'document_type' setting instead. It has the same effect, but is more appropriately named."
+  config :index_type, :validate => :string, :obsolete => "Please use the 'document_type' setting instead. It has the same effect, but is more appropriately named."
 
   # The document type to write events to. Generally you should try to write only
   # similar events to the same 'type'. String expansion `%{foo}` works here.
@@ -333,14 +333,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     event['@metadata']['retry_count'] = 0
 
-    # Set the 'type' value for the index.
-    type = if @document_type
-             event.sprintf(@document_type)
-           elsif @index_type # deprecated
-             event.sprintf(@index_type)
-           else
-             event["type"] || "logs"
-           end
+    type = get_event_type(event)
+    return if type.nil? # Warning log generated in 'get_event_type'
 
     params = {
       :_id => @document_id ? event.sprintf(@document_id) : nil,
@@ -353,6 +347,22 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     buffer_receive([event.sprintf(@action), params, event])
   end # def receive
+
+  def get_event_type(event)
+    # Set the 'type' value for the index.
+    type = if @document_type
+             event.sprintf(@document_type)
+           else
+             event["type"] || "logs"
+           end
+
+    if !(type.is_a?(String) || type.is_a?(Numeric))
+      @logger.warn("Bad event type! Non-string/integer type value set! Event cannot be processed", :type_class => type.class, :type_value => type, :event => event)
+      return nil
+    end
+
+    type.to_s
+  end
 
   public
   # The submit method can be called from both the
