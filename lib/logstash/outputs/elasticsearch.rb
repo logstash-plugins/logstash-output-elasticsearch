@@ -38,6 +38,17 @@ require "logstash/outputs/elasticsearch/http_client"
 # - Events from the retry queue are submitted again when the queue reaches its max size or when
 #   the max interval time is reached. The max interval time is configurable via :retry_max_interval.
 # - Events which are not retryable or have reached their max retry count are logged to stderr.
+#
+# ==== DNS Caching
+#
+# This plugin uses the JVM to lookup DNS entries and is subject to the value of https://docs.oracle.com/javase/7/docs/technotes/guides/net/properties.html[networkaddress.cache.ttl],
+# a global setting for the JVM.
+#
+# As an example, to set your DNS TTL to 1 second you would set
+# the `LS_JAVA_OPTS` environment variable to `-Dnetwordaddress.cache.ttl=1`.
+#
+# Keep in mind that a connection with keepalive enabled will
+# not reevaluate its DNS value while the keepalive is in effect.
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   attr_reader :client
 
