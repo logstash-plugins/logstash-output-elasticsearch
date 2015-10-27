@@ -526,11 +526,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       :_routing => @routing ? event.sprintf(@routing) : nil
     }
     
-    action = event.sprintf(@action)
+    sprinted_action = event.sprintf(@action)
 
     params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if action == 'update' && @upsert != ""
 
-    buffer_receive([action, params, event])
+    buffer_receive([sprinted_action, params, event])
   end # def receive
 
   public
