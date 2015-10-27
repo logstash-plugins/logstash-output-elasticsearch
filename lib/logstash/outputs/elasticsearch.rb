@@ -496,8 +496,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     return {} unless @user && @password
 
     {
-      :user => ::URI.escape(@user, "@:"),
-      :password => ::URI.escape(@password.value, "@:")
+      :user => @user,
+      :password => @password.value
     }
   end
 
