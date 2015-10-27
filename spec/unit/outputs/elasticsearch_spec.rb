@@ -48,6 +48,21 @@ describe "outputs/elasticsearch" do
       end
     end
 
+    describe "auth setup with url encodable passwords" do
+      let(:user) { "foo@bar"}
+      let(:password) {"baz@blah" }
+      let(:options) { super.merge("user" => user, "password" => password) }
+      let(:auth_setup) { eso.send(:setup_basic_auth) }
+
+      it "should return the user verbatim" do
+        expect(auth_setup[:user]).to eql(user)
+      end
+
+      it "should return the password verbatim" do
+        expect(auth_setup[:password]).to eql(password)
+      end
+    end
+
     describe "with path" do
       it "should properly create a URI with the path" do
         expect(eso.path).to eql(options["path"])
@@ -84,7 +99,7 @@ describe "outputs/elasticsearch" do
   end
 
   # TODO(sissel): Improve this. I'm not a fan of using message expectations (expect().to receive...)
-  # especially with respect to logging to verify a failure/retry has occurred. For now, this 
+  # especially with respect to logging to verify a failure/retry has occurred. For now, this
   # should suffice, though.
   context "with timeout set" do
     let(:listener) { Flores::Random.tcp_listener }
@@ -98,9 +113,9 @@ describe "outputs/elasticsearch" do
       }
     end
     let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
-    
+
     before do
-      eso.register 
+      eso.register
 
       # Expect a timeout to be logged.
       expect(eso.logger).to receive(:warn).with("Failed to flush outgoing items",
