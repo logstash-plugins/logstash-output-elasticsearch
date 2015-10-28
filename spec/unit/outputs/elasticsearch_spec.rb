@@ -63,6 +63,21 @@ describe "outputs/elasticsearch" do
       end
     end
 
+    describe "auth setup with url encodable passwords" do
+      let(:user) { "foo@bar"}
+      let(:password) {"baz@blah" }
+      let(:options) { super.merge("user" => user, "password" => password) }
+      let(:auth_setup) { eso.send(:setup_basic_auth) }
+
+      it "should return the user verbatim" do
+        expect(auth_setup[:user]).to eql(user)
+      end
+
+      it "should return the password verbatim" do
+        expect(auth_setup[:password]).to eql(password)
+      end
+    end
+
     describe "with path" do
       it "should properly create a URI with the path" do
         expect(eso.path).to eql(options["path"])
