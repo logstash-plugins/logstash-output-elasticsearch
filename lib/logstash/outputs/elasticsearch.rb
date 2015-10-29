@@ -232,6 +232,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   public
   def register
+    require "logstash/outputs/elasticsearch/template_manager"
+
     @hosts = Array(@hosts)
     # retry-specific variables
     @retry_flush_mutex = Mutex.new
@@ -273,14 +275,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       common_options.merge(:hosts => @hosts, :logger => @logger)
     )
 
-    if @manage_template
-      begin
-        @logger.info("Automatic template management enabled", :manage_template => @manage_template.to_s)
-        @client.template_install(@template_name, get_template, @template_overwrite)
-      rescue => e
-        @logger.error("Failed to install template: #{e.message}")
-      end
-    end
+    TemplateManager.install_template(self)
 
     @logger.info("New Elasticsearch output", :hosts => @hosts)
 
@@ -306,6 +301,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       end
     end
   end # def register
+
 
   public
   def get_template
