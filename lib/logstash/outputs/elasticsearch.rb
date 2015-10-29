@@ -302,35 +302,28 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     end
   end # def register
 
-
-  public
-  def get_template
-    if @template.nil?
-      @template = ::File.expand_path('elasticsearch/elasticsearch-template.json', ::File.dirname(__FILE__))
-      if !File.exists?(@template)
-        raise "You must specify 'template => ...' in your elasticsearch output (I looked for '#{@template}')"
-      end
-    end
-    template_json = IO.read(@template).gsub(/\n/,'')
-    template = LogStash::Json.load(template_json)
-    @logger.info("Using mapping template", :template => template)
-    return template
-  end # def get_template
-
-  public
   def receive(event)
+    event['@metadata']['retry_count'] = 0
 
-    # block until we have not maxed out our
-    # retry queue. This is applying back-pressure
-    # to slow down the receive-rate
+    wait_for_retry_queue_room # Apply back pressure if needed
+
+    params = event_action_params(event)
+    action = event.sprintf(@action)
+    buffer_receive([action, params, event])
+  end # def receive
+
+  # block until we have not maxed out our
+  # retry queue. This is applying back-pressure
+  # to slow down the receive-rate
+  def wait_for_retry_queue_room
     @retry_flush_mutex.synchronize {
       @retry_queue_not_full.wait(@retry_flush_mutex) while @retry_queue.size > @retry_max_items
     }
+  end
 
-    event['@metadata']['retry_count'] = 0
-
+  # get the action parameters for the given event
+  def event_action_params(event)
     type = get_event_type(event)
-    return if type.nil? # Warning log generated in 'get_event_type'
 
     params = {
       :_id => @document_id ? event.sprintf(@document_id) : nil,
@@ -340,10 +333,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     }
 
     params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @action == 'update' && @upsert != ""
+    params
+  end
 
-    buffer_receive([event.sprintf(@action), params, event])
-  end # def receive
-
+  # Determine the correct value for the 'type' field for the given event
   def get_event_type(event)
     # Set the 'type' value for the index.
     type = if @document_type
@@ -353,8 +346,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
            end
 
     if !(type.is_a?(String) || type.is_a?(Numeric))
-      @logger.warn("Bad event type! Non-string/integer type value set! Event cannot be processed", :type_class => type.class, :type_value => type, :event => event)
-      return nil
+      @logger.warn("Bad event type! Non-string/integer type value set!", :type_class => type.class, :type_value => type.to_s, :event => event)
+      type = type.to_s
     end
 
     type.to_s
