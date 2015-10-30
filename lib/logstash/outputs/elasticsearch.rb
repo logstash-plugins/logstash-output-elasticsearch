@@ -347,7 +347,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     if !(type.is_a?(String) || type.is_a?(Numeric))
       @logger.warn("Bad event type! Non-string/integer type value set!", :type_class => type.class, :type_value => type.to_s, :event => event)
-      type = type.to_s
     end
 
     type.to_s
