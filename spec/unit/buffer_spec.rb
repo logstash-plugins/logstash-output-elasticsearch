@@ -26,7 +26,7 @@ describe LogStash::Outputs::ElasticSearch::Buffer do
   subject(:buffer){ LogStash::Outputs::ElasticSearch::Buffer.new(logger, max_size, flush_interval, &operation) }
 
   after(:each) do
-    buffer.stop
+    buffer.stop(do_flush=false)
   end
 
   it "should initialize cleanly" do
@@ -57,7 +57,7 @@ describe LogStash::Outputs::ElasticSearch::Buffer do
 
     describe "interval flushing a stopped buffer" do
       before do
-        buffer.stop
+        buffer.stop(do_flush=false)
         sleep flush_interval + 1
       end
 
@@ -86,6 +86,13 @@ describe LogStash::Outputs::ElasticSearch::Buffer do
       end
 
       include_examples("a buffer with two items inside")
+    end
+  end
+
+  describe "with an empty buffer" do
+    it "should not perform an operation if the buffer is empty" do
+      buffer.flush
+      expect(operation_target.receive_count).to eql(0)
     end
   end
 

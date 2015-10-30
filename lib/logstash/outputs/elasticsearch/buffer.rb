@@ -1,4 +1,5 @@
-require "concurrent"
+require 'concurrent'
+java_import java.util.concurrent.locks.ReentrantLock
 
 module LogStash; module Outputs; class ElasticSearch
   class Buffer
@@ -6,8 +7,9 @@ module LogStash; module Outputs; class ElasticSearch
       @logger = logger
       # You need to aquire this for anything modifying state generally
       @operations_mutex = Mutex.new
+      @operations_lock = java.util.concurrent.locks.ReentrantLock.new
 
-      @state = :running
+      @stopping = Concurrent::AtomicBoolean.new(false)
       @max_size = max_size
       @submit_proc = block
 
@@ -40,10 +42,16 @@ module LogStash; module Outputs; class ElasticSearch
       synchronize { flush_unsafe }
     end
 
-    def stop
+    def stop(do_flush=true,wait_complete=true)
+      return if stopping?
+      @stopping.make_true
+
+      # No need to acquire a lock in this case
+      return if !do_flush && !wait_complete
+
       synchronize do
-        @state = :stopping
-        @flush_thread.join
+        flush_unsafe if do_flush
+        @flush_thread.join if wait_complete
       end
     end
 
@@ -55,7 +63,14 @@ module LogStash; module Outputs; class ElasticSearch
     # this takes a block and will yield the internal buffer and executes
     # the block in a synchronized block from the internal mutex
     def synchronize
-      @operations_mutex.synchronize { yield(@buffer) }
+      return @operations_mutex.synchronize { yield(@buffer) }
+
+      @operations_lock.lock
+      begin
+
+      ensure
+        @operations_lock.unlock
+      end
     end
 
     # These methods are private for various reasons, chief among them threadsafety!
@@ -82,6 +97,8 @@ module LogStash; module Outputs; class ElasticSearch
                              :class => e.class.name,
                              :backtrace => e.backtrace
                 )
+              rescue Exception => e
+                @logger.warn("Exception flushing buffer at interval!", :error => e.message, :class => e.class.name)
               end
             end
           end
@@ -90,21 +107,20 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def flush_unsafe
-      @submit_proc.call(@buffer)
-      @last_flush = Time.now
-      @buffer.clear
+      if @buffer.size > 0
+        @submit_proc.call(@buffer)
+        @buffer.clear
+      end
+
+      @last_flush = Time.now # This must always be set to ensure correct timer behavior
     end
 
     def last_flush_seconds_ago
       Time.now - @last_flush
     end
 
-    def running?
-      @state == :running
-    end
-
     def stopping?
-      @state == :stopping
+      @stopping.true?
     end
   end
 end end end

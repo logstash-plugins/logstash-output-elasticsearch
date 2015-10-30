@@ -30,7 +30,7 @@ describe "client create actions", :integration => true do
       subject = get_es_output("create", "id123")
       subject.register
       subject.receive(LogStash::Event.new("message" => "sample message here"))
-      subject.buffer_flush(:final => true)
+      subject.flush
       @es.indices.refresh
       # Wait or fail until everything's indexed.
       Stud::try(3.times) do
@@ -43,7 +43,7 @@ describe "client create actions", :integration => true do
       subject = get_es_output("create")
       subject.register
       subject.receive(LogStash::Event.new("message" => "sample message here"))
-      subject.buffer_flush(:final => true)
+      subject.flush
       @es.indices.refresh
       # Wait or fail until everything's indexed.
       Stud::try(3.times) do
