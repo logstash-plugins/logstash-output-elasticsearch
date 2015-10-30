@@ -31,7 +31,7 @@ describe "index template expected behavior", :integration => true do
     subject.receive(LogStash::Event.new("country" => "us"))
     subject.receive(LogStash::Event.new("country" => "at"))
     subject.receive(LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0 ] }))
-    subject.buffer_flush(:final => true)
+    subject.flush
     @es.indices.refresh
 
     # Wait or fail until everything's indexed.

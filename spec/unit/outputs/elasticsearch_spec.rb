@@ -41,9 +41,20 @@ describe "outputs/elasticsearch" do
       end
 
       context "with a bad type" do
+        let(:type_arg) { ["foo"] }
+        let(:result) { eso.get_event_type(LogStash::Event.new("type" => type_arg)) }
+
+        before do
+          allow(eso.instance_variable_get(:@logger)).to receive(:warn)
+          result
+        end
+
         it "should call @logger.warn and return nil" do
-          expect(eso.instance_variable_get(:@logger)).to receive(:warn).with(/Bad event type!/, anything).once
-          expect(eso.get_event_type(LogStash::Event.new("type" => ["foo"]))).to eql(nil)
+          expect(eso.instance_variable_get(:@logger)).to have_received(:warn).with(/Bad event type!/, anything).once
+        end
+
+        it "should set the type to the stringified value" do
+          expect(result).to eql(type_arg.to_s)
         end
       end
     end
@@ -118,12 +129,13 @@ describe "outputs/elasticsearch" do
       eso.register
 
       # Expect a timeout to be logged.
-      expect(eso.logger).to receive(:warn).with("Failed to flush outgoing items",
-                                                hash_including(:exception => "Manticore::SocketTimeout"))
+      expect(eso.logger).to receive(:error).with(/Attempted to send a bulk request/, anything)
     end
 
     after do
       listener[0].close
+      # Stop the receive buffer, but don't flush because that would hang forever in this case since ES never returns a result
+      eso.instance_variable_get(:@buffer).stop(false,false)
       eso.close
     end
 
@@ -131,7 +143,7 @@ describe "outputs/elasticsearch" do
       Thread.new { eso.receive(LogStash::Event.new) }
 
       # Allow the timeout to occur.
-      sleep(options["timeout"] + 0.3)
+      sleep(options["timeout"] + 0.5)
     end
   end
 end

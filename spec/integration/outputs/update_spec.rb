@@ -46,7 +46,7 @@ describe "all protocols update actions", :integration => true do
     subject = get_es_output("456")
     subject.register
     subject.receive(LogStash::Event.new("message" => "sample message here"))
-    subject.buffer_flush(:final => true)
+    subject.flush
     expect {@es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
   end
 
@@ -54,7 +54,7 @@ describe "all protocols update actions", :integration => true do
     subject = get_es_output("123")
     subject.register
     subject.receive(LogStash::Event.new("message" => "updated message here"))
-    subject.buffer_flush(:final => true)
+    subject.flush
     r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
     insist { r["_source"]["message"] } == 'updated message here'
   end
@@ -64,7 +64,7 @@ describe "all protocols update actions", :integration => true do
       subject = get_es_output("456", '{"message": "upsert message"}')
       subject.register
       subject.receive(LogStash::Event.new("message" => "sample message here"))
-      subject.buffer_flush(:final => true)
+      subject.flush
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
       insist { r["_source"]["message"] } == 'upsert message'
     end
@@ -73,7 +73,7 @@ describe "all protocols update actions", :integration => true do
       subject = get_es_output("456", nil, true)
       subject.register
       subject.receive(LogStash::Event.new("message" => "sample message here"))
-      subject.buffer_flush(:final => true)
+      subject.flush
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
       insist { r["_source"]["message"] } == 'sample message here'
     end

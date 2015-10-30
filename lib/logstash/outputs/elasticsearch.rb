@@ -52,7 +52,6 @@ require "logstash/outputs/elasticsearch/http_client"
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   attr_reader :client
 
-  include Stud::Buffer
   RETRYABLE_CODES = [409, 429, 503]
   SUCCESS_CODES = [200, 201]
 
@@ -233,6 +232,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   public
   def register
     require "logstash/outputs/elasticsearch/template_manager"
+    require "logstash/outputs/elasticsearch/buffer"
 
     @hosts = Array(@hosts)
     # retry-specific variables
@@ -242,7 +242,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @retry_queue_needs_flushing = ConditionVariable.new
     @retry_queue_not_full = ConditionVariable.new
     @retry_queue = Queue.new
-    @submit_mutex = Mutex.new
+    @stopping = Concurrent::AtomicBoolean.new(false)
 
     client_settings = {}
     common_options = {
@@ -279,14 +279,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     @logger.info("New Elasticsearch output", :hosts => @hosts)
 
-    @client_idx = 0
-
-    buffer_initialize(
-      :max_items => @flush_size,
-      :max_interval => @idle_flush_time,
-      :logger => @logger
-    )
-
     @retry_timer_thread = Thread.new do
       loop do
         sleep(@retry_max_interval)
@@ -300,6 +292,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         retry_flush
       end
     end
+
+    @buffer = ::LogStash::Outputs::ElasticSearch::Buffer.new(@logger, @flush_size, @idle_flush_time) do |actions|
+      submit(actions)
+    end
   end # def register
 
   def receive(event)
@@ -309,7 +305,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     params = event_action_params(event)
     action = event.sprintf(@action)
-    buffer_receive([action, params, event])
+
+    @buffer << [action, params, event]
   end # def receive
 
   # block until we have not maxed out our
@@ -356,69 +353,77 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # The submit method can be called from both the
   # Stud::Buffer flush thread and from our own retry thread.
   def submit(actions)
-    @submit_mutex.synchronize do
-      es_actions = actions.map { |a, doc, event| [a, doc, event.to_hash] }
+    es_actions = actions.map { |a, doc, event| [a, doc, event.to_hash] }
 
-      bulk_response = @client.bulk(es_actions)
+    bulk_response = @client.bulk(es_actions)
 
-      next unless bulk_response["errors"]
+    handle_bulk_errors(actions, bulk_response)
+  rescue Manticore::SocketException, Manticore::SocketTimeout => e
+    # If we can't even connect to the server let's just print out the URL (:hosts is actually a URL)
+    # and let the user sort it out from there
+    @logger.error(
+      "Attempted to send a bulk request to Elasticsearch configured at '#{@client.client_options[:hosts]}',"+
+        " but Elasticsearch appears to be unreachable or down!",
+      :client_config => @client.client_options,
+      :error_message => e.message,
+      :class => e.class.name
+    )
+    @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
 
-      actions_to_retry = []
+    # We retry until there are no errors! Errors should all go to the retry queue
+    sleep 1
+    retry unless @stopping.true?
+  rescue => e
+    # For all other errors print out full connection issues
+    @logger.error(
+      "Attempted to send a bulk request to Elasticsearch configured at '#{@client.client_options[:hosts]}'," +
+        " but an error occurred and it failed! Are you sure you can reach elasticsearch from this machine using " +
+        "the configuration provided?",
+      :client_config => @client.client_options,
+      :error_message => e.message,
+      :error_class => e.class.name,
+      :backtrace => e.backtrace
+    )
 
-      bulk_response["items"].each_with_index do |resp,idx|
-        action_type, action_props = resp.first
+    @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
 
-        status = action_props["status"]
-        action = actions[idx]
+    # We retry until there are no errors! Errors should all go to the retry queue
+    sleep 1
+    retry unless @stopping.true?
+  end
 
-        if RETRYABLE_CODES.include?(status)
-          @logger.warn "retrying failed action with response code: #{status}"
-          actions_to_retry << action
-        elsif not SUCCESS_CODES.include?(status)
-          @logger.warn "Failed action. ", status: status, action: action, response: resp
-        end
+  def handle_bulk_errors(actions, bulk_response)
+    return unless bulk_response["errors"]
+
+    actions_to_retry = []
+
+    bulk_response["items"].each_with_index do |resp, idx|
+      action_type, action_props = resp.first
+
+      status = action_props["status"]
+      action = actions[idx]
+
+      if RETRYABLE_CODES.include?(status)
+        @logger.warn "retrying failed action with response code: #{status}"
+        actions_to_retry << action
+      elsif not SUCCESS_CODES.include?(status)
+        @logger.warn "Failed action. ", status: status, action: action, response: resp
       end
-
-      retry_push(actions_to_retry) unless actions_to_retry.empty?
     end
+
+    retry_push(actions_to_retry) unless actions_to_retry.empty?
   end
 
   # When there are exceptions raised upon submission, we raise an exception so that
   # Stud::Buffer will retry to flush
   public
-  def flush(actions, close = false)
-    begin
-      submit(actions)
-    rescue Manticore::SocketException => e
-      # If we can't even connect to the server let's just print out the URL (:hosts is actually a URL)
-      # and let the user sort it out from there
-      @logger.error(
-        "Attempted to send a bulk request to Elasticsearch configured at '#{@client.client_options[:hosts]}',"+
-          " but Elasticsearch appears to be unreachable or down!",
-        :client_config => @client.client_options,
-        :error_message => e.message
-      )
-      @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
-    rescue => e
-      # For all other errors print out full connection issues
-      @logger.error(
-        "Attempted to send a bulk request to Elasticsearch configured at '#{@client.client_options[:hosts]}'," +
-            " but an error occurred and it failed! Are you sure you can reach elasticsearch from this machine using " +
-          "the configuration provided?",
-        :client_config => @client.client_options,
-        :error_message => e.message,
-        :error_class => e.class.name,
-        :backtrace => e.backtrace
-      )
-
-      @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
-
-      raise e
-    end
+  def flush
+    @buffer.flush
   end # def flush
 
   public
   def close
+    @stopping.make_true
     @client.stop_sniffing!
 
     @retry_close_requested.make_true
@@ -435,9 +440,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     # for further final execution of an in-process remaining call.
     @retry_thread.join
 
-    # execute any final actions along with a proceeding retry for any
-    # final actions that did not succeed.
-    buffer_flush(:final => true)
+    @buffer.stop
     retry_flush
   end
 
