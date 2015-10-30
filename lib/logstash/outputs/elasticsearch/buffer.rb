@@ -22,10 +22,7 @@ module LogStash; module Outputs; class ElasticSearch
 
     def push(item)
       synchronize do |buffer|
-        buffer << item
-        if buffer.size >= @max_size
-          flush_unsafe
-        end
+        push_unsafe(item)
       end
     end
     alias_method :<<, :push
@@ -34,7 +31,7 @@ module LogStash; module Outputs; class ElasticSearch
     def push_multi(items)
       raise ArgumentError, "push multi takes an array!, not an #{items.class}!" unless items.is_a?(Array)
       synchronize do |buffer|
-        buffer.concat(items)
+        items.each {|item| push_unsafe(item) }
       end
     end
 
@@ -76,6 +73,13 @@ module LogStash; module Outputs; class ElasticSearch
     # These methods are private for various reasons, chief among them threadsafety!
     # Many require the @operations_mutex to be locked to be safe
     private
+
+    def push_unsafe(item)
+      @buffer << item
+      if @buffer.size >= @max_size
+        flush_unsafe
+      end
+    end
 
     def spawn_interval_flusher
       Thread.new do
