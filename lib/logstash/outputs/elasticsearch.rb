@@ -286,6 +286,67 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @buffer << [action, params, event]
   end # def receive
 
+  # When there are exceptions raised upon submission, we raise an exception so that
+  # Stud::Buffer will retry to flush
+  def flush
+    @buffer.flush
+  end # def flush
+
+  def close
+    @stopping.make_true
+    @client.stop_sniffing!
+    @buffer.stop
+  end
+
+  def retrying_submit(actions)
+    retries_left = @max_retries+1 # +1 for the first attempt
+
+    # Initially we submit the full list of actions
+    submit_actions = actions
+
+    while submit_actions && submit_actions.length > 0 && retries_left > 0
+      return if !submit_actions # If everything's a success we move along
+      # We retry with whatever is didn't succeed
+      begin
+        submit_actions = submit(submit_actions)
+      rescue => e
+        @logger.warn("Encountered an unexpected error submitting a bulk request!",
+        :message => e.message,
+        :class => e.class.name,
+        :backtrace => e.backtrace)
+      end
+      retries_left -= 1
+    end
+  end
+
+  def submit(actions)
+    es_actions = actions.map { |a, doc, event| [a, doc, event.to_hash] }
+
+    bulk_response = safe_bulk(es_actions,actions)
+    return if @stopping.true? # bulk_response is nil when @stopping == true
+
+    # If there are no errors, we're done here!
+    return unless bulk_response["errors"]
+
+    actions_to_retry = []
+    bulk_response["items"].each_with_index do |response,idx|
+      action_type, action_props = response.first
+      status = action_props["status"]
+      action = actions[idx]
+
+      if SUCCESS_CODES.include?(status)
+        next
+      elsif RETRYABLE_CODES.include?(status)
+        @logger.warn "retrying failed action with response code: #{status}"
+        actions_to_retry << action
+      else
+        @logger.warn "Failed action. ", status: status, action: action, response: response
+      end
+    end
+
+    actions_to_retry
+  end
+
   # get the action parameters for the given event
   def event_action_params(event)
     type = get_event_type(event)
@@ -315,48 +376,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     end
 
     type.to_s
-  end
-
-  def retrying_submit(actions)
-    actions_to_retry = submit(actions)
-    return if !actions_to_retry # If everything's a success we move along
-
-    retries_left = @max_retries
-    while retries_left > 0
-      actions_to_retry = submit(actions_to_retry)
-      retries_left -= 1
-    end
-  end
-
-  public
-  # The submit method can be called from both the
-  # Stud::Buffer flush thread and from our own retry thread.
-  def submit(actions)
-    es_actions = actions.map { |a, doc, event| [a, doc, event.to_hash] }
-
-    bulk_response = safe_bulk(es_actions,actions)
-    return if @stopping.true? # bulk_response is nil when @stopping == true
-
-    # If there are no errors, we're done here!
-    return unless bulk_response["errors"]
-
-    actions_to_retry = []
-    bulk_response["items"].each_with_index do |response,idx|
-      action_type, action_props = response.first
-      status = action_props["status"]
-      action = actions[idx]
-
-      if SUCCESS_CODES.include?(status)
-        next
-      elsif RETRYABLE_CODES.include?(status)
-        @logger.warn "retrying failed action with response code: #{status}"
-        actions_to_retry << action
-      else
-        @logger.warn "Failed action. ", status: status, action: action, response: resp
-      end
-    end
-
-    actions_to_retry
   end
 
   # Rescue retryable errors during bulk submission
@@ -391,26 +410,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
 
-    # We retry until there are no errors! Errors should all go to the retry queue
-    sleep 1
-    retry unless @stopping.true?
+    raise e
   end
 
-  # When there are exceptions raised upon submission, we raise an exception so that
-  # Stud::Buffer will retry to flush
-  public
-  def flush
-    @buffer.flush
-  end # def flush
-
-  public
-  def close
-    @stopping.make_true
-    @client.stop_sniffing!
-    @buffer.stop
-  end
-
-  private
   def setup_proxy
     return {} unless @proxy
 
@@ -426,7 +428,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     return {:proxy => proxy}
   end
 
-  private
   def setup_ssl
     return {} unless @ssl
 
@@ -458,7 +459,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     { ssl: ssl_options }
   end
 
-  private
   def setup_basic_auth
     return {} unless @user && @password
 
