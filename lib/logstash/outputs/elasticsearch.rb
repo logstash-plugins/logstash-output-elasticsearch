@@ -202,14 +202,16 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # How long to wait, in seconds, between sniffing attempts
   config :sniffing_delay, :validate => :number, :default => 5
 
-  # Set max retry for each event
+  # Set max retry for each event. The total time spent blocked on retries will be
+  # (max_retries * retry_max_interval). This may vary a bit if Elasticsearch is very slow to respond
   config :max_retries, :validate => :number, :default => 3
 
-  # Set retry policy for events that failed to send
-  config :retry_max_items, :validate => :number, :default => 5000
+  # Set max interval between bulk retries.
+  config :retry_max_interval, :validate => :number, :default => 2
 
-  # Set max interval between bulk retries
-  config :retry_max_interval, :validate => :number, :default => 5
+  # DEPRECATED This setting no longer does anything. If you need to change the number of retries in flight
+  # try increasing the total number of workers to better handle this.
+  config :retry_max_items, :validate => :number, :default => 5000, :deprecated => true
 
   # Set the address of a forward HTTP proxy.
   # Can be either a string, such as `http://localhost:123` or a hash in the form
@@ -235,13 +237,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     require "logstash/outputs/elasticsearch/buffer"
 
     @hosts = Array(@hosts)
-    # retry-specific variables
-    @retry_flush_mutex = Mutex.new
-    @retry_close_requested = Concurrent::AtomicBoolean.new(false)
-    # needs flushing when interval
-    @retry_queue_needs_flushing = ConditionVariable.new
-    @retry_queue_not_full = ConditionVariable.new
-    @retry_queue = Queue.new
     @stopping = Concurrent::AtomicBoolean.new(false)
 
     client_settings = {}
@@ -279,44 +274,17 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     @logger.info("New Elasticsearch output", :hosts => @hosts)
 
-    @retry_timer_thread = Thread.new do
-      loop do
-        sleep(@retry_max_interval)
-        @retry_flush_mutex.synchronize { @retry_queue_needs_flushing.signal }
-      end
-    end
-
-    @retry_thread = Thread.new do
-      while @retry_close_requested.false?
-        @retry_flush_mutex.synchronize { @retry_queue_needs_flushing.wait(@retry_flush_mutex) }
-        retry_flush
-      end
-    end
-
     @buffer = ::LogStash::Outputs::ElasticSearch::Buffer.new(@logger, @flush_size, @idle_flush_time) do |actions|
-      submit(actions)
+      retrying_submit(actions)
     end
   end # def register
 
   def receive(event)
-    event['@metadata']['retry_count'] = 0
-
-    wait_for_retry_queue_room # Apply back pressure if needed
-
     params = event_action_params(event)
     action = event.sprintf(@action)
 
     @buffer << [action, params, event]
   end # def receive
-
-  # block until we have not maxed out our
-  # retry queue. This is applying back-pressure
-  # to slow down the receive-rate
-  def wait_for_retry_queue_room
-    @retry_flush_mutex.synchronize {
-      @retry_queue_not_full.wait(@retry_flush_mutex) while @retry_queue.size > @retry_max_items
-    }
-  end
 
   # get the action parameters for the given event
   def event_action_params(event)
@@ -349,15 +317,51 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     type.to_s
   end
 
+  def retrying_submit(actions)
+    actions_to_retry = submit(actions)
+    return if !actions_to_retry # If everything's a success we move along
+
+    retries_left = @max_retries
+    while retries_left > 0
+      actions_to_retry = submit(actions_to_retry)
+      retries_left -= 1
+    end
+  end
+
   public
   # The submit method can be called from both the
   # Stud::Buffer flush thread and from our own retry thread.
   def submit(actions)
     es_actions = actions.map { |a, doc, event| [a, doc, event.to_hash] }
 
-    bulk_response = @client.bulk(es_actions)
+    bulk_response = safe_bulk(es_actions,actions)
+    return if @stopping.true? # bulk_response is nil when @stopping == true
 
-    handle_bulk_errors(actions, bulk_response)
+    # If there are no errors, we're done here!
+    return unless bulk_response["errors"]
+
+    actions_to_retry = []
+    bulk_response["items"].each_with_index do |response,idx|
+      action_type, action_props = response.first
+      status = action_props["status"]
+      action = actions[idx]
+
+      if SUCCESS_CODES.include?(status)
+        next
+      elsif RETRYABLE_CODES.include?(status)
+        @logger.warn "retrying failed action with response code: #{status}"
+        actions_to_retry << action
+      else
+        @logger.warn "Failed action. ", status: status, action: action, response: resp
+      end
+    end
+
+    actions_to_retry
+  end
+
+  # Rescue retryable errors during bulk submission
+  def safe_bulk(es_actions,actions)
+    @client.bulk(es_actions)
   rescue Manticore::SocketException, Manticore::SocketTimeout => e
     # If we can't even connect to the server let's just print out the URL (:hosts is actually a URL)
     # and let the user sort it out from there
@@ -392,28 +396,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     retry unless @stopping.true?
   end
 
-  def handle_bulk_errors(actions, bulk_response)
-    return unless bulk_response["errors"]
-
-    actions_to_retry = []
-
-    bulk_response["items"].each_with_index do |resp, idx|
-      action_type, action_props = resp.first
-
-      status = action_props["status"]
-      action = actions[idx]
-
-      if RETRYABLE_CODES.include?(status)
-        @logger.warn "retrying failed action with response code: #{status}"
-        actions_to_retry << action
-      elsif not SUCCESS_CODES.include?(status)
-        @logger.warn "Failed action. ", status: status, action: action, response: resp
-      end
-    end
-
-    retry_push(actions_to_retry) unless actions_to_retry.empty?
-  end
-
   # When there are exceptions raised upon submission, we raise an exception so that
   # Stud::Buffer will retry to flush
   public
@@ -425,23 +407,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def close
     @stopping.make_true
     @client.stop_sniffing!
-
-    @retry_close_requested.make_true
-    # First, make sure retry_timer_thread is stopped
-    # to ensure we do not signal a retry based on
-    # the retry interval.
-    Thread.kill(@retry_timer_thread)
-    @retry_timer_thread.join
-    # Signal flushing in the case that #retry_flush is in
-    # the process of waiting for a signal.
-    @retry_flush_mutex.synchronize { @retry_queue_needs_flushing.signal }
-    # Now, #retry_flush is ensured to not be in a state of
-    # waiting and can be safely joined into the main thread
-    # for further final execution of an in-process remaining call.
-    @retry_thread.join
-
     @buffer.stop
-    retry_flush
   end
 
   private
@@ -499,43 +465,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     {
       :user => @user,
       :password => @password.value
-    }
-  end
-
-  private
-  # in charge of submitting any actions in @retry_queue that need to be
-  # retried
-  #
-  # This method is not called concurrently. It is only called by @retry_thread
-  # and once that thread is ended during the close process, a final call
-  # to this method is done upon close in the main thread.
-  def retry_flush()
-    unless @retry_queue.empty?
-      buffer = @retry_queue.size.times.map do
-        next_action, next_doc, next_event = @retry_queue.pop
-        next_event['@metadata']['retry_count'] += 1
-
-        if next_event['@metadata']['retry_count'] > @max_retries
-          @logger.error "too many attempts at sending event. dropping: #{next_event}"
-          nil
-        else
-          [next_action, next_doc, next_event]
-        end
-      end.compact
-
-      submit(buffer) unless buffer.empty?
-    end
-
-    @retry_flush_mutex.synchronize {
-      @retry_queue_not_full.signal if @retry_queue.size < @retry_max_items
-    }
-  end
-
-  private
-  def retry_push(actions)
-    Array(actions).each{|action| @retry_queue << action}
-    @retry_flush_mutex.synchronize {
-      @retry_queue_needs_flushing.signal if @retry_queue.size >= @retry_max_items
     }
   end
 
