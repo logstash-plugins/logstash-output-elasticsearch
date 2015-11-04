@@ -26,23 +26,23 @@ describe "outputs/elasticsearch" do
 
     describe "getting a document type" do
       it "should default to 'logs'" do
-        expect(eso.get_event_type(LogStash::Event.new)).to eql("logs")
+        expect(eso.send(:get_event_type, LogStash::Event.new)).to eql("logs")
       end
 
       it "should get the type from the event if nothing else specified in the config" do
-        expect(eso.get_event_type(LogStash::Event.new("type" => "foo"))).to eql("foo")
+        expect(eso.send(:get_event_type, LogStash::Event.new("type" => "foo"))).to eql("foo")
       end
 
       context "with 'document type set'" do
         let(:options) { super.merge("document_type" => "bar")}
         it "should get the event type from the 'document_type' setting" do
-          expect(eso.get_event_type(LogStash::Event.new())).to eql("bar")
+          expect(eso.send(:get_event_type, LogStash::Event.new())).to eql("bar")
         end
       end
 
       context "with a bad type" do
         let(:type_arg) { ["foo"] }
-        let(:result) { eso.get_event_type(LogStash::Event.new("type" => type_arg)) }
+        let(:result) { eso.send(:get_event_type, LogStash::Event.new("type" => type_arg)) }
 
         before do
           allow(eso.instance_variable_get(:@logger)).to receive(:warn)

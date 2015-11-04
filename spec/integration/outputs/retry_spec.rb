@@ -125,7 +125,7 @@ describe "failures in bulk class expected behavior", :integration => true do
   it "non-retryable errors like mapping errors (400) should be dropped and not be retried (unfortunately)" do
     subject.register
     subject.receive(invalid_event)
-    expect(subject).not_to receive(:retry_push)
+    expect(subject).to receive(:submit).once.and_call_original
     subject.close
 
     @es.indices.refresh
@@ -139,7 +139,7 @@ describe "failures in bulk class expected behavior", :integration => true do
   it "successful requests should not be appended to retry queue" do
     subject.register
     subject.receive(event1)
-    expect(subject).not_to receive(:retry_push)
+    expect(subject).to receive(:submit).once.and_call_original
     subject.close
     @es.indices.refresh
     sleep(5)
