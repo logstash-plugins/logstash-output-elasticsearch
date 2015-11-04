@@ -22,7 +22,7 @@ describe "failures in bulk class expected behavior", :integration => true do
       }
     end
 
-    allow_any_instance_of(LogStash::Outputs::Elasticsearch::HttpClient).to receive(:bulk).and_return(*expanded_responses)
+    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient).to receive(:bulk).and_return(*expanded_responses)
   end
 
   subject! do
