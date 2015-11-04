@@ -49,7 +49,7 @@ require "uri" # for escaping user input
 # Keep in mind that a connection with keepalive enabled will
 # not reevaluate its DNS value while the keepalive is in effect.
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
-  attr_reader :client
+  attr_reader :client, :hosts
 
   RETRYABLE_CODES = [409, 429, 503]
   SUCCESS_CODES = [200, 201]
@@ -210,7 +210,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # DEPRECATED This setting no longer does anything. If you need to change the number of retries in flight
   # try increasing the total number of workers to better handle this.
-  config :retry_max_items, :validate => :number, :default => 5000, :deprecated => true
+  config :retry_max_items, :validate => :number, :default => 500, :deprecated => true
 
   # Set the address of a forward HTTP proxy.
   # Can be either a string, such as `http://localhost:123` or a hash in the form
@@ -230,55 +230,38 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # a timeout occurs, the request will be retried.
   config :timeout, :validate => :number
 
-  public
-  def register
+  # This needs to be done after this class is defined to avoid weird class inheritance issues
+  def self.load_dependencies
     require "logstash/outputs/elasticsearch/http_client"
+    require "logstash/outputs/elasticsearch/http_client_builder"
     require "logstash/outputs/elasticsearch/template_manager"
     require "logstash/outputs/elasticsearch/buffer"
+  end
+
+  def register
+    self.class.load_dependencies
 
     @stopping = Concurrent::AtomicBoolean.new(false)
-    @hosts = Array(@hosts)
-    @client = build_client
+    setup_hosts # properly sets @hosts
+    @client = ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
     TemplateManager.install_template(self)
-
-    @buffer = ::LogStash::Outputs::ElasticSearch::Buffer.new(@logger, @flush_size, @idle_flush_time) do |actions|
-      retrying_submit(actions)
-    end
+    setup_buffer_and_handler
 
     @logger.info("New Elasticsearch output", :hosts => @hosts)
   end
 
-  def build_client
-    client_settings = {}
-    common_options = {
-      :client_settings => client_settings,
-      :sniffing => @sniffing,
-      :sniffing_delay => @sniffing_delay
-    }
-
-    common_options[:timeout] = @timeout if @timeout
-    client_settings[:path] = "/#{@path}/".gsub(/\/+/, "/") # Normalize slashes
-    @logger.debug? && @logger.debug("Normalizing http path", :path => @path, :normalized => client_settings[:path])
-
-    if @hosts.nil? || @hosts.empty?
-      @logger.info("No 'host' set in elasticsearch output. Defaulting to localhost")
-      @hosts = ["localhost"]
+  def setup_buffer_and_handler
+    @buffer = ::LogStash::Outputs::ElasticSearch::Buffer.new(@logger, @flush_size, @idle_flush_time) do |actions|
+      retrying_submit(actions)
     end
+  end
 
-    client_settings.merge! setup_ssl()
-    client_settings.merge! setup_proxy()
-    common_options.merge! setup_basic_auth()
-
-    # Update API setup
-    update_options = {
-      :upsert => @upsert,
-      :doc_as_upsert => @doc_as_upsert
-    }
-    common_options.merge! update_options if @action == 'update'
-
-    LogStash::Outputs::ElasticSearch::HttpClient.new(
-      common_options.merge(:hosts => @hosts, :logger => @logger)
-    )
+  def setup_hosts
+    @hosts = Array(@hosts)
+    if @hosts.empty?
+      @logger.info("No 'host' set in elasticsearch output. Defaulting to localhost")
+      @hosts.replace(["localhost"])
+    end
   end
 
   def receive(event)
@@ -413,61 +396,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
 
     raise e
-  end
-
-  def setup_proxy
-    return {} unless @proxy
-
-    # Symbolize keys
-    proxy = if @proxy.is_a?(Hash)
-              Hash[@proxy.map {|k,v| [k.to_sym, v]}]
-            elsif @proxy.is_a?(String)
-              @proxy
-            else
-              raise LogStash::ConfigurationError, "Expected 'proxy' to be a string or hash, not '#{@proxy}''!"
-            end
-
-    return {:proxy => proxy}
-  end
-
-  def setup_ssl
-    return {} unless @ssl
-
-    if @cacert && @truststore
-      raise(LogStash::ConfigurationError, "Use either \"cacert\" or \"truststore\" when configuring the CA certificate") if @truststore
-    end
-
-    ssl_options = {}
-
-    if @cacert
-      ssl_options[:ca_file] = @cacert
-    elsif @truststore
-      ssl_options[:truststore_password] = @truststore_password.value if @truststore_password
-    end
-
-    ssl_options[:truststore] = @truststore if @truststore
-    if @keystore
-      ssl_options[:keystore] = @keystore
-      ssl_options[:keystore_password] = @keystore_password.value if @keystore_password
-    end
-    if @ssl_certificate_verification == false
-      @logger.warn [
-        "** WARNING ** Detected UNSAFE options in elasticsearch output configuration!",
-        "** WARNING ** You have enabled encryption but DISABLED certificate verification.",
-        "** WARNING ** To make sure your data is secure change :ssl_certificate_verification to true"
-      ].join("\n")
-      ssl_options[:verify] = false
-    end
-    { ssl: ssl_options }
-  end
-
-  def setup_basic_auth
-    return {} unless @user && @password
-
-    {
-      :user => @user,
-      :password => @password.value
-    }
   end
 
   @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }

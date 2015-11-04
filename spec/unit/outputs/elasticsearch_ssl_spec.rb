@@ -27,7 +27,6 @@ describe "SSL option" do
   end
 
   context "when using ssl with client certificates" do
-
     let(:keystore_path) { Stud::Temporary.file.path }
 
     after :each do
