@@ -4,7 +4,7 @@ require "base64"
 require "elasticsearch"
 require "elasticsearch/transport/transport/http/manticore"
 
-module LogStash::Outputs::Elasticsearch
+module LogStash; module Outputs; class ElasticSearch;
   class HttpClient
     attr_reader :client, :options, :client_options, :sniffer_thread
     # This is here in case we use DEFAULT_OPTIONS in the future
@@ -151,4 +151,4 @@ module LogStash::Outputs::Elasticsearch
       @client.indices.put_template(:name => name, :body => template)
     end
   end
-end
+end end end

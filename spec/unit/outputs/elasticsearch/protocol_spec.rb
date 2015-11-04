@@ -2,10 +2,10 @@ require "logstash/devutils/rspec/spec_helper"
 require "logstash/outputs/elasticsearch/http_client"
 require "java"
 
-describe LogStash::Outputs::Elasticsearch::HttpClient do
+describe LogStash::Outputs::ElasticSearch::HttpClient do
   describe "sniffing" do
     let(:base_options) { {:hosts => ["127.0.0.1"], :logger => Cabin::Channel.get }}
-    let(:client) { LogStash::Outputs::Elasticsearch::HttpClient.new(base_options.merge(client_opts)) }
+    let(:client) { LogStash::Outputs::ElasticSearch::HttpClient.new(base_options.merge(client_opts)) }
     let(:transport) { client.client.transport }
 
     before do

@@ -8,7 +8,6 @@ require "stud/buffer"
 require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
 require "uri" # for escaping user input
-require "logstash/outputs/elasticsearch/http_client"
 
 # This plugin is the recommended method of storing logs in Elasticsearch.
 # If you plan on using the Kibana web interface, you'll want to use this output.
@@ -233,12 +232,23 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   public
   def register
+    require "logstash/outputs/elasticsearch/http_client"
     require "logstash/outputs/elasticsearch/template_manager"
     require "logstash/outputs/elasticsearch/buffer"
 
-    @hosts = Array(@hosts)
     @stopping = Concurrent::AtomicBoolean.new(false)
+    @hosts = Array(@hosts)
+    @client = build_client
+    TemplateManager.install_template(self)
 
+    @buffer = ::LogStash::Outputs::ElasticSearch::Buffer.new(@logger, @flush_size, @idle_flush_time) do |actions|
+      retrying_submit(actions)
+    end
+
+    @logger.info("New Elasticsearch output", :hosts => @hosts)
+  end
+
+  def build_client
     client_settings = {}
     common_options = {
       :client_settings => client_settings,
@@ -266,18 +276,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     }
     common_options.merge! update_options if @action == 'update'
 
-    @client = LogStash::Outputs::Elasticsearch::HttpClient.new(
+    LogStash::Outputs::ElasticSearch::HttpClient.new(
       common_options.merge(:hosts => @hosts, :logger => @logger)
     )
-
-    TemplateManager.install_template(self)
-
-    @logger.info("New Elasticsearch output", :hosts => @hosts)
-
-    @buffer = ::LogStash::Outputs::ElasticSearch::Buffer.new(@logger, @flush_size, @idle_flush_time) do |actions|
-      retrying_submit(actions)
-    end
-  end # def register
+  end
 
   def receive(event)
     params = event_action_params(event)
