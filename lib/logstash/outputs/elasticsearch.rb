@@ -49,113 +49,18 @@ require "uri" # for escaping user input
 # Keep in mind that a connection with keepalive enabled will
 # not reevaluate its DNS value while the keepalive is in effect.
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
-  attr_reader :client, :hosts
+  require "logstash/outputs/elasticsearch/http_client"
+  require "logstash/outputs/elasticsearch/http_client_builder"
+  require "logstash/outputs/elasticsearch/common_configs"
+  require "logstash/outputs/elasticsearch/common"
 
-  RETRYABLE_CODES = [409, 429, 503]
-  SUCCESS_CODES = [200, 201]
+  # Most config options are defined here!
+  include(LogStash::Outputs::ElasticSearch::CommonConfigs)
+
+  # Common impl. defined here
+  include(LogStash::Outputs::ElasticSearch::Common)
 
   config_name "elasticsearch"
-
-  # The index to write events to. This can be dynamic using the `%{foo}` syntax.
-  # The default value will partition your indices by day so you can more easily
-  # delete old data or only search specific date ranges.
-  # Indexes may not contain uppercase characters.
-  # For weekly indexes ISO 8601 format is recommended, eg. logstash-%{+xxxx.ww}
-  config :index, :validate => :string, :default => "logstash-%{+YYYY.MM.dd}"
-
-  # The index type to write events to. Generally you should try to write only
-  # similar events to the same 'type'. String expansion `%{foo}` works here.
-  #
-  # Deprecated in favor of `document_type` field.
-  config :index_type, :validate => :string, :obsolete => "Please use the 'document_type' setting instead. It has the same effect, but is more appropriately named."
-
-  # The document type to write events to. Generally you should try to write only
-  # similar events to the same 'type'. String expansion `%{foo}` works here.
-  # Unless you set 'document_type', the event 'type' will be used if it exists
-  # otherwise the document type will be assigned the value of 'logs'
-  config :document_type, :validate => :string
-
-  # Starting in Logstash 1.3 (unless you set option `manage_template` to false)
-  # a default mapping template for Elasticsearch will be applied, if you do not
-  # already have one set to match the index pattern defined (default of
-  # `logstash-%{+YYYY.MM.dd}`), minus any variables.  For example, in this case
-  # the template will be applied to all indices starting with `logstash-*`
-  #
-  # If you have dynamic templating (e.g. creating indices based on field names)
-  # then you should set `manage_template` to false and use the REST API to upload
-  # your templates manually.
-  config :manage_template, :validate => :boolean, :default => true
-
-  # This configuration option defines how the template is named inside Elasticsearch.
-  # Note that if you have used the template management features and subsequently
-  # change this, you will need to prune the old template manually, e.g.
-  #
-  # `curl -XDELETE <http://localhost:9200/_template/OldTemplateName?pretty>`
-  #
-  # where `OldTemplateName` is whatever the former setting was.
-  config :template_name, :validate => :string, :default => "logstash"
-
-  # You can set the path to your own template here, if you so desire.
-  # If not set, the included template will be used.
-  config :template, :validate => :path
-
-  # Overwrite the current template with whatever is configured
-  # in the `template` and `template_name` directives.
-  config :template_overwrite, :validate => :boolean, :default => false
-
-  # The document ID for the index. Useful for overwriting existing entries in
-  # Elasticsearch with the same ID.
-  config :document_id, :validate => :string
-
-  # A routing override to be applied to all processed events.
-  # This can be dynamic using the `%{foo}` syntax.
-  config :routing, :validate => :string
-
-  # Sets the host(s) of the remote instance. If given an array it will load balance requests across the hosts specified in the `hosts` parameter.
-  # Remember the `http` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http[http] address (eg. 9200, not 9300).
-  #     `"127.0.0.1"`
-  #     `["127.0.0.1:9200","127.0.0.2:9200"]`
-  # It is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `hosts` list
-  # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes in Elasticsearch.
-
-  config :hosts, :validate => :array
-
-  config :host, :obsolete => "Please use the 'hosts' setting instead. You can specify multiple entries separated by comma in 'host:port' format."
-
-  # The port setting is obsolete.  Please use the 'hosts' setting instead.
-  # Hosts entries can be in "host:port" format.
-  config :port, :obsolete => "Please use the 'hosts' setting instead. Hosts entries can be in 'host:port' format."
-
-  # This plugin uses the bulk index API for improved indexing performance.
-  # To make efficient bulk API calls, we will buffer a certain number of
-  # events before flushing that out to Elasticsearch. This setting
-  # controls how many events will be buffered before sending a batch
-  # of events. Increasing the `flush_size` has an effect on Logstash's heap size.
-  # Remember to also increase the heap size using `LS_HEAP_SIZE` if you are sending big documents
-  # or have increased the `flush_size` to a higher value.
-  config :flush_size, :validate => :number, :default => 500
-
-  # The amount of time since last flush before a flush is forced.
-  #
-  # This setting helps ensure slow event rates don't get stuck in Logstash.
-  # For example, if your `flush_size` is 100, and you have received 10 events,
-  # and it has been more than `idle_flush_time` seconds since the last flush,
-  # Logstash will flush those 10 events automatically.
-  #
-  # This helps keep both fast and slow log streams moving along in
-  # near-real-time.
-  config :idle_flush_time, :validate => :number, :default => 1
-
-  # The Elasticsearch action to perform. Valid actions are:
-  #
-  # - index: indexes a document (an event from Logstash).
-  # - delete: deletes a document by id (An id is required for this action)
-  # - create: indexes a document, fails if a document by that id already exists in the index.
-  # - update: updates a document by id. Update has a special case where you can upsert -- update a
-  #   document if not already present. See the `upsert` option
-  #
-  # For more details on actions, check out the http://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
-  config :action, :validate => %w(index delete create update), :default => "index"
 
   # Username to authenticate to a secure Elasticsearch cluster
   config :user, :validate => :string
@@ -222,180 +127,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Create a new document with source if `document_id` doesn't exist in Elasticsearch
   config :doc_as_upsert, :validate => :boolean, :default => false
 
-  # Set upsert content for update mode.
-  # Create a new document with this parameter as json string if `document_id` doesn't exists
-  config :upsert, :validate => :string, :default => ""
-
   # Set the timeout for network operations and requests sent Elasticsearch. If
   # a timeout occurs, the request will be retried.
   config :timeout, :validate => :number
 
-  # This needs to be done after this class is defined to avoid weird class inheritance issues
-  def self.load_dependencies
-    require "logstash/outputs/elasticsearch/http_client"
-    require "logstash/outputs/elasticsearch/http_client_builder"
-    require "logstash/outputs/elasticsearch/template_manager"
-    require "logstash/outputs/elasticsearch/buffer"
-  end
-
-  def register
-    self.class.load_dependencies
-
-    @stopping = Concurrent::AtomicBoolean.new(false)
-    setup_hosts # properly sets @hosts
+  def build_client
     @client = ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
-    TemplateManager.install_template(self)
-    setup_buffer_and_handler
-
-    @logger.info("New Elasticsearch output", :hosts => @hosts)
-  end
-
-  def setup_buffer_and_handler
-    @buffer = ::LogStash::Outputs::ElasticSearch::Buffer.new(@logger, @flush_size, @idle_flush_time) do |actions|
-      retrying_submit(actions)
-    end
-  end
-
-  def setup_hosts
-    @hosts = Array(@hosts)
-    if @hosts.empty?
-      @logger.info("No 'host' set in elasticsearch output. Defaulting to localhost")
-      @hosts.replace(["localhost"])
-    end
-  end
-
-  def receive(event)
-    params = event_action_params(event)
-    action = event.sprintf(@action)
-
-    @buffer << [action, params, event]
-  end # def receive
-
-  # When there are exceptions raised upon submission, we raise an exception so that
-  # Stud::Buffer will retry to flush
-  def flush
-    @buffer.flush
-  end # def flush
-
-  def close
-    @stopping.make_true
-    @client.stop_sniffing!
-    @buffer.stop
-  end
-
-  def retrying_submit(actions)
-    retries_left = @max_retries+1 # +1 for the first attempt
-
-    # Initially we submit the full list of actions
-    submit_actions = actions
-
-    while submit_actions && submit_actions.length > 0 && retries_left > 0
-      return if !submit_actions # If everything's a success we move along
-      # We retry with whatever is didn't succeed
-      begin
-        submit_actions = submit(submit_actions)
-      rescue => e
-        @logger.warn("Encountered an unexpected error submitting a bulk request!",
-        :message => e.message,
-        :class => e.class.name,
-        :backtrace => e.backtrace)
-      end
-      retries_left -= 1
-    end
-  end
-
-  def submit(actions)
-    es_actions = actions.map { |a, doc, event| [a, doc, event.to_hash] }
-
-    bulk_response = safe_bulk(es_actions,actions)
-    return if @stopping.true? # bulk_response is nil when @stopping == true
-
-    # If there are no errors, we're done here!
-    return unless bulk_response["errors"]
-
-    actions_to_retry = []
-    bulk_response["items"].each_with_index do |response,idx|
-      action_type, action_props = response.first
-      status = action_props["status"]
-      action = actions[idx]
-
-      if SUCCESS_CODES.include?(status)
-        next
-      elsif RETRYABLE_CODES.include?(status)
-        @logger.warn "retrying failed action with response code: #{status}"
-        actions_to_retry << action
-      else
-        @logger.warn "Failed action. ", status: status, action: action, response: response
-      end
-    end
-
-    actions_to_retry
-  end
-
-  # get the action parameters for the given event
-  def event_action_params(event)
-    type = get_event_type(event)
-
-    params = {
-      :_id => @document_id ? event.sprintf(@document_id) : nil,
-      :_index => event.sprintf(@index),
-      :_type => type,
-      :_routing => @routing ? event.sprintf(@routing) : nil
-    }
-
-    params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @action == 'update' && @upsert != ""
-    params
-  end
-
-  # Determine the correct value for the 'type' field for the given event
-  def get_event_type(event)
-    # Set the 'type' value for the index.
-    type = if @document_type
-             event.sprintf(@document_type)
-           else
-             event["type"] || "logs"
-           end
-
-    if !(type.is_a?(String) || type.is_a?(Numeric))
-      @logger.warn("Bad event type! Non-string/integer type value set!", :type_class => type.class, :type_value => type.to_s, :event => event)
-    end
-
-    type.to_s
-  end
-
-  # Rescue retryable errors during bulk submission
-  def safe_bulk(es_actions,actions)
-    @client.bulk(es_actions)
-  rescue Manticore::SocketException, Manticore::SocketTimeout => e
-    # If we can't even connect to the server let's just print out the URL (:hosts is actually a URL)
-    # and let the user sort it out from there
-    @logger.error(
-      "Attempted to send a bulk request to Elasticsearch configured at '#{@client.client_options[:hosts]}',"+
-        " but Elasticsearch appears to be unreachable or down!",
-      :client_config => @client.client_options,
-      :error_message => e.message,
-      :class => e.class.name
-    )
-    @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
-
-    # We retry until there are no errors! Errors should all go to the retry queue
-    sleep 1
-    retry unless @stopping.true?
-  rescue => e
-    # For all other errors print out full connection issues
-    @logger.error(
-      "Attempted to send a bulk request to Elasticsearch configured at '#{@client.client_options[:hosts]}'," +
-        " but an error occurred and it failed! Are you sure you can reach elasticsearch from this machine using " +
-        "the configuration provided?",
-      :client_config => @client.client_options,
-      :error_message => e.message,
-      :error_class => e.class.name,
-      :backtrace => e.backtrace
-    )
-
-    @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
-
-    raise e
   end
 
   @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }

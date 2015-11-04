@@ -35,11 +35,6 @@ end
 RSpec.configure do |config|
   config.include ESHelper
 
-  # Fix potential load order issues
-  config.before(:suite) do
-    LogStash::Outputs::ElasticSearch.load_dependencies
-  end
-
   if DOCKER_INTEGRATION
     # this :all hook gets run before every describe block that is tagged with :integration => true.
     config.before(:all, :integration => true) do
