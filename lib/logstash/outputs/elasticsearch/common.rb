@@ -149,7 +149,7 @@ module LogStash; module Outputs; class ElasticSearch;
       @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
 
       # We retry until there are no errors! Errors should all go to the retry queue
-      sleep 1
+      sleep @retry_max_interval
       retry unless @stopping.true?
     rescue => e
       # For all other errors print out full connection issues
