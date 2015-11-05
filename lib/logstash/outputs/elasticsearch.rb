@@ -54,10 +54,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   require "logstash/outputs/elasticsearch/common_configs"
   require "logstash/outputs/elasticsearch/common"
 
-  # Most config options are defined here!
+  # Protocol agnostic (i.e. non-http, non-java specific) configs go here
   include(LogStash::Outputs::ElasticSearch::CommonConfigs)
 
-  # Common impl. defined here
+  # Protocol agnostic methods
   include(LogStash::Outputs::ElasticSearch::Common)
 
   config_name "elasticsearch"

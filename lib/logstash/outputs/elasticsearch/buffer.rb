@@ -60,14 +60,7 @@ module LogStash; module Outputs; class ElasticSearch
     # this takes a block and will yield the internal buffer and executes
     # the block in a synchronized block from the internal mutex
     def synchronize
-      return @operations_mutex.synchronize { yield(@buffer) }
-
-      @operations_lock.lock
-      begin
-
-      ensure
-        @operations_lock.unlock
-      end
+      @operations_mutex.synchronize { yield(@buffer) }
     end
 
     # These methods are private for various reasons, chief among them threadsafety!
@@ -86,26 +79,27 @@ module LogStash; module Outputs; class ElasticSearch
         loop do
           sleep 0.2
           break if stopping?
+          synchronize { interval_flush }
+        end
+      end
+    end
 
-          synchronize do
-            if last_flush_seconds_ago >= @flush_interval
-              begin
-                @logger.info? && @logger.info("Flushing buffer at interval",
-                                              :instance => self.inspect,
-                                              :interval => @flush_interval)
-                flush_unsafe
-              rescue StandardError => e
-                @logger.warn("Error flushing buffer at interval!",
-                             :instance => self.inspect,
-                             :message => e.message,
-                             :class => e.class.name,
-                             :backtrace => e.backtrace
-                )
-              rescue Exception => e
-                @logger.warn("Exception flushing buffer at interval!", :error => e.message, :class => e.class.name)
-              end
-            end
-          end
+    def interval_flush
+      if last_flush_seconds_ago >= @flush_interval
+        begin
+          @logger.info? && @logger.info("Flushing buffer at interval",
+                                        :instance => self.inspect,
+                                        :interval => @flush_interval)
+          flush_unsafe
+        rescue StandardError => e
+          @logger.warn("Error flushing buffer at interval!",
+                       :instance => self.inspect,
+                       :message => e.message,
+                       :class => e.class.name,
+                       :backtrace => e.backtrace
+          )
+        rescue Exception => e
+          @logger.warn("Exception flushing buffer at interval!", :error => e.message, :class => e.class.name)
         end
       end
     end
