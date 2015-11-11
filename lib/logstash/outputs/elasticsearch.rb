@@ -62,6 +62,17 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   config_name "elasticsearch"
 
+  # The Elasticsearch action to perform. Valid actions are:
+  #
+  # - index: indexes a document (an event from Logstash).
+  # - delete: deletes a document by id (An id is required for this action)
+  # - create: indexes a document, fails if a document by that id already exists in the index.
+  # - update: updates a document by id. Update has a special case where you can upsert -- update a
+  #   document if not already present. See the `upsert` option
+  #
+  # For more details on actions, check out the http://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
+  config :action, :validate => %w(index delete create update), :default => "index"
+
   # Username to authenticate to a secure Elasticsearch cluster
   config :user, :validate => :string
   # Password to authenticate to a secure Elasticsearch cluster
@@ -106,26 +117,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # How long to wait, in seconds, between sniffing attempts
   config :sniffing_delay, :validate => :number, :default => 5
 
-  # Set max retry for each event. The total time spent blocked on retries will be
-  # (max_retries * retry_max_interval). This may vary a bit if Elasticsearch is very slow to respond
-  config :max_retries, :validate => :number, :default => 3
-
-  # Set max interval between bulk retries.
-  config :retry_max_interval, :validate => :number, :default => 2
-
-  # DEPRECATED This setting no longer does anything. If you need to change the number of retries in flight
-  # try increasing the total number of workers to better handle this.
-  config :retry_max_items, :validate => :number, :default => 500, :deprecated => true
-
   # Set the address of a forward HTTP proxy.
   # Can be either a string, such as `http://localhost:123` or a hash in the form
   # of `{host: 'proxy.org' port: 80 scheme: 'http'}`.
   # Note, this is NOT a SOCKS proxy, but a plain HTTP proxy
   config :proxy
-
-  # Enable `doc_as_upsert` for update mode.
-  # Create a new document with source if `document_id` doesn't exist in Elasticsearch
-  config :doc_as_upsert, :validate => :boolean, :default => false
 
   # Set the timeout for network operations and requests sent Elasticsearch. If
   # a timeout occurs, the request will be retried.
@@ -133,6 +129,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   def build_client
     @client = ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
+  end
+
+  def close
+    @stopping.make_true
+    @client.stop_sniffing!
+    @buffer.stop
   end
 
   @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }

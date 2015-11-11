@@ -19,22 +19,24 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def receive(event)
+      @buffer << event_action_tuple(event)
+    end
+
+    # Receive an array of events and immediately attempt to index them (no buffering)
+    def multi_receive(events)
+      retrying_submit(events.map {|e| event_action_tuple(e) })
+    end
+
+    # Convert the event into a 3-tuple of action, params, and event
+    def event_action_tuple(event)
       params = event_action_params(event)
       action = event.sprintf(@action)
-
-      @buffer << [action, params, event]
+      [action, params, event]
     end
 
     def flush
       @buffer.flush
     end
-
-    def close
-      @stopping.make_true
-      @client.stop_sniffing!
-      @buffer.stop
-    end
-
 
     def setup_hosts
       @hosts = Array(@hosts)
@@ -61,7 +63,7 @@ module LogStash; module Outputs; class ElasticSearch;
       submit_actions = actions
 
       while submit_actions && submit_actions.length > 0 && retries_left > 0
-        return if !submit_actions # If everything's a success we move along
+        return if !submit_actions || submit_actions.empty? # If everything's a success we move along
         # We retry with whatever is didn't succeed
         begin
           submit_actions = submit(submit_actions)
@@ -76,7 +78,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def submit(actions)
-      es_actions = actions.map { |a, doc, event| [a, doc, event.to_hash] }
+      es_actions = actions.map { |a, doc, event| [a, doc, event.to_hash]}
 
       bulk_response = safe_bulk(es_actions,actions)
 
