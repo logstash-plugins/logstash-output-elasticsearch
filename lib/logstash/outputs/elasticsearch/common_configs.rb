@@ -11,7 +11,7 @@ module LogStash; module Outputs; class ElasticSearch
       # The index type to write events to. Generally you should try to write only
       # similar events to the same 'type'. String expansion `%{foo}` works here.
       #
-      # Deprecated in favor of `document_type` field.
+      # Deprecated in favor of `docoument_type` field.
       mod.config :index_type, :validate => :string, :obsolete => "Please use the 'document_type' setting instead. It has the same effect, but is more appropriately named."
 
       # The document type to write events to. Generally you should try to write only
@@ -62,8 +62,7 @@ module LogStash; module Outputs; class ElasticSearch
       #     `["127.0.0.1:9200","127.0.0.2:9200"]`
       # It is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `hosts` list
       # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes in Elasticsearch.
-
-      mod.config :hosts, :validate => :array
+      mod.config :hosts, :validate => :array, :default => ["127.0.0.1"]
 
       mod.config :host, :obsolete => "Please use the 'hosts' setting instead. You can specify multiple entries separated by comma in 'host:port' format."
 
@@ -91,20 +90,24 @@ module LogStash; module Outputs; class ElasticSearch
       # near-real-time.
       mod.config :idle_flush_time, :validate => :number, :default => 1
 
-      # The Elasticsearch action to perform. Valid actions are:
-      #
-      # - index: indexes a document (an event from Logstash).
-      # - delete: deletes a document by id (An id is required for this action)
-      # - create: indexes a document, fails if a document by that id already exists in the index.
-      # - update: updates a document by id. Update has a special case where you can upsert -- update a
-      #   document if not already present. See the `upsert` option
-      #
-      # For more details on actions, check out the http://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
-      mod.config :action, :validate => %w(index delete create update), :default => "index"
-
-      # Set upsert content for update mode.
+      # Set upsert content for update mode.s
       # Create a new document with this parameter as json string if `document_id` doesn't exists
       mod.config :upsert, :validate => :string, :default => ""
+
+      # Enable `doc_as_upsert` for update mode.
+      # Create a new document with source if `document_id` doesn't exist in Elasticsearch
+      mod.config :doc_as_upsert, :validate => :boolean, :default => false
+
+      # Set max retry for each event. The total time spent blocked on retries will be
+      # (max_retries * retry_max_interval). This may vary a bit if Elasticsearch is very slow to respond
+      mod.config :max_retries, :validate => :number, :default => 3
+
+      # Set max interval between bulk retries.
+      mod.config :retry_max_interval, :validate => :number, :default => 2
+
+      # DEPRECATED This setting no longer does anything. If you need to change the number of retries in flight
+      # try increasing the total number of workers to better handle this.
+      mod.config :retry_max_items, :validate => :number, :default => 500, :deprecated => true
     end
   end
-end; end; end
+end end end
