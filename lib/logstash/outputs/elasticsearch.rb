@@ -400,7 +400,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     # Update API setup
     update_options = {
-      :upsert => @upsert,
       :doc_as_upsert => @doc_as_upsert
     }
     common_options.merge! update_options
@@ -528,7 +527,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     
     sprinted_action = event.sprintf(@action)
 
-    params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if action == 'update' && @upsert != ""
+    params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if sprinted_action == 'update' && @upsert != ""
 
     buffer_receive([sprinted_action, params, event])
   end # def receive
