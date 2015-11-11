@@ -84,4 +84,30 @@ describe "all protocols update actions", :integration => true do
       end
     end
   end
+
+  describe "action parameter with interpolated string equal to 'update'" do
+    subject do
+      next LogStash::Outputs::ElasticSearch.new(
+        {
+          "host" => "node01",
+          "protocol" => "http",
+          "index" => "logstash",
+          "action" => "%{action_field}",
+          "document_id" => "%{id}",
+          "doc_as_upsert" => false,
+          "upsert" => "{\"field1\": \"%{text_field}\"}"
+        }
+      )
+    end
+
+    let(:event) do
+      LogStash::Event.new("action_field" => "update", "id" => "123", "text_field" => 'some text')
+    end
+
+    it "should give all update parameters to protocol" do
+      subject.register
+      expect(subject).to receive(:buffer_receive).with(["update", hash_including(:_upsert => {"field1" => "some text"}), event])
+      subject.receive(event)
+    end
+  end
 end
