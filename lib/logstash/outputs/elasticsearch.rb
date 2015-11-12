@@ -113,7 +113,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Note: This will return ALL nodes with HTTP enabled (including master nodes!). If you use
   # this with master nodes, you probably want to disable HTTP on them by setting
   # `http.enabled` to false in their elasticsearch.yml. You can either use the `sniffing` option or
-  # manually enter multiple Elasticsearch hosts using the `hosts` paramater.
+  # manually enter multiple Elasticsearch hosts using the `hosts` parameter.
   config :sniffing, :validate => :boolean, :default => false
 
   # How long to wait, in seconds, between sniffing attempts
