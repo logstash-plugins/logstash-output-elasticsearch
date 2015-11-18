@@ -1,3 +1,7 @@
+## 2.1.4
+ - Improved the default template to disable fielddata on analyzed string fields. #309
+ - Dependend on logstash-core 2.0.0 released version, rather than RC1
+
 ## 2.1.3
  - Improved the default template to use doc_values wherever possible.
  - Template contains example mappings for every numeric type. You must map your
