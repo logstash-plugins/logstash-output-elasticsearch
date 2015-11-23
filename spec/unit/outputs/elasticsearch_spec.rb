@@ -131,4 +131,26 @@ describe "outputs/elasticsearch" do
       sleep(options["timeout"] + 0.5)
     end
   end
+
+  describe "the action option" do
+    subject(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
+    context "with a sprintf action" do
+      let(:options) { {"action" => "%{myactionfield}"} }
+
+      let(:event) { LogStash::Event.new("myactionfield" => "update", "message" => "blah") }
+
+      it "should interpolate the requested action value when creating an event_action_tuple" do
+        expect(eso.event_action_tuple(event).first).to eql("update")
+      end
+    end
+
+    context "with an invalid action" do
+      let(:options) { {"action" => "SOME Garbaaage"} }
+
+      it "should raise a configuration error" do
+        expect { subject.register }.to raise_error(LogStash::ConfigurationError)
+      end
+    end
+  end
+
 end
