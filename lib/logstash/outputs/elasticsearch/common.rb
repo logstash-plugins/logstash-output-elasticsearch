@@ -14,6 +14,7 @@ module LogStash; module Outputs; class ElasticSearch;
       build_client
       install_template
       setup_buffer_and_handler
+      check_action_validity
 
       @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts)
     end
@@ -54,6 +55,22 @@ module LogStash; module Outputs; class ElasticSearch;
       @buffer = ::LogStash::Outputs::ElasticSearch::Buffer.new(@logger, @flush_size, @idle_flush_time) do |actions|
         retrying_submit(actions)
       end
+    end
+
+    def check_action_validity
+      raise LogStash::ConfigurationError, "No action specified!" unless @action
+
+      # If we're using string interpolation, we're good!
+      return if @action =~ /%{.+}/
+      return if valid_actions.include?(@action)
+
+      raise LogStash::ConfigurationError, "Action '#{@action}' is invalid! Pick one of #{valid_actions} or use a sprintf style statement"
+    end
+
+    # To be overidden by the -java version
+    VALID_HTTP_ACTIONS=["index", "delete", "create", "update"]
+    def valid_actions
+      VALID_HTTP_ACTIONS
     end
 
     def retrying_submit(actions)
