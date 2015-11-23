@@ -1,0 +1,9 @@
+before_install:
+  - curl -s https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/2.0.0/elasticsearch-2.0.0.deb > elasticsearch.deb
+  - sudo dpkg -i --force-confnew elasticsearch.deb
+  - sudo service elasticsearch start
+  - sleep 10
+language: ruby
+rvm:
+  - jruby-19mode
+script: bundle exec rspec spec && bundle exec rspec spec
