@@ -69,9 +69,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # - create: indexes a document, fails if a document by that id already exists in the index.
   # - update: updates a document by id. Update has a special case where you can upsert -- update a
   #   document if not already present. See the `upsert` option
+  # - A sprintf style string to change the action based on the content of the event. The value `%{[foo]}`
+  #   would use the foo field for the action
   #
   # For more details on actions, check out the http://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
-  config :action, :validate => %w(index delete create update), :default => "index"
+  config :action, :validate => :string, :default => "index"
 
   # Username to authenticate to a secure Elasticsearch cluster
   config :user, :validate => :string
