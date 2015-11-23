@@ -1,3 +1,6 @@
+## 2.1.5
+ - Sprintf style 'action' parameters no longer raise a LogStash::ConfigurationError
+
 ## 2.1.4
  - Improved the default template to disable fielddata on analyzed string fields. #309
  - Dependend on logstash-core 2.0.0 released version, rather than RC1
