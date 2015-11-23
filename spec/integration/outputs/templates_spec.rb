@@ -78,8 +78,8 @@ describe "index template expected behavior", :integration => true do
     insist { results["hits"]["hits"][0]["_source"]["geoip"]["location"] } == [ 0.0, 0.0 ]
   end
 
-  it "should index stopwords like 'at' " do
-    results = @es.search(:body => { "aggregations" => { "my_agg" => { "terms" => { "field" => "country" } } } })["aggregations"]["my_agg"]
+  it "aggregate .raw results correctly " do
+    results = @es.search(:body => { "aggregations" => { "my_agg" => { "terms" => { "field" => "country.raw" } } } })["aggregations"]["my_agg"]
     terms = results["buckets"].collect { |b| b["key"] }
 
     insist { terms }.include?("us")
