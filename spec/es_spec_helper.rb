@@ -8,7 +8,7 @@ require "logstash/outputs/elasticsearch"
 
 CONTAINER_NAME = "logstash-output-elasticsearch-#{rand(999).to_s}"
 CONTAINER_IMAGE = "elasticsearch"
-CONTAINER_TAG = "1.6"
+CONTAINER_TAG = "2.0"
 
 DOCKER_INTEGRATION = ENV["DOCKER_INTEGRATION"]
 

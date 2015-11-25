@@ -60,7 +60,7 @@ describe "Update actions", :integration => true do
     
   context "when using script" do
     it "should increment a counter with event/doc 'count' variable" do
-      subject = get_es_output({ 'document_id' => "123", 'script' => 'scripted_update' })
+      subject = get_es_output({ 'document_id' => "123", 'script' => 'scripted_update', 'script_type' => 'file' })
       subject.register
       subject.receive(LogStash::Event.new("count" => 2))
       subject.flush
@@ -69,7 +69,7 @@ describe "Update actions", :integration => true do
     end
 
     it "should increment a counter with event/doc '[data][count]' nested variable" do
-      subject = get_es_output({ 'document_id' => "123", 'script' => 'scripted_update_nested' })
+      subject = get_es_output({ 'document_id' => "123", 'script' => 'scripted_update_nested', 'script_type' => 'file' })
       subject.register
       subject.receive(LogStash::Event.new("data" => { "count" => 3 }))
       subject.flush
@@ -113,7 +113,7 @@ describe "Update actions", :integration => true do
 
     context "when using script" do
       it "should create new documents with upsert content" do
-        subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_update', 'upsert' => '{"message": "upsert message"}' })
+        subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_update', 'upsert' => '{"message": "upsert message"}', 'script_type' => 'file' })
         subject.register
         subject.receive(LogStash::Event.new("message" => "sample message here"))
         subject.flush
@@ -122,7 +122,7 @@ describe "Update actions", :integration => true do
       end
 
       it "should create new documents with event/doc as script params" do
-        subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_upsert', 'scripted_upsert' => true })
+        subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_upsert', 'scripted_upsert' => true, 'script_type' => 'file' })
         subject.register
         subject.receive(LogStash::Event.new("counter" => 1))
         subject.flush
