@@ -24,8 +24,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       end
 
       it "should periodically sniff the client" do
-        sleep 1.5
-        expect(transport).to have_received(:reload_connections!)
+        sleep 2
+        expect(transport).to have_received(:reload_connections!).at_least(:once)
       end
     end
 
