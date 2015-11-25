@@ -106,7 +106,7 @@ module LogStash; module Outputs; class ElasticSearch
       mod.config :max_retries, :validate => :number, :default => 3
 
       # Set script name for scripted update mode
-      config :script, :validate => :string, :default => ""
+      mod.config :script, :validate => :string, :default => ""
 
       # Define the type of script referenced by "script" variable
       #  inline : "script" contains inline script
