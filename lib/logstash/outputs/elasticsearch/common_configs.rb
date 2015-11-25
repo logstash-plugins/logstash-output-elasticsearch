@@ -112,7 +112,7 @@ module LogStash; module Outputs; class ElasticSearch
       #  inline : "script" contains inline script
       #  indexed : "script" contains the name of script directly indexed in elasticsearch
       #  file    : "script" contains the name of script stored in elasticseach's config directory
-      mod.config :script_type, :validate => ["inline", 'indexed', "file"]
+      mod.config :script_type, :validate => ["inline", 'indexed', "file"], :default => ["inline"]
 
       # Set the language of the used script
       mod.config :script_lang, :validate => :string, :default => ""
