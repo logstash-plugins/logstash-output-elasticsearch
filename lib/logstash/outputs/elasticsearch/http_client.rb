@@ -18,18 +18,27 @@ module LogStash; module Outputs; class ElasticSearch;
       # @options = DEFAULT_OPTIONS.merge(options)
       @options = options
       @client = build_client(@options)
+      # mutex to prevent requests and sniffing to access the
+      # connection pool at the same time
+      @request_mutex = Mutex.new
       start_sniffing!
     end
 
     def template_install(name, template, force=false)
-      if template_exists?(name) && !force
-        @logger.debug("Found existing Elasticsearch template. Skipping template management", :name => name)
-        return
+      @request_mutex.synchronize do
+        if template_exists?(name) && !force
+          @logger.debug("Found existing Elasticsearch template. Skipping template management", :name => name)
+          return
+        end
+        template_put(name, template)
       end
-      template_put(name, template)
     end
 
     def bulk(actions)
+      @request_mutex.synchronize { non_threadsafe_bulk(actions) }
+    end
+
+    def non_threadsafe_bulk(actions)
       return if actions.empty?
       bulk_body = actions.collect do |action, args, source|
         if action == 'update'
@@ -61,7 +70,7 @@ module LogStash; module Outputs; class ElasticSearch;
       if options[:sniffing]
         @sniffer_thread = Thread.new do
           loop do
-            sniff!
+            @request_mutex.synchronize { sniff! }
             sleep (options[:sniffing_delay].to_f || 30)
           end
         end
