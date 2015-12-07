@@ -1,3 +1,7 @@
+## 2.1.6
+ - Serialize access to the connection pool in es-ruby client
+ - Add support for parent relationship
+
 ## 2.1.5
  - Sprintf style 'action' parameters no longer raise a LogStash::ConfigurationError
 
