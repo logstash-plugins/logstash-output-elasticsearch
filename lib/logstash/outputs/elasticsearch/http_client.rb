@@ -56,7 +56,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
         args.delete(:_upsert)
 
-        if source
+        if source and action != 'delete'
           next [ { action => args }, source ]
         else
           next { action => args }
