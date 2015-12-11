@@ -5,7 +5,7 @@ module LogStash; module Outputs; class ElasticSearch;
   module Common
     attr_reader :client, :hosts
 
-    RETRYABLE_CODES = [409, 429, 503]
+    RETRYABLE_CODES = [429, 503]
     SUCCESS_CODES = [200, 201]
 
     def register
@@ -74,23 +74,20 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def retrying_submit(actions)
-      retries_left = @max_retries+1 # +1 for the first attempt
-
       # Initially we submit the full list of actions
       submit_actions = actions
 
-      while submit_actions && submit_actions.length > 0 && retries_left > 0
+      while submit_actions && submit_actions.length
         return if !submit_actions || submit_actions.empty? # If everything's a success we move along
         # We retry with whatever is didn't succeed
         begin
           submit_actions = submit(submit_actions)
         rescue => e
-          @logger.warn("Encountered an unexpected error submitting a bulk request!",
+          @logger.warn("Encountered an unexpected error submitting a bulk request! Will retry.",
                        :message => e.message,
                        :class => e.class.name,
                        :backtrace => e.backtrace)
         end
-        retries_left -= 1
       end
     end
 

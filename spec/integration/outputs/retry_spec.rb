@@ -8,7 +8,6 @@ describe "failures in bulk class expected behavior", :integration => true do
   let(:event2) { LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0] }, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0}) }
   let(:action2) { ["index", {:_id=>nil, :_routing=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event2] }
   let(:invalid_event) { LogStash::Event.new("geoip" => { "location" => "notlatlon" }, "@timestamp" => "2014-11-17T20:37:17.223Z") }
-  let(:max_retries) { 3 }
 
   def mock_actions_with_response(*resp)
     expanded_responses = resp.map do |resp|
@@ -33,7 +32,6 @@ describe "failures in bulk class expected behavior", :integration => true do
       "hosts" => get_host_port(),
       "retry_max_items" => 10,
       "retry_max_interval" => 1,
-      "max_retries" => max_retries
     }
     next LogStash::Outputs::ElasticSearch.new(settings)
   end
@@ -108,14 +106,14 @@ describe "failures in bulk class expected behavior", :integration => true do
     sleep(3)
   end
 
-  it "should retry an event until max_retries reached" do
+  it "should retry an event infinitely until a non retryable status occurs" do
     mock_actions_with_response({"errors" => true, "statuses" => [429]},
                                {"errors" => true, "statuses" => [429]},
                                {"errors" => true, "statuses" => [429]},
                                {"errors" => true, "statuses" => [429]},
                                {"errors" => true, "statuses" => [429]},
-                               {"errors" => true, "statuses" => [429]})
-    expect(subject).to receive(:submit).with([action1]).exactly(max_retries+1).times.and_call_original
+                               {"errors" => true, "statuses" => [500]})
+    expect(subject).to receive(:submit).with([action1]).exactly(6).times.and_call_original
     subject.register
     subject.receive(event1)
     subject.flush

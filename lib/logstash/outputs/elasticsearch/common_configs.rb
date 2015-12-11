@@ -102,8 +102,7 @@ module LogStash; module Outputs; class ElasticSearch
       # Create a new document with source if `document_id` doesn't exist in Elasticsearch
       mod.config :doc_as_upsert, :validate => :boolean, :default => false
 
-      # Set max retry for each event. The total time spent blocked on retries will be
-      # (max_retries * retry_max_interval). This may vary a bit if Elasticsearch is very slow to respond
+      # DEPRECATED This setting no longer does anything. It will be marked obsolete in a future version.
       mod.config :max_retries, :validate => :number, :default => 3
 
       # Set max interval between bulk retries.
