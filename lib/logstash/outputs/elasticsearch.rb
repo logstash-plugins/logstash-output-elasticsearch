@@ -22,21 +22,18 @@ require "uri" # for escaping user input
 #
 # ==== Retry Policy
 #
+# The retry policy has changed significantly in the 2.2.0 release.
 # This plugin uses the Elasticsearch bulk API to optimize its imports into Elasticsearch. These requests may experience
-# either partial or total failures. Events are retried if they fail due to either a network error or the status codes
-# 429 (the server is busy), 409 (Version Conflict), or 503 (temporary overloading/maintenance).
+# either partial or total failures.
 #
-# The retry policy's logic can be described as follows:
+# The following errors are retried infinitely:
 #
-# - Block and retry all events in the bulk response that experience transient network exceptions until
-#   a successful submission is received by Elasticsearch.
-# - Retry the subset of sent events which resulted in ES errors of a retryable nature.
-# - Events which returned retryable error codes will be pushed onto a separate queue for
-#   retrying events. Events in this queue will be retried a maximum of 5 times by default (configurable through :max_retries).
-#   The size of this queue is capped by the value set in :retry_max_items.
-# - Events from the retry queue are submitted again when the queue reaches its max size or when
-#   the max interval time is reached. The max interval time is configurable via :retry_max_interval.
-# - Events which are not retryable or have reached their max retry count are logged to stderr.
+# - Network errors (inability to connect)
+# - 429 (Too many requests) and
+# - 503 (Service unavailable) errors
+#
+# NOTE: 409 exceptions are no longer retried. Please set a higher `retry_on_conflict` value if you experience 409 exceptions.
+# It is more performant for Elasticsearch to retry these exceptions than this plugin.
 #
 # ==== DNS Caching
 #

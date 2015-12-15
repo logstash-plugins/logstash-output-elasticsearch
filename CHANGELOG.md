@@ -1,3 +1,7 @@
+## 2.2.0
+ - Now retry too busy and service unavailable errors infinitely.
+ - Never retry conflict errors
+
 ## 2.1.6
  - Serialize access to the connection pool in es-ruby client
  - Add support for parent relationship
