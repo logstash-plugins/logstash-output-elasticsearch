@@ -1,10 +1,5 @@
 # Logstash Plugin
 
-ATTN: This plugin is undergoing a [major refactor](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/291)! Any refactors started now may need to be rebased/refactored before they are accepted!
-
-[![Build
-Status](http://build-eu-00.elastic.co/view/LS%20Plugins/view/LS%20Outputs/job/logstash-plugin-output-elasticsearch-unit/badge/icon)](http://build-eu-00.elastic.co/view/LS%20Plugins/view/LS%20Outputs/job/logstash-plugin-output-elasticsearch-unit/)
-
 [![Travis Build Status](https://travis-ci.org/logstash-plugins/logstash-output-elasticsearch.svg)](https://travis-ci.org/logstash-plugins/logstash-output-elasticsearch)
 
 This is a plugin for [Logstash](https://github.com/elastic/logstash).
