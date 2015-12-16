@@ -1,8 +1,9 @@
-## 2.2.0
+## 2.3.0
  - Now retry too busy and service unavailable errors infinitely.
  - Never retry conflict errors
+ - Fix broken delete verb that would fail due to sending body with verb
 
-## 2.1.6
+## 2.2.0
  - Serialize access to the connection pool in es-ruby client
  - Add support for parent relationship
 
