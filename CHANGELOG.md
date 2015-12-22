@@ -1,3 +1,6 @@
+## 2.3.1
+ - Bump manticore dependenvy to 0.5.2
+
 ## 2.3.0
  - Now retry too busy and service unavailable errors infinitely.
  - Never retry conflict errors
