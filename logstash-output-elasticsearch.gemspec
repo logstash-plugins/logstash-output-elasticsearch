@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
 
   s.name            = 'logstash-output-elasticsearch'
-  s.version         = '2.3.0'
+  s.version         = '2.3.1'
   s.licenses        = ['apache-2.0']
   s.summary         = "Logstash Output to Elasticsearch"
   s.description     = "Output events to elasticsearch"
@@ -31,7 +31,7 @@ Gem::Specification.new do |s|
 
   if RUBY_PLATFORM == 'java'
     s.platform = RUBY_PLATFORM
-    s.add_runtime_dependency "manticore", '~> 0.4.2'
+    s.add_runtime_dependency "manticore", '>= 0.5.2', '< 1.0.0'
   end
 
   s.add_development_dependency 'logstash-devutils'
