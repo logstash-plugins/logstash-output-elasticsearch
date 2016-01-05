@@ -7,5 +7,5 @@ before_install:
 language: ruby
 cache: bundler
 rvm:
-  - jruby-19mode
+  - jruby-1.7.23
 script: bundle exec rspec spec && bundle exec rspec spec --tag integration
