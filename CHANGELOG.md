@@ -1,3 +1,6 @@
+## 2.3.2
+ - Fix bug where max_retry_interval was not respected for HTTP error codes
+
 ## 2.3.1
  - Bump manticore dependenvy to 0.5.2
 
