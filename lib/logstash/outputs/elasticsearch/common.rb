@@ -77,7 +77,7 @@ module LogStash; module Outputs; class ElasticSearch;
       # Initially we submit the full list of actions
       submit_actions = actions
 
-      while submit_actions && submit_actions.length
+      while submit_actions && submit_actions.length > 0
         return if !submit_actions || submit_actions.empty? # If everything's a success we move along
         # We retry with whatever is didn't succeed
         begin
@@ -88,6 +88,8 @@ module LogStash; module Outputs; class ElasticSearch;
                        :class => e.class.name,
                        :backtrace => e.backtrace)
         end
+
+        sleep @retry_max_interval if submit_actions && submit_actions.length > 0
       end
     end
 
