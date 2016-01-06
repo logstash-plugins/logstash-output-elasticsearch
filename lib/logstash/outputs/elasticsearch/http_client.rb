@@ -34,41 +34,6 @@ module LogStash; module Outputs; class ElasticSearch;
       end
     end
 
-    def process_update_action(args, source)
-      if args[:_id]
-        if args[:_script]
-          # Use the event as a hash from your script with variable name defined by script_var_name (default: "event")
-          # Ex: event["@timestamp"]
-          source = { 'script' => {'params' => { @options[:script_var_name] => source }} }
-          if @options[:scripted_upsert]
-            source['scripted_upsert'] = true
-            source['upsert'] = {}
-          else
-            source['upsert'] = args.delete(:_upsert) if args[:_upsert]
-          end    
-          case @options[:script_type]
-          when "indexed"
-            source['script']['id'] = args.delete(:_script)
-          when "file"               
-            source['script']['file'] = args.delete(:_script)
-          when "inline"
-            source['script']['inline'] = args.delete(:_script)
-          end
-          source['script']['lang'] = @options[:script_lang] if @options[:script_lang] != ''
-        else
-          source = { 'doc' => source }
-          if @options[:doc_as_upsert]
-            source['doc_as_upsert'] = true
-          else
-            source['upsert'] = args.delete(:_upsert) if args[:_upsert]
-          end
-        end
-      else
-        raise(LogStash::ConfigurationError, "Specifying action => 'update' without a document '_id' is not supported.")
-      end
-      [args, source]
-    end
-
     def bulk(actions)
       @request_mutex.synchronize { non_threadsafe_bulk(actions) }
     end
@@ -76,7 +41,7 @@ module LogStash; module Outputs; class ElasticSearch;
     def non_threadsafe_bulk(actions)
       return if actions.empty?
       bulk_body = actions.collect do |action, args, source|
-        args, source = process_update_action(args, source) if action == 'update'
+        args, source = update_action_builder(args, source) if action == 'update'
 
         if source && action != 'delete'
           next [ { action => args }, source ]
@@ -180,6 +145,42 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def template_put(name, template)
       @client.indices.put_template(:name => name, :body => template)
+    end
+
+    # Build a bulk item for an elasticsearch update action
+    def update_action_builder(args, source)
+      if args[:_id]
+        if args[:_script]
+          # Use the event as a hash from your script with variable name defined by script_var_name (default: "event")
+          # Ex: event["@timestamp"]
+          source = { 'script' => {'params' => { @options[:script_var_name] => source }} }
+          if @options[:scripted_upsert]
+            source['scripted_upsert'] = true
+            source['upsert'] = {}
+          else
+            source['upsert'] = args.delete(:_upsert) if args[:_upsert]
+          end    
+          case @options[:script_type]
+          when "indexed"
+            source['script']['id'] = args.delete(:_script)
+          when "file"               
+            source['script']['file'] = args.delete(:_script)
+          when "inline"
+            source['script']['inline'] = args.delete(:_script)
+          end
+          source['script']['lang'] = @options[:script_lang] if @options[:script_lang] != ''
+        else
+          source = { 'doc' => source }
+          if @options[:doc_as_upsert]
+            source['doc_as_upsert'] = true
+          else
+            source['upsert'] = args.delete(:_upsert) if args[:_upsert]
+          end
+        end
+      else
+        raise(LogStash::ConfigurationError, "Specifying action => 'update' without a document '_id' is not supported.")
+      end
+      [args, source]
     end
   end
 end end end
