@@ -90,6 +90,21 @@ describe "Update actions", :integration => true do
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
       insist { r["_source"]["counter"] } == 4
     end
+
+    it "should increment a counter with event/doc 'count' variable with indexed script" do
+      @es.put_script lang: 'groovy', id: 'indexed_update', body: { script: 'ctx._source.counter += event["count"]' }
+      subject = get_es_output({
+        'document_id' => "123",
+        'script' => 'indexed_update',
+        'script_lang' => 'groovy',
+        'script_type' => 'indexed'
+      })
+      subject.register
+      subject.receive(LogStash::Event.new("count" => 4 ))
+      subject.flush
+      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
+      insist { r["_source"]["counter"] } == 5
+    end
   end
 
   context "when update with upsert" do

@@ -47,7 +47,7 @@ RSpec.configure do |config|
       rescue Docker::Error::NotFoundError
         scriptDir = File.expand_path File.dirname(__FILE__) + '/fixtures/scripts'
         Longshoreman.new("#{CONTAINER_IMAGE}:#{CONTAINER_TAG}", CONTAINER_NAME, {
-          'Cmd' => [ "-Des.script.inline=on" ],
+          'Cmd' => [ "-Des.script.inline=on", "-Des.script.indexed=on" ],
           'HostConfig' => {
             'Binds' => ["#{scriptDir}:/usr/share/elasticsearch/config/scripts"],
             'PublishAllPorts' => true
