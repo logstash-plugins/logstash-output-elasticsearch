@@ -32,11 +32,8 @@ describe "Update actions", :integration => true do
   end
 
   it "should fail without a document_id" do
-    subject = get_es_output()
-    subject.register
-    subject.receive(LogStash::Event.new("somevalue" => 100))
-    expect(subject.logger).to receive(:warn).at_least(1).with(anything,hash_including(:class => 'LogStash::ConfigurationError'))
-    subject.flush
+    subject = get_es_output
+    expect { subject.register }.to raise_error(LogStash::ConfigurationError)
   end
 
   context "when update only" do
