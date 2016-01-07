@@ -1,8 +1,9 @@
 sudo: false
 before_install:
   - curl -s https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/2.0.0/elasticsearch-2.0.0.tar.gz  > elasticsearch.tar.gz
-  - tar -xzf elasticsearch.tar.gz
-  - cd elasticsearch*/ && bin/elasticsearch &
+  - mkdir elasticsearch && tar -xzf elasticsearch.tar.gz --strip-components=1 -C ./elasticsearch/.
+  - ln -sn ../../spec/fixtures/scripts elasticsearch/config/.
+  - cd elasticsearch && bin/elasticsearch -Des.script.inline=on -Des.script.indexed=on &
   - sleep 10 && curl http://localhost:9200
 language: ruby
 cache: bundler
