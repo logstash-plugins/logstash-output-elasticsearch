@@ -22,6 +22,11 @@ module LogStash; module Outputs; class ElasticSearch;
         "doc_as_upsert and scripted_upsert are mutually exclusive."
       ) if params["doc_as_upsert"] and params["scripted_upsert"]
 
+      raise(
+        LogStash::ConfigurationError,
+        "Specifying action => 'update' needs a document_id."
+      ) if params['action'] == 'update' and params.fetch('document_id', '') == ''
+
       # Update API setup
       update_options = {
         :doc_as_upsert => params["doc_as_upsert"],
