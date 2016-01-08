@@ -1,3 +1,6 @@
+## 2.4.0
+ - Scripted update support courtesy of @Da-Wei
+
 ## 2.3.2
  - Fix bug where max_retry_interval was not respected for HTTP error codes
 
