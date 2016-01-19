@@ -1,3 +1,6 @@
+## 2.5.2
+ - Make error messages more verbose and easier to parse by humans
+
 ## 2.5.1
  - Fix bug where SSL would sometimes not be enabled
 
