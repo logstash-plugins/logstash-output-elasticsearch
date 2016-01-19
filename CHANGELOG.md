@@ -1,9 +1,10 @@
 ## 2.5.3
  - Fix bug with update document with doc_as_upsert and scripting (#364, #359)
-
+ - Make error messages more verbose and easier to parse by humans
+ 
 ## 2.5.2
  - Retryable failures are now logged at the info level instead of warning. (issue #372)
-
+ 
 ## 2.5.1
  - Fix bug where SSL would sometimes not be enabled
 

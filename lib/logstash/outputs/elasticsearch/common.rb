@@ -107,12 +107,13 @@ module LogStash; module Outputs; class ElasticSearch;
       bulk_response["items"].each_with_index do |response,idx|
         action_type, action_props = response.first
         status = action_props["status"]
+        error  = action_props["error"]
         action = actions[idx]
 
         if SUCCESS_CODES.include?(status)
           next
         elsif RETRYABLE_CODES.include?(status)
-          @logger.info "retrying failed action", status: status
+          @logger.info "retrying failed action with response code: #{status} (#{error})"
           actions_to_retry << action
         else
           @logger.warn "Failed action. ", status: status, action: action, response: response
@@ -166,9 +167,9 @@ module LogStash; module Outputs; class ElasticSearch;
       @logger.error(
         "Attempted to send a bulk request to Elasticsearch configured at '#{@client.client_options[:hosts]}',"+
           " but Elasticsearch appears to be unreachable or down!",
-        :client_config => @client.client_options,
         :error_message => e.message,
-        :class => e.class.name
+        :class => e.class.name,
+        :client_config => @client.client_options,
       )
       @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
 
@@ -181,10 +182,10 @@ module LogStash; module Outputs; class ElasticSearch;
         "Attempted to send a bulk request to Elasticsearch configured at '#{@client.client_options[:hosts]}'," +
           " but an error occurred and it failed! Are you sure you can reach elasticsearch from this machine using " +
           "the configuration provided?",
-        :client_config => @client.client_options,
         :error_message => e.message,
         :error_class => e.class.name,
-        :backtrace => e.backtrace
+        :backtrace => e.backtrace,
+        :client_config => @client.client_options,
       )
 
       @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
