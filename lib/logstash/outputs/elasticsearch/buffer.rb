@@ -87,7 +87,7 @@ module LogStash; module Outputs; class ElasticSearch
     def interval_flush
       if last_flush_seconds_ago >= @flush_interval
         begin
-          @logger.info? && @logger.info("Flushing buffer at interval",
+          @logger.debug? && @logger.debug("Flushing buffer at interval",
                                         :instance => self.inspect,
                                         :interval => @flush_interval)
           flush_unsafe
