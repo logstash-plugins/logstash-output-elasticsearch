@@ -44,8 +44,16 @@ module LogStash; module Outputs; class ElasticSearch
       # If not set, the included template will be used.
       mod.config :template, :validate => :path
 
-      # Overwrite the current template with whatever is configured
-      # in the `template` and `template_name` directives.
+      # The template_overwrite option will always overwrite the indicated template 
+      # in Elasticsearch with either the one indicated by template or the included one. 
+      # This option is set to false by default. If you always want to stay up to date 
+      # with the template provided by Logstash, this option could be very useful to you. 
+      # Likewise, if you have your own template file managed by puppet, for example, and 
+      # you wanted to be able to update it regularly, this option could help there as well.
+      # 
+      # Please note that if you are using your own customized version of the Logstash 
+      # template (logstash), setting this to true will make Logstash to overwrite 
+      # the "logstash" template (i.e. removing all customized settings)
       mod.config :template_overwrite, :validate => :boolean, :default => false
 
       # The document ID for the index. Useful for overwriting existing entries in
