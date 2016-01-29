@@ -1,3 +1,7 @@
+## 2.4.1
+ - Used debug level instead of info when emitting flush log message
+ - Updated docs about template
+
 ## 2.4.0
  - Scripted update support courtesy of @Da-Wei
 
