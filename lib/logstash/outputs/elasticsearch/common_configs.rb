@@ -5,7 +5,9 @@ module LogStash; module Outputs; class ElasticSearch
       # The default value will partition your indices by day so you can more easily
       # delete old data or only search specific date ranges.
       # Indexes may not contain uppercase characters.
-      # For weekly indexes ISO 8601 format is recommended, eg. logstash-%{+xxxx.ww}
+      # For weekly indexes ISO 8601 format is recommended, eg. logstash-%{+xxxx.ww}.
+      # LS uses Joda to format the index pattern from event timestamp. 
+      # Joda formats are defined http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html[here]. 
       mod.config :index, :validate => :string, :default => "logstash-%{+YYYY.MM.dd}"
 
       # The index type to write events to. Generally you should try to write only
