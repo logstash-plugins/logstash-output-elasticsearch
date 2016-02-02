@@ -46,15 +46,15 @@ module LogStash; module Outputs; class ElasticSearch
       # If not set, the included template will be used.
       mod.config :template, :validate => :path
 
-      # The template_overwrite option will always overwrite the indicated template 
-      # in Elasticsearch with either the one indicated by template or the included one. 
-      # This option is set to false by default. If you always want to stay up to date 
-      # with the template provided by Logstash, this option could be very useful to you. 
-      # Likewise, if you have your own template file managed by puppet, for example, and 
+      # The template_overwrite option will always overwrite the indicated template
+      # in Elasticsearch with either the one indicated by template or the included one.
+      # This option is set to false by default. If you always want to stay up to date
+      # with the template provided by Logstash, this option could be very useful to you.
+      # Likewise, if you have your own template file managed by puppet, for example, and
       # you wanted to be able to update it regularly, this option could help there as well.
-      # 
-      # Please note that if you are using your own customized version of the Logstash 
-      # template (logstash), setting this to true will make Logstash to overwrite 
+      #
+      # Please note that if you are using your own customized version of the Logstash
+      # template (logstash), setting this to true will make Logstash to overwrite
       # the "logstash" template (i.e. removing all customized settings)
       mod.config :template_overwrite, :validate => :boolean, :default => false
 
@@ -85,6 +85,15 @@ module LogStash; module Outputs; class ElasticSearch
       mod.config :port, :obsolete => "Please use the 'hosts' setting instead. Hosts entries can be in 'host:port' format."
 
       # This plugin uses the bulk index API for improved indexing performance.
+      # In Logstashes >= 2.2 this setting defines the maximum sized bulk request Logstash will make
+      # You you may want to increase this to be in line with your pipeline's batch size.
+      # If you specify a number larger than the batch size of your pipeline it will have no effect,
+      # save for the case where a filter increases the size of an inflight batch by outputting
+      # events.
+      #
+      # In Logstashes <= 2.1 this plugin uses its own internal buffer of events.
+      # This config option sets that size. In these older logstashes this size may
+      # have a significant impact on heap usage, whereas in 2.2+ it will never increase it.
       # To make efficient bulk API calls, we will buffer a certain number of
       # events before flushing that out to Elasticsearch. This setting
       # controls how many events will be buffered before sending a batch
