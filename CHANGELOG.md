@@ -1,3 +1,6 @@
+## 2.4.2
+ - Make flush_size actually cap the batch size in LS 2.2+
+
 ## 2.4.1
  - Used debug level instead of info when emitting flush log message
  - Updated docs about template

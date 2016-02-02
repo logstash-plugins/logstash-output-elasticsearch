@@ -92,6 +92,28 @@ describe "outputs/elasticsearch" do
         expect(manticore_host).to include("9202")
       end
     end
+
+    describe "#multi_receive" do
+      let(:events) { [double("one"), double("two"), double("three")] }
+      let(:events_tuples) { [double("one t"), double("two t"), double("three t")] }
+      let(:options) { super.merge("flush_size" => 2) }
+
+      before do
+        allow(eso).to receive(:retrying_submit).with(anything)
+        events.each_with_index do |e,i|
+          et = events_tuples[i]
+          allow(eso).to receive(:event_action_tuple).with(e).and_return(et)
+        end
+        eso.multi_receive(events)
+      end
+
+      it "should receive an array of events and invoke retrying_submit with them, split by flush_size" do
+        expect(eso).to have_received(:retrying_submit).with(events_tuples.slice(0,2))
+        expect(eso).to have_received(:retrying_submit).with(events_tuples.slice(2,3))
+      end
+
+    end
+
   end
 
   # TODO(sissel): Improve this. I'm not a fan of using message expectations (expect().to receive...)
