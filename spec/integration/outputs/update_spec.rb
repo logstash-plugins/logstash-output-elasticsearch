@@ -48,7 +48,7 @@ describe "Update actions", :integration => true do
     it "should update existing document" do
       subject = get_es_output({ 'document_id' => "123" })
       subject.register
-      subject.receive(LogStash::Event.new("message" => "updated message here"))
+      subject.receive(LogStash::Event.new("doc" => '{"message":"updated message here"'))
       subject.flush
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
       insist { r["_source"]["message"] } == 'updated message here'
