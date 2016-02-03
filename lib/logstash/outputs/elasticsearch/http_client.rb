@@ -170,6 +170,10 @@ module LogStash; module Outputs; class ElasticSearch;
         end
         source['script']['lang'] = @options[:script_lang] if @options[:script_lang] != ''
       else
+        if not source.has_key?("doc")
+          source = { 'doc' => source }
+
+        end
         if @options[:doc_as_upsert]
           source['doc_as_upsert'] = true
         else
