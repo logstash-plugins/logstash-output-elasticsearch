@@ -40,7 +40,7 @@ describe "Update actions", :integration => true do
     it "should not create new document" do
       subject = get_es_output({ 'document_id' => "456" } )
       subject.register
-      subject.receive(LogStash::Event.new("message" => "sample message here"))
+      subject.receive(LogStash::Event.new("doc" => '{"message":"sample message here"}'))
       subject.flush
       expect {@es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
     end
@@ -48,7 +48,7 @@ describe "Update actions", :integration => true do
     it "should update existing document" do
       subject = get_es_output({ 'document_id' => "123" })
       subject.register
-      subject.receive(LogStash::Event.new("doc" => '{"message":"updated message here"'))
+      subject.receive(LogStash::Event.new("doc" => '{"message":"updated message here"}'))
       subject.flush
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
       insist { r["_source"]["message"] } == 'updated message here'
