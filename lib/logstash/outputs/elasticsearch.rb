@@ -16,7 +16,7 @@ require "uri" # for escaping user input
 # We strongly encourage the use of HTTP over the node protocol for a number of reasons. HTTP is only marginally slower,
 # yet far easier to administer and work with. When using the HTTP protocol one may upgrade Elasticsearch versions without having
 # to upgrade Logstash in lock-step. For those still wishing to use the node or transport protocols please see
-# the https://www.elastic.co/guide/en/logstash/2.0/plugins-outputs-elasticsearch_java.html[logstash-output-elasticsearch_java] plugin.
+# the <<plugins-outputs-elasticsearch_java,elasticsearch_java output plugin>>.
 #
 # You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
 #
