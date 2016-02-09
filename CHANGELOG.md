@@ -1,3 +1,6 @@
+## 2.4.3
+ - Fix bug with update document. (#356)
+
 ## 2.4.2
  - Make flush_size actually cap the batch size in LS 2.2+
 
