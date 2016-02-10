@@ -105,18 +105,10 @@ module LogStash; module Outputs; class ElasticSearch;
       client_settings = options[:client_settings] || {}
       timeout = options[:timeout] || 0
 
-      uris = hosts.map do |host|
-        proto = client_settings[:ssl] ? "https"  : "http"
-        if host =~ /:\d+\z/
-          "#{proto}://#{host}#{client_settings[:path]}"
-        else
-          # Use default port of 9200 if none provided with host.
-          "#{proto}://#{host}:9200#{client_settings[:path]}"
-        end
-      end
+      urls = hosts.map {|host| host_to_url(host, client_settings[:ssl], client_settings[:path])}
 
       @client_options = {
-        :hosts => uris,
+        :hosts => urls,
         :ssl => client_settings[:ssl],
         :transport_options => {
           :socket_timeout => timeout,
@@ -134,6 +126,61 @@ module LogStash; module Outputs; class ElasticSearch;
       @logger.debug? && @logger.debug("Elasticsearch HTTP client options", client_options)
 
       Elasticsearch::Client.new(client_options)
+    end
+
+    HOSTNAME_PORT_REGEX=/\A(?<hostname>([A-Za-z0-9\.\-]+)|\[[0-9A-Fa-f\:]+\])(:(?<port>\d+))?\Z/
+    URL_REGEX=/\A#{URI::regexp(['http', 'https'])}\z/
+    # Parse a configuration host to a normalized URL
+    def host_to_url(host, ssl=nil, path=nil)
+      explicit_scheme = case ssl
+                        when true
+                          "https"
+                        when false
+                          "http"
+                        else
+                          nil
+                        end
+
+      # Ensure path starts with a /
+      if path && path[0] != '/'
+        path = "/#{path}"
+      end
+
+      url = nil
+      if host =~ URL_REGEX
+        url = URI.parse(host)
+
+        # Please note that the ssl == nil case is different! If you didn't make an explicit
+        # choice we don't complain!
+        if url.scheme == "http" && ssl == true
+          raise LogStash::ConfigurationError, "You specified a plain 'http' URL '#{host}' but set 'ssl' to true! Aborting!"
+        elsif url.scheme == "https" && ssl == false
+          raise LogStash::ConfigurationError, "You have explicitly disabled SSL but passed in an https URL '#{host}'! Aborting!"
+        end
+
+        url.scheme = explicit_scheme if explicit_scheme
+      elsif (match_results = HOSTNAME_PORT_REGEX.match(host))
+        hostname = match_results["hostname"]
+        port = match_results["port"] || 9200
+        url = URI.parse("#{explicit_scheme || 'http'}://#{hostname}:#{port}")
+      else
+        raise LogStash::ConfigurationError, "Host '#{host}' was specified, but is not valid! Use either a full URL or a hostname:port string!"
+      end
+
+      if path && url.path && url.path != "/" && url.path != ''
+        raise LogStash::ConfigurationError, "A path '#{url.path}' has been explicitly specified in the url '#{url}', but you also specified a path of '#{path}'. This is probably a mistake, please remove one setting."
+      end
+
+      if path
+        url.path = path  # The URI library cannot stringify if it holds a nil
+      end
+
+      if url.password || url.user
+        raise LogStash::ConfigurationError, "We do not support setting the user password in the URL directly as " +
+          "this may be logged to disk thus leaking credentials. Use the 'user' and 'password' options respectively"
+      end
+
+      url.to_s
     end
 
     def template_exists?(name)
