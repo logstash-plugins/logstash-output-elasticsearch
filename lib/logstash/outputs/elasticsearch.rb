@@ -81,8 +81,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # the root path for the Elasticsearch HTTP API lives.
   config :path, :validate => :string, :default => "/"
 
-  # Enable SSL/TLS secured communication to Elasticsearch cluster
-  config :ssl, :validate => :boolean, :default => false
+  # Enable SSL/TLS secured communication to Elasticsearch cluster. Leaving this unspecified will use whatever scheme
+  # is specified in the URLs listed in 'hosts'. If no explicit protocol is specified plain HTTP will be used.
+  # If SSL is explicitly disabled here the plugin will refuse to start if an HTTPS URL is given in 'hosts'
+  config :ssl, :validate => :boolean
 
   # Option to validate the server's certificate. Disabling this severely compromises security.
   # For more information on disabling certificate verification please read

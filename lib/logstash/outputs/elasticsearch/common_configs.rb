@@ -74,6 +74,9 @@ module LogStash; module Outputs; class ElasticSearch
       # Remember the `http` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http[http] address (eg. 9200, not 9300).
       #     `"127.0.0.1"`
       #     `["127.0.0.1:9200","127.0.0.2:9200"]`
+      #     `["http://127.0.0.1"]`
+      #     `["https://127.0.0.1:9200"]`
+      #     `["https://127.0.0.1:9200/mypath"]` (If using a proxy on a subpath)
       # It is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `hosts` list
       # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes in Elasticsearch.
       mod.config :hosts, :validate => :array, :default => ["127.0.0.1"]

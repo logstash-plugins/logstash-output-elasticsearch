@@ -1,3 +1,7 @@
+## 2.5.0
+ - Host settings now are more robust to bad input
+ - Host settings can now take full URLs
+
 ## 2.4.2
  - Make flush_size actually cap the batch size in LS 2.2+
 
