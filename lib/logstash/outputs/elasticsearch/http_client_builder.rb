@@ -59,7 +59,8 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def self.setup_ssl(logger, params)
-      return {} unless params["ssl"]
+      return {} if params["ssl"].nil?
+      return {:ssl => {:enabled => false}} if params["ssl"] == false
 
       cacert, truststore, truststore_password, keystore, keystore_password =
         params.values_at('cacert', 'truststore', 'truststore_password', 'keystore', 'keystore_password')
@@ -68,7 +69,7 @@ module LogStash; module Outputs; class ElasticSearch;
         raise(LogStash::ConfigurationError, "Use either \"cacert\" or \"truststore\" when configuring the CA certificate") if truststore
       end
 
-      ssl_options = {}
+      ssl_options = {:enabled => true}
 
       if cacert
         ssl_options[:ca_file] = cacert

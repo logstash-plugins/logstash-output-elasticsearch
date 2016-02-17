@@ -58,6 +58,10 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
         it "should handle an ssl url correctly when SSL is nil" do
           expect(subject.send(:host_to_url, https_hostname_port, nil)).to eql(https_hostname_port)
         end
+
+        it "should raise an exception if an unexpected value is passed in" do
+          expect { subject.send(:host_to_url, https_hostname_port, {})}.to raise_error(ArgumentError)
+        end
       end
 
       describe "path" do

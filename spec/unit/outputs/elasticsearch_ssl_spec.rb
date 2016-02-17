@@ -15,7 +15,7 @@ describe "SSL option" do
 
     it "should pass the flag to the ES client" do
       expect(::Elasticsearch::Client).to receive(:new) do |args|
-        expect(args[:ssl]).to eq(:verify => false)
+        expect(args[:ssl]).to eq(:enabled => true, :verify => false)
       end
       subject.register
     end
@@ -43,7 +43,6 @@ describe "SSL option" do
       }
       next LogStash::Outputs::ElasticSearch.new(settings)
     end
-
 
     it "should pass the keystore parameters to the ES client" do
       expect(::Elasticsearch::Client).to receive(:new) do |args|

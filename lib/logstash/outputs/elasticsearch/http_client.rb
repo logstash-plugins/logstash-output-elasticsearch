@@ -105,7 +105,8 @@ module LogStash; module Outputs; class ElasticSearch;
       client_settings = options[:client_settings] || {}
       timeout = options[:timeout] || 0
 
-      urls = hosts.map {|host| host_to_url(host, client_settings[:ssl], client_settings[:path])}
+      host_ssl_opt = client_settings[:ssl].nil? ? nil : client_settings[:ssl][:enabled]
+      urls = hosts.map {|host| host_to_url(host, host_ssl_opt, client_settings[:path])}
 
       @client_options = {
         :hosts => urls,
@@ -137,8 +138,10 @@ module LogStash; module Outputs; class ElasticSearch;
                           "https"
                         when false
                           "http"
-                        else
+                        when nil
                           nil
+                        else
+                          raise ArgumentError, "Unexpected SSL value!"
                         end
 
       # Ensure path starts with a /
