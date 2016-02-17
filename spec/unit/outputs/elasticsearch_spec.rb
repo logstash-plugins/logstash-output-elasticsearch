@@ -39,7 +39,7 @@ describe LogStash::Outputs::ElasticSearch do
 
     let(:manticore_urls) { subject.client.pool.urls }
     let(:manticore_url) { manticore_urls.first }
-    
+
     describe "getting a document type" do
       it "should default to 'doc'" do
         expect(subject.send(:get_event_type, LogStash::Event.new)).to eql("doc")
@@ -88,25 +88,25 @@ describe LogStash::Outputs::ElasticSearch do
         end
       end
     end
-    
+
     describe "with auth" do
       let(:user) { "myuser" }
       let(:password) { ::LogStash::Util::Password.new("mypassword") }
-      
+
       shared_examples "an authenticated config" do
         it "should set the URL auth correctly" do
           expect(manticore_url.user).to eq user
         end
       end
-        
+
       context "as part of a URL" do
         let(:options) {
           super.merge("hosts" => ["http://#{user}:#{password.value}@localhost:9200"])
         }
-        
+
         include_examples("an authenticated config")
       end
-      
+
       context "as a hash option" do
           let(:options) {
             super.merge!(
@@ -114,7 +114,7 @@ describe LogStash::Outputs::ElasticSearch do
               "password" => password
             )
         }
-        
+
         include_examples("an authenticated config")
       end
     end
@@ -218,7 +218,7 @@ describe LogStash::Outputs::ElasticSearch do
 
     context "429 errors" do
       let(:event) { ::LogStash::Event.new("foo" => "bar") }
-      let(:error) do 
+      let(:error) do
         ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(
           429, double("url").as_null_object, double("request body"), double("response body")
         )
@@ -252,7 +252,7 @@ describe LogStash::Outputs::ElasticSearch do
       end
     end
   end
-  
+
   context "with timeout set" do
     let(:listener) { Flores::Random.tcp_listener }
     let(:port) { listener[2] }
@@ -290,6 +290,16 @@ describe LogStash::Outputs::ElasticSearch do
       end
     end
 
+    context "with a sprintf action equals to update" do
+      let(:options) { {"action" => "%{myactionfield}", "upsert" => '{"message": "some text"}' } }
+
+      let(:event) { LogStash::Event.new("myactionfield" => "update", "message" => "blah") }
+
+      it "should obtain specific action's params from event_action_tuple" do
+        expect(subject.event_action_tuple(event)[1]).to include(:_upsert)
+      end
+    end
+
     context "with an invalid action" do
       let(:options) { {"action" => "SOME Garbaaage"} }
       let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
@@ -301,8 +311,8 @@ describe LogStash::Outputs::ElasticSearch do
   end
 
   describe "SSL end to end" do
-    let(:manticore_double) do 
-      double("manticoreX#{self.inspect}") 
+    let(:manticore_double) do
+      double("manticoreX#{self.inspect}")
     end
 
     before(:each) do
@@ -311,18 +321,18 @@ describe LogStash::Outputs::ElasticSearch do
       allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
       allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
       allow(manticore_double).to receive(:close)
-        
+
       allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
       subject.register
     end
-    
+
     shared_examples("an encrypted client connection") do
       it "should enable SSL in manticore" do
         expect(subject.client.pool.urls.map(&:scheme).uniq).to eql(['https'])
       end
     end
 
-      
+
     context "With the 'ssl' option" do
       let(:options) { {"ssl" => true}}
 
@@ -337,24 +347,34 @@ describe LogStash::Outputs::ElasticSearch do
 
   describe "retry_on_conflict" do
     let(:num_retries) { 123 }
-    let(:event) { LogStash::Event.new("message" => "blah") }
+    let(:event) { LogStash::Event.new("myactionfield" => "update", "message" => "blah") }
     let(:options) { { 'retry_on_conflict' => num_retries } }
 
     context "with a regular index" do
       let(:options) { super.merge("action" => "index") }
 
-      it "should interpolate the requested action value when creating an event_action_tuple" do
+      it "should not set the retry_on_conflict parameter when creating an event_action_tuple" do
         action, params, event_data = subject.event_action_tuple(event)
         expect(params).not_to include({:_retry_on_conflict => num_retries})
       end
     end
 
     context "using a plain update" do
-      let(:options) { super.merge("action" => "update", "retry_on_conflict" => num_retries, "document_id" => 1) } 
+      let(:options) { super.merge("action" => "update", "retry_on_conflict" => num_retries, "document_id" => 1) }
 
-      it "should interpolate the requested action value when creating an event_action_tuple" do
+      it "should set the retry_on_conflict parameter when creating an event_action_tuple" do
         action, params, event_data = subject.event_action_tuple(event)
         expect(params).to include({:_retry_on_conflict => num_retries})
+      end
+    end
+
+    context "with a sprintf action that resolves to update" do
+      let(:options) { super.merge("action" => "%{myactionfield}", "retry_on_conflict" => num_retries, "document_id" => 1) }
+
+      it "should set the retry_on_conflict parameter when creating an event_action_tuple" do
+        action, params, event_data = subject.event_action_tuple(event)
+        expect(params).to include({:_retry_on_conflict => num_retries})
+        expect(action).to eq("update")
       end
     end
   end
