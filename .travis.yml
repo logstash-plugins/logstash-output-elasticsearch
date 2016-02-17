@@ -1,12 +1,10 @@
 sudo: false
+env:
+  - TEST_SHIELD=true LS_USER=user LS_PASSWORD=changeme
 before_install:
-  - curl -s https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/2.0.0/elasticsearch-2.0.0.tar.gz  > elasticsearch.tar.gz
-  - mkdir elasticsearch && tar -xzf elasticsearch.tar.gz --strip-components=1 -C ./elasticsearch/.
-  - ln -sn ../../spec/fixtures/scripts elasticsearch/config/.
-  - cd elasticsearch && bin/elasticsearch -Des.script.inline=on -Des.script.indexed=on &
-  - sleep 10 && curl http://localhost:9200
+  - bash -x ssl_integration.bash
 language: ruby
 cache: bundler
 rvm:
   - jruby-1.7.23
-script: bundle exec rspec spec && bundle exec rspec spec --tag integration
+script: bundle exec rspec spec --tag elasticsearch_secure
