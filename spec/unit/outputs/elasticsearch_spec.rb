@@ -175,4 +175,29 @@ describe "outputs/elasticsearch" do
     end
   end
 
+  describe "SSL end to end" do
+    shared_examples("an encrypted client connection") do
+      it "should enable SSL in manticore" do
+        expect(eso.client.client_options[:hosts].map {|h| URI.parse(h).scheme}.uniq).to eql(['https'])
+      end
+    end
+
+    let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
+    subject(:manticore) { eso.client.client}
+
+    before do
+      eso.register
+    end
+
+    context "With the 'ssl' option" do
+      let(:options) { {"ssl" => true}}
+
+      include_examples("an encrypted client connection")
+    end
+
+    context "With an https host" do
+      let(:options) { {"hosts" => "https://localhost"} }
+      include_examples("an encrypted client connection")
+    end
+  end
 end

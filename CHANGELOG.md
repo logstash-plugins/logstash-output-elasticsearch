@@ -1,3 +1,6 @@
+## 2.5.1
+ - Fix bug where SSL would sometimes not be enabled
+
 ## 2.5.0
  - Host settings now are more robust to bad input
  - Host settings can now take full URLs
