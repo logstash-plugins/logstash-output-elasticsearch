@@ -3,6 +3,7 @@
 
 ## 2.5.1
  - Fix bug where SSL would sometimes not be enabled
+ - Fix bug with update document with doc_as_upsert and scripting
 
 ## 2.5.0
  - Host settings now are more robust to bad input
