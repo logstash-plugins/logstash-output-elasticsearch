@@ -203,10 +203,13 @@ module LogStash; module Outputs; class ElasticSearch;
         # Use the event as a hash from your script with variable name defined
         # by script_var_name (default: "event")
         # Ex: event["@timestamp"]
-        source = { 'script' => {'params' => { @options[:script_var_name] => source }} }
+        source_orig = source
+        source = { 'script' => {'params' => { @options[:script_var_name] => source_orig }} }
         if @options[:scripted_upsert]
           source['scripted_upsert'] = true
           source['upsert'] = {}
+        elsif @options[:doc_as_upsert]
+          source['upsert'] = source_orig
         else
           source['upsert'] = args.delete(:_upsert) if args[:_upsert]
         end

@@ -77,15 +77,45 @@ describe "Update actions", :integration => true do
     it "should increment a counter with event/doc 'count' variable with inline script" do
       subject = get_es_output({
         'document_id' => "123",
-        'script' => 'ctx._source.counter += event["count"]',
+        'script' => 'ctx._source.counter += event["counter"]',
         'script_lang' => 'groovy',
         'script_type' => 'inline'
       })
       subject.register
-      subject.receive(LogStash::Event.new("count" => 3 ))
+      subject.receive(LogStash::Event.new("counter" => 3 ))
       subject.flush
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
       insist { r["_source"]["counter"] } == 4
+    end
+
+    it "should increment a counter with event/doc 'count' variable with event/doc as upsert and inline script" do
+      subject = get_es_output({
+        'document_id' => "123",
+        'doc_as_upsert' => true,
+        'script' => 'if( ctx._source.containsKey("counter") ){ ctx._source.counter += event["counter"]; } else { ctx._source.counter = event["counter"]; }',
+        'script_lang' => 'groovy',
+        'script_type' => 'inline'
+      })
+      subject.register
+      subject.receive(LogStash::Event.new("counter" => 3 ))
+      subject.flush
+      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
+      insist { r["_source"]["counter"] } == 4
+    end
+
+    it "should, with new doc, set a counter with event/doc 'count' variable with event/doc as upsert and inline script" do
+      subject = get_es_output({
+        'document_id' => "456",
+        'doc_as_upsert' => true,
+        'script' => 'if( ctx._source.containsKey("counter") ){ ctx._source.counter += event["count"]; } else { ctx._source.counter = event["count"]; }',
+        'script_lang' => 'groovy',
+        'script_type' => 'inline'
+      })
+      subject.register
+      subject.receive(LogStash::Event.new("counter" => 3 ))
+      subject.flush
+      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+      insist { r["_source"]["counter"] } == 3
     end
 
     it "should increment a counter with event/doc 'count' variable with indexed script" do
