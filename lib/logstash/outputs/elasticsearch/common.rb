@@ -112,7 +112,7 @@ module LogStash; module Outputs; class ElasticSearch;
         if SUCCESS_CODES.include?(status)
           next
         elsif RETRYABLE_CODES.include?(status)
-          @logger.warn "retrying failed action with response code: #{status}"
+          @logger.info "retrying failed action", status: status
           actions_to_retry << action
         else
           @logger.warn "Failed action. ", status: status, action: action, response: response
