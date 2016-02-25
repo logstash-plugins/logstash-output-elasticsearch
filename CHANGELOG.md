@@ -1,3 +1,6 @@
+## 2.5.2
+ - Retryable failures are now logged at the info level instead of warning. (issue #372)
+
 ## 2.5.1
  - Fix bug where SSL would sometimes not be enabled
 
