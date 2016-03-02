@@ -19,9 +19,7 @@ shared_examples "a parent indexer" do
       ftw.put!("#{index_url}/#{type}_parent/test", :body => pdoc.to_json)
       
       subject.register
-      event_count.times do
-        subject.receive(LogStash::Event.new("link_to" => "test", "message" => "Hello World!", "type" => type))
-      end
+      subject.multi_receive(event_count.times.map { LogStash::Event.new("link_to" => "test", "message" => "Hello World!", "type" => type) })
     end
 
 

@@ -1,5 +1,4 @@
 require "logstash/outputs/elasticsearch/template_manager"
-require "logstash/outputs/elasticsearch/buffer"
 
 module LogStash; module Outputs; class ElasticSearch;
   module Common
@@ -13,14 +12,9 @@ module LogStash; module Outputs; class ElasticSearch;
       setup_hosts # properly sets @hosts
       build_client
       install_template
-      setup_buffer_and_handler
       check_action_validity
 
       @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts)
-    end
-
-    def receive(event)
-      @buffer << event_action_tuple(event)
     end
 
     # Receive an array of events and immediately attempt to index them (no buffering)
@@ -37,10 +31,6 @@ module LogStash; module Outputs; class ElasticSearch;
       [action, params, event]
     end
 
-    def flush
-      @buffer.flush
-    end
-
     def setup_hosts
       @hosts = Array(@hosts)
       if @hosts.empty?
@@ -51,12 +41,6 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def install_template
       TemplateManager.install_template(self)
-    end
-
-    def setup_buffer_and_handler
-      @buffer = ::LogStash::Outputs::ElasticSearch::Buffer.new(@logger, @flush_size, @idle_flush_time) do |actions|
-        retrying_submit(actions)
-      end
     end
 
     def check_action_validity
@@ -75,33 +59,55 @@ module LogStash; module Outputs; class ElasticSearch;
       VALID_HTTP_ACTIONS
     end
 
-    def retrying_submit(actions)
+    def retrying_submit(actions)      
       # Initially we submit the full list of actions
       submit_actions = actions
 
+      sleep_interval = @retry_initial_interval
+
       while submit_actions && submit_actions.length > 0
-        return if !submit_actions || submit_actions.empty? # If everything's a success we move along
+        
         # We retry with whatever is didn't succeed
         begin
           submit_actions = submit(submit_actions)
+          if submit_actions && submit_actions.size > 0
+            @logger.error("Retrying individual actions")
+            submit_actions.each {|action| @logger.error("Action", action) }
+          end
         rescue => e
-          @logger.warn("Encountered an unexpected error submitting a bulk request! Will retry.",
-                       :message => e.message,
+          @logger.error("Encountered an unexpected error submitting a bulk request! Will retry.",
+                       :error_message => e.message,
                        :class => e.class.name,
                        :backtrace => e.backtrace)
         end
 
-        sleep @retry_max_interval if submit_actions && submit_actions.length > 0
+        # Everything was a success!
+        break if !submit_actions || submit_actions.empty?
+
+        # If we're retrying the action sleep for the recommended interval
+        # Double the interval for the next time through to achieve exponential backoff
+        Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
+        sleep_interval = next_sleep_interval(sleep_interval)
       end
     end
 
+    def sleep_for_interval(sleep_interval)
+      Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
+      next_sleep_interval(sleep_interval)
+    end
+
+    def next_sleep_interval(current_interval)
+      doubled = current_interval * 2
+      doubled > @retry_max_interval ? @retry_max_interval : doubled
+    end
+
     def submit(actions)
-      es_actions = actions.map { |a, doc, event| [a, doc, event.to_hash]}
-
-      bulk_response = safe_bulk(es_actions,actions)
-
-      # If there are no errors, we're done here!
-      return unless bulk_response["errors"]
+      bulk_response = safe_bulk(actions)
+      
+      # If the response is nil that means we were in a retry loop
+      # and aborted since we're shutting down
+      # If it did return and there are no errors we're good as well
+      return if bulk_response.nil? || !bulk_response["errors"]
 
       actions_to_retry = []
       bulk_response["items"].each_with_index do |response,idx|
@@ -168,38 +174,64 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     # Rescue retryable errors during bulk submission
-    def safe_bulk(es_actions,actions)
-      @client.bulk(es_actions)
-    rescue Manticore::SocketException, Manticore::SocketTimeout => e
-      # If we can't even connect to the server let's just print out the URL (:hosts is actually a URL)
-      # and let the user sort it out from there
-      @logger.error(
-        "Attempted to send a bulk request to Elasticsearch configured at '#{@client.client_options[:hosts]}',"+
-          " but Elasticsearch appears to be unreachable or down!",
-        :error_message => e.message,
-        :class => e.class.name,
-        :client_config => @client.client_options,
-      )
-      @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
+    def safe_bulk(actions)
+      sleep_interval = @retry_initial_interval
+      begin
+        es_actions = actions.map {|action_type, params, event| [action_type, params, event.to_hash]}
+        response = @client.bulk(es_actions)
+        response
+      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError => e
+        # If we can't even connect to the server let's just print out the URL (:hosts is actually a URL)
+        # and let the user sort it out from there
+        @logger.error(
+          "Attempted to send a bulk request to elasticsearch'"+
+            " but Elasticsearch appears to be unreachable or down!",
+          :error_message => e.message,
+          :class => e.class.name,
+          :will_retry_in_seconds => sleep_interval
+        )
+        @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
 
-      # We retry until there are no errors! Errors should all go to the retry queue
-      sleep @retry_max_interval
-      retry unless @stopping.true?
-    rescue => e
-      # For all other errors print out full connection issues
-      @logger.error(
-        "Attempted to send a bulk request to Elasticsearch configured at '#{@client.client_options[:hosts]}'," +
-          " but an error occurred and it failed! Are you sure you can reach elasticsearch from this machine using " +
-          "the configuration provided?",
-        :error_message => e.message,
-        :error_class => e.class.name,
-        :backtrace => e.backtrace,
-        :client_config => @client.client_options,
-      )
+        # We retry until there are no errors! Errors should all go to the retry queue
+        sleep_interval = sleep_for_interval(sleep_interval)
+        retry unless @stopping.true?
+      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::NoConnectionAvailableError => e
+        @logger.error(
+          "Attempted to send a bulk request to elasticsearch, but no there are no living connections in the connection pool. Perhaps Elasticsearch is unreachable or down?",
+          :error_message => e.message,
+          :class => e.class.name,
+          :will_retry_in_seconds => sleep_interval
+        )
+        Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
+        sleep_interval = next_sleep_interval(sleep_interval)
+        retry unless @stopping.true?
+      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        if RETRYABLE_CODES.include?(e.response_code)
+          log_hash = {:code => e.response_code, :url => e.url}
+          log_hash[:body] = e.body if @logger.debug? # Generally this is too verbose
+          @logger.error("Attempted to send a bulk request to elasticsearch but received a bad HTTP response code!", log_hash)
 
-      @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
+          sleep_interval = sleep_for_interval(sleep_interval)
+          retry unless @stopping.true?
+        else
+          @logger.error("Got a bad response code from server, but this code is not considered retryable. Request will be dropped", :code => e.code)
+        end
+      rescue => e
+        # Stuff that should never happen
+        # For all other errors print out full connection issues
+        @logger.error(
+          "An unknown error occurred sending a bulk request to Elasticsearch. We will retry indefinitely",
+          :error_message => e.message,
+          :error_class => e.class.name,
+          :backtrace => e.backtrace
+        )
 
-      raise e
+        @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
+
+        # We retry until there are no errors! Errors should all go to the retry queue
+        sleep_interval = sleep_for_interval(sleep_interval)        
+        retry unless @stopping.true?
+      end
     end
   end
 end; end; end

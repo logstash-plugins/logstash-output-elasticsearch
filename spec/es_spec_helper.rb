@@ -5,6 +5,7 @@ require "logstash/json"
 require "stud/try"
 require "longshoreman"
 require "logstash/outputs/elasticsearch"
+require 'elasticsearch'
 
 CONTAINER_NAME = "logstash-output-elasticsearch-#{rand(999).to_s}"
 CONTAINER_IMAGE = "elasticsearch"

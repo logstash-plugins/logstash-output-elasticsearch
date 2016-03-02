@@ -14,9 +14,8 @@ describe "outputs/elasticsearch" do
 
     let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
 
-    let(:manticore_host) {
-      eso.client.send(:client).transport.options[:hosts].first
-    }
+    let(:manticore_urls) { eso.client.pool.urls }
+    let(:manticore_url) { manticore_urls.first }
 
     let(:do_register) { true }
 
@@ -67,17 +66,15 @@ describe "outputs/elasticsearch" do
       end
 
       it "should properly set the path on the HTTP client adding slashes" do
-        expect(manticore_host).to include("/" + options["path"] + "/")
+        expect(manticore_url.path).to eql("/" + options["path"] + "/")
       end
 
       context "with extra slashes" do
         let(:path) { "/slashed-path/ "}
-        let(:eso) {
-          LogStash::Outputs::ElasticSearch.new(options.merge("path" => "/some-path/"))
-        }
+        let(:options) { super.merge("path" => "/some-path/") }
 
         it "should properly set the path on the HTTP client without adding slashes" do
-          expect(manticore_host).to include(options["path"])
+          expect(manticore_url.path).to eql(options["path"])
         end
       end
 
@@ -88,7 +85,7 @@ describe "outputs/elasticsearch" do
           o["hosts"] = ["http://localhost:9200/mypath/"]
           o
         end
-        let(:client_host_path) { URI.parse(eso.client.client_options[:hosts].first).path }
+        let(:client_host_path) { manticore_url.path }
 
         it "should initialize without error" do
           expect { eso }.not_to raise_error
@@ -133,15 +130,12 @@ describe "outputs/elasticsearch" do
     end
     describe "without a port specified" do
       it "should properly set the default port (9200) on the HTTP client" do
-        expect(manticore_host).to include("9200")
+        expect(manticore_url.port).to eql(9200)
       end
     end
     describe "with a port other than 9200 specified" do
-      let(:manticore_host) {
-        eso.client.send(:client).transport.options[:hosts].last
-      }
       it "should properly set the specified port on the HTTP client" do
-        expect(manticore_host).to include("9202")
+        expect(manticore_urls.any? {|u| u.port == 9202}).to eql(true)
       end
     end
 
@@ -168,9 +162,6 @@ describe "outputs/elasticsearch" do
 
   end
 
-  # TODO(sissel): Improve this. I'm not a fan of using message expectations (expect().to receive...)
-  # especially with respect to logging to verify a failure/retry has occurred. For now, this
-  # should suffice, though.
   context "with timeout set" do
     let(:listener) { Flores::Random.tcp_listener }
     let(:port) { listener[2] }
@@ -188,21 +179,15 @@ describe "outputs/elasticsearch" do
       eso.register
 
       # Expect a timeout to be logged.
-      expect(eso.logger).to receive(:error).with(/Attempted to send a bulk request/, anything)
-    end
-
-    after do
-      listener[0].close
-      # Stop the receive buffer, but don't flush because that would hang forever in this case since ES never returns a result
-      eso.instance_variable_get(:@buffer).stop(false,false)
-      eso.close
+      expect(eso.logger).to receive(:error).with(/Attempted to send a bulk request to Elasticsearch/i, anything).at_least(:once)
+      expect(eso.client).to receive(:bulk).at_least(:twice).and_call_original
     end
 
     it "should fail after the timeout" do
-      Thread.new { eso.receive(LogStash::Event.new) }
+      Thread.new { eso.multi_receive([LogStash::Event.new]) }
 
-      # Allow the timeout to occur.
-      sleep(options["timeout"] + 0.5)
+      # Allow the timeout to occur
+      sleep 6
     end
   end
 
@@ -230,12 +215,12 @@ describe "outputs/elasticsearch" do
   describe "SSL end to end" do
     shared_examples("an encrypted client connection") do
       it "should enable SSL in manticore" do
-        expect(eso.client.client_options[:hosts].map {|h| URI.parse(h).scheme}.uniq).to eql(['https'])
+        expect(eso.client.pool.urls.map(&:scheme).uniq).to eql(['https'])
       end
     end
 
     let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
-    subject(:manticore) { eso.client.client}
+    subject(:manticore) { eso.client.pool.adapter.client}
 
     before do
       eso.register
@@ -273,6 +258,24 @@ describe "outputs/elasticsearch" do
       it "should interpolate the requested action value when creating an event_action_tuple" do
         action, params, event_data = eso.event_action_tuple(event)
         expect(params).to include({:_retry_on_conflict => num_retries})
+      end
+    end
+  end
+
+  describe "sleep interval calculation" do
+    let(:retry_max_interval) { 64 }
+    subject(:eso) { LogStash::Outputs::ElasticSearch.new("retry_max_interval" => retry_max_interval) }
+
+    it "should double the given value" do
+      expect(eso.next_sleep_interval(2)).to eql(4)
+      expect(eso.next_sleep_interval(32)).to eql(64)
+    end
+
+    it "should not increase the value past the max retry interval" do
+      sleep_interval = 2
+      100.times do
+        sleep_interval = eso.next_sleep_interval(sleep_interval)
+        expect(sleep_interval).to be <= retry_max_interval
       end
     end
   end

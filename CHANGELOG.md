@@ -1,3 +1,6 @@
+## 4.0.0
+ - Make this plugin threadsafe. Workers no longer needed or supported
+ - Add pool_max and pool_max_per_route options
 ## 3.0.2
   - Fix issues where URI based paths in 'hosts' would not function correctly
 ## 3.0.1
