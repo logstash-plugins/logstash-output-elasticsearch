@@ -46,6 +46,8 @@ require "uri" # for escaping user input
 # Keep in mind that a connection with keepalive enabled will
 # not reevaluate its DNS value while the keepalive is in effect.
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
+  declare_threadsafe!
+
   require "logstash/outputs/elasticsearch/http_client"
   require "logstash/outputs/elasticsearch/http_client_builder"
   require "logstash/outputs/elasticsearch/common_configs"
@@ -130,14 +132,35 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # a timeout occurs, the request will be retried.
   config :timeout, :validate => :number
 
+  # While the output tries to reuse connections efficiently we have a maximum.
+  # This sets the maximum number of open connections the output will create.
+  # Setting this too low may mean frequently closing / opening connections
+  # which is bad.
+  config :pool_max, :validate => :number, :default => 1000
+
+  # While the output tries to reuse connections efficiently we have a maximum per endpoint.
+  # This sets the maximum number of open connections per endpoint the output will create.
+  # Setting this too low may mean frequently closing / opening connections
+  # which is bad.
+  config :pool_max_per_route, :validate => :number, :default => 100
+
+  # When a backend is marked down a HEAD request will be sent to this path in the
+  # background to see if it has come back again before it is once again eligible
+  # to service requests. If you have custom firewall rules you may need to change
+  # this
+  config :healthcheck_path, :validate => :string, :default => "/"
+
+  # How frequently, in seconds, to wait between resurrection attempts.
+  # Resurrection is the process by which backend endpoints marked 'down' are checked
+  # to see if they have come back to life
+  config :resurrect_delay, :validate => :number, :default => 5
+
   def build_client
     @client = ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
   end
 
   def close
     @stopping.make_true
-    @client.stop_sniffing!
-    @buffer.stop
   end
 
   @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }

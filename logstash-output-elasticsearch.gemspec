@@ -19,13 +19,9 @@ Gem::Specification.new do |s|
   # Special flag to let us know this is actually a logstash plugin
   s.metadata = { "logstash_plugin" => "true", "logstash_group" => "output" }
 
-  # Gem dependencies
-  s.add_runtime_dependency 'concurrent-ruby'
-  s.add_runtime_dependency 'elasticsearch', ['>= 1.0.13', '~> 1.0']
   s.add_runtime_dependency 'stud', ['>= 0.0.17', '~> 0.0']
   s.add_runtime_dependency 'cabin', ['~> 0.6']
   s.add_runtime_dependency "logstash-core-plugin-api", "~> 2.0"
-
   s.add_development_dependency 'ftw', '~> 0.0.42'
   s.add_development_dependency 'logstash-codec-plain'
 
@@ -37,4 +33,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'logstash-devutils'
   s.add_development_dependency 'longshoreman'
   s.add_development_dependency 'flores'
+  # Still used in some specs, we should remove this ASAP
+  s.add_development_dependency 'elasticsearch'
 end

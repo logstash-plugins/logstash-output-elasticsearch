@@ -19,7 +19,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
 
     shared_examples("proper host handling") do
       it "should properly transform a host:port string to a URL" do
-        expect(subject.send(:host_to_url, hostname_port)).to eql(http_hostname_port)
+        expect(subject.send(:host_to_url, hostname_port).to_s).to eql(http_hostname_port)
       end
 
       it "should raise an error when a partial URL is an invalid format" do
@@ -29,11 +29,11 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       end
 
       it "should not raise an error with a / for a path" do
-        expect(subject.send(:host_to_url, "#{http_hostname_port}/")).to eql("#{http_hostname_port}/")
+        expect(subject.send(:host_to_url, "#{http_hostname_port}/").to_s).to eql("#{http_hostname_port}/")
       end
 
       it "should parse full URLs correctly" do
-        expect(subject.send(:host_to_url, http_hostname_port)).to eql(http_hostname_port)
+        expect(subject.send(:host_to_url, http_hostname_port).to_s).to eql(http_hostname_port)
       end
 
       it "should reject full URLs with usernames and passwords" do
@@ -56,7 +56,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
         end
 
         it "should handle an ssl url correctly when SSL is nil" do
-          expect(subject.send(:host_to_url, https_hostname_port, nil)).to eql(https_hostname_port)
+          expect(subject.send(:host_to_url, https_hostname_port, nil).to_s).to eql(https_hostname_port)
         end
 
         it "should raise an exception if an unexpected value is passed in" do
@@ -66,7 +66,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
 
       describe "path" do
         it "should allow paths in a url" do
-          expect(subject.send(:host_to_url, http_hostname_port_path, nil)).to eql(http_hostname_port_path)
+          expect(subject.send(:host_to_url, http_hostname_port_path, nil).to_s).to eql(http_hostname_port_path)
         end
 
         it "should not allow paths in two places" do
@@ -76,7 +76,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
         end
 
         it "should automatically insert a / in front of path overlays if needed" do
-          expect(subject.send(:host_to_url, http_hostname_port, false, "otherpath")).to eql(http_hostname_port + "/otherpath")
+          expect(subject.send(:host_to_url, http_hostname_port, false, "otherpath")).to eql(URI.parse(http_hostname_port + "/otherpath"))
         end
       end
     end
@@ -99,26 +99,12 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
 
   describe "sniffing" do
     let(:client) { LogStash::Outputs::ElasticSearch::HttpClient.new(base_options.merge(client_opts)) }
-    let(:transport) { client.client.transport }
-
-    before do
-      allow(transport).to receive(:reload_connections!)
-    end
 
     context "with sniffing enabled" do
       let(:client_opts) { {:sniffing => true, :sniffing_delay => 1 } }
 
-      after do
-        client.stop_sniffing!
-      end
-
       it "should start the sniffer" do
-        expect(client.sniffer_thread).to be_a(Thread)
-      end
-
-      it "should periodically sniff the client" do
-        sleep 2
-        expect(transport).to have_received(:reload_connections!).at_least(:once)
+        expect(client.pool.sniffing).to be_truthy
       end
     end
 
@@ -126,7 +112,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       let(:client_opts) { {:sniffing => false} }
 
       it "should not start the sniffer" do
-        expect(client.sniffer_thread).to be_nil
+        expect(client.pool.sniffing).to be_falsey
       end
     end
   end

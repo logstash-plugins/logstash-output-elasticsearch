@@ -1,13 +1,21 @@
 module LogStash; module Outputs; class ElasticSearch;
   module HttpClientBuilder
     def self.build(logger, hosts, params)
-      client_settings = {}
+      client_settings = {
+        :pool_max => params["pool_max"],
+        :pool_max_per_route => params["pool_max_per_route"],
+      }
 
       common_options = {
         :client_settings => client_settings,
-        :sniffing => params["sniffing"],
-        :sniffing_delay => params["sniffing_delay"]
+        :resurrect_delay => params["resurrect_delay"],
+        :healthcheck_path => params["healthcheck_path"]
       }
+
+      if params["sniffing"]
+        common_options[:sniffing] = true
+        common_options[:sniffer_delay] = params["sniffing_delay"]
+      end
 
       common_options[:timeout] = params["timeout"] if params["timeout"]
 
@@ -63,7 +71,10 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def self.setup_ssl(logger, params)
+      # If we have HTTPS hosts we act like SSL is enabled
+      params["ssl"] = true if params["hosts"].any? {|h| h.start_with?("https://")}
       return {} if params["ssl"].nil?
+
       return {:ssl => {:enabled => false}} if params["ssl"] == false
 
       cacert, truststore, truststore_password, keystore, keystore_password =
