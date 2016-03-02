@@ -139,15 +139,8 @@ describe "outputs/elasticsearch" do
       expect(eso.logger).to receive(:error).with(/Attempted to send a bulk request/, anything)
     end
 
-    after do
-      listener[0].close
-      # Stop the receive buffer, but don't flush because that would hang forever in this case since ES never returns a result
-      eso.instance_variable_get(:@buffer).stop(false,false)
-      eso.close
-    end
-
     it "should fail after the timeout" do
-      Thread.new { eso.receive(LogStash::Event.new) }
+      Thread.new { eso.multi_receive([LogStash::Event.new]) }
 
       # Allow the timeout to occur.
       sleep(options["timeout"] + 0.5)

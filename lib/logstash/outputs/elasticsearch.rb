@@ -4,7 +4,6 @@ require "logstash/environment"
 require "logstash/outputs/base"
 require "logstash/json"
 require "concurrent"
-require "stud/buffer"
 require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
 require "uri" # for escaping user input
@@ -50,6 +49,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   require "logstash/outputs/elasticsearch/http_client_builder"
   require "logstash/outputs/elasticsearch/common_configs"
   require "logstash/outputs/elasticsearch/common"
+
+  # This is needed to properly pool connections
+  declare_threadsafe!
 
   # Protocol agnostic (i.e. non-http, non-java specific) configs go here
   include(LogStash::Outputs::ElasticSearch::CommonConfigs)
@@ -135,7 +137,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def close
     @stopping.make_true
     @client.stop_sniffing!
-    @buffer.stop
   end
 
   @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }
