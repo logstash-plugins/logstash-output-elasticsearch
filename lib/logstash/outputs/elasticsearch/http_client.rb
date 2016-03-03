@@ -73,7 +73,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
       if @logger.debug?
         hosts_by_name = client.transport.hosts.map {|h| h["name"]}.sort
-        @logger.debug({"count" => hosts_by_name.count, "hosts" => hosts_by_name})
+        @logger.info("Sniffed Elasticsearch hosts", {"count" => hosts_by_name.count, "hosts" => hosts_by_name})
       end
 
     rescue StandardError => e
