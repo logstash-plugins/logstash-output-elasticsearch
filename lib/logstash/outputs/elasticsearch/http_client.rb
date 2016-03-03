@@ -71,7 +71,7 @@ module LogStash; module Outputs; class ElasticSearch;
     def sniff!
       client.transport.reload_connections! if options[:sniffing]
 
-      if @logger.debug?
+      if @logger.info?
         hosts_by_name = client.transport.hosts.map {|h| h["name"]}.sort
         @logger.info("Sniffed Elasticsearch hosts", {"count" => hosts_by_name.count, "hosts" => hosts_by_name})
       end
