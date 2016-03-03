@@ -130,6 +130,16 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # a timeout occurs, the request will be retried.
   config :timeout, :validate => :number
 
+  # Maximum number of connections to have in the internal connection pool
+  # You generally want this to be equal to or larger than the number of elasticsearch backend instances
+  # If you have a large number of backend instances you may want to consider either making this smaller
+  # or only using a subset of nodes to talk to the cluster. If you have more nodes than this value the plugin
+  # may have to drop and reconnect for each request thus impacting performance
+  config :pool_max, :validate => :number, :default => 50
+
+  # The maximum number of connections to a single backend endpoint the pool will allow
+  config :pool_max_per_route, :validate => :number, :default => 20
+
   def build_client
     @client = ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
   end
