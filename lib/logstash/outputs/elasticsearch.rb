@@ -4,7 +4,6 @@ require "logstash/environment"
 require "logstash/outputs/base"
 require "logstash/json"
 require "concurrent"
-require "stud/buffer"
 require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
 require "uri" # for escaping user input
@@ -50,6 +49,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   require "logstash/outputs/elasticsearch/http_client_builder"
   require "logstash/outputs/elasticsearch/common_configs"
   require "logstash/outputs/elasticsearch/common"
+
+  # This is needed to properly pool connections
+  declare_threadsafe!
 
   # Protocol agnostic (i.e. non-http, non-java specific) configs go here
   include(LogStash::Outputs::ElasticSearch::CommonConfigs)
@@ -128,6 +130,16 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # a timeout occurs, the request will be retried.
   config :timeout, :validate => :number
 
+  # Maximum number of connections to have in the internal connection pool
+  # You generally want this to be equal to or larger than the number of elasticsearch backend instances
+  # If you have a large number of backend instances you may want to consider either making this smaller
+  # or only using a subset of nodes to talk to the cluster. If you have more nodes than this value the plugin
+  # may have to drop and reconnect for each request thus impacting performance
+  config :pool_max, :validate => :number, :default => 50
+
+  # The maximum number of connections to a single backend endpoint the pool will allow
+  config :pool_max_per_route, :validate => :number, :default => 20
+
   def build_client
     @client = ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
   end
@@ -135,7 +147,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def close
     @stopping.make_true
     @client.stop_sniffing!
-    @buffer.stop
   end
 
   @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }

@@ -55,10 +55,7 @@ describe "failures in bulk class expected behavior", :integration => true do
     mock_actions_with_response({"errors" => false})
     expect(subject).to receive(:submit).with([action1, action2]).once.and_call_original
     subject.register
-    subject.receive(event1)
-    subject.receive(event2)
-    subject.flush
-    sleep(2)
+    subject.multi_receive([event1, event2])
   end
 
   it "retry exceptions within the submit body" do
@@ -73,8 +70,7 @@ describe "failures in bulk class expected behavior", :integration => true do
       end
     end
 
-    subject.receive(event1)
-    subject.flush
+    subject.multi_receive([event1])
   end
 
   it "should retry actions with response status of 503" do
@@ -86,12 +82,7 @@ describe "failures in bulk class expected behavior", :integration => true do
     expect(subject).to receive(:submit).with([action2]).ordered.once.and_call_original
 
     subject.register
-    subject.receive(event1)
-    subject.receive(event1)
-    subject.receive(event1)
-    subject.receive(event2)
-    subject.flush
-    sleep(3)
+    subject.multi_receive([event1, event1, event1, event2])
   end
 
   it "should retry actions with response status of 429" do
@@ -101,9 +92,7 @@ describe "failures in bulk class expected behavior", :integration => true do
                                {"errors" => false})
     expect(subject).to receive(:submit).with([action1]).twice.and_call_original
 
-    subject.receive(event1)
-    subject.flush
-    sleep(3)
+    subject.multi_receive([event1])
   end
 
   it "should retry an event infinitely until a non retryable status occurs" do
@@ -115,49 +104,38 @@ describe "failures in bulk class expected behavior", :integration => true do
                                {"errors" => true, "statuses" => [500]})
     expect(subject).to receive(:submit).with([action1]).exactly(6).times.and_call_original
     subject.register
-    subject.receive(event1)
-    subject.flush
-    sleep(5)
+    subject.multi_receive([event1])
   end
 
   it "non-retryable errors like mapping errors (400) should be dropped and not be retried (unfortunately)" do
     subject.register
-    subject.receive(invalid_event)
     expect(subject).to receive(:submit).once.and_call_original
+    subject.multi_receive([invalid_event])
     subject.close
 
     @es.indices.refresh
-    sleep(5)
-    Stud::try(10.times) do
-      r = @es.search
-      insist { r["hits"]["total"] } == 0
-    end
+    r = @es.search
+    expect(r["hits"]["total"]).to eql(0)
   end
 
   it "successful requests should not be appended to retry queue" do
-    subject.register
-    subject.receive(event1)
     expect(subject).to receive(:submit).once.and_call_original
+
+    subject.register
+    subject.multi_receive([event1])
     subject.close
     @es.indices.refresh
-    sleep(5)
-    Stud::try(10.times) do
-      r = @es.search
-      insist { r["hits"]["total"] } == 1
-    end
+    r = @es.search
+    expect(r["hits"]["total"]).to eql(1)
   end
 
   it "should only index proper events" do
     subject.register
-    subject.receive(invalid_event)
-    subject.receive(event1)
+    subject.multi_receive([invalid_event, event1])
     subject.close
 
     @es.indices.refresh
-    sleep(5)
-    Stud::try(10.times) do
-      r = @es.search
-      insist { r["hits"]["total"] } == 1
-    end
+    r = @es.search
+    expect(r["hits"]["total"]).to eql(1)
   end
 end

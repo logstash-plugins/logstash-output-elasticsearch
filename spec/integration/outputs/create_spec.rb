@@ -29,8 +29,7 @@ describe "client create actions", :integration => true do
     it "should create new documents with or without id" do
       subject = get_es_output("create", "id123")
       subject.register
-      subject.receive(LogStash::Event.new("message" => "sample message here"))
-      subject.flush
+      subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
       @es.indices.refresh
       # Wait or fail until everything's indexed.
       Stud::try(3.times) do
@@ -42,8 +41,7 @@ describe "client create actions", :integration => true do
     it "should create new documents without id" do
       subject = get_es_output("create")
       subject.register
-      subject.receive(LogStash::Event.new("message" => "sample message here"))
-      subject.flush
+      subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
       @es.indices.refresh
       # Wait or fail until everything's indexed.
       Stud::try(3.times) do

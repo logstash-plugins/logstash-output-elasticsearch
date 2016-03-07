@@ -24,14 +24,16 @@ describe "index template expected behavior", :integration => true do
 
     subject.register
 
-    subject.receive(LogStash::Event.new("message" => "sample message here"))
-    subject.receive(LogStash::Event.new("somevalue" => 100))
-    subject.receive(LogStash::Event.new("somevalue" => 10))
-    subject.receive(LogStash::Event.new("somevalue" => 1))
-    subject.receive(LogStash::Event.new("country" => "us"))
-    subject.receive(LogStash::Event.new("country" => "at"))
-    subject.receive(LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0 ] }))
-    subject.flush
+    subject.multi_receive([
+      LogStash::Event.new("message" => "sample message here"),
+      LogStash::Event.new("somevalue" => 100),
+      LogStash::Event.new("somevalue" => 10),
+      LogStash::Event.new("somevalue" => 1),
+      LogStash::Event.new("country" => "us"),
+      LogStash::Event.new("country" => "at"),
+      LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0 ] })
+    ])
+
     @es.indices.refresh
 
     # Wait or fail until everything's indexed.

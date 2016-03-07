@@ -57,7 +57,7 @@ module LogStash; module Outputs; class ElasticSearch;
       if options[:sniffing]
         @sniffer_thread = Thread.new do
           loop do
-            @request_mutex.synchronize { sniff! }
+            sniff!
             sleep (options[:sniffing_delay].to_f || 30)
           end
         end
@@ -70,8 +70,12 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def sniff!
       client.transport.reload_connections! if options[:sniffing]
-      hosts_by_name = client.transport.hosts.map {|h| h["name"]}.sort
-      @logger.debug({"count" => hosts_by_name.count, "hosts" => hosts_by_name})
+
+      if @logger.info?
+        hosts_by_name = client.transport.hosts.map {|h| h["name"]}.sort
+        @logger.info("Sniffed Elasticsearch hosts", {"count" => hosts_by_name.count, "hosts" => hosts_by_name})
+      end
+
     rescue StandardError => e
       @logger.error("Error while sniffing connection",
                     :message => e.message,

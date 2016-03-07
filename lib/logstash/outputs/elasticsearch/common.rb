@@ -1,5 +1,4 @@
 require "logstash/outputs/elasticsearch/template_manager"
-require "logstash/outputs/elasticsearch/buffer"
 
 module LogStash; module Outputs; class ElasticSearch;
   module Common
@@ -13,14 +12,9 @@ module LogStash; module Outputs; class ElasticSearch;
       setup_hosts # properly sets @hosts
       build_client
       install_template
-      setup_buffer_and_handler
       check_action_validity
 
       @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts)
-    end
-
-    def receive(event)
-      @buffer << event_action_tuple(event)
     end
 
     # Receive an array of events and immediately attempt to index them (no buffering)
@@ -37,10 +31,6 @@ module LogStash; module Outputs; class ElasticSearch;
       [action, params, event]
     end
 
-    def flush
-      @buffer.flush
-    end
-
     def setup_hosts
       @hosts = Array(@hosts)
       if @hosts.empty?
@@ -51,12 +41,6 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def install_template
       TemplateManager.install_template(self)
-    end
-
-    def setup_buffer_and_handler
-      @buffer = ::LogStash::Outputs::ElasticSearch::Buffer.new(@logger, @flush_size, @idle_flush_time) do |actions|
-        retrying_submit(actions)
-      end
     end
 
     def check_action_validity
