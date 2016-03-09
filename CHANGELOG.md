@@ -1,8 +1,6 @@
-## 2.5.3
+## 2.5.2
  - Fix bug with update document with doc_as_upsert and scripting (#364, #359)
  - Make error messages more verbose and easier to parse by humans
- 
-## 2.5.2
  - Retryable failures are now logged at the info level instead of warning. (issue #372)
  
 ## 2.5.1
