@@ -208,6 +208,7 @@ describe "outputs/elasticsearch" do
       context "without ssl enabled" do
         it "sets ssl options" do
           expect(::Elasticsearch::Client).to receive(:new) do |args|
+            expect(args[:ssl]).to be(Hash)
             expect(args[:ssl]).to include(:verify => false)
           end
           subject.register
