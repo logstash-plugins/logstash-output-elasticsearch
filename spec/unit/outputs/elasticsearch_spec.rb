@@ -199,5 +199,20 @@ describe "outputs/elasticsearch" do
       let(:options) { {"hosts" => "https://localhost"} }
       include_examples("an encrypted client connection")
     end
+
+    context "With an https host and ssl settings" do
+      let(:options) { {"hosts" => "https://localhost", "ssl_certificate_verification" => false} }
+      subject do
+        next LogStash::Outputs::ElasticSearch.new(options)
+      end
+      context "without ssl enabled" do
+        it "sets ssl options" do
+          expect(::Elasticsearch::Client).to receive(:new) do |args|
+            expect(args[:ssl]).to include(:verify => false)
+          end
+          subject.register
+        end
+      end
+    end
   end
 end
