@@ -1,3 +1,6 @@
+## 2.5.3
+ - Bump minimum manticore version to 0.5.4 which fixes a memory leak (#392)
+
 ## 2.5.2
  - Fix bug with update document with doc_as_upsert and scripting (#364, #359)
  - Make error messages more verbose and easier to parse by humans
