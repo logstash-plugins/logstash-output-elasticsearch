@@ -44,7 +44,7 @@ module LogStash; module Outputs; class ElasticSearch;
         args, source = update_action_builder(args, source) if action == 'update'
 
         if source && action != 'delete'
-          next [ { action => args }, source ]
+          next [ { action => args.merge({ :data => source }) } ]
         else
           next { action => args }
         end
