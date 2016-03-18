@@ -1,3 +1,5 @@
+# 2.5.4
+  - New dependency requirements for logstash-core for the 5.0 release
 ## 2.5.3
  - Bump minimum manticore version to 0.5.4 which fixes a memory leak (#392)
 
