@@ -1,4 +1,10 @@
-# 2.5.4
+# 5.0.0
+  - BREAKING CHANGE!  The default template in this version is _only_ compatible 
+    with Elasticsearch 5.0 due to new changes in mappings. This version contains 
+    the new default template. You _can_ still use this version of Logstash by 
+    manually specifying your own template, or disabling template management.
+
+## 2.5.4
   - New dependency requirements for logstash-core for the 5.0 release
 ## 2.5.3
  - Bump minimum manticore version to 0.5.4 which fixes a memory leak (#392)
