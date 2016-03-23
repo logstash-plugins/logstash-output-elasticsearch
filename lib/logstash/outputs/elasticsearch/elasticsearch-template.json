@@ -8,7 +8,7 @@
       "dynamic_templates" : [ {
         "message_field" : {
           "match" : "message",
-          "match_mapping_type" : "text",
+          "match_mapping_type" : "string",
           "mapping" : {
             "type" : "text", 
             "norms" : false }
@@ -16,7 +16,7 @@
         }, {
         "text_fields" : {
           "match" : "*",
-          "match_mapping_type" : "text",
+          "match_mapping_type" : "string",
           "mapping" : {
             "type" : "text", 
             "norms" : false,
@@ -30,7 +30,6 @@
         "@timestamp": { "type": "date" },
         "@version": { "type": "keyword" },
         "geoip"  : {
-          "type" : "object",
           "dynamic": true,
           "properties" : {
             "ip": { "type": "ip" },
