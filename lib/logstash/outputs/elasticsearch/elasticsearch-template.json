@@ -28,37 +28,13 @@
           }
         }
       }, {
-        "float_fields" : {
-          "match" : "*",
-          "match_mapping_type" : "float",
-          "mapping" : { "type" : "float", "doc_values" : true }
-        }
-      }, {
-        "double_fields" : {
+        "decimal_fields" : {
           "match" : "*",
           "match_mapping_type" : "double",
           "mapping" : { "type" : "double", "doc_values" : true }
         }
       }, {
-        "byte_fields" : {
-          "match" : "*",
-          "match_mapping_type" : "byte",
-          "mapping" : { "type" : "byte", "doc_values" : true }
-        }
-      }, {
-        "short_fields" : {
-          "match" : "*",
-          "match_mapping_type" : "short",
-          "mapping" : { "type" : "short", "doc_values" : true }
-        }
-      }, {
-        "integer_fields" : {
-          "match" : "*",
-          "match_mapping_type" : "integer",
-          "mapping" : { "type" : "integer", "doc_values" : true }
-        }
-      }, {
-        "long_fields" : {
+        "integral_fields" : {
           "match" : "*",
           "match_mapping_type" : "long",
           "mapping" : { "type" : "long", "doc_values" : true }
