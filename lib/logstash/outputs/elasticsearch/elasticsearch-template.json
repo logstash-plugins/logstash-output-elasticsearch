@@ -32,7 +32,6 @@
         "@timestamp": { "type": "date" },
         "@version": { "type": "string", "index": "not_analyzed" },
         "geoip"  : {
-          "type" : "object",
           "dynamic": true,
           "properties" : {
             "ip": { "type": "ip" },
