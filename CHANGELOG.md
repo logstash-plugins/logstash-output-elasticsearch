@@ -1,3 +1,9 @@
+# 2.6.0
+ - Changed the default template in this version to be compatible 
+   with Elasticsearch 5.0 due to new changes in mappings. This version contains 
+   the new default template. You _can_ still use this version of Logstash by 
+   manually specifying your own template, or disabling template management.
+
 # 2.5.5
   - Depend on logstash-core-plugin-api instead of logstash-core, removing the need to mass update plugins on major releases of logstash
 # 2.5.4
