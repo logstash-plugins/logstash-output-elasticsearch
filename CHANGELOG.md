@@ -1,16 +1,6 @@
-# 2.6.0
- - Changed the default template in this version to be compatible 
-   with Elasticsearch 5.0 due to new changes in mappings. This version contains 
-   the new default template. You _can_ still use this version of Logstash by 
-   manually specifying your own template, or disabling template management.
-
-# 2.5.5
-  - Depend on logstash-core-plugin-api instead of logstash-core, removing the need to mass update plugins on major releases of logstash
-# 2.5.4
-  - New dependency requirements for logstash-core for the 5.0 release
-## 2.5.3
- - Bump minimum manticore version to 0.5.4 which fixes a memory leak (#392)
-
+## 2.6.1
+ - Add 'retry_on_conflict' configuration option which should have been here from the beginning
+ 
 ## 2.5.2
  - Fix bug with update document with doc_as_upsert and scripting (#364, #359)
  - Make error messages more verbose and easier to parse by humans

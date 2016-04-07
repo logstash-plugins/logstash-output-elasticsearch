@@ -151,6 +151,11 @@ module LogStash; module Outputs; class ElasticSearch
       # DEPRECATED This setting no longer does anything. If you need to change the number of retries in flight
       # try increasing the total number of workers to better handle this.
       mod.config :retry_max_items, :validate => :number, :default => 500, :deprecated => true
+
+      # The number of times Elasticsearch should internally retry an update/upserted document
+      # See the https://www.elastic.co/guide/en/elasticsearch/guide/current/partial-updates.html[partial updates]
+      # for more info
+      mod.config :retry_on_conflict, :validate => :number, :default => 1
     end
   end
 end end end
