@@ -200,4 +200,28 @@ describe "outputs/elasticsearch" do
       include_examples("an encrypted client connection")
     end
   end
+
+  describe "retry_on_conflict" do
+    let(:num_retries) { 123 }
+    let(:event) { LogStash::Event.new("message" => "blah") }
+    subject(:eso) {LogStash::Outputs::ElasticSearch.new(options.merge('retry_on_conflict' => num_retries))}
+
+    context "with a regular index" do
+      let(:options) { {"action" => "index"} }
+
+      it "should interpolate the requested action value when creating an event_action_tuple" do
+        action, params, event_data = eso.event_action_tuple(event)
+        expect(params).not_to include({:_retry_on_conflict => num_retries})
+      end
+    end
+
+    context "using a plain update" do
+      let(:options) { {"action" => "update", "retry_on_conflict" => num_retries} }
+
+      it "should interpolate the requested action value when creating an event_action_tuple" do
+        action, params, event_data = eso.event_action_tuple(event)
+        expect(params).to include({:_retry_on_conflict => num_retries})
+      end
+    end
+  end
 end
