@@ -1,3 +1,6 @@
+## 2.6.2
+ - Fix bug where update index actions would not work with events with 'data' field
+
 ## 2.6.1
  - Add 'retry_on_conflict' configuration option which should have been here from the beginning
  
