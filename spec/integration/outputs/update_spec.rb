@@ -53,8 +53,20 @@ describe "Update actions", :integration => true do
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
       insist { r["_source"]["message"] } == 'updated message here'
     end
+
+    # The es ruby client treats the data field differently. Make sure this doesn't
+    # raise an exception
+    it "should update an existing document that has a 'data' field" do
+      subject = get_es_output({ 'document_id' => "123" })
+      subject.register
+      subject.receive(LogStash::Event.new("data" => "updated message here", "message" => "foo"))
+      subject.flush
+      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
+      insist { r["_source"]["data"] } == 'updated message here'
+      insist { r["_source"]["message"] } == 'foo'
+    end
   end
-    
+
   context "when using script" do
     it "should increment a counter with event/doc 'count' variable" do
       subject = get_es_output({ 'document_id' => "123", 'script' => 'scripted_update', 'script_type' => 'file' })
