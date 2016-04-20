@@ -1,8 +1,8 @@
 sudo: false
 env:
-  - INTEGRATION=false
-  - INTEGRATION=true ES_VERSION=2.2.0
-  - INTEGRATION=true ES_VERSION=1.7.5
+  - INTEGRATION=false TEST_DEBUG=1
+  - INTEGRATION=true TEST_DEBUG=1 ES_VERSION=2.2.0
+  - INTEGRATION=true TEST_DEBUG=1 ES_VERSION=1.7.5
 language: ruby
 cache: bundler
 rvm:

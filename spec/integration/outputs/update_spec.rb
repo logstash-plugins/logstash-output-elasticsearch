@@ -51,7 +51,7 @@ describe "Update actions", :integration => true do
       subject.receive(LogStash::Event.new("message" => "updated message here"))
       subject.flush
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-      insist { r["_source"]["message"] } == 'updated message here'
+      expect(r["_source"]["message"]).to eql('updated message here')
     end
 
     # The es ruby client treats the data field differently. Make sure this doesn't
@@ -62,8 +62,8 @@ describe "Update actions", :integration => true do
       subject.receive(LogStash::Event.new("data" => "updated message here", "message" => "foo"))
       subject.flush
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-      insist { r["_source"]["data"] } == 'updated message here'
-      insist { r["_source"]["message"] } == 'foo'
+      expect(r["_source"]["data"]).to eql('updated message here')
+      expect(r["_source"]["message"]).to eql('foo')
     end
   end
 
@@ -74,7 +74,7 @@ describe "Update actions", :integration => true do
       subject.receive(LogStash::Event.new("count" => 2))
       subject.flush
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-      insist { r["_source"]["counter"] } == 3
+      expect(r["_source"]["counter"]).to eql(3)
     end
 
     it "should increment a counter with event/doc '[data][count]' nested variable" do
@@ -83,7 +83,7 @@ describe "Update actions", :integration => true do
       subject.receive(LogStash::Event.new("data" => { "count" => 3 }))
       subject.flush
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-      insist { r["_source"]["counter"] } == 4
+      expect(r["_source"]["counter"]).to eql(4)
     end
 
     it "should increment a counter with event/doc 'count' variable with inline script" do
@@ -97,7 +97,7 @@ describe "Update actions", :integration => true do
       subject.receive(LogStash::Event.new("counter" => 3 ))
       subject.flush
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-      insist { r["_source"]["counter"] } == 4
+      expect(r["_source"]["counter"]).to eql(4)
     end
 
     it "should increment a counter with event/doc 'count' variable with event/doc as upsert and inline script" do
@@ -112,7 +112,7 @@ describe "Update actions", :integration => true do
       subject.receive(LogStash::Event.new("counter" => 3 ))
       subject.flush
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-      insist { r["_source"]["counter"] } == 4
+      expect(r["_source"]["counter"]).to eql(4)
     end
 
     it "should, with new doc, set a counter with event/doc 'count' variable with event/doc as upsert and inline script" do
@@ -127,7 +127,7 @@ describe "Update actions", :integration => true do
       subject.receive(LogStash::Event.new("counter" => 3 ))
       subject.flush
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-      insist { r["_source"]["counter"] } == 3
+      expect(r["_source"]["counter"]).to eql(3)
     end
 
     it "should increment a counter with event/doc 'count' variable with indexed script" do
@@ -142,7 +142,7 @@ describe "Update actions", :integration => true do
       subject.receive(LogStash::Event.new("count" => 4 ))
       subject.flush
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-      insist { r["_source"]["counter"] } == 5
+      expect(r["_source"]["counter"]).to eql(5)
     end
   end
 
@@ -153,7 +153,7 @@ describe "Update actions", :integration => true do
       subject.receive(LogStash::Event.new("message" => "sample message here"))
       subject.flush
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-      insist { r["_source"]["message"] } == 'upsert message'
+      expect(r["_source"]["message"]).to eql('upsert message')
     end
 
     it "should create new documents with event/doc as upsert" do
@@ -162,7 +162,7 @@ describe "Update actions", :integration => true do
       subject.receive(LogStash::Event.new("message" => "sample message here"))
       subject.flush
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-      insist { r["_source"]["message"] } == 'sample message here'
+      expect(r["_source"]["message"]).to eql('sample message here')
     end
 
     context "when using script" do
@@ -172,7 +172,7 @@ describe "Update actions", :integration => true do
         subject.receive(LogStash::Event.new("message" => "sample message here"))
         subject.flush
         r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-        insist { r["_source"]["message"] } == 'upsert message'
+        expect(r["_source"]["message"]).to eql('upsert message')
       end
 
       it "should create new documents with event/doc as script params" do
@@ -181,7 +181,7 @@ describe "Update actions", :integration => true do
         subject.receive(LogStash::Event.new("counter" => 1))
         subject.flush
         r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-        insist { r["_source"]["counter"] } == 1
+        expect(r["_source"]["counter"]).to eql(1)
       end
     end
   end
