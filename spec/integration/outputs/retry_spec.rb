@@ -30,7 +30,6 @@ describe "failures in bulk class expected behavior", :integration => true do
       "index" => "logstash-2014.11.17",
       "template_overwrite" => true,
       "hosts" => get_host_port(),
-      "retry_max_items" => 10,
       "retry_max_interval" => 1,
     }
     next LogStash::Outputs::ElasticSearch.new(settings)
@@ -122,29 +121,20 @@ describe "failures in bulk class expected behavior", :integration => true do
 
   it "non-retryable errors like mapping errors (400) should be dropped and not be retried (unfortunately)" do
     subject.register
-    subject.receive(invalid_event)
     expect(subject).to receive(:submit).once.and_call_original
+    subject.receive(invalid_event)
     subject.close
-
     @es.indices.refresh
-    sleep(5)
-    Stud::try(10.times) do
-      r = @es.search
-      insist { r["hits"]["total"] } == 0
-    end
+    expect(@es.search["hits"]["total"]).to eql(0)
   end
 
-  it "successful requests should not be appended to retry queue" do
+  it "successful requests should not be retried" do
     subject.register
-    subject.receive(event1)
     expect(subject).to receive(:submit).once.and_call_original
+    subject.receive(event1)
     subject.close
     @es.indices.refresh
-    sleep(5)
-    Stud::try(10.times) do
-      r = @es.search
-      insist { r["hits"]["total"] } == 1
-    end
+    expect(@es.search["hits"]["total"]).to eql(1)
   end
 
   it "should only index proper events" do
