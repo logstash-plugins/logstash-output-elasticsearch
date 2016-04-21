@@ -156,6 +156,9 @@ module LogStash; module Outputs; class ElasticSearch
       # See the https://www.elastic.co/guide/en/elasticsearch/guide/current/partial-updates.html[partial updates]
       # for more info
       mod.config :retry_on_conflict, :validate => :number, :default => 1
+
+      # Set which ingest pipeline you wish to execute for an event
+      mod.config :pipeline, :validate => :string, :default => nil
     end
   end
 end end end
