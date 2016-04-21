@@ -134,12 +134,20 @@ module LogStash; module Outputs; class ElasticSearch;
         :_routing => @routing ? event.sprintf(@routing) : nil
       }
 
-      params[:parent] = event.sprintf(@parent) if @parent
+      if @pipeline
+        params[:pipeline] = @pipeline
+      end
+
+     if @parent
+        params[:parent] = event.sprintf(@parent)
+      end
+
       if @action == 'update'
         params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
         params[:_script] = event.sprintf(@script) if @script != ""
         params[:_retry_on_conflict] = @retry_on_conflict
       end
+
       params
     end
 

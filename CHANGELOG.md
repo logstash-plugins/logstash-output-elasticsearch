@@ -1,3 +1,6 @@
+## 2.7.0
+ - Add `pipeline` configuration option for setting an ingest pipeline to run upon indexing
+
 ## 2.6.2
  - Fix bug where update index actions would not work with events with 'data' field
 
