@@ -104,12 +104,14 @@ module LogStash; module Outputs; class ElasticSearch;
       hosts = options[:hosts] || ["127.0.0.1"]
       client_settings = options[:client_settings] || {}
       timeout = options[:timeout] || 0
+      headers = options[:headers] || {}
 
       host_ssl_opt = client_settings[:ssl].nil? ? nil : client_settings[:ssl][:enabled]
       urls = hosts.map {|host| host_to_url(host, host_ssl_opt, client_settings[:path])}
 
       @client_options = {
         :hosts => urls,
+        :headers => headers,
         :ssl => client_settings[:ssl],
         :transport_options => {
           :socket_timeout => timeout,
@@ -121,7 +123,8 @@ module LogStash; module Outputs; class ElasticSearch;
 
       if options[:user] && options[:password] then
         token = Base64.strict_encode64(options[:user] + ":" + options[:password])
-        @client_options[:headers] = { "Authorization" => "Basic #{token}" }
+        auth_header = { "Authorization" => "Basic #{token}" }
+        @client_options[:headers].merge! auth_header
       end
 
       @logger.debug? && @logger.debug("Elasticsearch HTTP client options", client_options)
