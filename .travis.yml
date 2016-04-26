@@ -1,4 +1,6 @@
 sudo: false
+jdk:
+  - oraclejdk8
 env:
   - INTEGRATION=false
   - INTEGRATION=true ES_VERSION=2.2.0
@@ -7,5 +9,5 @@ env:
 language: ruby
 cache: bundler
 rvm:
-  - jruby-1.7.24
+  - jruby-1.7.25
 script: ./travis-run.sh
