@@ -41,7 +41,7 @@ require "uri" # for escaping user input
 # a global setting for the JVM.
 #
 # As an example, to set your DNS TTL to 1 second you would set
-# the `LS_JAVA_OPTS` environment variable to `-Dnetwordaddress.cache.ttl=1`.
+# the `LS_JAVA_OPTS` environment variable to `-Dnetworkaddress.cache.ttl=1`.
 #
 # Keep in mind that a connection with keepalive enabled will
 # not reevaluate its DNS value while the keepalive is in effect.
