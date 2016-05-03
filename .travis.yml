@@ -1,13 +1,15 @@
+---
 sudo: false
-jdk:
-  - oraclejdk8
+jdk: oraclejdk8
 env:
-  - INTEGRATION=false
-  - INTEGRATION=true ES_VERSION=2.2.0
-  - INTEGRATION=true ES_VERSION=1.7.5
-  - INTEGRATION=true ES_VERSION=5.0.0-alpha1
+- INTEGRATION=false
+- INTEGRATION=true ES_VERSION=2.2.0
+- INTEGRATION=true ES_VERSION=1.7.5
+- INTEGRATION=true ES_VERSION=5.0.0-alpha1
 language: ruby
 cache: bundler
 rvm:
-  - jruby-1.7.25
-script: ./travis-run.sh
+- jruby-1.7.25
+script: "./travis-run.sh"
+before_install:
+- git clone -b feature/event_interface https://github.com/elastic/logstash

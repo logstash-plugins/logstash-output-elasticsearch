@@ -157,7 +157,7 @@ module LogStash; module Outputs; class ElasticSearch;
       type = if @document_type
                event.sprintf(@document_type)
              else
-               event["type"] || "logs"
+               event.get("type") || "logs"
              end
 
       if !(type.is_a?(String) || type.is_a?(Numeric))
