@@ -1,3 +1,5 @@
+## 3.0.1
+  - Republish all the gems under jruby.
 ## 3.0.0
   - Update the plugin to the version 2.0 of the plugin api, this change is required for Logstash 5.0 compatibility. See https://github.com/elastic/logstash/issues/5141
 ## 2.7.0
