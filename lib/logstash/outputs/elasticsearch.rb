@@ -79,7 +79,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # HTTP Path at which the Elasticsearch server lives. Use this if you must run Elasticsearch behind a proxy that remaps
   # the root path for the Elasticsearch HTTP API lives.
-  config :path, :validate => :string, :default => "/"
+  # Note that if you use paths as components of URLs in the 'hosts' field you may
+  # not also set this field. That will raise an error at startup
+  config :path, :validate => :string
 
   # Enable SSL/TLS secured communication to Elasticsearch cluster. Leaving this unspecified will use whatever scheme
   # is specified in the URLs listed in 'hosts'. If no explicit protocol is specified plain HTTP will be used.

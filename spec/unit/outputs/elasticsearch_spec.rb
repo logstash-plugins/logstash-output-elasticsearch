@@ -18,10 +18,12 @@ describe "outputs/elasticsearch" do
       eso.client.send(:client).transport.options[:hosts].first
     }
 
+    let(:do_register) { true }
+
     around(:each) do |block|
-      eso.register
+      eso.register if do_register
       block.call()
-      eso.close
+      eso.close if do_register
     end
 
     describe "getting a document type" do
@@ -76,6 +78,56 @@ describe "outputs/elasticsearch" do
 
         it "should properly set the path on the HTTP client without adding slashes" do
           expect(manticore_host).to include(options["path"])
+        end
+      end
+
+      context "with a URI based path" do
+        let(:options) do
+          o = super()
+          o.delete("path")
+          o["hosts"] = ["http://localhost:9200/mypath/"]
+          o
+        end
+        let(:client_host_path) { URI.parse(eso.client.client_options[:hosts].first).path }
+
+        it "should initialize without error" do
+          expect { eso }.not_to raise_error
+        end
+
+        it "should use the URI path" do
+          expect(client_host_path).to eql("/mypath/")
+        end
+
+        context "with a path option but no URL path" do
+          let(:options) do
+            o = super()
+            o["path"] = "/override/"
+            o["hosts"] = ["http://localhost:9200"]
+            o
+          end
+
+          it "should initialize without error" do
+            expect { eso }.not_to raise_error
+          end
+
+          it "should use the option path" do
+            expect(client_host_path).to eql("/override/")
+          end
+        end
+
+        # If you specify the path in two spots that is an error!
+        context "with a path option and a URL path" do
+          let(:do_register) { false } # Register will fail
+          let(:options) do
+            o = super()
+            o["path"] = "/override"
+            o["hosts"] = ["http://localhost:9200/mypath/"]
+            o
+          end
+
+          it "should initialize with an error" do
+            expect { eso.register }.to raise_error(LogStash::ConfigurationError)
+          end
         end
       end
     end
