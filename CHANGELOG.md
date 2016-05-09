@@ -1,3 +1,5 @@
+## 3.0.2
+  - Fix issues where URI based paths in 'hosts' would not function correctly
 ## 3.0.1
   - Republish all the gems under jruby.
 ## 3.0.0
@@ -10,12 +12,12 @@
 
 ## 2.6.1
  - Add 'retry_on_conflict' configuration option which should have been here from the beginning
- 
+
 ## 2.5.2
  - Fix bug with update document with doc_as_upsert and scripting (#364, #359)
  - Make error messages more verbose and easier to parse by humans
  - Retryable failures are now logged at the info level instead of warning. (issue #372)
- 
+
 ## 2.5.1
  - Fix bug where SSL would sometimes not be enabled
 
