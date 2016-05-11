@@ -130,6 +130,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # a timeout occurs, the request will be retried.
   config :timeout, :validate => :number
 
+  # Additional headers to add to all requests.
+  # Should be an array of hashes in the form
+  # `{ 'X-My-Header-Here': 'val123', ... }`
+  config :headers, :validate => :hash
+
   def build_client
     @client = ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
   end

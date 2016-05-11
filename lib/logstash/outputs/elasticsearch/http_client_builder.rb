@@ -20,6 +20,7 @@ module LogStash; module Outputs; class ElasticSearch;
       client_settings.merge! setup_ssl(logger, params)
       client_settings.merge! setup_proxy(logger, params)
       common_options.merge! setup_basic_auth(logger, params)
+      common_options.merge! setup_headers(logger, params)
 
       # Update API setup
       raise( Logstash::ConfigurationError,
@@ -105,6 +106,12 @@ module LogStash; module Outputs; class ElasticSearch;
         :user => user,
         :password => password.value
       }
+    end
+
+    def self.setup_headers(logger, params)
+      return {} unless params["headers"]
+
+      params["headers"]
     end
   end
 end; end; end
