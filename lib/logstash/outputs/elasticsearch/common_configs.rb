@@ -10,12 +10,6 @@ module LogStash; module Outputs; class ElasticSearch
       # Joda formats are defined http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html[here].
       mod.config :index, :validate => :string, :default => "logstash-%{+YYYY.MM.dd}"
 
-      # The index type to write events to. Generally you should try to write only
-      # similar events to the same 'type'. String expansion `%{foo}` works here.
-      #
-      # Deprecated in favor of `docoument_type` field.
-      mod.config :index_type, :validate => :string, :obsolete => "Please use the 'document_type' setting instead. It has the same effect, but is more appropriately named."
-
       # The document type to write events to. Generally you should try to write only
       # similar events to the same 'type'. String expansion `%{foo}` works here.
       # Unless you set 'document_type', the event 'type' will be used if it exists
@@ -81,12 +75,6 @@ module LogStash; module Outputs; class ElasticSearch
       # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes in Elasticsearch.
       mod.config :hosts, :validate => :array, :default => ["127.0.0.1"]
 
-      mod.config :host, :obsolete => "Please use the 'hosts' setting instead. You can specify multiple entries separated by comma in 'host:port' format."
-
-      # The port setting is obsolete.  Please use the 'hosts' setting instead.
-      # Hosts entries can be in "host:port" format.
-      mod.config :port, :obsolete => "Please use the 'hosts' setting instead. Hosts entries can be in 'host:port' format."
-
       # This plugin uses the bulk index API for improved indexing performance.
       # This setting defines the maximum sized bulk request Logstash will make
       # You you may want to increase this to be in line with your pipeline's batch size.
@@ -114,8 +102,8 @@ module LogStash; module Outputs; class ElasticSearch
       # Create a new document with source if `document_id` doesn't exist in Elasticsearch
       mod.config :doc_as_upsert, :validate => :boolean, :default => false
 
-      # DEPRECATED This setting no longer does anything. It will be marked obsolete in a future version.
-      mod.config :max_retries, :validate => :number, :default => 3
+      #Obsolete since 4.1.0
+      mod.config :max_retries, :obsolete => "This setting no longer does anything. Please remove it from your config"
 
       # Set script name for scripted update mode
       mod.config :script, :validate => :string, :default => ""
@@ -141,9 +129,8 @@ module LogStash; module Outputs; class ElasticSearch
       # Set max interval in seconds between bulk retries.
       mod.config :retry_max_interval, :validate => :number, :default => 64
 
-      # DEPRECATED This setting no longer does anything. If you need to change the number of retries in flight
-      # try increasing the total number of workers to better handle this.
-      mod.config :retry_max_items, :validate => :number, :default => 500, :deprecated => true
+      #Obsolete since 4.1.0
+      mod.config :retry_max_items, :obsolete => "This setting no longer does anything. Please remove it from your config"
 
       # The number of times Elasticsearch should internally retry an update/upserted document
       # See the https://www.elastic.co/guide/en/elasticsearch/guide/current/partial-updates.html[partial updates]

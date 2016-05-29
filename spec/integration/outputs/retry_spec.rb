@@ -32,7 +32,6 @@ describe "failures in bulk class expected behavior", :integration => true do
       "index" => "logstash-2014.11.17",
       "template_overwrite" => true,
       "hosts" => get_host_port(),
-      "retry_max_items" => 10,
       "retry_max_interval" => 64,
       "retry_initial_interval" => 2
     }
