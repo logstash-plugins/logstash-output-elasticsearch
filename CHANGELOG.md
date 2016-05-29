@@ -1,14 +1,24 @@
+## 4.1.0
+- breaking,config: Removed obsolete config `host` and `port`. Please use the `hosts` config with the `[host:port]` syntax.
+- breaking,config: Removed obsolete config `index_type`. Please use `document_type` instead.
+- breaking,config: Set config `max_retries` and `retry_max_items` as obsolete
+
 ## 4.0.0
  - Make this plugin threadsafe. Workers no longer needed or supported
  - Add pool_max and pool_max_per_route options
+
 ## 3.0.2
-  - Fix issues where URI based paths in 'hosts' would not function correctly
+ - Fix issues where URI based paths in 'hosts' would not function correctly
+
 ## 3.0.1
-  - Republish all the gems under jruby.
+ - Republish all the gems under jruby.
+
 ## 3.0.0
-  - Update the plugin to the version 2.0 of the plugin api, this change is required for Logstash 5.0 compatibility. See https://github.com/elastic/logstash/issues/5141
+ - Update the plugin to the version 2.0 of the plugin api, this change is required for Logstash 5.0 compatibility. See https://github.com/elastic/logstash/issues/5141
+
 ## 2.7.0
  - Add `pipeline` configuration option for setting an ingest pipeline to run upon indexing
+
 
 ## 2.6.2
  - Fix bug where update index actions would not work with events with 'data' field
