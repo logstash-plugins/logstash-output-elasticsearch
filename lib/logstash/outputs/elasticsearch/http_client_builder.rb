@@ -22,7 +22,7 @@ module LogStash; module Outputs; class ElasticSearch;
       common_options.merge! setup_basic_auth(logger, params)
 
       # Update API setup
-      raise( Logstash::ConfigurationError,
+      raise( LogStash::ConfigurationError,
         "doc_as_upsert and scripted_upsert are mutually exclusive."
       ) if params["doc_as_upsert"] and params["scripted_upsert"]
 
