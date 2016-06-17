@@ -102,7 +102,7 @@ describe "Update actions", :integration => true do
         'script_type' => 'inline'
       })
       subject.register
-      subject.multi_receive([LogStash::Event.new("count" => 3 )])
+      subject.multi_receive([LogStash::Event.new("counter" => 3 )])
       r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
       insist { r["_source"]["counter"] } == 4
     end
