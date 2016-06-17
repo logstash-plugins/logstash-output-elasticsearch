@@ -128,7 +128,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Note, this is NOT a SOCKS proxy, but a plain HTTP proxy
   config :proxy
 
-  # Set the timeout for network operations and requests sent Elasticsearch. If
+  # Set the timeout, in seconds, for network operations and requests sent Elasticsearch. If
   # a timeout occurs, the request will be retried.
   config :timeout, :validate => :number
 
