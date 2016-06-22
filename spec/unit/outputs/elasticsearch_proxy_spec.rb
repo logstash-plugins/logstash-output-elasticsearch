@@ -4,12 +4,7 @@ require "logstash/outputs/elasticsearch"
 require 'manticore/client'
 
 describe "Proxy option" do
-  let(:settings) {
-    {
-      "hosts" => "node01",
-      "proxy" => proxy
-    }
-  }
+  let(:settings) { { "hosts" => "node01" } }
   subject {
     LogStash::Outputs::ElasticSearch.new(settings)
   }
@@ -23,30 +18,46 @@ describe "Proxy option" do
       subject.register
     end
 
-    context "when specified as a string" do
-      let(:proxy) { "http://127.0.0.1:1234" }
-
-      it "should set the proxy to the exact value" do
-        expect(::Manticore::Client).to have_received(:new) do |options|
-          expect(options[:proxy]).to eql(proxy)
+    context "when specified as a URI" do
+      shared_examples("hash conversion") do |hash|
+        let(:settings) { super.merge("proxy" => proxy)}
+        
+        it "should set the proxy to the correct hash value" do
+          expect(::Manticore::Client).to have_received(:new) do |options|
+            expect(options[:proxy]).to eq(hash)
+          end
         end
       end
-    end
+      
+      describe "simple proxy" do
+        let(:proxy) { LogStash::Util::SafeURI.new("http://127.0.0.1:1234") }
 
-    context "when specified as a hash" do
-      let(:proxy) { {"hosts" => "127.0.0.1", "protocol" => "http"} }
+        include_examples("hash conversion",
+          {
+            :host => "127.0.0.1",
+            :scheme => "http",
+            :port => 1234  
+          }
+        )
+      end
+      
+      
+      describe "a secure authed proxy" do
+        let(:proxy) { LogStash::Util::SafeURI.new("https://myuser:mypass@127.0.0.1:1234") }
 
-      it "should pass through the proxy values as symbols" do
-        expected = {:hosts => proxy["hosts"], :protocol => proxy["protocol"]}
-        expect(::Manticore::Client).to have_received(:new) do |options|
-          expect(options[:proxy]).to eql(expected)
-        end
+        include_examples("hash conversion",
+          {
+            :host => "127.0.0.1",
+            :scheme => "https",
+            :user => "myuser",
+            :password => "mypass",
+            :port => 1234  
+          }
+        )
       end
     end
 
     context "when not specified" do
-      let(:proxy) { nil }
-      
       it "should not send the proxy option to manticore" do
         expect(::Manticore::Client).to have_received(:new) do |options|
           expect(options).not_to include(:proxy)
@@ -54,15 +65,4 @@ describe "Proxy option" do
       end
     end
   end
-
-  describe "invalid configs" do
-    let(:proxy) { ["bad", "stuff"] }
-
-    it "should have raised an exception" do
-      expect {
-        subject.register
-      }.to raise_error(LogStash::ConfigurationError)
-    end
-  end
-
 end

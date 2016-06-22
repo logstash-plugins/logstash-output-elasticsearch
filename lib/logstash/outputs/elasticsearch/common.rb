@@ -14,7 +14,7 @@ module LogStash; module Outputs; class ElasticSearch;
       install_template
       check_action_validity
 
-      @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts)
+      @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized))
     end
 
     # Receive an array of events and immediately attempt to index them (no buffering)
@@ -212,15 +212,14 @@ module LogStash; module Outputs; class ElasticSearch;
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         if RETRYABLE_CODES.include?(e.response_code)
-          safe_url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(e.url)
-          log_hash = {:code => e.response_code, :url => safe_url}
+          log_hash = {:code => e.response_code, :url => e.url.sanitized}
           log_hash[:body] = e.body if @logger.debug? # Generally this is too verbose
           @logger.error("Attempted to send a bulk request to elasticsearch but received a bad HTTP response code!", log_hash)
 
           sleep_interval = sleep_for_interval(sleep_interval)
           retry unless @stopping.true?
         else
-          @logger.error("Got a bad response code from server, but this code is not considered retryable. Request will be dropped", :code => e.response_code, :body => e.response.body)
+          @logger.error("Got a bad response code from server, but this code is not considered retryable. Request will be dropped", :code => e.response_code, :body => e.body)
         end
       rescue => e
         # Stuff that should never happen

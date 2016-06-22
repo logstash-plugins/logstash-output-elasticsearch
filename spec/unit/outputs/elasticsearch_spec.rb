@@ -8,23 +8,34 @@ describe "outputs/elasticsearch" do
       {
         "index" => "my-index",
         "hosts" => ["localhost","localhost:9202"],
-        "path" => "some-path"
+        "path" => "some-path",
+        "manage_template" => false
       }
     }
-
-    let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
+    
+    let(:eso) { LogStash::Outputs::ElasticSearch.new(options) }
 
     let(:manticore_urls) { eso.client.pool.urls }
     let(:manticore_url) { manticore_urls.first }
 
     let(:do_register) { true }
 
-    around(:each) do |block|
-      eso.register if do_register
-      block.call()
-      eso.close if do_register
+    before(:each) do
+      if do_register
+        eso.register
+        
+        # Rspec mocks can't handle background threads, so... we can't use any 
+        allow(eso.client.pool).to receive(:start_resurrectionist)
+        allow(eso.client.pool).to receive(:start_sniffer)
+        allow(eso.client.pool).to receive(:healthcheck!)
+        eso.client.pool.adapter.manticore.respond_with(:body => "{}")
+      end
     end
-
+    
+    after(:each) do
+      eso.close 
+    end
+    
     describe "getting a document type" do
       it "should default to 'logs'" do
         expect(eso.send(:get_event_type, LogStash::Event.new)).to eql("logs")
@@ -59,13 +70,43 @@ describe "outputs/elasticsearch" do
         end
       end
     end
+    
+    describe "with auth" do
+      let(:user) { "myuser" }
+      let(:password) { ::LogStash::Util::Password.new("mypassword") }
+      
+      shared_examples "an authenticated config" do
+        it "should set the URL auth correctly" do
+          expect(manticore_url.user).to eq user
+        end
+      end
+        
+      context "as part of a URL" do
+        let(:options) {
+          super.merge("hosts" => ["http://#{user}:#{password.value}@localhost:9200"])
+        }
+        
+        include_examples("an authenticated config")
+      end
+      
+      context "as a hash option" do
+          let(:options) {
+            super.merge!(
+              "user" => user,
+              "password" => password
+            )
+        }
+        
+        include_examples("an authenticated config")
+      end
+    end
 
     describe "with path" do
       it "should properly create a URI with the path" do
         expect(eso.path).to eql(options["path"])
       end
 
-      it "should properly set the path on the HTTP client adding slashes" do
+        it "should properly set the path on the HTTP client adding slashes" do
         expect(manticore_url.path).to eql("/" + options["path"] + "/")
       end
 
@@ -185,6 +226,7 @@ describe "outputs/elasticsearch" do
     end
 
     it "should fail after the timeout" do
+      #pending("This is tricky now that we do healthchecks on instantiation")
       Thread.new { eso.multi_receive([LogStash::Event.new]) }
 
       # Allow the timeout to occur
@@ -214,19 +256,35 @@ describe "outputs/elasticsearch" do
   end
 
   describe "SSL end to end" do
+    let(:manticore_double) do 
+      double("manticoreX#{self.inspect}") 
+    end
+    
+    let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
+
+    before(:each) do
+      response_double = double("manticore response").as_null_object
+      # Allow healtchecks
+      allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
+      allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
+      allow(manticore_double).to receive(:close)
+        
+      allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
+      eso.register
+    end
+    
+    after(:each) do
+      eso.close
+    end
+    
+    
     shared_examples("an encrypted client connection") do
       it "should enable SSL in manticore" do
         expect(eso.client.pool.urls.map(&:scheme).uniq).to eql(['https'])
       end
     end
 
-    let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
-    subject(:manticore) { eso.client.pool.adapter.client}
-
-    before do
-      eso.register
-    end
-
+      
     context "With the 'ssl' option" do
       let(:options) { {"ssl" => true}}
 
