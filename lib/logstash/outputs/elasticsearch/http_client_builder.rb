@@ -76,8 +76,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def self.setup_ssl(logger, params)
-      # If we have HTTPS hosts we act like SSL is enabled
-      params["ssl"] = true if params["hosts"].any? {|h| h.start_with?("https://")}
+      params["ssl"] = true if params["hosts"].any? {|h| h.scheme == "https" }
       return {} if params["ssl"].nil?
 
       return {:ssl => {:enabled => false}} if params["ssl"] == false

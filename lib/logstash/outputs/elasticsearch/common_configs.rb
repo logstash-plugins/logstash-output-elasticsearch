@@ -1,3 +1,5 @@
+require 'forwardable' # Needed for logstash core SafeURI. We need to patch this in core: https://github.com/elastic/logstash/pull/5978
+
 module LogStash; module Outputs; class ElasticSearch
   module CommonConfigs
     def self.included(mod)
@@ -76,7 +78,7 @@ module LogStash; module Outputs; class ElasticSearch
       #     `["https://127.0.0.1:9200/mypath"]` (If using a proxy on a subpath)
       # It is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `hosts` list
       # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes in Elasticsearch.
-      mod.config :hosts, :validate => :array, :default => ["127.0.0.1"]
+      mod.config :hosts, :validate => :uri, :default => [::LogStash::Util::SafeURI.new("//127.0.0.1")], :list => true
 
       # This plugin uses the bulk index API for improved indexing performance.
       # This setting defines the maximum sized bulk request Logstash will make.

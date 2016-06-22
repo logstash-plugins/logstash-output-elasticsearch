@@ -8,11 +8,12 @@ describe "outputs/elasticsearch" do
       {
         "index" => "my-index",
         "hosts" => ["localhost","localhost:9202"],
-        "path" => "some-path"
+        "path" => "some-path",
+        "manage_template" => false
       }
     }
 
-    let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
+    let(:eso) { LogStash::Outputs::ElasticSearch.new(options) }
 
     let(:manticore_urls) { eso.client.pool.urls }
     let(:manticore_url) { manticore_urls.first }
@@ -20,7 +21,11 @@ describe "outputs/elasticsearch" do
     let(:do_register) { true }
 
     around(:each) do |block|
-      eso.register if do_register
+      if do_register
+        eso.register
+        eso.client.pool.adapter.manticore.respond_with(:body => "{}")
+      end
+
       block.call()
       eso.close if do_register
     end

@@ -8,6 +8,7 @@ require "stud/buffer"
 require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
 require "uri" # for escaping user input
+require "forwardable"
 
 # This plugin is the recommended method of storing logs in Elasticsearch.
 # If you plan on using the Kibana web interface, you'll want to use this output.
