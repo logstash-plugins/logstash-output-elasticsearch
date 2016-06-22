@@ -1,3 +1,10 @@
+## 6.0.0
+- Proxies requiring auth now always work when a URL is specified
+- It is no longer possible to specify a proxy as a hash due to security reasons 
+- Fix URL normalization logic to correctly apply all settings to sniffed hosts
+- Proxies requiring auth now always work when a URL is specified
+- Switch internals to new LogStash::Util::SafeURI type for more defensive approach to logging credentials
+
 ## 5.4.1
 - Correctly sniff against ES 5.x clusters
 

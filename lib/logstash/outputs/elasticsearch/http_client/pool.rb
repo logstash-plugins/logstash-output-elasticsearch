@@ -6,7 +6,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
       def initialize(response_code, url, body)
         @response_code = response_code
-        @url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
+        @url = url
         @body = body
       end
 
@@ -19,7 +19,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
       def initialize(original_error, url)
         @original_error = original_error
-        @url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
+        @url = url
       end
 
       def message
@@ -27,13 +27,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
     end
 
-    attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :auth, :healthcheck_path
+    attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :healthcheck_path
 
     DEFAULT_OPTIONS = {
       :healthcheck_path => '/'.freeze,
       :scheme => 'http',
       :resurrect_delay => 5,
-      :auth => nil, # Can be set to {:user => 'user', :password => 'pass'}
       :sniffing => false,
       :sniffer_delay => 10,
     }.freeze
@@ -41,19 +40,15 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def initialize(logger, adapter, initial_urls=[], options={})
       @logger = logger
       @adapter = adapter
-
+      @initial_urls = initial_urls
+      
+      raise ArgumentError, "No URL Normalizer specified!" unless options[:url_normalizer]
+      @url_normalizer = options[:url_normalizer]
       DEFAULT_OPTIONS.merge(options).tap do |merged|
         @healthcheck_path = merged[:healthcheck_path]
-        @scheme = merged[:scheme]
         @resurrect_delay = merged[:resurrect_delay]
-        @auth = merged[:auth]
         @sniffing = merged[:sniffing]
         @sniffer_delay = merged[:sniffer_delay]
-      end
-
-      # Override the scheme if one is explicitly set in urls
-      if initial_urls.any? {|u| u.scheme == 'https'} && @scheme == 'http'
-        raise ArgumentError, "HTTP was set as scheme, but an HTTPS URL was passed in!"
       end
 
       # Used for all concurrent operations in this class
@@ -62,9 +57,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # Holds metadata about all URLs
       @url_info = {}
       @stopping = false
-      
-      update_urls(initial_urls)
-      
+    end
+    
+    def start
+      update_urls(@initial_urls)
       start_resurrectionist
       start_sniffer if @sniffing
     end
@@ -204,7 +200,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         if matches
           host = matches[1].empty? ? matches[2] : matches[1]
           port = matches[3]
-          LogStash::Util::SafeURI.new("#{host}:#{port}")
+          ::LogStash::Util::SafeURI.new("#{host}:#{port}")
         end
       end.compact
     end
@@ -228,26 +224,25 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def healthcheck!
       # Try to keep locking granularity low such that we don't affect IO...
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
-        safe_url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
         begin
           logger.info("Running health check to see if an Elasticsearch connection is working",
-                      url: safe_url, healthcheck_path: @healthcheck_path)
-          response = perform_request_to_url(url, "HEAD", @healthcheck_path)
+                      url: url, healthcheck_path: healthcheck_path)
+          response = perform_request_to_url(url, :head, healthcheck_path)
           # If no exception was raised it must have succeeded!
-          logger.warn("Restored connection to ES instance", :url => safe_url)
+          logger.warn("Restored connection to ES instance", :url => url.sanitized)
           @state_mutex.synchronize { meta[:state] = :alive }
         rescue HostUnreachableError, BadResponseCodeError => e
-          logger.warn("Attempted to resurrect connection to dead ES instance, but got an error.", url: safe_url, error_type: e.class, error: e.message)
+          logger.warn("Attempted to resurrect connection to dead ES instance, but got an error.", url: url.sanitized, error_type: e.class, error: e.message)
         end
       end
     end
 
     def stop_resurrectionist
-      @resurrectionist.join
+      @resurrectionist.join if @resurrectionist
     end
 
     def resurrectionist_alive?
-      @resurrectionist.alive?
+      @resurrectionist ? @resurrectionist.alive? : nil
     end
 
     def perform_request(method, path, params={}, body=nil)
@@ -270,18 +265,11 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def normalize_url(uri)
-      raise ArgumentError, "Only URI/SafeURI objects may be passed in!" unless uri.is_a?(URI) || uri.is_a?(LogStash::Util::SafeURI)
-      uri = uri.clone
-
-      # Set credentials if need be
-      if @auth && !uri.user
-        uri.user ||= @auth[:user]
-        uri.password ||= @auth[:password]
+      u = @url_normalizer.call(uri)
+      if !u.is_a?(::LogStash::Util::SafeURI)
+        raise "URL Normalizer returned a '#{u.class}' rather than a SafeURI! This shouldn't happen!"
       end
-
-      uri.scheme = @scheme
-
-      uri
+      u
     end
 
     def update_urls(new_urls)
@@ -313,7 +301,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
       if state_changes[:removed].size > 0 || state_changes[:added].size > 0
         if logger.info?
-          logger.info("Elasticsearch pool URLs updated", :changes => safe_state_changes(state_changes))
+          logger.info("Elasticsearch pool URLs updated", :changes => state_changes)
         end
       end
       
@@ -324,14 +312,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       healthcheck! 
     end
     
-    def safe_state_changes(state_changes)
-      state_changes.reduce({}) do |acc, kv|
-        k,v = kv
-        acc[k] = v.map(&LogStash::Outputs::ElasticSearch::SafeURL.method(:without_credentials)).map(&:to_s)
-        acc
-      end
-    end
-
     def size
       @state_mutex.synchronize { @url_info.size }
     end
@@ -378,10 +358,9 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         meta = @url_info[url]
         # In case a sniff happened removing the metadata just before there's nothing to mark
         # This is an extreme edge case, but it can happen!
-        return unless meta 
-        safe_url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
-        logger.warn("Marking url as dead.", :reason => error.message, :url => safe_url,
-                    :error_message => error.message, :error_class => error.class.name)
+        return unless meta
+        logger.warn("Marking url as dead. Last error: [#{error.class}] #{error.message}",
+                    :url => url, :error_message => error.message, :error_class => error.class.name)
         meta[:state] = :dead
         meta[:last_error] = error
         meta[:last_errored_at] = Time.now
