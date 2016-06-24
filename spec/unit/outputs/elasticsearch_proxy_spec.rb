@@ -42,6 +42,16 @@ describe "Proxy option" do
         end
       end
     end
+
+    context "when not specified" do
+      let(:proxy) { nil }
+      
+      it "should not send the proxy option to manticore" do
+        expect(::Manticore::Client).to have_received(:new) do |options|
+          expect(options).not_to include(:proxy)
+        end
+      end
+    end
   end
 
   describe "invalid configs" do
