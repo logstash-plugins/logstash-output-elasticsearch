@@ -206,20 +206,31 @@ module LogStash; module Outputs; class ElasticSearch;
 
     # Build a bulk item for an elasticsearch update action
     def update_action_builder(args, source)
+      # We mutate the args, this makes things sane so the caller is not surprised
+      args = args.clone 
       if args[:_script]
         # Use the event as a hash from your script with variable name defined
         # by script_var_name (default: "event")
         # Ex: event["@timestamp"]
         source_orig = source
-        source = { 'script' => {'params' => { @options[:script_var_name] => source_orig }} }
-        if @options[:scripted_upsert]
-          source['scripted_upsert'] = true
+
+        source = {}
+
+        # It is CRITICAL that this section be the first one used to update source
+        # ES 1.7.5 has a bug where the key order of the JSON matters.
+        # Luckily ruby hashes are ordered. See more here: https://github.com/elastic/elasticsearch/issues/19103
+        
+        if @options[:scripted_upsert]          
           source['upsert'] = {}
         elsif @options[:doc_as_upsert]
           source['upsert'] = source_orig
         else
           source['upsert'] = args.delete(:_upsert) if args[:_upsert]
         end
+
+        source['scripted_upsert'] = true  if @options[:scripted_upsert]
+        source['script'] = {}
+        
         case @options[:script_type]
         when 'indexed'
           source['script']['id'] = args.delete(:_script)
@@ -229,6 +240,8 @@ module LogStash; module Outputs; class ElasticSearch;
           source['script']['inline'] = args.delete(:_script)
         end
         source['script']['lang'] = @options[:script_lang] if @options[:script_lang] != ''
+
+        source['script']['params'] = { @options[:script_var_name] => source_orig }
       else
         source = { 'doc' => source }
         if @options[:doc_as_upsert]
