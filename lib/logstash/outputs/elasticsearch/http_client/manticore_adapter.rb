@@ -34,7 +34,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       params[:body] = body if body
       url_and_path = (url + path).to_s # Convert URI object to string
 
-
       resp = @manticore.send(method.downcase, url_and_path, params)
 
       # Manticore returns lazy responses by default

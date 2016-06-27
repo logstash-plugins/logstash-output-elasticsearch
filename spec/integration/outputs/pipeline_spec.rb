@@ -1,6 +1,6 @@
 require_relative "../../../spec/es_spec_helper"
 
-describe "Ingest pipeline execution behavior", :integration => true, :version_5x => true do
+describe "Ingest pipeline execution behavior", :integration_5x => true do
   subject! do
     require "logstash/outputs/elasticsearch"
     settings = {
