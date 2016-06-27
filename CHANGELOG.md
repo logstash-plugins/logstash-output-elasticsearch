@@ -1,5 +1,4 @@
 ## 4.1.1
-
 - Fix bug where setting credentials would cause fatal errors. See https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/441
 
 ## 4.1.0

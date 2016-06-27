@@ -18,7 +18,7 @@ setup_es() {
 
 start_es() {
   es_args=$@
-  elasticsearch/bin/elasticsearch $es_args > /tmp/elasticsearch.log &
+  elasticsearch/bin/elasticsearch $es_args > /tmp/elasticsearch.log 2>/dev/null &
   count=120
   echo "Waiting for elasticsearch to respond..."
   while ! curl --silent localhost:9200 && [[ $count -ne 0 ]]; do
@@ -36,10 +36,14 @@ else
   if [[ "$ES_VERSION" == 5.* ]]; then
     setup_es https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/$ES_VERSION/elasticsearch-$ES_VERSION.tar.gz
     start_es -Ees.script.inline=true -Ees.script.indexed=true -Ees.script.file=true
-    bundle exec rspec -fd spec --tag integration --tag version_5x
-  else
+    bundle exec rspec -fd spec --tag integration --tag version_5x --tag integration_2x_plus
+  elif [[ "$ES_VERSION" == 2.* ]]; then
     setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
     start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
     bundle exec rspec -fd spec --tag integration --tag ~version_5x
+  else
+    setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
+    start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
+    bundle exec rspec -fd spec --tag integration --tag ~version_5x --tag ~version_2x_plus
   fi
 fi
