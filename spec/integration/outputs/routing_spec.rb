@@ -12,7 +12,7 @@ shared_examples "a routing indexer" do
     before do
       subject.register
       event_count.times do
-        subject.multi_receive([LogStash::Event.new("message" => "Hello World!", "type" => type)])
+        subject.multi_receive([LogStash::Event.new("message" => "test", "type" => type)])
       end
     end
 
@@ -26,6 +26,7 @@ shared_examples "a routing indexer" do
       # Wait until all events are available.
       Stud::try(10.times) do
         data = ""
+
         response = ftw.get!("#{index_url}/_count?q=*&routing=#{routing}")
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)

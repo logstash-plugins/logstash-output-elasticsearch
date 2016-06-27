@@ -67,7 +67,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # - delete: deletes a document by id (An id is required for this action)
   # - create: indexes a document, fails if a document by that id already exists in the index.
   # - update: updates a document by id. Update has a special case where you can upsert -- update a
-  #   document if not already present. See the `upsert` option
+  #   document if not already present. See the `upsert` option. NOTE: This does not work and is not supported
+  #   in Elasticsearch 1.x. Please upgrade to ES 2.x or greater to use this feature with Logstash!
   # - A sprintf style string to change the action based on the content of the event. The value `%{[foo]}`
   #   would use the foo field for the action
   #
