@@ -177,8 +177,7 @@ module LogStash; module Outputs; class ElasticSearch;
         "Attempted to send a bulk request to Elasticsearch configured at '#{@client.client_options[:hosts]}',"+
           " but Elasticsearch appears to be unreachable or down!",
         :error_message => e.message,
-        :class => e.class.name,
-        :client_config => @client.client_options,
+        :class => e.class.name
       )
       @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
 
@@ -193,8 +192,7 @@ module LogStash; module Outputs; class ElasticSearch;
           "the configuration provided?",
         :error_message => e.message,
         :error_class => e.class.name,
-        :backtrace => e.backtrace,
-        :client_config => @client.client_options,
+        :backtrace => e.backtrace
       )
 
       @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
