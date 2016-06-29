@@ -1,3 +1,9 @@
+## 2.7.1
+ - Fix spec suite argument passing and other minor bugs
+ - Show test failures in CI
+ - Omit extraneous debug information in error messages
+ - Allow URI paths to work correctly when no 'path' option set
+
 ## 2.7.0
  - Add `pipeline` configuration option for setting an ingest pipeline to run upon indexing
 
