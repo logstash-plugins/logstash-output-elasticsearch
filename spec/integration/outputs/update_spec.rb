@@ -1,6 +1,7 @@
 require_relative "../../../spec/es_spec_helper"
 
-describe "Update actions", :integration => true do
+describe "Update actions", :integration => true, :version_2x_plus => true do
+
   require "logstash/outputs/elasticsearch"
   require "elasticsearch"
 

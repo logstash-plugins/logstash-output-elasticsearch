@@ -12,7 +12,7 @@ shared_examples "a routing indexer" do
     before do
       subject.register
       event_count.times do
-        subject.receive(LogStash::Event.new("message" => "Hello World!", "type" => type))
+        subject.receive(LogStash::Event.new("message" => "test", "type" => type))
       end
     end
 

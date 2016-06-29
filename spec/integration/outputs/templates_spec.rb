@@ -73,9 +73,7 @@ describe "index template expected behavior", :integration => true do
   end
 
   it "make [geoip][location] a geo_point" do
-    results = @es.search(:body => { "query" => { "bool" => { "must" => { "match_all" => {} }, "filter" => { "geo_distance" => { "distance" => "1000km", "geoip.location" => { "lat" => 0.5, "lon" => 0.5 } } } } } })
-    insist { results["hits"]["total"] } == 1
-    insist { results["hits"]["hits"][0]["_source"]["geoip"]["location"] } == [ 0.0, 0.0 ]
+    expect(@es.indices.get_template(name: "logstash")["logstash"]["mappings"]["_default_"]["properties"]["geoip"]["properties"]["location"]["type"]).to eq("geo_point")
   end
 
   it "aggregate .raw results correctly " do
