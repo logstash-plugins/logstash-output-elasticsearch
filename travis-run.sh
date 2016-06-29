@@ -1,6 +1,13 @@
 #!/bin/bash
 set -ex
 
+function finish {
+  last_result=$?
+  set +e
+  [[ $last_result -ne 0 ]] && cat /tmp/elasticsearch.log
+}
+trap finish EXIT
+
 setup_es() {
   download_url=$1
   curl -sL $download_url > elasticsearch.tar.gz
@@ -10,10 +17,17 @@ setup_es() {
 }
 
 start_es() {
-  es_args=$1
-  elasticsearch/bin/elasticsearch $es_args > /tmp/elasticsearch.log &
-  sleep 10
-  curl http://localhost:9200 && echo "ES is up!" || cat /tmp/elasticsearch.log
+  es_args=$@
+  elasticsearch/bin/elasticsearch $es_args > /tmp/elasticsearch.log 2>/dev/null &
+  count=120
+  echo "Waiting for elasticsearch to respond..."
+  while ! curl --silent localhost:9200 && [[ $count -ne 0 ]]; do
+    count=$(( $count - 1 ))
+    [[ $count -eq 0 ]] && return 1
+    sleep 1
+  done
+  echo "Elasticsearch is Up !"
+  return 0
 }
 
 if [[ "$INTEGRATION" != "true" ]]; then
@@ -22,10 +36,14 @@ else
   if [[ "$ES_VERSION" == 5.* ]]; then
     setup_es https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/$ES_VERSION/elasticsearch-$ES_VERSION.tar.gz
     start_es -Ees.script.inline=true -Ees.script.indexed=true -Ees.script.file=true
-    bundle exec rspec -fd spec --tag integration --tag version_5x
-  else
+    bundle exec rspec -fd spec --tag integration --tag version_5x --tag integration_2x_plus
+  elif [[ "$ES_VERSION" == 2.* ]]; then
     setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
     start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
     bundle exec rspec -fd spec --tag integration --tag ~version_5x
+  else
+    setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
+    start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
+    bundle exec rspec -fd spec --tag integration --tag ~version_5x --tag ~version_2x_plus
   fi
 fi
