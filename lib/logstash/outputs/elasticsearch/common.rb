@@ -112,17 +112,18 @@ module LogStash; module Outputs; class ElasticSearch;
       actions_to_retry = []
       bulk_response["items"].each_with_index do |response,idx|
         action_type, action_props = response.first
+
         status = action_props["status"]
-        error  = action_props["error"]
+        failure  = action_props["error"]
         action = actions[idx]
 
         if SUCCESS_CODES.include?(status)
           next
         elsif RETRYABLE_CODES.include?(status)
-          @logger.info "retrying failed action with response code: #{status} (#{error})"
+          @logger.info "retrying failed action with response code: #{status} (#{failure})"
           actions_to_retry << action
-        else
-          @logger.warn "Failed action. ", status: status, action: action, response: response
+        elsif !failure_type_logging_whitelist.include?(failure["type"])
+          @logger.warn "Failed action.", status: status, action: action, response: response
         end
       end
 

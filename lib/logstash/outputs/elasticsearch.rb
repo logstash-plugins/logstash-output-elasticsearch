@@ -133,6 +133,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # a timeout occurs, the request will be retried.
   config :timeout, :validate => :number
 
+  # Set the Elasticsearch errors in the whitelist that you don't want to log. 
+  # A useful example is when you want to skip all 409 errors
+  # which are `document_already_exists_exception`.
+  config :failure_type_logging_whitelist, :validate => :array, :default => []
+
   # While the output tries to reuse connections efficiently we have a maximum.
   # This sets the maximum number of open connections the output will create.
   # Setting this too low may mean frequently closing / opening connections
