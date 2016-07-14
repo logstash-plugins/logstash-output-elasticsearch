@@ -1,3 +1,6 @@
+## 4.1.3
+  - Relax constraint on logstash-core-plugin-api to >= 1.60 <= 2.99
+
 ## 4.1.2
 
 - Added a configuration called failure_type_logging_whitelist which takes a list of strings, that are error types from elasticsearch, so we prevent logging WARN if elasticsearch fails with that action. See https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/423
