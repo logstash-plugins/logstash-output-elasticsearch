@@ -30,6 +30,11 @@ module LogStash; module Outputs; class ElasticSearch;
       template_put(name, template)
     end
 
+    def get_version
+      url, response = @pool.get("")
+      LogStash::Json.load(response.body)["version"]
+    end
+
     def bulk(actions)
       @action_count ||= 0
       @action_count += actions.size
