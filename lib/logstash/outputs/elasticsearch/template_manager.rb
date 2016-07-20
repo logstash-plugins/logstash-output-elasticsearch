@@ -4,7 +4,7 @@ module LogStash; module Outputs; class ElasticSearch
     def self.install_template(plugin)
       return unless plugin.manage_template
       plugin.logger.info("Using mapping template from", :path => plugin.template)
-      template = get_template(plugin.template)
+      template = get_template(plugin.template, get_es_major_version(plugin.client))
       plugin.logger.info("Attempting to install template", :manage_template => template)
       install(plugin.client, plugin.template_name, template, plugin.template_overwrite)
     rescue => e
@@ -12,9 +12,16 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     private
+    def self.get_es_version(client)
+      client.get_version
+    end
 
-    def self.get_template(path)
-      template_path = path || default_template_path
+    def self.get_es_major_version(client)
+      get_es_version(client)["number"][0]
+    end
+
+    def self.get_template(path, es_major_version)
+      template_path = path || default_template_path(es_major_version)
       read_template_file(template_path)
     end
 
@@ -22,8 +29,9 @@ module LogStash; module Outputs; class ElasticSearch
       client.template_install(template_name, template, template_overwrite)
     end
 
-    def self.default_template_path
-      ::File.expand_path('elasticsearch-template.json', ::File.dirname(__FILE__))
+    def self.default_template_path(es_major_version)
+      default_template_name = "elasticsearch-template-es#{es_major_version}x.json"
+      ::File.expand_path(default_template_name, ::File.dirname(__FILE__))
     end
 
     def self.read_template_file(template_path)
