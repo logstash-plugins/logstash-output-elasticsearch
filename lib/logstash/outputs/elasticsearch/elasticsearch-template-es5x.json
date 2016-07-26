@@ -15,19 +15,7 @@
             "fielddata" : { "format" : "disabled" }
           }
         }
-      }, {
-        "string_fields" : {
-          "match" : "*",
-          "match_mapping_type" : "string",
-          "mapping" : {
-            "type" : "string", "index" : "analyzed", "omit_norms" : true,
-            "fielddata" : { "format" : "disabled" },
-            "fields" : {
-              "raw" : {"type": "string", "index" : "not_analyzed", "ignore_above" : 256}
-            }
-          }
-        }
-      } ],
+      }],
       "properties" : {
         "@timestamp": { "type": "date" },
         "@version": { "type": "string", "index": "not_analyzed" },
