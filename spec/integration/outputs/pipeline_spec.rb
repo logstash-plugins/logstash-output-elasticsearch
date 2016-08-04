@@ -19,7 +19,7 @@ describe "Ingest pipeline execution behavior", :integration => true, :version_5x
         {
           "grok": {
             "field": "message",
-            "pattern": "%{COMBINEDAPACHELOG}"
+            "patterns": ["%{COMBINEDAPACHELOG}"]
           }
         }
       ]

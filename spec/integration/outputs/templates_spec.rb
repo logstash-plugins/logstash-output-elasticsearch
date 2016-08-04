@@ -59,18 +59,18 @@ describe "index template expected behavior", :integration => true do
     reject { values }.include?(1)
   end
 
-  it "does not create .raw field for the message field" do
-    results = @es.search(:q => "message.raw:\"sample message here\"")
+  it "does not create .keyword field for the message field" do
+    results = @es.search(:q => "message.keyword:\"sample message here\"")
     insist { results["hits"]["total"] } == 0
   end
 
-  it "creates .raw field from any string field which is not_analyzed" do
-    results = @es.search(:q => "country.raw:\"us\"")
+  it "creates .keyword field from any string field which is not_analyzed" do
+    results = @es.search(:q => "country.keyword:\"us\"")
     insist { results["hits"]["total"] } == 1
     insist { results["hits"]["hits"][0]["_source"]["country"] } == "us"
 
     # partial or terms should not work.
-    results = @es.search(:q => "country.raw:\"u\"")
+    results = @es.search(:q => "country.keyword:\"u\"")
     insist { results["hits"]["total"] } == 0
   end
 
@@ -78,8 +78,8 @@ describe "index template expected behavior", :integration => true do
     expect(@es.indices.get_template(name: "logstash")["logstash"]["mappings"]["_default_"]["properties"]["geoip"]["properties"]["location"]["type"]).to eq("geo_point")
   end
 
-  it "aggregate .raw results correctly " do
-    results = @es.search(:body => { "aggregations" => { "my_agg" => { "terms" => { "field" => "country.raw" } } } })["aggregations"]["my_agg"]
+  it "aggregate .keyword results correctly " do
+    results = @es.search(:body => { "aggregations" => { "my_agg" => { "terms" => { "field" => "country.keyword" } } } })["aggregations"]["my_agg"]
     terms = results["buckets"].collect { |b| b["key"] }
 
     insist { terms }.include?("us")

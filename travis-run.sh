@@ -35,7 +35,7 @@ if [[ "$INTEGRATION" != "true" ]]; then
 else
   if [[ "$ES_VERSION" == 5.* ]]; then
     setup_es https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/$ES_VERSION/elasticsearch-$ES_VERSION.tar.gz
-    start_es -Ees.script.inline=true -Ees.script.indexed=true -Ees.script.file=true
+    start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
     bundle exec rspec -fd spec --tag integration --tag version_5x --tag integration_2x_plus
   elif [[ "$ES_VERSION" == 2.* ]]; then
     setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz

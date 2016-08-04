@@ -3,9 +3,9 @@ sudo: false
 jdk: oraclejdk8
 env:
 - INTEGRATION=false
-- INTEGRATION=true ES_VERSION=2.2.0
 - INTEGRATION=true ES_VERSION=1.7.5
-- INTEGRATION=true ES_VERSION=5.0.0-alpha1
+- INTEGRATION=true ES_VERSION=2.3.4
+- INTEGRATION=true ES_VERSION=5.0.0-alpha4
 language: ruby
 cache: bundler
 rvm:
