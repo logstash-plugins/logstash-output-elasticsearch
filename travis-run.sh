@@ -36,14 +36,14 @@ else
   if [[ "$ES_VERSION" == 5.* ]]; then
     setup_es https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/$ES_VERSION/elasticsearch-$ES_VERSION.tar.gz
     start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
-    bundle exec rspec -fd spec --tag integration --tag --tag ~version:less_than_5x
+    bundle exec rspec -fd spec --tag integration --tag version:greater_than_5x --tag ~version:less_than_5x
   elif [[ "$ES_VERSION" == 2.* ]]; then
     setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
     start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
-    bundle exec rspec -fd spec --tag integration --tag --tag ~version:greater_than_5x
+    bundle exec rspec -fd spec --tag integration --tag version:less_than_5x --tag ~version:greater_than_5x
   else
     setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
     start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
-    bundle exec rspec -fd spec --tag integration --tag ~greater_than_2x
+    bundle exec rspec -fd spec --tag integration --tag ~version:greater_than_2x
   fi
 fi
