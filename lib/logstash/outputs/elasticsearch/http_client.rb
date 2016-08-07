@@ -211,6 +211,8 @@ module LogStash; module Outputs; class ElasticSearch;
 
     # Build a bulk item for an elasticsearch update action
     def update_action_builder(args, source)
+      return [args, source] if @options[:skip_update_action_builder]
+
       if args[:_script]
         # Use the event as a hash from your script with variable name defined
         # by script_var_name (default: "event")

@@ -161,6 +161,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # to see if they have come back to life
   config :resurrect_delay, :validate => :number, :default => 5
 
+  # Whether to skip update_action_builder and pass event content as is (useful when 
+  # input is already in es_bulk format) or build the action (doc => event, or scripted)
+  config :skip_update_action_builder, :validate => :boolean, :default => false
+
   def build_client
     @client = ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
   end
