@@ -1,6 +1,6 @@
 require_relative "../../../spec/es_spec_helper"
 
-describe "Update actions", :integration => true, :version => 'greater_than_2x' do
+describe "Update actions", :integration => true, :version_greater_than_2x => true do
   require "logstash/outputs/elasticsearch"
 
   def get_es_output( options={} )
