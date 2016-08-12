@@ -20,6 +20,19 @@ require "uri" # for escaping user input
 #
 # You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
 #
+# ==== Template management for Elasticsearch 5.x
+# Index template for this version (Logstash 5.0) has been changed to reflect Elasticsearch's mapping changes in version 5.0. 
+# Most importantly, the subfield for string multi-fields has changed from `.raw` to `.keyword` to match ES default 
+# behavior.
+#
+# ** Users installing ES 5.x and LS 5.x **
+# This change will not affect you and you will continue to use the ES defaults.
+#
+# ** Users upgrading from LS 2.x to LS 5.x with ES 5.x **
+# LS will not force upgrade the template, if `logstash` template already exists. This means you will still use 
+# `.raw` for sub-fields coming from 2.x. If you choose to use the new template, you will have to reindex your data after 
+# the new template is installed.
+#
 # ==== Retry Policy
 #
 # The retry policy has changed significantly in the 2.2.0 release.
