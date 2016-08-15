@@ -155,6 +155,10 @@ module LogStash; module Outputs; class ElasticSearch;
         params[:_retry_on_conflict] = @retry_on_conflict
       end
 
+      if @remove_empty_action_params
+        params = params.delete_if { |k,v| v.nil? or (v.is_a? String and v.empty?) }
+      end
+
       params
     end
 
