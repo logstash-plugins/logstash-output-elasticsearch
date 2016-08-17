@@ -1,7 +1,7 @@
 require_relative "../../../spec/es_spec_helper"
 
 # This file is a copy of template test for 2.x. We can DRY this up later.
-describe "index template expected behavior for 5.x", :integration => true, :version_greater_than_5x => true do
+describe "index template expected behavior for 5.x", :integration => true, :version_greater_than_equal_to_5x => true do
   subject! do
     require "logstash/outputs/elasticsearch"
     settings = {

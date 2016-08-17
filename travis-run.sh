@@ -37,16 +37,16 @@ else
     setup_es https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/$ES_VERSION/elasticsearch-$ES_VERSION.tar.gz
     start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
     # Run all tests which are for versions > 5 but don't run ones tagged < 5.x. Include ingest, new template
-    bundle exec rspec -fd spec --tag integration --tag version_greater_than_5x --tag ~version_less_than_5x
+    bundle exec rspec -fd spec --tag integration --tag version_greater_than_equal_to_5x --tag ~version_less_than_5x
   elif [[ "$ES_VERSION" == 2.* ]]; then
     setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
     start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
     # Run all tests which are for versions < 5 but don't run ones tagged 5.x and above. Skip ingest, new template
-    bundle exec rspec -fd spec --tag integration --tag version_less_than_5x --tag ~version_greater_than_5x
+    bundle exec rspec -fd spec --tag integration --tag version_less_than_5x --tag ~version_greater_than_equal_to_5x
   else
     setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
     start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
     # Still have to support ES versions < 2.x so run tests for those.
-    bundle exec rspec -fd spec --tag integration --tag ~version_greater_than_5x --tag ~version_greater_than_2x
+    bundle exec rspec -fd spec --tag integration --tag ~version_greater_than_equal_to_5x --tag ~version_greater_than_equal_to_2x
   fi
 fi
