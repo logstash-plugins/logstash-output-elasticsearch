@@ -1,6 +1,7 @@
 require_relative "../../../spec/es_spec_helper"
 
-describe "index template expected behavior", :integration => true, :version_less_than_5x => true do
+# This file is a copy of template test for 2.x. We can DRY this up later.
+describe "index template expected behavior for 5.x", :integration => true, :version_greater_than_equal_to_5x => true do
   subject! do
     require "logstash/outputs/elasticsearch"
     settings = {
@@ -59,18 +60,18 @@ describe "index template expected behavior", :integration => true, :version_less
     reject { values }.include?(1)
   end
 
-  it "does not create .raw field for the message field" do
-    results = @es.search(:q => "message.raw:\"sample message here\"")
+  it "does not create .keyword field for the message field" do
+    results = @es.search(:q => "message.keyword:\"sample message here\"")
     insist { results["hits"]["total"] } == 0
   end
 
-  it "creates .raw field from any string field which is not_analyzed" do
-    results = @es.search(:q => "country.raw:\"us\"")
+  it "creates .keyword field from any string field which is not_analyzed" do
+    results = @es.search(:q => "country.keyword:\"us\"")
     insist { results["hits"]["total"] } == 1
     insist { results["hits"]["hits"][0]["_source"]["country"] } == "us"
 
     # partial or terms should not work.
-    results = @es.search(:q => "country.raw:\"u\"")
+    results = @es.search(:q => "country.keyword:\"u\"")
     insist { results["hits"]["total"] } == 0
   end
 
@@ -78,8 +79,8 @@ describe "index template expected behavior", :integration => true, :version_less
     expect(@es.indices.get_template(name: "logstash")["logstash"]["mappings"]["_default_"]["properties"]["geoip"]["properties"]["location"]["type"]).to eq("geo_point")
   end
 
-  it "aggregate .raw results correctly " do
-    results = @es.search(:body => { "aggregations" => { "my_agg" => { "terms" => { "field" => "country.raw" } } } })["aggregations"]["my_agg"]
+  it "aggregate .keyword results correctly " do
+    results = @es.search(:body => { "aggregations" => { "my_agg" => { "terms" => { "field" => "country.keyword" } } } })["aggregations"]["my_agg"]
     terms = results["buckets"].collect { |b| b["key"] }
 
     insist { terms }.include?("us")
