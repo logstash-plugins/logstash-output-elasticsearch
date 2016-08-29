@@ -177,7 +177,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # How long to wait before checking if the connection is stale before executing a request on a connection using keepalive.
   # You may want to set this lower, if you get connection errors regularly
   # Quoting the Apache commons docs (this client is based Apache Commmons):
-  # 'Defines period of inactivity in milliseconds after which persistent connections must be re-validated prior to being leased to the consumer. Non-positive value passed to this method disables connection validation. This check helps detect connections that have become stale (half-closed) while kept inactive in the pool.'
+  # 'Defines period of inactivity in milliseconds after which persistent connections must
+  # be re-validated prior to being leased to the consumer. Non-positive value passed to
+  # this method disables connection validation. This check helps detect connections that
+  # have become stale (half-closed) while kept inactive in the pool.'
   # See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/conn/PoolingHttpClientConnectionManager.html#setValidateAfterInactivity(int)[these docs for more info]
   config :validate_after_inactivity, :validate => :number, :default => 10000
 

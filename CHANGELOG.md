@@ -1,13 +1,17 @@
+## 5.1.0
+- Add check_connection_timeout parameter (default 10m)
+- Set default timeout to 60s
+
 ## 5.0.0
-- Breaking Change: Index template for 5.0 has been changed to reflect Elasticsearch's mapping changes. Most importantly, 
+- Breaking Change: Index template for 5.0 has been changed to reflect Elasticsearch's mapping changes. Most importantly,
 the subfield for string multi-fields has changed from `.raw` to `.keyword` to match ES default behavior. ([#386](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/386))
 
 **Users installing ES 5.x and LS 5.x**
 This change will not affect you and you will continue to use the ES defaults.
 
 **Users upgrading from LS 2.x to LS 5.x with ES 5.x**
-LS will not force upgrade the template, if `logstash` template already exists. This means you will still use 
-`.raw` for sub-fields coming from 2.x. If you choose to use the new template, you will have to reindex your data after 
+LS will not force upgrade the template, if `logstash` template already exists. This means you will still use
+`.raw` for sub-fields coming from 2.x. If you choose to use the new template, you will have to reindex your data after
 the new template is installed.
 
 ## 4.1.3
