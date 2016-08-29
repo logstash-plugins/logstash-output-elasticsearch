@@ -279,4 +279,20 @@ describe "outputs/elasticsearch" do
       end
     end
   end
+
+  describe "stale connection check" do
+    let(:validate_after_inactivity) { 123 }
+    subject(:eso) { LogStash::Outputs::ElasticSearch.new("validate_after_inactivity" => validate_after_inactivity) }
+
+    before do
+      allow(::Manticore::Client).to receive(:new).with(any_args)
+      subject.register
+    end
+
+    it "should set the correct http client option for 'validate_after_inactivity" do
+      expect(::Manticore::Client).to have_received(:new) do |options|
+        expect(options[:check_connection_timeout]).to eq(validate_after_inactivity)
+      end
+    end
+  end
 end

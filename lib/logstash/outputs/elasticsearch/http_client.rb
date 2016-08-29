@@ -99,6 +99,8 @@ module LogStash; module Outputs; class ElasticSearch;
 
       adapter_options[:proxy] = client_settings[:proxy] if client_settings[:proxy]
 
+      adapter_options[:check_connection_timeout] = client_settings[:check_connection_timeout] if client_settings[:check_connection_timeout]
+
       # Having this explicitly set to nil is an error
       if client_settings[:pool_max]
         adapter_options[:pool_max] = client_settings[:pool_max]

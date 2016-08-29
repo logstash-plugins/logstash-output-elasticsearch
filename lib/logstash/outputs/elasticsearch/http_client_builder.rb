@@ -4,6 +4,7 @@ module LogStash; module Outputs; class ElasticSearch;
       client_settings = {
         :pool_max => params["pool_max"],
         :pool_max_per_route => params["pool_max_per_route"],
+        :check_connection_timeout => params["validate_after_inactivity"]
       }
 
       common_options = {
