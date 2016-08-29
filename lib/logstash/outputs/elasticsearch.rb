@@ -144,7 +144,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Set the timeout, in seconds, for network operations and requests sent Elasticsearch. If
   # a timeout occurs, the request will be retried.
-  config :timeout, :validate => :number
+  config :timeout, :validate => :number, :default => 60
 
   # Set the Elasticsearch errors in the whitelist that you don't want to log. 
   # A useful example is when you want to skip all 409 errors
