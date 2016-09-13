@@ -8,6 +8,10 @@ module ESHelper
     print default_opts
     Elasticsearch::Client.new(:hosts => [ default_opts ])
   end
+  
+  def get_host_port
+    "#{localhost}:#{9200}"
+  end  
 end
 
 RSpec.configure do |config|

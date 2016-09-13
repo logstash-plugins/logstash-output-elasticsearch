@@ -2,7 +2,7 @@
 sudo: false
 jdk: oraclejdk8
 env:
-- ES_SECURE=true ES_VERSION=5.0.0-alpha5
+- ES_SECURE=true INTEGRATION=true ES_VERSION=5.0.0-alpha5
 language: ruby
 cache: bundler
 rvm:
