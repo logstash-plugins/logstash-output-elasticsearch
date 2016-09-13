@@ -47,6 +47,7 @@ install_shield() {
     elasticsearch/bin/elasticsearch-plugin install x-pack
 }
 
+# Setup roles
 setup_shield() {
     echo "Creating Logstash role"
     curl -s -POST http://${ES_USER}:${ES_PASSWORD}@localhost:9200/_xpack/security/role/logstash -d '{
