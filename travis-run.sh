@@ -71,7 +71,7 @@ setup_shield() {
 
 if [[ "$INTEGRATION" != "true" ]]; then
   bundle exec rspec -fd spec
-elif [[ "$ES_SECURE" == "true"]]; then
+elif [[ "$ES_SECURE" == "true" ]]; then
   setup_es https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/$ES_VERSION/elasticsearch-$ES_VERSION.tar.gz
   install_shield
   start_es
