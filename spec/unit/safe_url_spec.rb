@@ -2,6 +2,8 @@ require "logstash/outputs/elasticsearch/safe_url"
 require "uri"
 
 describe ::LogStash::Outputs::ElasticSearch::SafeURL do
+  let(:placeholder) { ::LogStash::Outputs::ElasticSearch::SafeURL::PLACEHOLDER }
+
   context "#without_credentials" do
     subject { described_class.without_credentials(url) }
 
@@ -27,16 +29,16 @@ describe ::LogStash::Outputs::ElasticSearch::SafeURL do
       it_behaves_like "returning a new object"
       
       it "should hide the user" do
-        expect(subject.user).to be == "~hidden~"
+        expect(subject.user).to be == placeholder
       end
 
       it "should hide the password" do
-        expect(subject.user).to be == "~hidden~"
+        expect(subject.user).to be == placeholder
       end
 
       context "#to_s" do
         it "should not contain credentials" do
-          expect(subject.to_s).to be == "https://~hidden~:~hidden~@example.com/"
+          expect(subject.to_s).to be == "https://#{placeholder}:#{placeholder}@example.com/"
         end
       end
     end
