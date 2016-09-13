@@ -6,12 +6,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
       def initialize(response_code, url, body)
         @response_code = response_code
-        @url = url
+        @url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
         @body = body
       end
 
       def message
-        "Got response code '#{response_code}' contact Elasticsrearch at URL '#{@url}'"
+        "Got response code '#{response_code}' contact Elasticsearch at URL '#{@url}'"
       end
     end
     class HostUnreachableError < Error;
@@ -19,7 +19,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
       def initialize(original_error, url)
         @original_error = original_error
-        @url = url
+        @url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
       end
 
       def message
