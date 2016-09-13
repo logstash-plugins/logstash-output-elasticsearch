@@ -1,3 +1,6 @@
+## 5.1.1
+- Hide user and password from the URL logged during sniffing process.
+
 ## 5.1.0
 - Add check_connection_timeout parameter (default 10m)
 - Set default timeout to 60s
