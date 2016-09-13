@@ -31,7 +31,6 @@ Gem::Specification.new do |s|
   end
 
   s.add_development_dependency 'logstash-devutils'
-  s.add_development_dependency 'longshoreman'
   s.add_development_dependency 'flores'
   # Still used in some specs, we should remove this ASAP
   s.add_development_dependency 'elasticsearch'
