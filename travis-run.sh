@@ -25,7 +25,7 @@ start_es() {
   count=120
   echo "Waiting for elasticsearch to respond..."
   local es_command=curl --silent localhost:9200
-  if [[ "$ES_SECURE" == "true" ]]; then
+  if [[ $ES_SECURE ]]; then
       es_command=curl -u$ES_USER:$ES_PASSWORD --silent localhost:9200
   fi
   while ! $es_command && [[ $count -ne 0 ]]; do
@@ -71,7 +71,7 @@ setup_shield() {
 
 if [[ "$INTEGRATION" != "true" ]]; then
   bundle exec rspec -fd spec
-elif [[ "$ES_SECURE" == "true" ]]; then
+elif [[ $ES_SECURE ]]; then
   setup_es https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/$ES_VERSION/elasticsearch-$ES_VERSION.tar.gz
   install_shield
   start_es
