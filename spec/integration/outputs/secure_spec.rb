@@ -29,7 +29,7 @@ describe "when connected to secure ES using basic auth", :elasticsearch_secure =
     insist { results["hits"]["hits"][0]["_source"]["message"] } == "sample message here"
   end
   
-  it "can upload the right template"
+  it "can upload the right template" do
     template = @es.indices.get_template(name: 'logstash')
     insist { template["template"]} == "logstash-*"
     subject.multi_receive([
