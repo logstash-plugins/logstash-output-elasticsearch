@@ -1,6 +1,6 @@
 {
   "template" : "logstash-*",
-  "version" : 20160915,
+  "version" : 50001,
   "settings" : {
     "index.refresh_interval" : "5s"
   },
