@@ -48,7 +48,7 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
       end
     end
     context "elasticsearch 5.x" do
-      it "chooses the 2x template" do
+      it "chooses the 5x template" do
         expect(described_class.default_template_path("5")).to match(/elasticsearch-template-es5x.json/)
       end
     end
