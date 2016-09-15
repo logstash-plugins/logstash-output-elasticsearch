@@ -1,6 +1,6 @@
 require_relative "../../../spec/es_spec_helper"
 
-describe "connect using HTTP Authentication", :elasticsearch_secure => true do
+describe "when connected to secure ES using basic auth", :elasticsearch_secure => true do
   subject do
     require "logstash/outputs/elasticsearch"
     settings = {
@@ -19,7 +19,7 @@ describe "connect using HTTP Authentication", :elasticsearch_secure => true do
     @es.indices.delete(index: 'logstash-*')
   end
 
-  it "sends events to ES" do
+  it "can sends events to ES" do
     expect {
       subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
     }.to_not raise_error
@@ -28,9 +28,27 @@ describe "connect using HTTP Authentication", :elasticsearch_secure => true do
     insist { results["hits"]["total"] } == 1
     insist { results["hits"]["hits"][0]["_source"]["message"] } == "sample message here"
   end
+  
+  it "can upload the right template"
+    template = @es.indices.get_template(name: 'logstash')
+    insist { template["template"]} == "logstash-*"
+    subject.multi_receive([
+      LogStash::Event.new("message" => "sample message here"),
+      LogStash::Event.new("somevalue" => 100),
+      LogStash::Event.new("somevalue" => 10),
+      LogStash::Event.new("somevalue" => 1),
+      LogStash::Event.new("country" => "us"),
+      LogStash::Event.new("country" => "at"),
+      LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0 ] })
+    ])
+    @es.indices.refresh
+    results = @es.search(:q => "country.keyword:\"us\"")
+    insist { results["hits"]["total"] } == 1
+    insist { results["hits"]["hits"][0]["_source"]["country"] } == "us"
+  end
 end
 
-describe "role based access control", :elasticsearch_secure => true do
+describe "when role based access control is configured", :elasticsearch_secure => true do
   subject do
     require "logstash/outputs/elasticsearch"
     settings = {
@@ -51,7 +69,7 @@ describe "role based access control", :elasticsearch_secure => true do
     @es.indices.delete(index: 'beats')
   end
 
-  it "cannot send events to beats index" do
+  it "cannot send events to a beats index by default" do
     subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
     @es.indices.refresh
     results = @es.search(index: 'beats', q: '*')
