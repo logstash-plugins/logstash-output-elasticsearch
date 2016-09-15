@@ -24,9 +24,9 @@ start_es() {
   elasticsearch/bin/elasticsearch -p elasticsearch/bin/elasticsearch.pid $es_args > /tmp/elasticsearch.log 2>/dev/null &
   count=120
   echo "Waiting for elasticsearch to respond..."
-  local es_command=curl --silent localhost:9200
+  local es_command="curl --silent localhost:9200"
   if [[ $ES_SECURE ]]; then
-      es_command=curl -u$ES_USER:$ES_PASSWORD --silent localhost:9200
+      es_command="curl -u$ES_USER:$ES_PASSWORD --silent localhost:9200"
   fi
   while ! $es_command && [[ $count -ne 0 ]]; do
     count=$(( $count - 1 ))
@@ -50,8 +50,8 @@ install_shield() {
 # Setup roles
 setup_shield() {
     echo "Creating Logstash role"
-    curl -s -POST http://${ES_USER}:${ES_PASSWORD}@localhost:9200/_xpack/security/role/logstash -d '{
-      "cluster": ["manage_index_templates"],
+    curl -s -POST http://${ES_USER}:${ES_PASSWORD}@localhost:9200/_xpack/security/role/logstash_writer -d '{
+      "cluster": ["manage_index_templates", "monitor"],
       "indices": [
         {
           "names": [ "logstash-*" ],
@@ -63,7 +63,7 @@ setup_shield() {
     echo "Creating Logstash user"
     curl -s -POST http://${ES_USER}:${ES_PASSWORD}@localhost:9200/_xpack/security/user/logstash_user -d '{
       "password" : "changeme",
-      "roles" : [ "logstash" ],
+      "roles" : [ "logstash_writer" ],
       "full_name" : "logstash travis",
       "email" : "abc@example.com"
     }'
