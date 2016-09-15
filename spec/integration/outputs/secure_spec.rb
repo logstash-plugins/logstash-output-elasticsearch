@@ -30,8 +30,6 @@ describe "when connected to secure ES using basic auth", :elasticsearch_secure =
   end
   
   it "can upload the right template" do
-    template = @es.indices.get_template(name: 'logstash')
-    insist { template["template"]} == "logstash-*"
     subject.multi_receive([
       LogStash::Event.new("message" => "sample message here"),
       LogStash::Event.new("somevalue" => 100),
@@ -42,6 +40,8 @@ describe "when connected to secure ES using basic auth", :elasticsearch_secure =
       LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0 ] })
     ])
     @es.indices.refresh
+    template = @es.indices.get_template(name: 'logstash')
+    insist { template["template"]} == "logstash-*"
     results = @es.search(:q => "country.keyword:\"us\"")
     insist { results["hits"]["total"] } == 1
     insist { results["hits"]["hits"][0]["_source"]["country"] } == "us"
