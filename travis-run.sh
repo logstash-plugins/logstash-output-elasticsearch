@@ -44,7 +44,7 @@ stop_es() {
 }
 
 install_shield() {
-    elasticsearch/bin/elasticsearch-plugin install x-pack
+    elasticsearch/bin/elasticsearch-plugin install x-pack --batch
 }
 
 # Setup roles
