@@ -9,7 +9,7 @@
       "_all" : {"enabled" : true, "norms" : false},
       "dynamic_templates" : [ {
         "message_field" : {
-          "match" : "message",
+          "path_match" : "message",
           "match_mapping_type" : "string",
           "mapping" : {
             "type" : "string", "index" : "analyzed", "norms" : false,
