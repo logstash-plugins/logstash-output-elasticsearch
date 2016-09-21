@@ -8,7 +8,7 @@
       "_all" : {"enabled" : true, "omit_norms" : true},
       "dynamic_templates" : [ {
         "message_field" : {
-          "match" : "message",
+          "path_match" : "message",
           "match_mapping_type" : "string",
           "mapping" : {
             "type" : "string", "index" : "analyzed", "omit_norms" : true,
