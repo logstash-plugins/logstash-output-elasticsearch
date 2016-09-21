@@ -12,8 +12,8 @@
           "path_match" : "message",
           "match_mapping_type" : "string",
           "mapping" : {
-            "type" : "string", "index" : "analyzed", "norms" : false,
-            "fielddata" : { "format" : "disabled" }
+            "type" : "text",
+            "norms" : false
           }
         }
       }, {
