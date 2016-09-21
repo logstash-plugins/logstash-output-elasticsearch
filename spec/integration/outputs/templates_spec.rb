@@ -26,6 +26,7 @@ describe "index template expected behavior", :integration => true, :version_less
 
     subject.multi_receive([
       LogStash::Event.new("message" => "sample message here"),
+      LogStash::Event.new("somemessage" => { "message" => "sample nested message here" }),
       LogStash::Event.new("somevalue" => 100),
       LogStash::Event.new("somevalue" => 10),
       LogStash::Event.new("somevalue" => 1),
@@ -39,7 +40,7 @@ describe "index template expected behavior", :integration => true, :version_less
     # Wait or fail until everything's indexed.
     Stud::try(20.times) do
       r = @es.search
-      insist { r["hits"]["total"] } == 7
+      insist { r["hits"]["total"] } == 8
     end
   end
 
@@ -62,6 +63,11 @@ describe "index template expected behavior", :integration => true, :version_less
   it "does not create .raw field for the message field" do
     results = @es.search(:q => "message.raw:\"sample message here\"")
     insist { results["hits"]["total"] } == 0
+  end
+
+  it "creates .raw field for nested message fields" do
+    results = @es.search(:q => "somemessage.message.raw:\"sample nested message here\"")
+    insist { results["hits"]["total"] } == 1
   end
 
   it "creates .raw field from any string field which is not_analyzed" do

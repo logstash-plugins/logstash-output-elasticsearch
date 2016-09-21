@@ -27,6 +27,7 @@ describe "index template expected behavior for 5.x", :integration => true, :vers
 
     subject.multi_receive([
       LogStash::Event.new("message" => "sample message here"),
+      LogStash::Event.new("somemessage" => { "message" => "sample nested message here" }),
       LogStash::Event.new("somevalue" => 100),
       LogStash::Event.new("somevalue" => 10),
       LogStash::Event.new("somevalue" => 1),
@@ -40,7 +41,7 @@ describe "index template expected behavior for 5.x", :integration => true, :vers
     # Wait or fail until everything's indexed.
     Stud::try(20.times) do
       r = @es.search
-      insist { r["hits"]["total"] } == 7
+      insist { r["hits"]["total"] } == 8
     end
   end
 
@@ -60,9 +61,14 @@ describe "index template expected behavior for 5.x", :integration => true, :vers
     reject { values }.include?(1)
   end
 
-  it "does not create .keyword field for the message field" do
+  it "does not create .keyword field for top-level message field" do
     results = @es.search(:q => "message.keyword:\"sample message here\"")
     insist { results["hits"]["total"] } == 0
+  end
+
+  it "creates .keyword field for nested message fields" do
+    results = @es.search(:q => "somemessage.message.keyword:\"sample nested message here\"")
+    insist { results["hits"]["total"] } == 1
   end
 
   it "creates .keyword field from any string field which is not_analyzed" do
