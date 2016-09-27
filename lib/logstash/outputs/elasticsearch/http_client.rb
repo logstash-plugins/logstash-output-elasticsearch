@@ -184,7 +184,8 @@ module LogStash; module Outputs; class ElasticSearch;
       end
 
       if path && url.path && url.path != "/" && url.path != ''
-        raise LogStash::ConfigurationError, "A path '#{url.path}' has been explicitly specified in the url '#{url}', but you also specified a path of '#{path}'. This is probably a mistake, please remove one setting."
+        safe_url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
+        raise LogStash::ConfigurationError, "A path '#{url.path}' has been explicitly specified in the url '#{safe_url}', but you also specified a path of '#{path}'. This is probably a mistake, please remove one setting."
       end
 
       if path

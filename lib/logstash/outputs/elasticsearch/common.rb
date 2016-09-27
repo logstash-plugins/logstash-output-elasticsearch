@@ -208,7 +208,8 @@ module LogStash; module Outputs; class ElasticSearch;
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         if RETRYABLE_CODES.include?(e.response_code)
-          log_hash = {:code => e.response_code, :url => e.url}
+          safe_url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(e.url)
+          log_hash = {:code => e.response_code, :url => safe_url}
           log_hash[:body] = e.body if @logger.debug? # Generally this is too verbose
           @logger.error("Attempted to send a bulk request to elasticsearch but received a bad HTTP response code!", log_hash)
 
