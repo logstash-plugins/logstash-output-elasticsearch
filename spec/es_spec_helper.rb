@@ -1,4 +1,5 @@
 require "logstash/devutils/rspec/spec_helper"
+require "ftw"
 require 'elasticsearch'
 
 module ESHelper
