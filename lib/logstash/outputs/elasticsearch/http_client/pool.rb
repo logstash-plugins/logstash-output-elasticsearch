@@ -194,14 +194,16 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def resurrect_dead!
       # Try to keep locking granularity low such that we don't affect IO...
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:dead] } }.each do |url,meta|
+        safe_url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
         begin
-          @logger.info("Checking url #{url} with path #{@healthcheck_path} to see if node resurrected")
+          logger.info("Running health check to see if an Elasticsearch connection is working",
+                      url: safe_url, healthcheck_path: @healthcheck_path)
           perform_request_to_url(url, "HEAD", @healthcheck_path)
           # If no exception was raised it must have succeeded!
-          logger.warn("Resurrected connection to dead ES instance at #{url}")
+          logger.warn("Restored connection to ES instance", :url => safe_url)
           @state_mutex.synchronize { meta[:dead] = false }
         rescue HostUnreachableError => e
-          logger.debug("Attempted to resurrect connection to dead ES instance at #{url}, got an error [#{e.class}] #{e.message}")
+          logger.debug("Attempted to resurrect connection to dead ES instance, but got an error.", url: safe_url, error_type: e.class, error: e.message)
         end
       end
     end
@@ -325,8 +327,9 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         # In case a sniff happened removing the metadata just before there's nothing to mark
         # This is an extreme edge case, but it can happen!
         return unless meta 
-        logger.warn("Marking url as dead. Last error: [#{error.class}] #{error.message}",
-                    :url => url, :error_message => error.message, :error_class => error.class.name)
+        safe_url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
+        logger.warn("Marking url as dead.", :reason => error.message, :url => safe_url,
+                    :error_message => error.message, :error_class => error.class.name)
         meta[:dead] = true
         meta[:last_error] = error
         meta[:last_errored_at] = Time.now
