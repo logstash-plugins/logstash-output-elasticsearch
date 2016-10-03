@@ -1,5 +1,6 @@
 ## 5.1.2
 - Hide credentials in exceptions and log messages ([#482](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/482))
+- [internal] Remove dependency on longshoreman project
 
 ## 5.1.1
 - Hide user and password from the URL logged during sniffing process.
