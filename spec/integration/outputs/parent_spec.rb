@@ -33,7 +33,7 @@ shared_examples "a parent indexer" do
       Stud::try(10.times) do
         query = { "query" => { "has_parent" => { "type" => "#{type}_parent", "query" => { "match" => { "foo" => "bar" } } } } }
         data = ""
-        response = ftw.post!("#{index_url}/_count?q=*", :body => query.to_json)
+        response = ftw.post!("#{index_url}/_count", :body => query.to_json)
         response.read_body { |chunk| data << chunk }
         result = LogStash::Json.load(data)
         cur_count = result["count"]
