@@ -114,8 +114,8 @@ module LogStash; module Outputs; class ElasticSearch
       #  file    : "script" contains the name of script stored in elasticseach's config directory
       mod.config :script_type, :validate => ["inline", 'indexed', "file"], :default => ["inline"]
 
-      # Set the language of the used script
-      mod.config :script_lang, :validate => :string, :default => ""
+      # Set the language of the used script. If not set, this defaults to painless in ES 5.0
+      mod.config :script_lang, :validate => :string, :default => "painless"
 
       # Set variable name passed to script (scripted update)
       mod.config :script_var_name, :validate => :string, :default => "event"

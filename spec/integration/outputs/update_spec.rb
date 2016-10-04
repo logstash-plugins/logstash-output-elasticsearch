@@ -9,7 +9,8 @@ describe "Update actions", :integration => true, :version_greater_than_equal_to_
       "index" => "logstash-update",
       "template_overwrite" => true,
       "hosts" => get_host_port(),
-      "action" => "update"
+      "action" => "update",
+      "script_lang" => "groovy"
     }
     LogStash::Outputs::ElasticSearch.new(settings.merge!(options))
   end
@@ -166,6 +167,7 @@ describe "Update actions", :integration => true, :version_greater_than_equal_to_
         subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_upsert', 'scripted_upsert' => true, 'script_type' => 'file' })
         subject.register
         subject.multi_receive([LogStash::Event.new("counter" => 1)])
+        @es.indices.refresh
         r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
         insist { r["_source"]["counter"] } == 1
       end
