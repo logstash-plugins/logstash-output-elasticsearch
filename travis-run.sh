@@ -34,7 +34,7 @@ if [[ "$INTEGRATION" != "true" ]]; then
   bundle exec rspec -fd spec
 else
   if [[ "$ES_VERSION" == 5.* ]]; then
-    setup_es https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/$ES_VERSION/elasticsearch-$ES_VERSION.tar.gz
+    setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
     start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
     # Run all tests which are for versions > 5 but don't run ones tagged < 5.x. Include ingest, new template
     bundle exec rspec -fd spec --tag integration --tag version_greater_than_equal_to_5x --tag ~version_less_than_5x
