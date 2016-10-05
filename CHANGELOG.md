@@ -1,3 +1,6 @@
+## 5.2.0
+- Change default lang for scripts to be painless, inline with ES 5.0. Earlier there was no default.
+
 ## 5.1.2
 - Hide credentials in exceptions and log messages ([#482](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/482))
 - [internal] Remove dependency on longshoreman project
