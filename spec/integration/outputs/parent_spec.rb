@@ -4,7 +4,6 @@ shared_examples "a parent indexer" do
     let(:index) { 10.times.collect { rand(10).to_s }.join("") }
     let(:type) { 10.times.collect { rand(10).to_s }.join("") }
     let(:event_count) { 10000 + rand(500) }
-    let(:flush_size) { rand(200) + 1 }
     let(:parent) { "not_implemented" }
     let(:config) { "not_implemented" }
     subject { LogStash::Outputs::ElasticSearch.new(config) }
@@ -17,7 +16,7 @@ shared_examples "a parent indexer" do
       ftw.put!("#{index_url}", :body => mapping.to_json)
       pdoc = { "foo" => "bar" }
       ftw.put!("#{index_url}/#{type}_parent/test", :body => pdoc.to_json)
-      
+
       subject.register
       subject.multi_receive(event_count.times.map { LogStash::Event.new("link_to" => "test", "message" => "Hello World!", "type" => type) })
     end
@@ -49,7 +48,6 @@ describe "(http protocol) index events with static parent", :integration => true
       {
         "hosts" => get_host_port,
         "index" => index,
-        "flush_size" => flush_size,
         "parent" => parent
       }
     }
@@ -62,10 +60,8 @@ describe "(http_protocol) index events with fieldref in parent value", :integrat
       {
         "hosts" => get_host_port,
         "index" => index,
-        "flush_size" => flush_size,
         "parent" => "%{link_to}"
       }
     }
   end
 end
-

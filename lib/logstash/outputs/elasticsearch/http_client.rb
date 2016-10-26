@@ -5,6 +5,21 @@ require 'logstash/outputs/elasticsearch/http_client/pool'
 require 'logstash/outputs/elasticsearch/http_client/manticore_adapter'
 
 module LogStash; module Outputs; class ElasticSearch;
+  # This is a constant instead of a config option because
+  # there really isn't a good reason to configure it.
+  #
+  # The criteria used are:
+  # 1. We need a number that's less than 100MiB because ES
+  #    won't accept bulks larger than that.
+  # 2. It must be large enough to amortize the connection constant
+  #    across multiple requests.
+  # 3. It must be small enough that even if multiple threads hit this size
+  #    we won't use a lot of heap.
+  #
+  # We wound up agreeing that a number greater than 10 MiB and less than 100MiB
+  # made sense. We picked one on the lowish side to not use too much heap.
+  TARGET_BULK_BYTES = 20 * 1024 * 1024 # 20MiB
+
   class HttpClient
     attr_reader :client, :options, :logger, :pool, :action_count, :recv_count
     # This is here in case we use DEFAULT_OPTIONS in the future
@@ -38,9 +53,11 @@ module LogStash; module Outputs; class ElasticSearch;
     def bulk(actions)
       @action_count ||= 0
       @action_count += actions.size
-      
+
       return if actions.empty?
-      bulk_body = actions.collect do |action, args, source|
+
+
+      bulk_actions = actions.collect do |action, args, source|
         args, source = update_action_builder(args, source) if action == 'update'
 
         if source && action != 'delete'
@@ -48,13 +65,37 @@ module LogStash; module Outputs; class ElasticSearch;
         else
           next { action => args }
         end
-      end.
-      flatten.
-      reduce("") do |acc,line|
-        acc << LogStash::Json.dump(line)
-        acc << "\n"
       end
 
+      bulk_body = ""
+      bulk_responses = []
+      bulk_actions.each do |action|
+        as_json = action.is_a?(Array) ?
+                    action.map {|line| LogStash::Json.dump(line)}.join("\n") :
+                    LogStash::Json.dump(action)
+        as_json << "\n"
+
+        if (bulk_body.size + as_json.size) > TARGET_BULK_BYTES
+          bulk_responses << bulk_send(bulk_body)
+          bulk_body = as_json
+        else
+          bulk_body << as_json
+        end
+      end
+
+      bulk_responses << bulk_send(bulk_body) if bulk_body.size > 0
+
+      join_bulk_responses(bulk_responses)
+    end
+
+    def join_bulk_responses(bulk_responses)
+      {
+        "errors" => bulk_responses.any? {|r| r["errors"] == true},
+        "items" => bulk_responses.reduce([]) {|m,r| m.concat(r["items"])}
+      }
+    end
+
+    def bulk_send(bulk_body)
       # Discard the URL
       url, response = @pool.post("_bulk", nil, bulk_body)
       LogStash::Json.load(response.body)

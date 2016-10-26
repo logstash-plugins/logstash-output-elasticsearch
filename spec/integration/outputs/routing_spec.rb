@@ -4,7 +4,6 @@ shared_examples "a routing indexer" do
     let(:index) { 10.times.collect { rand(10).to_s }.join("") }
     let(:type) { 10.times.collect { rand(10).to_s }.join("") }
     let(:event_count) { 10000 + rand(500) }
-    let(:flush_size) { rand(200) + 1 }
     let(:routing) { "not_implemented" }
     let(:config) { "not_implemented" }
     subject { LogStash::Outputs::ElasticSearch.new(config) }
@@ -43,7 +42,6 @@ describe "(http protocol) index events with static routing", :integration => tru
       {
         "hosts" => get_host_port,
         "index" => index,
-        "flush_size" => flush_size,
         "routing" => routing
       }
     }
@@ -57,10 +55,8 @@ describe "(http_protocol) index events with fieldref in routing value", :integra
       {
         "hosts" => get_host_port,
         "index" => index,
-        "flush_size" => flush_size,
         "routing" => "%{message}"
       }
     }
   end
 end
-

@@ -81,7 +81,7 @@ module LogStash; module Outputs; class ElasticSearch
       # If you specify a number larger than the batch size of your pipeline it will have no effect,
       # save for the case where a filter increases the size of an inflight batch by outputting
       # events.
-      mod.config :flush_size, :validate => :number, :default => 500
+      mod.config :flush_size, :validate => :number, :deprecate => "This setting is no longer necessary as we now try to restrict bulk requests to sane sizes. See the 'Batch Sizes' section of the docs. If you think you still need to restrict payloads based on the number, not size, of events, please open a ticket."
 
       # The amount of time since last flush before a flush is forced.
       #
