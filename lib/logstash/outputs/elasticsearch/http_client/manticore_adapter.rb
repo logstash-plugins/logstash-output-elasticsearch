@@ -45,7 +45,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # but for our current purposes this is correct
       if resp.code < 200 || resp.code > 299 && resp.code != 404
         safe_url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
-        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(resp.code, safe_url + path, body)
+        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(resp.code, safe_url + path, resp.body)
       end
 
       resp

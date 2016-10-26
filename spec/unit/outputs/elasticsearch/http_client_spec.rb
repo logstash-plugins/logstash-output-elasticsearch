@@ -3,7 +3,7 @@ require "logstash/outputs/elasticsearch/http_client"
 require "java"
 
 describe LogStash::Outputs::ElasticSearch::HttpClient do
-  let(:base_options) { {:hosts => ["127.0.0.1"], :logger => Cabin::Channel.get }}
+  let(:base_options) { {:hosts => ["127.0.0.1"], :logger => Cabin::Channel.get} }
 
   describe "Host/URL Parsing" do
     subject { described_class.new(base_options) }
