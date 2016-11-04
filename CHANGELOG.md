@@ -1,3 +1,6 @@
+## 5.3.0
+- Bulk operations will now target 20MB chunks at a time to reduce heap usage
+
 ## 5.2.0
 - Change default lang for scripts to be painless, inline with ES 5.0. Earlier there was no default.
 
