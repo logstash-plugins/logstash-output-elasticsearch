@@ -1,3 +1,6 @@
+## 5.3.1
+- depends on Adressable ~> 2.3.0 to satisfy development dependency of the core ([logstash/#6204](https://github.com/elastic/logstash/issues/6204))
+
 ## 5.3.0
 - Bulk operations will now target 20MB chunks at a time to reduce heap usage
 
