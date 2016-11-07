@@ -1,5 +1,6 @@
 ## 5.2.1
 - Hide user/password in connection pool
+- depends on Adressable ~> 2.3.0 to satisfy development dependency of the core ([logstash/#6204](https://github.com/elastic/logstash/issues/6204))
 
 ## 5.2.0
 - Change default lang for scripts to be painless, inline with ES 5.0. Earlier there was no default.
