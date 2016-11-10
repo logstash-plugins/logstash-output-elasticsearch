@@ -1,3 +1,6 @@
+## 5.3.2
+- Use byte size, not char count for bulk operation size checks
+
 ## 5.3.1
 - depends on Adressable ~> 2.3.0 to satisfy development dependency of the core ([logstash/#6204](https://github.com/elastic/logstash/issues/6204))
 
