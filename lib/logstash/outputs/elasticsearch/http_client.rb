@@ -75,7 +75,7 @@ module LogStash; module Outputs; class ElasticSearch;
                     LogStash::Json.dump(action)
         as_json << "\n"
 
-        if (bulk_body.size + as_json.size) > TARGET_BULK_BYTES
+        if (bulk_body.bytesize + as_json.bytesize) > TARGET_BULK_BYTES
           bulk_responses << bulk_send(bulk_body)
           bulk_body = as_json
         else
