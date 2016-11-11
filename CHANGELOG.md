@@ -1,3 +1,6 @@
+## 5.3.3
+- Hide user/password in connection pool
+
 ## 5.3.2
 - Use byte size, not char count for bulk operation size checks
 
