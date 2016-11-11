@@ -93,6 +93,21 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       expect(subject).to have_received(:in_use_connections).twice
     end
   end
+  
+  describe "safe_state_changes" do
+    let(:state_changes) do 
+      {
+        :added => [URI.parse("http://sekretu:sekretp@foo1")],
+        :removed => [URI.parse("http://sekretu:sekretp@foo2")]
+      }
+    end
+    let(:processed) { subject.safe_state_changes(state_changes)}
+    
+    it "should hide passwords" do
+      expect(processed[:added].any? {|p| p =~ /sekretp/ }).to be false
+      expect(processed[:removed].any? {|p| p =~ /sekretp/ }).to be false
+    end
+  end
 
   describe "connection management" do
     context "with only one URL in the list" do

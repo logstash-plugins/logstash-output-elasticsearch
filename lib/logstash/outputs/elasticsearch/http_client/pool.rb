@@ -261,7 +261,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         new_urls.each do |url|
           # URI objects don't have real hash equality! So, since this isn't perf sensitive we do a linear scan
           unless @url_info.keys.include?(url)
-            state_changes[:added] << url.to_s
+            state_changes[:added] << url
             add_url(url)
           end
         end
@@ -269,14 +269,24 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         # Delete connections not in the new list
         @url_info.each do |url,_|
           unless new_urls.include?(url)
-            state_changes[:removed] << url.to_s
+            state_changes[:removed] << url
             remove_url(url)
           end
         end
       end
 
       if state_changes[:removed].size > 0 || state_changes[:added].size > 0
-        logger.info("Elasticsearch pool URLs updated", :changes => state_changes)
+        if logger.info?
+          logger.info("Elasticsearch pool URLs updated", :changes => safe_state_changes(state_changes))
+        end
+      end
+    end
+    
+    def safe_state_changes(state_changes)
+      state_changes.reduce({}) do |acc, kv|
+        k,v = kv
+        acc[k] = v.map(&LogStash::Outputs::ElasticSearch::SafeURL.method(:without_credentials)).map(&:to_s)
+        acc
       end
     end
 
