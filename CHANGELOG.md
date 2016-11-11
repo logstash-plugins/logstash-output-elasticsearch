@@ -1,3 +1,6 @@
+## 5.2.1
+- Hide user/password in connection pool
+
 ## 5.2.0
 - Change default lang for scripts to be painless, inline with ES 5.0. Earlier there was no default.
 
