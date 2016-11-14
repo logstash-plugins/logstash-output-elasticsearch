@@ -146,7 +146,7 @@ module LogStash; module Outputs; class ElasticSearch;
       }
 
       if @pipeline
-        params[:pipeline] = @pipeline
+        params[:pipeline] = event.sprintf(@pipeline)
       end
 
      if @parent

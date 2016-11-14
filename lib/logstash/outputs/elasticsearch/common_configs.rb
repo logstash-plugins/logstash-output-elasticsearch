@@ -137,7 +137,8 @@ module LogStash; module Outputs; class ElasticSearch
       # for more info
       mod.config :retry_on_conflict, :validate => :number, :default => 1
 
-      # Set which ingest pipeline you wish to execute for an event
+      # Set which ingest pipeline you wish to execute for an event. You can also use event dependent configuration
+      # here like `pipeline => "%{INGEST_PIPELINE}"`
       mod.config :pipeline, :validate => :string, :default => nil
     end
   end
