@@ -16,15 +16,18 @@ module LogStash; module Outputs; class ElasticSearch
       # otherwise the document type will be assigned the value of 'logs'
       mod.config :document_type, :validate => :string
 
-      # Starting in Logstash 1.3 (unless you set option `manage_template` to false)
-      # a default mapping template for Elasticsearch will be applied, if you do not
-      # already have one set to match the index pattern defined (default of
-      # `logstash-%{+YYYY.MM.dd}`), minus any variables.  For example, in this case
-      # the template will be applied to all indices starting with `logstash-*`
+      # From Logstash 1.3 onwards, a template is applied to Elasticsearch during
+      # Logstash's startup if one with the name `template_name` does not already exist.
+      # By default, the contents of this template is the default template for
+      # `logstash-%{+YYYY.MM.dd}` which always matches indices based on the pattern
+      # `logstash-*`.  Should you require support for other index names, or would like
+      # to change the mappings in the template in general, a custom template can be
+      # specified by setting `template` to the path of a template file.
       #
-      # If you have dynamic templating (e.g. creating indices based on field names)
-      # then you should set `manage_template` to false and use the REST API to upload
-      # your templates manually.
+      # Setting `manage_template` to false disables this feature.  If you require more
+      # control over template creation, (e.g. creating indices dynamically based on
+      # field names) you should set `manage_template` to false and use the REST
+      # API to apply your templates manually.
       mod.config :manage_template, :validate => :boolean, :default => true
 
       # This configuration option defines how the template is named inside Elasticsearch.
