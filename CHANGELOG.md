@@ -1,3 +1,6 @@
+## 5.3.4
+- Add `sprintf` or event dependent configuration when specifying ingest pipeline
+
 ## 5.3.3
 - Hide user/password in connection pool
 
