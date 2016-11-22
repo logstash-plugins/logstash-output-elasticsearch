@@ -9,6 +9,10 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:options) { {:resurrect_delay => 2} } # Shorten the delay a bit to speed up tests
 
   subject { described_class.new(logger, adapter, initial_urls, options) }
+  
+  before do
+    allow(adapter).to receive(:perform_request).with(anything, 'HEAD', subject.healthcheck_path, {}, nil)
+  end
 
   describe "initialization" do
     it "should be successful" do
@@ -22,7 +26,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     end
 
     it "should attempt to resurrect connections after the ressurrect delay" do
-      expect(subject).to receive(:resurrect_dead!).once
+      expect(subject).to receive(:healthcheck!).once
       sleep(subject.resurrect_delay + 1)
     end
   end
@@ -148,9 +152,9 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
         subject.return_connection(u)
         subject.mark_dead(u, Exception.new)
 
-        expect(subject.url_meta(u)[:dead]).to eql(true)
+        expect(subject.url_meta(u)[:state]).to eql(:dead)
         sleep subject.resurrect_delay + 1
-        expect(subject.url_meta(u)[:dead]).to eql(false)
+        expect(subject.url_meta(u)[:state]).to eql(:alive)
       end
     end
   end
