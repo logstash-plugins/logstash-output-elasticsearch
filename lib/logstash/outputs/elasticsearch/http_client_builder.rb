@@ -24,6 +24,10 @@ module LogStash; module Outputs; class ElasticSearch;
         client_settings[:path] = "/#{params["path"]}/".gsub(/\/+/, "/") # Normalize slashes
       end
 
+      if params["parameters"]
+        client_settings[:parameters] = params["parameters"]
+      end
+
       logger.debug? && logger.debug("Normalizing http path", :path => params["path"], :normalized => client_settings[:path])
 
       client_settings.merge! setup_ssl(logger, params)

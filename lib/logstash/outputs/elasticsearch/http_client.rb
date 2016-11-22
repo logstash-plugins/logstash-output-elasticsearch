@@ -131,7 +131,7 @@ module LogStash; module Outputs; class ElasticSearch;
       timeout = options[:timeout] || 0
 
       host_ssl_opt = client_settings[:ssl].nil? ? nil : client_settings[:ssl][:enabled]
-      urls = hosts.map {|host| host_to_url(host, host_ssl_opt, client_settings[:path])}
+      urls = hosts.map {|host| host_to_url(host, host_ssl_opt, client_settings[:path], client_settings[:parameters])}
 
       adapter_options = {
         :socket_timeout => timeout,
@@ -186,7 +186,7 @@ module LogStash; module Outputs; class ElasticSearch;
     HOSTNAME_PORT_REGEX=/\A(?<hostname>([A-Za-z0-9\.\-]+)|\[[0-9A-Fa-f\:]+\])(:(?<port>\d+))?\Z/
     URL_REGEX=/\A#{URI::regexp(['http', 'https'])}\z/
     # Parse a configuration host to a normalized URL
-    def host_to_url(host, ssl=nil, path=nil)
+    def host_to_url(host, ssl=nil, path=nil, parameters=nil)
       explicit_scheme = case ssl
                         when true
                           "https"
@@ -231,6 +231,15 @@ module LogStash; module Outputs; class ElasticSearch;
 
       if path
         url.path = path  # The URI library cannot stringify if it holds a nil
+      end
+
+      if parameters
+        query_string = parameters.map { |k,v| "#{k}=#{v}" }.join("&")
+        if query = url.query
+          url.query = "#{query}&#{query_string}"
+        else
+          url.query = query_string
+        end
       end
 
       if url.password || url.user

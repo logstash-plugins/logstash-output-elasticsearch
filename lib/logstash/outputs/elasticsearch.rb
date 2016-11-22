@@ -103,6 +103,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # not also set this field. That will raise an error at startup
   config :path, :validate => :string
 
+  # Pass a set of key value pairs as the URL query string. This query string is added
+  # to every host listed in the 'hosts' configuration. If this list contains urls which
+  # already contain a query string, this one will be appended to the existing one.
+  config :parameters, :validate => :hash
+
   # Enable SSL/TLS secured communication to Elasticsearch cluster. Leaving this unspecified will use whatever scheme
   # is specified in the URLs listed in 'hosts'. If no explicit protocol is specified plain HTTP will be used.
   # If SSL is explicitly disabled here the plugin will refuse to start if an HTTPS URL is given in 'hosts'
