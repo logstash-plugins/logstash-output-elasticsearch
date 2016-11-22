@@ -104,8 +104,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :path, :validate => :string
 
   # Pass a set of key value pairs as the URL query string. This query string is added
-  # to every host listed in the 'hosts' configuration. If this list contains urls which
-  # already contain a query string, this one will be appended to the existing one.
+  # to every host listed in the 'hosts' configuration. If the 'hosts' list contains
+  # urls that already have query strings, the one specified here will be appended.
   config :parameters, :validate => :hash
 
   # Enable SSL/TLS secured communication to Elasticsearch cluster. Leaving this unspecified will use whatever scheme
