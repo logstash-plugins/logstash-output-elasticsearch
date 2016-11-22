@@ -62,8 +62,13 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # Holds metadata about all URLs
       @url_info = {}
       @stopping = false
-
+      
       update_urls(initial_urls)
+      # Perform initial healthcheck to determine which URLs are alive
+      # We do this here because we don't want error messages on API actions unless
+      # this fails
+      healthcheck! 
+      
       start_resurrectionist
       start_sniffer if @sniffing
     end
@@ -96,7 +101,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def alive_urls_count
-      @state_mutex.synchronize { @url_info.values.select {|v| !v[:dead] }.count }
+      @state_mutex.synchronize { @url_info.values.select {|v| !v[:state] == :alive }.count }
     end
 
     def url_info
@@ -186,24 +191,24 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def start_resurrectionist
       @resurrectionist = Thread.new do
         until_stopped("resurrection", @resurrect_delay) do
-          resurrect_dead!
+          healthcheck!
         end
       end
     end
 
-    def resurrect_dead!
+    def healthcheck!
       # Try to keep locking granularity low such that we don't affect IO...
-      @state_mutex.synchronize { @url_info.select {|url,meta| meta[:dead] } }.each do |url,meta|
+      @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         safe_url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
         begin
           logger.info("Running health check to see if an Elasticsearch connection is working",
                       url: safe_url, healthcheck_path: @healthcheck_path)
-          perform_request_to_url(url, "HEAD", @healthcheck_path)
+          response = perform_request_to_url(url, "HEAD", @healthcheck_path)
           # If no exception was raised it must have succeeded!
           logger.warn("Restored connection to ES instance", :url => safe_url)
-          @state_mutex.synchronize { meta[:dead] = false }
-        rescue HostUnreachableError => e
-          logger.debug("Attempted to resurrect connection to dead ES instance, but got an error.", url: safe_url, error_type: e.class, error: e.message)
+          @state_mutex.synchronize { meta[:state] = :alive }
+        rescue HostUnreachableError, BadResponseCodeError => e
+          logger.warn("Attempted to resurrect connection to dead ES instance, but got an error.", url: safe_url, error_type: e.class, error: e.message)
         end
       end
     end
@@ -305,7 +310,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def empty_url_meta
       {
         :in_use => 0,
-        :dead => false
+        :state => :unknown
       }
     end
 
@@ -340,7 +345,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         safe_url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
         logger.warn("Marking url as dead.", :reason => error.message, :url => safe_url,
                     :error_message => error.message, :error_class => error.class.name)
-        meta[:dead] = true
+        meta[:state] = :dead
         meta[:last_error] = error
         meta[:last_errored_at] = Time.now
       end
@@ -361,7 +366,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         lowest_value_seen = nil
         @url_info.each do |url,meta|
           meta_in_use = meta[:in_use]
-          next if meta[:dead]
+          next if meta[:state] == :dead
 
           if lowest_value_seen.nil? || meta_in_use < lowest_value_seen
             lowest_value_seen = meta_in_use

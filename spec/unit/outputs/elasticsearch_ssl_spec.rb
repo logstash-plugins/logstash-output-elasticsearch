@@ -1,5 +1,6 @@
 require_relative "../../../spec/es_spec_helper"
 require 'stud/temporary'
+require "logstash/outputs/elasticsearch"
 
 describe "SSL option" do
   context "when using ssl without cert verification" do
@@ -16,7 +17,7 @@ describe "SSL option" do
     end
 
     it "should pass the flag to the ES client" do
-      expect(::Manticore::Client).to receive(:new) do |args|
+      expect(::Manticore::Client).to receive(:new).and_call_original do |args|
         expect(args[:ssl]).to eq(:enabled => true, :verify => false)
       end
       subject.register
@@ -32,6 +33,9 @@ describe "SSL option" do
 
   context "when using ssl with client certificates" do
     let(:keystore_path) { Stud::Temporary.file.path }
+    before do
+      `openssl req -x509  -batch -nodes -newkey rsa:2048 -keyout lumberjack.key -out #{keystore_path}.pem`
+    end
 
     after :each do
       File.delete(keystore_path)
@@ -42,8 +46,7 @@ describe "SSL option" do
       settings = {
         "hosts" => "node01",
         "ssl" => true,
-        "keystore" => keystore_path,
-        "keystore_password" => "test"
+        "cacert" => keystore_path,
       }
       next LogStash::Outputs::ElasticSearch.new(settings)
     end
@@ -51,7 +54,7 @@ describe "SSL option" do
     it "should pass the keystore parameters to the ES client" do
       expect(::Manticore::Client).to receive(:new) do |args|
         expect(args[:ssl]).to include(:keystore => keystore_path, :keystore_password => "test")
-      end
+      end.and_call_original
       subject.register
     end
 

@@ -1,6 +1,7 @@
 require_relative "../../../spec/es_spec_helper"
 require 'stud/temporary'
 require "logstash/outputs/elasticsearch"
+require 'manticore/client'
 
 describe "Proxy option" do
   let(:settings) {
@@ -14,7 +15,7 @@ describe "Proxy option" do
   }
 
   before do
-    allow(::Manticore::Client).to receive(:new).with(any_args)
+    allow(::Manticore::Client).to receive(:new).with(any_args).and_call_original
   end
 
   describe "valid configs" do

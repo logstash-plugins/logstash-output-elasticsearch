@@ -31,7 +31,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def perform_request(url, method, path, params={}, body=nil)
       params = (params || {}).merge @request_options
       params[:body] = body if body
-      url_and_path = (url + path).to_s # Convert URI object to string
+      # Convert URI object to string
+      url_and_path = path ? (url + path).to_s  : url.to_s
 
       resp = @manticore.send(method.downcase, url_and_path, params)
 

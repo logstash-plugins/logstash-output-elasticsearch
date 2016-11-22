@@ -285,7 +285,7 @@ describe "outputs/elasticsearch" do
     subject(:eso) { LogStash::Outputs::ElasticSearch.new("validate_after_inactivity" => validate_after_inactivity) }
 
     before do
-      allow(::Manticore::Client).to receive(:new).with(any_args)
+      allow(::Manticore::Client).to receive(:new).with(any_args).and_call_original
       subject.register
     end
 
