@@ -64,10 +64,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @stopping = false
       
       update_urls(initial_urls)
-      # Perform initial healthcheck to determine which URLs are alive
-      # We do this here because we don't want error messages on API actions unless
-      # this fails
-      healthcheck! 
       
       start_resurrectionist
       start_sniffer if @sniffing
@@ -285,6 +281,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           logger.info("Elasticsearch pool URLs updated", :changes => safe_state_changes(state_changes))
         end
       end
+      
+      # Run an inline healthcheck anytime URLs are updated
+      # This guarantees that during startup / post-startup
+      # sniffing we don't have idle periods waiting for the
+      # periodic sniffer to allow new hosts to come online
+      healthcheck! 
     end
     
     def safe_state_changes(state_changes)
