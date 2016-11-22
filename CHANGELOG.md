@@ -1,3 +1,6 @@
+## 5.3.5
+- Docs: Remove mention of using the elasticsearch_java output plugin because it is no longer supported
+
 ## 5.3.4
 - Add `sprintf` or event dependent configuration when specifying ingest pipeline
 
