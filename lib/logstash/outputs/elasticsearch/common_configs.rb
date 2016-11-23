@@ -79,8 +79,8 @@ module LogStash; module Outputs; class ElasticSearch
       mod.config :hosts, :validate => :array, :default => ["127.0.0.1"]
 
       # This plugin uses the bulk index API for improved indexing performance.
-      # This setting defines the maximum sized bulk request Logstash will make
-      # You you may want to increase this to be in line with your pipeline's batch size.
+      # This setting defines the maximum sized bulk request Logstash will make.
+      # You may want to increase this to be in line with your pipeline's batch size.
       # If you specify a number larger than the batch size of your pipeline it will have no effect,
       # save for the case where a filter increases the size of an inflight batch by outputting
       # events.
