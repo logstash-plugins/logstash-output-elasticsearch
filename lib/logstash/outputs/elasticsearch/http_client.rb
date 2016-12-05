@@ -29,11 +29,14 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def initialize(options={})      
       @logger = options[:logger]
+      
       # Again, in case we use DEFAULT_OPTIONS in the future, uncomment this.
       # @options = DEFAULT_OPTIONS.merge(options)
       @options = options
-
-      normalize_hosts!
+      
+      @options[:hosts].each do |host|
+          
+      end
 
       @url_template = build_url_template
 
@@ -51,23 +54,6 @@ module LogStash; module Outputs; class ElasticSearch;
         :port => self.port,
         :path => self.path
       }
-    end
-
-    # We support hostnames of the form 'myhostname' and 'myhostname:1234' where 1234 is the port
-    # The URI library does not parse this correctly, so here we normalize this so it is parsed as a hostname
-    # without a schema
-    HOSTNAME_PORT_REGEX=/\A(?<hostname>([A-Za-z0-9\.\-]+)|\[[0-9A-Fa-f\:]+\])(:(?<port>\d+))?\Z/   
-    def normalize_hosts!
-      @options[:hosts] = @options[:hosts].map do |host|
-        h_string = host.to_s
-
-        if HOSTNAME_PORT_REGEX.match(h_string)
-          # Making the scheme relative with // makes the host:port parse correctly
-          ::LogStash::Util::SafeURI.new("//#{h_string}")
-        else
-          host
-        end
-      end
     end
 
     def template_install(name, template, force=false)
@@ -88,7 +74,6 @@ module LogStash; module Outputs; class ElasticSearch;
       @action_count += actions.size
 
       return if actions.empty?
-
 
       bulk_actions = actions.collect do |action, args, source|
         args, source = update_action_builder(args, source) if action == 'update'

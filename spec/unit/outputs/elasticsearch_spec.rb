@@ -12,7 +12,7 @@ describe "outputs/elasticsearch" do
         "manage_template" => false
       }
     }
-
+    
     let(:eso) { LogStash::Outputs::ElasticSearch.new(options) }
 
     let(:manticore_urls) { eso.client.pool.urls }
@@ -20,16 +20,21 @@ describe "outputs/elasticsearch" do
 
     let(:do_register) { true }
 
-    around(:each) do |block|
+    before(:each) do
       if do_register
         eso.register
+        
+        # Rspec mocks can't handle background threads, so... we can't use any 
+        allow(eso.client.pool).to receive(:start_resurrectionist)
+        allow(eso.client.pool).to receive(:start_sniffer)
         eso.client.pool.adapter.manticore.respond_with(:body => "{}")
       end
-
-      block.call()
+    end
+    
+    after(:each) do
       eso.close if do_register
     end
-
+    
     describe "getting a document type" do
       it "should default to 'logs'" do
         expect(eso.send(:get_event_type, LogStash::Event.new)).to eql("logs")
@@ -220,6 +225,7 @@ describe "outputs/elasticsearch" do
 
   describe "SSL end to end" do
     shared_examples("an encrypted client connection") do
+      
       it "should enable SSL in manticore" do
         expect(eso.client.pool.urls.map(&:scheme).uniq).to eql(['https'])
       end
