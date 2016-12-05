@@ -10,11 +10,22 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
   subject { described_class.new(logger, adapter, initial_urls, options) }
   
+  let(:manticore_double) { double("manticore") }
   before do
     allow(adapter).to receive(:perform_request).with(anything, 'HEAD', subject.healthcheck_path, {}, nil)
+    
+    
+          response_double = double("manticore response").as_null_object
+          # Allow healtchecks
+          allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
+          allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
+          
+          allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
+    
+    
     subject.start
   end
-
+  
   describe "initialization" do
     it "should be successful" do
       expect { subject }.not_to raise_error
@@ -85,7 +96,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
     context "with multiple URLs in the list" do
       let(:initial_urls) { [ ::LogStash::Util::SafeURI.new("http://localhost:9200"), ::LogStash::Util::SafeURI.new("http://localhost:9201"), ::LogStash::Util::SafeURI.new("http://localhost:9202") ] }
-
+      
       it "should minimize the number of connections to a single URL" do
         connected_urls = []
 
