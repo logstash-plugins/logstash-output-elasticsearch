@@ -3,6 +3,7 @@ require "cabin"
 require "base64"
 require 'logstash/outputs/elasticsearch/http_client/pool'
 require 'logstash/outputs/elasticsearch/http_client/manticore_adapter'
+require 'cgi'
 
 module LogStash; module Outputs; class ElasticSearch;
   # This is a constant instead of a config option because
@@ -44,7 +45,7 @@ module LogStash; module Outputs; class ElasticSearch;
       # mutex to prevent requests and sniffing to access the
       # connection pool at the same time
     end
-
+    
     def build_url_template
       {
         :scheme => self.scheme,
@@ -253,6 +254,7 @@ module LogStash; module Outputs; class ElasticSearch;
         :sniffer_delay => options[:sniffer_delay],
         :healthcheck_path => options[:healthcheck_path],
         :resurrect_delay => options[:resurrect_delay],
+        :url_normalizer => self.method(:host_to_url)
       }
       pool_options[:scheme] = self.scheme if self.scheme
 
@@ -261,11 +263,13 @@ module LogStash; module Outputs; class ElasticSearch;
       end
 
       pool_class = ::LogStash::Outputs::ElasticSearch::HttpClient::Pool
-      full_urls = @options[:hosts].map {|h| host_to_url(h, client_settings[:parameters] || {}) }
-      pool_class.new(@logger, adapter, full_urls, pool_options)
+      full_urls = @options[:hosts].map {|h| host_to_url(h) }
+      pool = pool_class.new(@logger, adapter, full_urls, pool_options)
+      pool.start
+      pool
     end
 
-    def host_to_url(h, parameters={})
+    def host_to_url(h)
       # Build a naked URI class to be wrapped in a SafeURI before returning
       # do NOT log this! It could leak passwords
       uri_klass = @url_template[:scheme] == 'https' ? URI::HTTPS : URI::HTTP
@@ -278,13 +282,17 @@ module LogStash; module Outputs; class ElasticSearch;
       uri.path = h.path if !h.path.nil? && !h.path.empty? &&  h.path != "/"
       uri.query = h.query
       
-      if !parameters.empty?
-        query_string = parameters.map { |k,v| "#{k}=#{v}" }.join("&")
-        if query = uri.query
-          uri.query = "#{query}&#{query_string}"
-        else
-          uri.query = query_string
-        end
+      parameters = client_settings[:parameters]
+      if parameters && !parameters.empty?
+        combined = uri.query ?
+           CGI::parse(uri.query).merge(parameters) :
+           parameters
+        query_str = combined.flat_map {|k,v|
+          values = Array(v)
+          values.map {|av| "#{k}=#{av}"}
+        }.join("&")
+        
+        uri.query = query_str
       end
 
       ::LogStash::Util::SafeURI.new(uri.normalize)

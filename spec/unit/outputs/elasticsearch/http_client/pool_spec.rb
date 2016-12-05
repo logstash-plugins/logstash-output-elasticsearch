@@ -6,12 +6,13 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:logger) { Cabin::Channel.get }
   let(:adapter) { LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter.new(logger) }
   let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
-  let(:options) { {:resurrect_delay => 2} } # Shorten the delay a bit to speed up tests
+  let(:options) { {:resurrect_delay => 2, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
 
   subject { described_class.new(logger, adapter, initial_urls, options) }
   
   before do
     allow(adapter).to receive(:perform_request).with(anything, 'HEAD', subject.healthcheck_path, {}, nil)
+    subject.start
   end
 
   describe "initialization" do

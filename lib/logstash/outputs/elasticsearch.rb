@@ -146,10 +146,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :sniffing_delay, :validate => :number, :default => 5
 
   # Set the address of a forward HTTP proxy.
-  # Can be either a string, such as `http://localhost:123` or a hash in the form
-  # of `{host: 'proxy.org' port: 80 scheme: 'http'}`.
-  # Note, this is NOT a SOCKS proxy, but a plain HTTP proxy
-  config :proxy
+  # This used to accept hashes as arguments but now only accepts
+  # arguments of the URI type to prevent leaking credentials.
+  config :proxy, :validate => :uri
 
   # Set the timeout, in seconds, for network operations and requests sent Elasticsearch. If
   # a timeout occurs, the request will be retried.
@@ -194,7 +193,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :validate_after_inactivity, :validate => :number, :default => 10000
 
   def build_client
-    @client = ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
+    @client ||= ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
   end
 
   def close

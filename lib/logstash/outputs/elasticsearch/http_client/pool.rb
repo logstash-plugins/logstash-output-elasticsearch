@@ -41,7 +41,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def initialize(logger, adapter, initial_urls=[], options={})
       @logger = logger
       @adapter = adapter
-
+      @initial_urls = initial_urls
+      
       DEFAULT_OPTIONS.merge(options).tap do |merged|
         @healthcheck_path = merged[:healthcheck_path]
         @scheme = merged[:scheme]
@@ -49,6 +50,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         @auth = merged[:auth]
         @sniffing = merged[:sniffing]
         @sniffer_delay = merged[:sniffer_delay]
+        @url_normalizer = merged[:url_normalizer]
       end
 
       # Override the scheme if one is explicitly set in urls
@@ -62,9 +64,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # Holds metadata about all URLs
       @url_info = {}
       @stopping = false
-      
-      update_urls(initial_urls)
-      
+    end
+    
+    def start
+      update_urls(@initial_urls)
       start_resurrectionist
       start_sniffer if @sniffing
     end
@@ -269,18 +272,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def normalize_url(uri)
-      raise ArgumentError, "Only SafeURI objects may be passed in!" unless uri.is_a?(::LogStash::Util::SafeURI)
-      uri = uri.clone
-
-      # Set credentials if need be
-      if @auth && !uri.user
-        uri.user ||= @auth[:user]
-        uri.password ||= @auth[:password]
-      end
-
-      uri.scheme = @scheme
-
-      uri
+      @url_normalizer.call(uri)
     end
 
     def update_urls(new_urls)

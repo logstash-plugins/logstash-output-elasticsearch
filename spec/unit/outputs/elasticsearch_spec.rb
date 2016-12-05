@@ -27,6 +27,7 @@ describe "outputs/elasticsearch" do
         # Rspec mocks can't handle background threads, so... we can't use any 
         allow(eso.client.pool).to receive(:start_resurrectionist)
         allow(eso.client.pool).to receive(:start_sniffer)
+        allow(eso.client.pool).to receive(:healthcheck!)
         eso.client.pool.adapter.manticore.respond_with(:body => "{}")
       end
     end
@@ -195,6 +196,7 @@ describe "outputs/elasticsearch" do
     end
 
     it "should fail after the timeout" do
+      #pending("This is tricky now that we do healthchecks on instantiation")
       Thread.new { eso.multi_receive([LogStash::Event.new]) }
 
       # Allow the timeout to occur
@@ -224,6 +226,16 @@ describe "outputs/elasticsearch" do
   end
 
   describe "SSL end to end" do
+    let(:manticore_double) { double("manticore") }
+    before do
+        response_double = double("manticore response").as_null_object
+        # Allow healtchecks
+        allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
+        allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
+        
+        allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
+    end
+    
     shared_examples("an encrypted client connection") do
       
       it "should enable SSL in manticore" do
