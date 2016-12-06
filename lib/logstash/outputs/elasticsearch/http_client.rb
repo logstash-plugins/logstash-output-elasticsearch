@@ -107,8 +107,17 @@ module LogStash; module Outputs; class ElasticSearch;
                     action.map {|line| LogStash::Json.dump(line)}.join("\n") :
                     LogStash::Json.dump(action)
         as_json << "\n"
+        
+        if as_json.bytesize > @options[:max_request_size]
+          @logger.error("Dropping event, too large!", 
+                      :max_request_size => @options[:max_request_size],
+                      :bulk_body_size => as_json.bytesize,
+                      :bulk_body_sample => as_json[0..100])
+          next # Skip to the next action, this one is dropped
+        end
 
-        if (bulk_body.bytesize + as_json.bytesize) > TARGET_BULK_BYTES
+        if_added_body_size = (bulk_body.bytesize + as_json.bytesize)
+        if if_added_body_size > TARGET_BULK_BYTES || if_added_body_size > @options[:max_request_size]
           bulk_responses << bulk_send(bulk_body)
           bulk_body = as_json
         else
@@ -117,7 +126,7 @@ module LogStash; module Outputs; class ElasticSearch;
       end
 
       bulk_responses << bulk_send(bulk_body) if bulk_body.size > 0
-
+      
       join_bulk_responses(bulk_responses)
     end
 
