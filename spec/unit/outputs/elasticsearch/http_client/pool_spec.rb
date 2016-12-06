@@ -10,20 +10,23 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
   subject { described_class.new(logger, adapter, initial_urls, options) }
   
-  let(:manticore_double) { double("manticore") }
+  let(:manticore_double) { double("manticore a") }
   before do
     allow(adapter).to receive(:perform_request).with(anything, 'HEAD', subject.healthcheck_path, {}, nil)
     
     
-          response_double = double("manticore response").as_null_object
-          # Allow healtchecks
-          allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
-          allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
-          
-          allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
+    response_double = double("manticore response").as_null_object
+    # Allow healtchecks
+    allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
+    allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
     
-    
+    allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
+
     subject.start
+  end
+  
+  after do
+    subject.close
   end
   
   describe "initialization" do
@@ -63,6 +66,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       allow(adapter).to receive(:close).and_call_original
       allow(subject).to receive(:wait_for_in_use_connections).and_call_original
       allow(subject).to receive(:in_use_connections).and_return([subject.empty_url_meta()],[])
+      allow(subject).to receive(:start)
       subject.close
     end
 

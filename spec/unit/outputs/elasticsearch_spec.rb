@@ -33,7 +33,7 @@ describe "outputs/elasticsearch" do
     end
     
     after(:each) do
-      eso.close if do_register
+      eso.close 
     end
     
     describe "getting a document type" do
@@ -226,30 +226,32 @@ describe "outputs/elasticsearch" do
   end
 
   describe "SSL end to end" do
-    let(:manticore_double) { double("manticore") }
+    let(:manticore_double) { double("manticore b") }
+    
+    let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
+    subject(:manticore) { eso.client.pool.adapter.client}
+
+    after do
+      eso.close
+    end
+    
     before do
-        response_double = double("manticore response").as_null_object
-        # Allow healtchecks
-        allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
-        allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
+      response_double = double("manticore response").as_null_object
+      # Allow healtchecks
+      allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
+      allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
         
-        allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
+      allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
+      eso.register
     end
     
     shared_examples("an encrypted client connection") do
-      
       it "should enable SSL in manticore" do
         expect(eso.client.pool.urls.map(&:scheme).uniq).to eql(['https'])
       end
     end
 
-    let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
-    subject(:manticore) { eso.client.pool.adapter.client}
-
-    before do
-      eso.register
-    end
-
+      
     context "With the 'ssl' option" do
       let(:options) { {"ssl" => true}}
 
