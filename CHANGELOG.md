@@ -1,5 +1,11 @@
-## 5.4.1
+## 5.5.1
 - Correctly sniff against ES 5.x clusters
+
+## 5.5.0
+- Added new option `max_request_size` that will drop outgoing bulk requests larger than it.
+- Retry ALL non-200 response-codes coming from the bulk API. Individual sub-codes for individual events
+  are handled as before, but the bulk API's top level response should always be 200 unless there
+  is either a bug or perhaps a broken proxy in the user's infrastructure.
 
 ## 5.4.0
 - Perform healthcheck against hosts right after startup / sniffing

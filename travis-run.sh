@@ -33,8 +33,12 @@ start_es() {
   return 0
 }
 
+# This is needed because our test for large event sizes can use a good amount
+# of memory. 
+export JRUBY_OPTS="$JRUBY_OPTS -J-Xmx2G -J-Xms2G";
+
 if [[ "$INTEGRATION" != "true" ]]; then
-  bundle exec rspec -fd spec
+  bundle exec rspec -fd spec;
 else
   if [ "$1" -eq "" ]; then
     spec_path="spec"
