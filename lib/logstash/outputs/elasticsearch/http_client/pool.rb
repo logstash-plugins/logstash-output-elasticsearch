@@ -245,11 +245,11 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def stop_resurrectionist
-      @resurrectionist.join
+      @resurrectionist.join if @resurrectionist
     end
 
     def resurrectionist_alive?
-      @resurrectionist.alive?
+      @resurrectionist ? @resurrectionist.alive? : nil
     end
 
     def perform_request(method, path, params={}, body=nil)

@@ -3,14 +3,16 @@ require 'stud/temporary'
 require "logstash/outputs/elasticsearch"
 
 describe "SSL option" do
-  let(:manticore_double) { double("manticore") }
+  let(:manticore_double) { double("manticoreSSL #{self.inspect}") }
   before do
-      response_double = double("manticore response").as_null_object
-      # Allow healtchecks
-      allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
-      allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
-      
-      allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
+    allow(manticore_double).to receive(:close)
+    
+    response_double = double("manticore response").as_null_object
+    # Allow healtchecks
+    allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
+    allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
+    
+    allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
   end
   
   context "when using ssl without cert verification" do
@@ -23,7 +25,11 @@ describe "SSL option" do
         "pool_max" => 1,
         "pool_max_per_route" => 1
       }
-      next LogStash::Outputs::ElasticSearch.new(settings)
+      LogStash::Outputs::ElasticSearch.new(settings)
+    end
+    
+    after do
+      subject.close
     end
     
     it "should pass the flag to the ES client" do
