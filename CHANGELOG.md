@@ -1,5 +1,6 @@
 ## 5.4.0
 - Perform healthcheck against hosts right after startup / sniffing
+- Add support for custom query parameters
 
 ## 5.3.5
 - Docs: Remove mention of using the elasticsearch_java output plugin because it is no longer supported
