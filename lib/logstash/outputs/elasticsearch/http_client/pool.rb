@@ -151,14 +151,47 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     ES2_SNIFF_RE_URL  = /([^\/]*)?\/?([^:]*):([0-9]+)/
     # Sniffs and returns the results. Does not update internal URLs!
     def check_sniff
-      url, resp = perform_request(:get, '_nodes')
+      url, resp = perform_request(:get, '_nodes/http')
       parsed = LogStash::Json.load(resp.body)
-      parsed['nodes'].map do |id,info|
+      
+      nodes = parsed['nodes']
+      if !nodes || nodes.empty?
+        @logger.warn("Sniff returned no nodes! Will not update hosts.")
+        return nil
+      else
+        case major_version(nodes)
+        when 5
+          sniff_5x(nodes)
+        when 2
+          sniff_2x_1x(nodes)
+        when 1
+          sniff_2x_1x(nodes)
+        else
+          @logger.warn("Could not determine version for nodes in ES cluster!")
+          return nil
+        end
+      end
+    end
+    
+    def major_version(nodes)
+      k,v = nodes.first; v['version'].split('.').first.to_i
+    end
+    
+    def sniff_5x(nodes)
+      nodes.map do |id,info|
+        if info["http"]
+          uri = LogStash::Util::SafeURI.new(info["http"]["publish_address"])
+        end
+      end.compact
+    end
+    
+    def sniff_2x_1x(nodes)
+      nodes.map do |id,info|
         # TODO Make sure this works with shield. Does that listed
         # stuff as 'https_address?'
+        
         addr_str = info['http_address'].to_s
         next unless addr_str # Skip hosts with HTTP disabled
-
 
         # Only connect to nodes that serve data
         # this will skip connecting to client, tribe, and master only nodes
@@ -171,7 +204,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         if matches
           host = matches[1].empty? ? matches[2] : matches[1]
           port = matches[3]
-          URI.parse("#{@scheme}://#{host}:#{port}")
+          LogStash::Util::SafeURI.new("#{host}:#{port}")
         end
       end.compact
     end
@@ -237,7 +270,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def normalize_url(uri)
-      raise ArgumentError, "Only URI objects may be passed in!" unless uri.is_a?(URI)
+      raise ArgumentError, "Only URI/SafeURI objects may be passed in!" unless uri.is_a?(URI) || uri.is_a?(LogStash::Util::SafeURI)
       uri = uri.clone
 
       # Set credentials if need be
@@ -252,6 +285,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def update_urls(new_urls)
+      return if new_urls.nil?
+      
       # Normalize URLs
       new_urls = new_urls.map(&method(:normalize_url))
 

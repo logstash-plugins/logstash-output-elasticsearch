@@ -43,31 +43,6 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
         expect(subject.sniffer_alive?).to eql(true)
       end
     end
-
-    describe "check sniff" do
-      context "with a good sniff result" do
-        let(:sniff_resp_path) { File.dirname(__FILE__) + '/../../../../fixtures/5x_node_resp.json' }
-        let(:sniff_resp) { double("resp") }
-        let(:sniff_resp_body) { File.open(sniff_resp_path).read }
-        
-        before do
-          allow(subject).to receive(:perform_request).
-                              with(:get, '_nodes').
-                              and_return([double('url'), sniff_resp])
-          allow(sniff_resp).to receive(:body).and_return(sniff_resp_body)
-        end
-        
-        it "should execute a sniff without error" do
-          expect { subject.check_sniff }.not_to raise_error
-        end
-
-        it "should return the correct sniff URL list" do
-          url_strs = subject.check_sniff.map(&:to_s)
-          expect(url_strs).to include("http://127.0.0.1:9200")
-          expect(url_strs).to include("http://127.0.0.1:9201")
-        end
-      end
-    end
   end
 
   describe "closing" do
