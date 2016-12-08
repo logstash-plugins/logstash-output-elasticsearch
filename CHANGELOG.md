@@ -1,3 +1,6 @@
+## 5.4.1
+- Correctly sniff against ES 5.x clusters
+
 ## 5.4.0
 - Perform healthcheck against hosts right after startup / sniffing
 - Add support for custom query parameters
