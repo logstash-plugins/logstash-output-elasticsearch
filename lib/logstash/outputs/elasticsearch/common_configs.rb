@@ -61,6 +61,15 @@ module LogStash; module Outputs; class ElasticSearch
       # Elasticsearch with the same ID.
       mod.config :document_id, :validate => :string
 
+      # The version to use for indexing.
+      # See https://www.elastic.co/blog/elasticsearch-versioning-support.
+      mod.config :version, :validate => :string
+      
+      # The version_type to use for indexing.
+      # See https://www.elastic.co/blog/elasticsearch-versioning-support.
+      # See also https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types
+      mod.config :version_type, :validate => ["internal", 'external', "external_gt", "external_gte", "force"]
+
       # A routing override to be applied to all processed events.
       # This can be dynamic using the `%{foo}` syntax.
       mod.config :routing, :validate => :string

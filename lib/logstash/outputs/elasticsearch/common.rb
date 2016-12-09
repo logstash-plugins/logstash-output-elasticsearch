@@ -6,6 +6,13 @@ module LogStash; module Outputs; class ElasticSearch;
 
     RETRYABLE_CODES = [429, 503]
     SUCCESS_CODES = [200, 201]
+    CONFLICT_CODE = 409
+
+    # When you use external versioning, you are communicating that you want
+    # to ignore conflicts. More obviously, since an external version is a 
+    # constant part of the incoming document, we should not retry, as retrying
+    # will never succeed. 
+    VERSION_TYPES_PERMITTING_CONFLICT = ["external", "external_gt", "external_gte"]
 
     def register
       @stopping = Concurrent::AtomicBoolean.new(false)
@@ -120,8 +127,12 @@ module LogStash; module Outputs; class ElasticSearch;
         status = action_props["status"]
         failure  = action_props["error"]
         action = actions[idx]
+        action_params = action[1]
 
         if SUCCESS_CODES.include?(status)
+          next
+        elsif CONFLICT_CODE == status && VERSION_TYPES_PERMITTING_CONFLICT.include?(action_params[:version_type])
+          @logger.debug "Ignoring external version conflict: status[#{status}] failure[#{failure}] version[#{action_params[:version]}] version_type[#{action_params[:version_type]}]"
           next
         elsif RETRYABLE_CODES.include?(status)
           @logger.info "retrying failed action with response code: #{status} (#{failure})"
@@ -157,6 +168,14 @@ module LogStash; module Outputs; class ElasticSearch;
         params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
         params[:_script] = event.sprintf(@script) if @script != ""
         params[:_retry_on_conflict] = @retry_on_conflict
+      end
+
+      if @version
+        params[:version] = event.sprintf(@version)
+      end
+
+      if @version_type
+        params[:version_type] = event.sprintf(@version_type)
       end
 
       params
