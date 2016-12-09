@@ -36,6 +36,20 @@ module LogStash; module Outputs; class ElasticSearch;
       client_settings.merge! setup_ssl(logger, params)
       common_options.merge! setup_basic_auth(logger, params)
 
+      external_version_types = ["external", "external_gt", "external_gte"]
+      # External Version validation
+      raise(
+        LogStash::ConfigurationError,
+        "External versioning requires the presence of a version number."
+      ) if external_version_types.include?(params.fetch('version_type', '')) and params.fetch("version", nil) == nil
+ 
+
+      # Create API setup
+      raise(
+        LogStash::ConfigurationError,
+        "External versioning is not supported by the create action."
+      ) if params['action'] == 'create' and external_version_types.include?(params.fetch('version_type', ''))
+
       # Update API setup
       raise( LogStash::ConfigurationError,
         "doc_as_upsert and scripted_upsert are mutually exclusive."
@@ -45,6 +59,11 @@ module LogStash; module Outputs; class ElasticSearch;
         LogStash::ConfigurationError,
         "Specifying action => 'update' needs a document_id."
       ) if params['action'] == 'update' and params.fetch('document_id', '') == ''
+
+      raise(
+        LogStash::ConfigurationError,
+        "External versioning is not supported by the update action. See https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-update.html."
+      ) if params['action'] == 'update' and external_version_types.include?(params.fetch('version_type', ''))
 
       # Update API setup
       update_options = {
