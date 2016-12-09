@@ -280,7 +280,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       
       # Normalize URLs
       new_urls = new_urls.map(&method(:normalize_url))
-      
       # Used for logging nicely
       state_changes = {:removed => [], :added => []}
       @state_mutex.synchronize do
