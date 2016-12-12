@@ -28,17 +28,31 @@ module LogStash; module Outputs; class ElasticSearch;
     #   :setting => value
     # }
 
-    def initialize(options={})      
+#
+    # The `options` is a hash where the following symbol keys have meaning:
+    #
+    # * `:hosts` - array of String. Set a list of hosts to use for communication.
+    # * `:port` - number. set the port to use to communicate with Elasticsearch
+    # * `:user` - String. The user to use for authentication.
+    # * `:password` - String. The password to use for authentication.
+    # * `:timeout` - Float. A duration value, in seconds, after which a socket
+    #    operation or request will be aborted if not yet successfull
+    # * `:client_settings` - a hash; see below for keys.
+    #
+    # The `client_settings` key is a has that can contain other settings:
+    #
+    # * `:ssl` - Boolean. Enable or disable SSL/TLS.
+    # * `:proxy` - String. Choose a HTTP HTTProxy to use.
+    # * `:path` - String. The leading path for prefixing Elasticsearch
+    #   requests. This is sometimes used if you are proxying Elasticsearch access
+    #   through a special http path, such as using mod_rewrite.
+    def initialize(options={})
       @logger = options[:logger]
       
       # Again, in case we use DEFAULT_OPTIONS in the future, uncomment this.
       # @options = DEFAULT_OPTIONS.merge(options)
       @options = options
       
-      @options[:hosts].each do |host|
-          
-      end
-
       @url_template = build_url_template
 
       @pool = build_pool(@options)
@@ -124,24 +138,7 @@ module LogStash; module Outputs; class ElasticSearch;
       @pool.close
     end
 
-    #
-    # The `options` is a hash where the following symbol keys have meaning:
-    #
-    # * `:hosts` - array of String. Set a list of hosts to use for communication.
-    # * `:port` - number. set the port to use to communicate with Elasticsearch
-    # * `:user` - String. The user to use for authentication.
-    # * `:password` - String. The password to use for authentication.
-    # * `:timeout` - Float. A duration value, in seconds, after which a socket
-    #    operation or request will be aborted if not yet successfull
-    # * `:client_settings` - a hash; see below for keys.
-    #
-    # The `client_settings` key is a has that can contain other settings:
-    #
-    # * `:ssl` - Boolean. Enable or disable SSL/TLS.
-    # * `:proxy` - String. Choose a HTTP HTTProxy to use.
-    # * `:path` - String. The leading path for prefixing Elasticsearch
-    #   requests. This is sometimes used if you are proxying Elasticsearch access
-    #   through a special http path, such as using mod_rewrite.
+    
     def calculate_property(uris, property, default, sniff_check)
       values = uris.map(&property).uniq
 
@@ -205,9 +202,8 @@ module LogStash; module Outputs; class ElasticSearch;
       calculate_property(uris, :port, nil, sniffing) || 9200
     end
     
-    DEFAULT_URIS = [::LogStash::Util::SafeURI.new("http://127.0.0.1")]
     def uris
-      @options[:hosts] || DEFAULT_URIS
+      @options[:hosts]
     end
 
     def client_settings
