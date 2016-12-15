@@ -197,7 +197,10 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def port
-      calculate_property(uris, :port, 9200, sniffing)
+      # We don't set the 'default' here because the default is what the user
+      # indicated, so we use an || outside of calculate_property. This lets people
+      # Enter things like foo:123, bar and wind up with foo:123, bar:9200
+      calculate_property(uris, :port, nil, sniffing) || 9200
     end
     
     def uris
