@@ -31,13 +31,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       params = (params || {}).merge @request_options
       params[:body] = body if body
       
-      # We can discard the user / password at this point. We need to send a plain URI
-      # to manticore, but the adapter should already have been configured with the auth
-      # previously
-      url_with_path = url.uri.clone
-      
-      if path
-        url_with_path.path = path.start_with?("/") ? path : "/#{path}"
+      # Create a new SafeURI that we can modify
+      if path && path != "/"
+        url_with_path = ::LogStash::Util::SafeURI.new(url.uri.clone)
+        url_with_path.path = url.path + (path.start_with?("/") ? path : "/#{path}")
+      else
+        url_with_path = url
       end
 
       if url_with_path.user
@@ -57,7 +56,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # template installation. We might need a better story around this later
       # but for our current purposes this is correct
       if resp.code < 200 || resp.code > 299 && resp.code != 404
-        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(resp.code, url + path, body)
+        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(resp.code, url_with_path, body)
       end
 
       resp

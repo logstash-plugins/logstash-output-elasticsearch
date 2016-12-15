@@ -43,6 +43,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @adapter = adapter
       @initial_urls = initial_urls
       
+      raise ArgumentError, "No URL Normalizer specified!" unless options[:url_normalizer]
+      @url_normalizer = options[:url_normalizer]
       DEFAULT_OPTIONS.merge(options).tap do |merged|
         @healthcheck_path = merged[:healthcheck_path]
         @scheme = merged[:scheme]
@@ -50,7 +52,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         @auth = merged[:auth]
         @sniffing = merged[:sniffing]
         @sniffer_delay = merged[:sniffer_delay]
-        @url_normalizer = merged[:url_normalizer]
       end
 
       # Override the scheme if one is explicitly set in urls
@@ -236,10 +237,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
                       url: url, healthcheck_path: @healthcheck_path)
           response = perform_request_to_url(url, "HEAD", @healthcheck_path)
           # If no exception was raised it must have succeeded!
-          logger.warn("Restored connection to ES instance", :url => url)
+          logger.warn("Restored connection to ES instance", :url => url.sanitized)
           @state_mutex.synchronize { meta[:state] = :alive }
         rescue HostUnreachableError, BadResponseCodeError => e
-          logger.warn("Attempted to resurrect connection to dead ES instance, but got an error.", url: url, error_type: e.class, error: e.message)
+          logger.warn("Attempted to resurrect connection to dead ES instance, but got an error.", url: url.sanitized, error_type: e.class, error: e.message)
         end
       end
     end
@@ -272,7 +273,11 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def normalize_url(uri)
-      @url_normalizer.call(uri)
+      u = @url_normalizer.call(uri)
+      if !u.is_a?(::LogStash::Util::SafeURI)
+        raise "URL Normalizer returned a '#{u.class}' rather than a SafeURI! This shouldn't happen!"
+      end
+      u
     end
 
     def update_urls(new_urls)
@@ -280,6 +285,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       
       # Normalize URLs
       new_urls = new_urls.map(&method(:normalize_url))
+      
       # Used for logging nicely
       state_changes = {:removed => [], :added => []}
       @state_mutex.synchronize do

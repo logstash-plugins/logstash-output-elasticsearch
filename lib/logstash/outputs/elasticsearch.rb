@@ -199,7 +199,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def close
     @stopping.make_true
     @client.close if @client
-    puts "CLIENT CLOSED"
   end
 
   @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }

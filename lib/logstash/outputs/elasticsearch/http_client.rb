@@ -143,13 +143,13 @@ module LogStash; module Outputs; class ElasticSearch;
       values = uris.map(&property).uniq
 
       if sniff_check && values.size > 1
-          raise LogStash::ConfigurationError, "Cannot have multiple values for #{property} in hosts when sniffing is enabled!"
+        raise LogStash::ConfigurationError, "Cannot have multiple values for #{property} in hosts when sniffing is enabled!"
       end
 
       uri_value = values.first
 
-      default = nil if default == '' # Blanks are as good as nil
-      uri_value = nil if uri_value == ''
+      default = nil if default.is_a?(String) && default.empty? # Blanks are as good as nil
+      uri_value = nil if uri_value.is_a?(String) && uri_value.empty?
 
       if default && uri_value && (default != uri_value)
         raise LogStash::ConfigurationError, "Explicit value for '#{property}' was declared, but it is different in one of the URLs given! Please make sure your URLs are inline with explicit values. The URLs have the property set to '#{uri_value}', but it was also set to '#{default}' explicitly"
@@ -281,8 +281,8 @@ module LogStash; module Outputs; class ElasticSearch;
       parameters = client_settings[:parameters]
       if parameters && !parameters.empty?
         combined = uri.query ?
-           CGI::parse(uri.query).merge(parameters) :
-           parameters
+          Hash[URI::decode_www_form(uri.query)].merge(parameters) :
+          parameters
         query_str = combined.flat_map {|k,v|
           values = Array(v)
           values.map {|av| "#{k}=#{av}"}
