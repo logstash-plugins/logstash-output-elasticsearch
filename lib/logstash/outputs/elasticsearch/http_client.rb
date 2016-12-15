@@ -197,9 +197,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def port
-      # Users can't set this, so we always set the default to nil,
-      # We have an or because we always want to return something
-      calculate_property(uris, :port, nil, sniffing) || 9200
+      calculate_property(uris, :port, 9200, sniffing)
     end
     
     def uris
