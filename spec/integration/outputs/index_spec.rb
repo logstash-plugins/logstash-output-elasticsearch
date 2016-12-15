@@ -58,6 +58,7 @@ describe "TARGET_BULK_BYTES", :integration => true do
 
 
   before do
+    puts "RAW CURLTEST #{`curl http://localhost:9200`}"
     subject.register
     allow(subject.client).to receive(:bulk_send).with(any_args).and_call_original
     subject.multi_receive(events)

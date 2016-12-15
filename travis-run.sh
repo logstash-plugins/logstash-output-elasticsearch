@@ -21,7 +21,7 @@ setup_es() {
 
 start_es() {
   es_args=$@
-  elasticsearch/bin/elasticsearch $es_args > /tmp/elasticsearch.log 2>/dev/null &
+  elasticsearch/bin/elasticsearch $es_args &
   count=120
   echo "Waiting for elasticsearch to respond..."
   while ! curl --silent localhost:9200 && [[ $count -ne 0 ]]; do

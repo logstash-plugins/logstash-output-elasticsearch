@@ -211,7 +211,6 @@ module LogStash; module Outputs; class ElasticSearch;
         sleep_interval = next_sleep_interval(sleep_interval)
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-        safe_url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(e.url)
         log_hash = {:code => e.response_code, :url => e.url.sanitized}
         log_hash[:body] = e.body if @logger.debug? # Generally this is too verbose
           
