@@ -97,10 +97,10 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     end
   end
 
-  describe "bulk response" do
+  describe "join_bulk_responses" do
     subject { described_class.new(base_options) }
 
-    context "with items available" do
+    context "when items key is available" do
       require "json"
       let(:bulk_response) {
         LogStash::Json.load ('[{
@@ -124,7 +124,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       end
     end
 
-    context "with items are not available" do
+    context "when items key is not available" do
       require "json"
       let(:bulk_response) {
         JSON.parse ('[{
