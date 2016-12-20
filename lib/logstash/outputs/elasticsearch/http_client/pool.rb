@@ -235,7 +235,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         safe_url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
         begin
-          if @is_healthcheck_path_absolute do
+          if @is_healthcheck_path_absolute
             healthcheck_safe_url = ::LogStash::Util::SafeURI.new(@healthcheck_path)
             logger.info("Running health check to see if an Elasticsearch connection is working",
                         healthcheck_url: healthcheck_safe_url)
