@@ -8,6 +8,7 @@ require "stud/buffer"
 require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
 require "uri" # for escaping user input
+require "forwardable"
 
 # This plugin is the recommended method of storing logs in Elasticsearch.
 # If you plan on using the Kibana web interface, you'll want to use this output.
@@ -38,9 +39,13 @@ require "uri" # for escaping user input
 # This plugin uses the Elasticsearch bulk API to optimize its imports into Elasticsearch. These requests may experience
 # either partial or total failures.
 #
-# The following errors are retried infinitely:
+# Total failures, meaning the 'main' HTTP response code is 200 for the request are always retried infinitely with the exception of 400 
+# (Bad Request)responses. This also includes all network related failures. 400 responses are dropped because they most likely are the result
+# of a too-large request. This can happen if you have individual events approaching the 100MiB mark. This output will detect large events and
+# try to create requests less than 100MiB but it will not divide events up.
 #
-# - Network errors (inability to connect)
+# Partial failures, meaning an individual event comprising a part of a bulk payload will only be retried if they are:
+#
 # - 429 (Too many requests) and
 # - 503 (Service unavailable) errors
 #
@@ -50,6 +55,7 @@ require "uri" # for escaping user input
 # ==== Batch Sizes ====
 # This plugin attempts to send batches of events as a single request. However, if
 # a request exceeds 20MB we will break it up until multiple batch requests. If a single document exceeds 20MB it will be sent as a single request.
+# If that single document's serialized size exceeds `max_batch_size` (by default 99MiB) then the event will be dropped and an error logged.
 #
 # ==== DNS Caching
 #
@@ -145,10 +151,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :sniffing_delay, :validate => :number, :default => 5
 
   # Set the address of a forward HTTP proxy.
-  # Can be either a string, such as `http://localhost:123` or a hash in the form
-  # of `{host: 'proxy.org' port: 80 scheme: 'http'}`.
-  # Note, this is NOT a SOCKS proxy, but a plain HTTP proxy
-  config :proxy
+  # This used to accept hashes as arguments but now only accepts
+  # arguments of the URI type to prevent leaking credentials.
+  config :proxy, :validate => :uri
 
   # Set the timeout, in seconds, for network operations and requests sent Elasticsearch. If
   # a timeout occurs, the request will be retried.
@@ -191,13 +196,35 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # have become stale (half-closed) while kept inactive in the pool.'
   # See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/conn/PoolingHttpClientConnectionManager.html#setValidateAfterInactivity(int)[these docs for more info]
   config :validate_after_inactivity, :validate => :number, :default => 10000
+  
+  # This is the maximum size HTTP request this plugin will attempt to send.
+  #
+  # This plugin will try to send appropriately sized requests, using multiple
+  # requests per batch if the events are very large, but if a single event
+  # is larger than this value sending even that single request would be rejected by elasticsearch. 
+  # To accomodate this behavior this output will not send requests if they exceed a size that
+  # would be rejected by Elasticsearch.
+  #
+  # You should only consider changing this setting if:
+  # 1. You want to set it to a lower value to prevent large events being stored in ES.
+  # 2. You have increased Elasticsearch's `http.max_content_length` setting.
+  # 
+  # We check this size after serializing to see whether we should even try to send it
+  # If the event is larger than this we log an error and drop the event.
+  # 
+  # The default is set to work with Elasticsearch's default maximum request size of 100MiB
+  # Note that we've set it by default to 1MiB lower as a fudge factor for any protocol overhead
+  # or other things that could account for a slight difference in the HTTTP request, as our size
+  # check only happens on the request body.
+  config :max_request_size, :validate => :number, :default => 99 * 1024 * 1024
 
   def build_client
-    @client = ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
+    @client ||= ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
   end
 
   def close
     @stopping.make_true
+    @client.close if @client
   end
 
   @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }

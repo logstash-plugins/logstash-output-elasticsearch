@@ -9,7 +9,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter do
 
   it "should raise an exception if requests are issued after close" do
     subject.close
-    expect { subject.perform_request("http://localhost:9200", :get, '/') }.to raise_error(::Manticore::ClientStoppedException)
+    expect { subject.perform_request(::LogStash::Util::SafeURI.new("http://localhost:9200"), :get, '/') }.to raise_error(::Manticore::ClientStoppedException)
   end
 
   it "should implement host unreachable exceptions" do
@@ -18,7 +18,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter do
 
   describe "integration specs", :integration => true do
     it "should perform correct tests without error" do
-      resp = subject.perform_request("http://localhost:9200", :get, "/")
+      resp = subject.perform_request(::LogStash::Util::SafeURI.new("http://localhost:9200"), :get, "/")
       expect(resp.code).to eql(200)
     end
   end

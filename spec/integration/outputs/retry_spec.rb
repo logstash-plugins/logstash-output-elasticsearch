@@ -76,16 +76,50 @@ describe "failures in bulk class expected behavior", :integration => true do
     subject.multi_receive([event1])
   end
 
-  it "should retry actions with response status of 503" do    expect(subject).to receive(:submit).with([action1, action1, action1, action2]).ordered.once.and_call_original
+  it "should retry actions with response status of 503" do
+    expect(subject).to receive(:submit).with([action1, action1, action1, action2]).ordered.once.and_call_original
     expect(subject).to receive(:submit).with([action1, action2]).ordered.once.and_call_original
     expect(subject).to receive(:submit).with([action2]).ordered.once.and_call_original
 
     subject.register
+    
     mock_actions_with_response({"errors" => true, "statuses" => [200, 200, 503, 503]},
                                {"errors" => true, "statuses" => [200, 503]},
-                               {"errors" => false})
+                               {"errors" => false, "statuses" => [200]})
 
     subject.multi_receive([event1, event1, event1, event2])
+  end
+  
+  it "should always retry actions against teapots and other non-retryable main response codes" do
+    expect(subject).to receive(:submit).with([action1, action2]).ordered.once.and_call_original
+    expect(subject.logger).to receive(:error).with(/a bad HTTP response code/, anything).once
+
+    subject.register
+    
+    i = 0
+    expect(subject.client).to receive(:bulk).
+      with(any_args) do
+        i += 1
+        if i==1
+          raise(::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(418, LogStash::Util::SafeURI.new("http://fake.address"), "I'm a teapot"))
+        else
+          ok_status = [["index", {"status" => 200}]]
+          {"errors" => "false", "items" => [ok_status, ok_status]}
+        end
+      end.at_least(:once)
+
+    subject.multi_receive([event1, event2])
+  end
+  
+  it "should log and drop requests if the payload is too large" do
+    # 120MiB Event, ES will return a 400 error in this case
+    # This can cause an OOM if you don't enlarge your heap size
+    too_large = ::LogStash::Event.new("message" => "a" * ((1024**2) * 101))
+    
+    subject.register
+    expect(subject.client).to receive(:bulk).once.and_call_original
+    expect(subject.client.logger).to receive(:error).with(/Dropping event, too large/i, anything).once
+    subject.multi_receive([too_large])
   end
 
   it "should retry actions with response status of 429" do

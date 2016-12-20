@@ -5,15 +5,30 @@ require "json"
 describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:logger) { Cabin::Channel.get }
   let(:adapter) { LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter.new(logger) }
-  let(:initial_urls) { [URI.parse("http://localhost:9200")] }
-  let(:options) { {:resurrect_delay => 2} } # Shorten the delay a bit to speed up tests
+  let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
+  let(:options) { {:resurrect_delay => 2, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
 
   subject { described_class.new(logger, adapter, initial_urls, options) }
   
+  let(:manticore_double) { double("manticore a") }
   before do
     allow(adapter).to receive(:perform_request).with(anything, 'HEAD', subject.healthcheck_path, {}, nil)
-  end
+    
+    
+    response_double = double("manticore response").as_null_object
+    # Allow healtchecks
+    allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
+    allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
+    
+    allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
 
+    subject.start
+  end
+  
+  after do
+    subject.close
+  end
+  
   describe "initialization" do
     it "should be successful" do
       expect { subject }.not_to raise_error
@@ -51,6 +66,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       allow(adapter).to receive(:close).and_call_original
       allow(subject).to receive(:wait_for_in_use_connections).and_call_original
       allow(subject).to receive(:in_use_connections).and_return([subject.empty_url_meta()],[])
+      allow(subject).to receive(:start)
       subject.close
     end
 
@@ -73,33 +89,18 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     end
   end
   
-  describe "safe_state_changes" do
-    let(:state_changes) do 
-      {
-        :added => [URI.parse("http://sekretu:sekretp@foo1")],
-        :removed => [URI.parse("http://sekretu:sekretp@foo2")]
-      }
-    end
-    let(:processed) { subject.safe_state_changes(state_changes)}
-    
-    it "should hide passwords" do
-      expect(processed[:added].any? {|p| p =~ /sekretp/ }).to be false
-      expect(processed[:removed].any? {|p| p =~ /sekretp/ }).to be false
-    end
-  end
-
   describe "connection management" do
     context "with only one URL in the list" do
       it "should use the only URL in 'with_connection'" do
         subject.with_connection do |c|
-          expect(c).to eql(initial_urls.first)
+          expect(c).to eq(initial_urls.first)
         end
       end
     end
 
     context "with multiple URLs in the list" do
-      let(:initial_urls) { [ URI.parse("http://localhost:9200"), URI.parse("http://localhost:9201"), URI.parse("http://localhost:9202") ] }
-
+      let(:initial_urls) { [ ::LogStash::Util::SafeURI.new("http://localhost:9200"), ::LogStash::Util::SafeURI.new("http://localhost:9201"), ::LogStash::Util::SafeURI.new("http://localhost:9202") ] }
+      
       it "should minimize the number of connections to a single URL" do
         connected_urls = []
 

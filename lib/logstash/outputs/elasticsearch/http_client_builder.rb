@@ -6,11 +6,14 @@ module LogStash; module Outputs; class ElasticSearch;
         :pool_max_per_route => params["pool_max_per_route"],
         :check_connection_timeout => params["validate_after_inactivity"]
       }
-
+      
+      client_settings[:proxy] = params["proxy"] if params["proxy"]
+      
       common_options = {
         :client_settings => client_settings,
         :resurrect_delay => params["resurrect_delay"],
-        :healthcheck_path => params["healthcheck_path"]
+        :healthcheck_path => params["healthcheck_path"],
+        :max_request_size => params["max_request_size"]
       }
 
       if params["sniffing"]
@@ -31,7 +34,6 @@ module LogStash; module Outputs; class ElasticSearch;
       logger.debug? && logger.debug("Normalizing http path", :path => params["path"], :normalized => client_settings[:path])
 
       client_settings.merge! setup_ssl(logger, params)
-      client_settings.merge! setup_proxy(logger, params)
       common_options.merge! setup_basic_auth(logger, params)
 
       # Update API setup
@@ -59,25 +61,8 @@ module LogStash; module Outputs; class ElasticSearch;
       )
     end
 
-    def self.setup_proxy(logger, params)
-      proxy = params["proxy"]
-      return {} unless proxy
-
-      # Symbolize keys
-      proxy = if proxy.is_a?(Hash)
-                Hash[proxy.map {|k,v| [k.to_sym, v]}]
-              elsif proxy.is_a?(String)
-                proxy
-              else
-                raise LogStash::ConfigurationError, "Expected 'proxy' to be a string or hash, not '#{proxy}''!"
-              end
-
-      return {:proxy => proxy}
-    end
-
     def self.setup_ssl(logger, params)
-      # If we have HTTPS hosts we act like SSL is enabled
-      params["ssl"] = true if params["hosts"].any? {|h| h.start_with?("https://")}
+      params["ssl"] = true if params["hosts"].any? {|h| h.scheme == "https" }
       return {} if params["ssl"].nil?
 
       return {:ssl => {:enabled => false}} if params["ssl"] == false

@@ -1,5 +1,4 @@
 require 'manticore'
-require "logstash/outputs/elasticsearch/safe_url"
 
 module LogStash; module Outputs; class ElasticSearch; class HttpClient;
   class ManticoreAdapter
@@ -31,10 +30,22 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def perform_request(url, method, path, params={}, body=nil)
       params = (params || {}).merge @request_options
       params[:body] = body if body
-      # Convert URI object to string
-      url_and_path = path ? (url + path).to_s  : url.to_s
+      
+      # Create a new SafeURI that we can modify
+      if path && path != "/"
+        url_with_path = ::LogStash::Util::SafeURI.new(url.uri.clone)
+        url_with_path.path = url.path + (path.start_with?("/") ? path : "/#{path}")
+      else
+        url_with_path = url
+      end
 
-      resp = @manticore.send(method.downcase, url_and_path, params)
+      if url_with_path.user
+        params[:auth] = { :user => url_with_path.user, :pass => url_with_path.password }
+        url_with_path.user = nil
+        url_with_path.password = nil
+      end
+
+      resp = @manticore.send(method.downcase, url_with_path.to_s, params)
 
       # Manticore returns lazy responses by default
       # We want to block for our usage, this will wait for the repsonse
@@ -45,8 +56,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # template installation. We might need a better story around this later
       # but for our current purposes this is correct
       if resp.code < 200 || resp.code > 299 && resp.code != 404
-        safe_url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
-        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(resp.code, safe_url + path, resp.body)
+        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(resp.code, url_with_path, body)
       end
 
       resp
