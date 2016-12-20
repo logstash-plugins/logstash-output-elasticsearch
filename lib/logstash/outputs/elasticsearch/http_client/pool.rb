@@ -29,8 +29,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
     attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :auth, :healthcheck_path
 
+    ROOT_URI_PATH = '/'.freeze
+    HEAD_HTTP_REQ = 'HEAD'.freeze
+
     DEFAULT_OPTIONS = {
-      :healthcheck_path => '/'.freeze,
+      :healthcheck_path => ROOT_URI_PATH,
+      :is_healthcheck_path_absolute => false,
       :scheme => 'http',
       :resurrect_delay => 5,
       :auth => nil, # Can be set to {:user => 'user', :password => 'pass'}
@@ -44,6 +48,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
       DEFAULT_OPTIONS.merge(options).tap do |merged|
         @healthcheck_path = merged[:healthcheck_path]
+        @is_healthcheck_path_absolute = merged[:is_healthcheck_path_absolute]
         @scheme = merged[:scheme]
         @resurrect_delay = merged[:resurrect_delay]
         @auth = merged[:auth]
@@ -230,9 +235,16 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         safe_url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
         begin
-          logger.info("Running health check to see if an Elasticsearch connection is working",
-                      url: safe_url, healthcheck_path: @healthcheck_path)
-          response = perform_request_to_url(url, "HEAD", @healthcheck_path)
+          if @is_healthcheck_path_absolute
+            healthcheck_safe_url = ::LogStash::Util::SafeURI.new(@healthcheck_path)
+            logger.info("Running health check to see if an Elasticsearch connection is working",
+                        healthcheck_url: healthcheck_safe_url)
+            response = perform_request_to_url(healthcheck_safe_url, HEAD_HTTP_REQ, ROOT_URI_PATH)
+          else
+            logger.info("Running health check to see if an Elasticsearch connection is working",
+                        url: safe_url, healthcheck_path: @healthcheck_path)
+            response = perform_request_to_url(url, HEAD_HTTP_REQ, @healthcheck_path)
+          end
           # If no exception was raised it must have succeeded!
           logger.warn("Restored connection to ES instance", :url => safe_url)
           @state_mutex.synchronize { meta[:state] = :alive }

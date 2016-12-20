@@ -177,6 +177,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # this
   config :healthcheck_path, :validate => :string, :default => "/"
 
+  # When a `healthcheck_path` config is provided, this additional flag can be used to 
+  # specify whether it is an absolute URI or a relative path. 
+  # If this flag is true, `healthcheck_path` is expected to be a fully formed URL 
+  # with any basic auth credentials provided in the URL itself.
+  config :is_healthcheck_path_absolute, :validate => :boolean, :default => false
+
   # How frequently, in seconds, to wait between resurrection attempts.
   # Resurrection is the process by which backend endpoints marked 'down' are checked
   # to see if they have come back to life
