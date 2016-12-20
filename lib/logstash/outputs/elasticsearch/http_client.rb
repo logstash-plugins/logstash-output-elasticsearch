@@ -91,7 +91,7 @@ module LogStash; module Outputs; class ElasticSearch;
     def join_bulk_responses(bulk_responses)
       {
         "errors" => bulk_responses.any? {|r| r["errors"] == true},
-        "items" => bulk_responses.reduce([]) {|m,r| m.concat(r["items"])}
+        "items" => bulk_responses.reduce([]) {|m,r| m.concat(r.fetch("items", []))}
       }
     end
 
