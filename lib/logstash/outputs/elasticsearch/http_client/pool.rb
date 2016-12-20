@@ -34,7 +34,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
     DEFAULT_OPTIONS = {
       :healthcheck_path => ROOT_URI_PATH,
-      :is_healthcheck_path_absolute => false
+      :is_healthcheck_path_absolute => false,
       :scheme => 'http',
       :resurrect_delay => 5,
       :auth => nil, # Can be set to {:user => 'user', :password => 'pass'}
