@@ -1,5 +1,4 @@
 require 'manticore'
-require "logstash/outputs/elasticsearch/safe_url"
 
 module LogStash; module Outputs; class ElasticSearch; class HttpClient;
   class ManticoreAdapter
@@ -7,16 +6,32 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
     def initialize(logger, options={})
       @logger = logger
-      @options = options || {}
-      @options[:ssl] = @options[:ssl] || {}
+      options = options.clone || {}
+      options[:ssl] = options[:ssl] || {}
 
       # We manage our own retries directly, so let's disable them here
-      @options[:automatic_retries] = 0
+      options[:automatic_retries] = 0
       # We definitely don't need cookies
-      @options[:cookies] = false
+      options[:cookies] = false
 
-      @request_options = @options[:headers] ? {:headers => @options[:headers]} : {}
-      @manticore = ::Manticore::Client.new(@options)
+      @request_options = options[:headers] ? {:headers => @options[:headers]} : {}
+      
+      if options[:proxy]
+        options[:proxy] = manticore_proxy_hash(options[:proxy])
+      end
+      
+      @manticore = ::Manticore::Client.new(options)
+    end
+    
+    # Transform the proxy option to a hash. Manticore's support for non-hash
+    # proxy options is broken. This was fixed in https://github.com/cheald/manticore/commit/34a00cee57a56148629ed0a47c329181e7319af5
+    # but this is not yet released
+    def manticore_proxy_hash(proxy_uri)
+      [:scheme, :port, :user, :password, :path].reduce(:host => proxy_uri.host) do |acc,opt|
+        value = proxy_uri.send(opt)
+        acc[opt] = value unless value.nil? || (value.is_a?(String) && value.empty?)
+        acc
+      end
     end
 
     def client
@@ -31,10 +46,27 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def perform_request(url, method, path, params={}, body=nil)
       params = (params || {}).merge @request_options
       params[:body] = body if body
-      # Convert URI object to string
-      url_and_path = path ? (url + path).to_s  : url.to_s
+      
+      request_uri = if path
+                      # Combine the paths using the minimal # of /s
+                      # First, we make sure the path is relative so URI.join does
+                      # the right thing
+                      relative_path = path && path.start_with?("/") ? path[1..-1] : path
+                      # Wrap this with a safe URI defensively against careless handling later
+                      ::LogStash::Util::SafeURI.new(URI.join(url.uri, relative_path))
+                    else
+                      ::LogStash::Util::SafeURI.new(url.uri.clone)
+                    end
+        
+      # We excise auth info from the URL in case manticore itself tries to stick
+      # sensitive data in a thrown exception or log data
+      if request_uri.user
+        params[:auth] = { :user => request_uri.user, :password => request_uri.password, :eager => true }
+        request_uri.user = nil
+        request_uri.password = nil
+      end
 
-      resp = @manticore.send(method.downcase, url_and_path, params)
+      resp = @manticore.send(method.downcase, request_uri.to_s, params)
 
       # Manticore returns lazy responses by default
       # We want to block for our usage, this will wait for the repsonse
@@ -45,8 +77,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # template installation. We might need a better story around this later
       # but for our current purposes this is correct
       if resp.code < 200 || resp.code > 299 && resp.code != 404
-        safe_url = ::LogStash::Outputs::ElasticSearch::SafeURL.without_credentials(url)
-        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(resp.code, safe_url + path, resp.body)
+        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(resp.code, request_uri, body)
       end
 
       resp
