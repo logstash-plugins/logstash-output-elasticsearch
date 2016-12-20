@@ -97,6 +97,49 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     end
   end
 
+  describe "bulk response" do
+    subject { described_class.new(base_options) }
+
+    context "with items available" do
+      require "json"
+      let(:bulk_response) {
+        LogStash::Json.load ('[{
+          "items": [{
+            "delete": {
+              "_index":   "website",
+              "_type":    "blog",
+              "_id":      "123",
+              "_version": 2,
+              "status":   200,
+              "found":    true
+            }
+          }],
+          "errors": false
+        }]')
+      }
+      it "should be handled properly" do
+        s = subject.send(:join_bulk_responses, bulk_response)
+        expect(s["errors"]).to be false
+        expect(s["items"].size).to be 1
+      end
+    end
+
+    context "with items are not available" do
+      require "json"
+      let(:bulk_response) {
+        JSON.parse ('[{
+          "took": 4,
+          "errors": false
+        }]')
+      }
+      it "should be handled properly" do
+        s = subject.send(:join_bulk_responses, bulk_response)
+        expect(s["errors"]).to be false
+        expect(s["items"].size).to be 0
+      end
+    end
+  end
+
   describe "sniffing" do
     let(:client) { LogStash::Outputs::ElasticSearch::HttpClient.new(base_options.merge(client_opts)) }
 
