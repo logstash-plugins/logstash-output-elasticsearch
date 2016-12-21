@@ -143,6 +143,15 @@ module LogStash; module Outputs; class ElasticSearch
       # Set which ingest pipeline you wish to execute for an event. You can also use event dependent configuration
       # here like `pipeline => "%{INGEST_PIPELINE}"`
       mod.config :pipeline, :validate => :string, :default => nil
+
+      # The document's version to use. Overrides Elasticsearch's internal version scheme.
+      mod.config :version, :validate => :string
+
+      # Allows for using different versioning system by using your own.
+      # Note: 'external_gte' and 'force' are for special cases. They may result in loss of data
+      # if used incorrectly.
+      # See https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types[here] for more on using version_type.
+      mod.config :version_type, :validate => ["internal", 'external', "external_gt", "external_gte", "force"]
     end
   end
 end end end
