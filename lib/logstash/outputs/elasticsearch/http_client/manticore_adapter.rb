@@ -46,25 +46,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def perform_request(url, method, path, params={}, body=nil)
       params = (params || {}).merge @request_options
       params[:body] = body if body
-      
-      request_uri = if path
-                      # Combine the paths using the minimal # of /s
-                      # First, we make sure the path is relative so URI.join does
-                      # the right thing
-                      relative_path = path && path.start_with?("/") ? path[1..-1] : path
-                      # Wrap this with a safe URI defensively against careless handling later
-                      ::LogStash::Util::SafeURI.new(URI.join(url.uri, relative_path))
-                    else
-                      ::LogStash::Util::SafeURI.new(url.uri.clone)
-                    end
-        
-      # We excise auth info from the URL in case manticore itself tries to stick
-      # sensitive data in a thrown exception or log data
-      if request_uri.user
-        params[:auth] = { :user => request_uri.user, :password => request_uri.password, :eager => true }
-        request_uri.user = nil
-        request_uri.password = nil
+
+      if url.user
+        params[:auth] = { :user => url.user, :password => url.password, :eager => true }
       end
+
+      request_uri = format_url(url, path)
 
       resp = @manticore.send(method.downcase, request_uri.to_s, params)
 
@@ -81,6 +68,31 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
 
       resp
+    end
+
+    def format_url(url, path)
+
+      request_uri = url.uri
+
+      if path
+        # Combine the paths using the minimal # of /s
+        # First, we make sure the path is relative so URI.join does
+        # the right thing
+        relative_path = path && path.start_with?("/") ? path[1..-1] : path
+        query = request_uri.query
+        request_uri = URI.join(request_uri, relative_path)
+        request_uri.query = query
+      else
+        request_uri = request_uri.clone
+      end
+
+      # We excise auth info from the URL in case manticore itself tries to stick
+      # sensitive data in a thrown exception or log data
+      request_uri.user = nil
+      request_uri.password = nil
+
+      # Wrap this with a safe URI defensively against careless handling later
+      ::LogStash::Util::SafeURI.new(request_uri)
     end
 
     def close
