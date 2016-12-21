@@ -13,7 +13,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:manticore_double) { double("manticore a") }
   before do
     allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil)
-    
+    allow(adapter).to receive(:perform_request).with(subject.healthcheck_path, :head, "/", {}, nil)
     
     response_double = double("manticore response").as_null_object
     # Allow healtchecks
@@ -44,6 +44,25 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       expect(subject).to receive(:healthcheck!).once
       sleep(subject.resurrect_delay + 1)
     end
+
+    context "when using an absolute_healthcheck_path option" do
+      let(:options) { super.merge(:absolute_healthcheck_path => true, :healthcheck_path => "http://abc:xyz@localhost:9200")}
+      let(:pool) { described_class.new(logger, adapter, initial_urls, options) }
+
+      before do
+        pool.start
+      end
+
+      after do
+        pool.close
+      end
+
+      it "should use the healthcheck_path as URL to do a health check" do
+        expect(pool).to receive(:healthcheck!).once
+        sleep(pool.resurrect_delay + 1)
+      end
+    end
+
   end
 
   describe "the sniffer" do

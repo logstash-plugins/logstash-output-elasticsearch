@@ -27,10 +27,13 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
     end
 
-    attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :healthcheck_path
+    attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :healthcheck_path, :absolute_healthcheck_path
+
+    ROOT_URI_PATH = '/'.freeze
 
     DEFAULT_OPTIONS = {
-      :healthcheck_path => '/'.freeze,
+      :healthcheck_path => ROOT_URI_PATH,
+      :absolute_healthcheck_path => false,
       :scheme => 'http',
       :resurrect_delay => 5,
       :sniffing => false,
@@ -46,6 +49,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @url_normalizer = options[:url_normalizer]
       DEFAULT_OPTIONS.merge(options).tap do |merged|
         @healthcheck_path = merged[:healthcheck_path]
+        @absolute_healthcheck_path = merged[:absolute_healthcheck_path]
         @resurrect_delay = merged[:resurrect_delay]
         @sniffing = merged[:sniffing]
         @sniffer_delay = merged[:sniffer_delay]
@@ -225,9 +229,16 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # Try to keep locking granularity low such that we don't affect IO...
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         begin
-          logger.info("Running health check to see if an Elasticsearch connection is working",
-                      url: url, healthcheck_path: healthcheck_path)
-          response = perform_request_to_url(url, :head, healthcheck_path)
+          if @absolute_healthcheck_path
+            absolute_healthcheck_safe_url = ::LogStash::Util::SafeURI.new(healthcheck_path)
+            logger.info("Running health check to see if an Elasticsearch connection is working",
+                        absolute_healthcheck_url: absolute_healthcheck_safe_url.sanitized)
+            response = perform_request_to_url(healthcheck_path, :head, ROOT_URI_PATH)
+          else
+            logger.info("Running health check to see if an Elasticsearch connection is working",
+                        url: url, healthcheck_path: healthcheck_path)
+            response = perform_request_to_url(url, :head, healthcheck_path)
+          end
           # If no exception was raised it must have succeeded!
           logger.warn("Restored connection to ES instance", :url => url.sanitized)
           @state_mutex.synchronize { meta[:state] = :alive }
