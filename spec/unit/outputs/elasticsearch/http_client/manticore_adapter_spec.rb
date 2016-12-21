@@ -39,6 +39,34 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter do
     end
   end
 
+  describe "format_url" do
+    let(:url) { ::LogStash::Util::SafeURI.new("http://localhost:9200/path/") }
+    let(:path) { "_bulk" }
+    subject { described_class.new(double("logger"), {}) }
+
+    it "should add the path argument to the uri's path" do
+      expect(subject.format_url(url, path).path).to eq("/path/_bulk")
+    end
+
+    context "when uri contains query parameters" do
+      let(:query_params) { "query=value&key=value2" }
+      let(:url) { ::LogStash::Util::SafeURI.new("http://localhost:9200/path/?#{query_params}") }
+
+      it "should retain query_params after format" do
+        expect(subject.format_url(url, path).query).to eq(query_params)
+      end
+    end
+
+    context "when uri contains credentials" do
+      let(:url) { ::LogStash::Util::SafeURI.new("http://user:pass@localhost:9200") }
+
+      it "should remove credentials after format" do
+        expect(subject.format_url(url, path).user).to be_nil
+        expect(subject.format_url(url, path).password).to be_nil
+      end
+    end
+  end
+
   describe "integration specs", :integration => true do
     it "should perform correct tests without error" do
       resp = subject.perform_request(::LogStash::Util::SafeURI.new("http://localhost:9200"), :get, "/")
