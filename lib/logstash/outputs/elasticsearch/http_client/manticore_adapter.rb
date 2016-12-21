@@ -79,6 +79,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         # First, we make sure the path is relative so URI.join does
         # the right thing
         relative_path = path && path.start_with?("/") ? path[1..-1] : path
+        # because URI.join obliterates the query parameter, we need to save it
+        # and restore it after this operation
         query = request_uri.query
         request_uri = URI.join(request_uri, relative_path)
         request_uri.query = query
