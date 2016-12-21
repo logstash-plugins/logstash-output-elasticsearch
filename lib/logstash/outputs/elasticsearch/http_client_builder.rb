@@ -12,7 +12,8 @@ module LogStash; module Outputs; class ElasticSearch;
       common_options = {
         :client_settings => client_settings,
         :resurrect_delay => params["resurrect_delay"],
-        :healthcheck_path => params["healthcheck_path"]
+        :healthcheck_path => params["healthcheck_path"],
+        :absolute_healthcheck_path => params["absolute_healthcheck_path"]
       }
 
       if params["sniffing"]

@@ -9,26 +9,25 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:options) { {:resurrect_delay => 2, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
 
   subject { described_class.new(logger, adapter, initial_urls, options) }
-  
+
   let(:manticore_double) { double("manticore a") }
   before do
-    allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil)
-    
-    
+
     response_double = double("manticore response").as_null_object
     # Allow healtchecks
     allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
     allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
-    
+    allow(manticore_double).to receive(:close)
+
     allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
 
     subject.start
   end
-  
+
   after do
     subject.close
   end
-  
+
   describe "initialization" do
     it "should be successful" do
       expect { subject }.not_to raise_error
@@ -43,6 +42,26 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     it "should attempt to resurrect connections after the ressurrect delay" do
       expect(subject).to receive(:healthcheck!).once
       sleep(subject.resurrect_delay + 1)
+    end
+
+    describe "absolute_healthcheck_path" do
+      let(:options) { super.merge(:absolute_healthcheck_path => true, :healthcheck_path => "http://abc:xyz@localhost:9200")}
+      let(:pool) { described_class.new(logger, adapter, initial_urls, options) }
+
+      before do
+        pool.start
+      end
+
+      after do
+        pool.close
+      end
+
+      context "when enabled" do
+        it "should use the healthcheck_path as URL to do a health check" do
+          expect(adapter).to receive(:perform_request).with(::LogStash::Util::SafeURI.new(subject.healthcheck_path), :head, "/", {}, nil)
+          pool.healthcheck!
+        end
+      end
     end
   end
 
@@ -88,7 +107,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       expect(subject).to have_received(:in_use_connections).twice
     end
   end
-  
+
   describe "connection management" do
     context "with only one URL in the list" do
       it "should use the only URL in 'with_connection'" do
@@ -99,8 +118,11 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     end
 
     context "with multiple URLs in the list" do
+      before :each do
+        allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil)
+      end
       let(:initial_urls) { [ ::LogStash::Util::SafeURI.new("http://localhost:9200"), ::LogStash::Util::SafeURI.new("http://localhost:9201"), ::LogStash::Util::SafeURI.new("http://localhost:9202") ] }
-      
+
       it "should minimize the number of connections to a single URL" do
         connected_urls = []
 
