@@ -45,7 +45,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       sleep(subject.resurrect_delay + 1)
     end
 
-    context "when using an absolute_healthcheck_path option" do
+    describe "absolute_healthcheck_path" do
       let(:options) { super.merge(:absolute_healthcheck_path => true, :healthcheck_path => "http://abc:xyz@localhost:9200")}
       let(:pool) { described_class.new(logger, adapter, initial_urls, options) }
 
@@ -57,12 +57,14 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
         pool.close
       end
 
-      it "should use the healthcheck_path as URL to do a health check" do
-        expect(pool).to receive(:healthcheck!).once
-        sleep(pool.resurrect_delay + 1)
+      context "when enabled" do
+        it "should use the healthcheck_path as URL to do a health check" do
+          expect(pool).to receive(:healthcheck!).once
+          expect(adapter).to receive(:perform_request).with(::LogStash::Util::SafeURI.new(subject.healthcheck_path), :head, "/", {}, nil)
+          pool.healthcheck!
+        end
       end
     end
-
   end
 
   describe "the sniffer" do
