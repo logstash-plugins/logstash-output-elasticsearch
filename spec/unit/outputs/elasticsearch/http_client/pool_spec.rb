@@ -13,7 +13,6 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:manticore_double) { double("manticore a") }
   before do
     allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil)
-    allow(adapter).to receive(:perform_request).with(::LogStash::Util::SafeURI.new(subject.healthcheck_path), :head, "/", {}, nil)
     
     response_double = double("manticore response").as_null_object
     # Allow healtchecks
@@ -50,6 +49,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       let(:pool) { described_class.new(logger, adapter, initial_urls, options) }
 
       before do
+        allow(adapter).to receive(:perform_request).with(::LogStash::Util::SafeURI.new(subject.healthcheck_path), :head, "/", {}, nil)
         pool.start
       end
 
