@@ -14,7 +14,6 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   before do
     allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil)
     
-    
     response_double = double("manticore response").as_null_object
     # Allow healtchecks
     allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
@@ -43,6 +42,28 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     it "should attempt to resurrect connections after the ressurrect delay" do
       expect(subject).to receive(:healthcheck!).once
       sleep(subject.resurrect_delay + 1)
+    end
+
+    describe "absolute_healthcheck_path" do
+      let(:options) { super.merge(:absolute_healthcheck_path => true, :healthcheck_path => "http://abc:xyz@localhost:9200")}
+      let(:pool) { described_class.new(logger, adapter, initial_urls, options) }
+
+      before do
+        allow(adapter).to receive(:perform_request).with(::LogStash::Util::SafeURI.new(subject.healthcheck_path), :head, "/", {}, nil)
+        pool.start
+      end
+
+      after do
+        pool.close
+      end
+
+      context "when enabled" do
+        it "should use the healthcheck_path as URL to do a health check" do
+          expect(pool).to receive(:healthcheck!).once
+          expect(adapter).to receive(:perform_request).with(::LogStash::Util::SafeURI.new(subject.healthcheck_path), :head, "/", {}, nil)
+          pool.healthcheck!
+        end
+      end
     end
   end
 
