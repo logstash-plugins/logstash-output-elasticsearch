@@ -1,3 +1,6 @@
+## 6.1.0
+- Add option to use an absolute healthcheck path
+
 ## 6.0.0
 - Proxies requiring auth now always work when a URL is specified
 - It is no longer possible to specify a proxy as a hash due to security reasons 
