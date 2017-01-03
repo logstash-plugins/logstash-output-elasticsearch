@@ -61,7 +61,7 @@ module LogStash; module Outputs; class ElasticSearch
       # Elasticsearch with the same ID.
       mod.config :document_id, :validate => :string
 
-      # The version to use for indexing.
+      # The version to use for indexing. Use sprintf syntax like `%{my_version}` to use a field value here.
       # See https://www.elastic.co/blog/elasticsearch-versioning-support.
       mod.config :version, :validate => :string
       

@@ -1,3 +1,6 @@
+## 6.2.0
+- Add version number / version conflict support
+
 ## 6.1.0
 - Add option to use an absolute healthcheck path
 
