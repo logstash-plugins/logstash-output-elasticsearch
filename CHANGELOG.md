@@ -1,3 +1,7 @@
+## 6.2.1
+- When an HTTP error is encountered, log the response body instead of the request.
+  The request body will still be logged at debug level.
+
 ## 6.2.0
 - Add version number / version conflict support
 
