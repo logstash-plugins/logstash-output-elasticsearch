@@ -2,16 +2,17 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
   class Pool
     class NoConnectionAvailableError < Error; end
     class BadResponseCodeError < Error
-      attr_reader :url, :response_code, :body
+      attr_reader :url, :response_code, :request_body, :response_body
 
-      def initialize(response_code, url, body)
+      def initialize(response_code, url, request_body, response_body)
         @response_code = response_code
         @url = url
-        @body = body
+        @request_body = request_body
+        @response_body = response_body
       end
 
       def message
-        "Got response code '#{response_code}' contact Elasticsearch at URL '#{@url}'"
+        "Got response code '#{response_code}' contacting Elasticsearch at URL '#{@url}'"
       end
     end
     class HostUnreachableError < Error;

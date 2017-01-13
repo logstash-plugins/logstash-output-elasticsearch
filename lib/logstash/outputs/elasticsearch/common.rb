@@ -238,7 +238,10 @@ module LogStash; module Outputs; class ElasticSearch;
           sleep_interval = sleep_for_interval(sleep_interval)
           retry unless @stopping.true?
         else
-          @logger.error("Got a bad response code from server, but this code is not considered retryable. Request will be dropped", :code => e.response_code, :body => e.body)
+          log_hash = {:code => e.response_code, 
+                      :response_body => e.response_body}
+          log_hash[:request_body] = e.request_body if @logger.debug?
+          @logger.error("Got a bad response code from server, but this code is not considered retryable. Request will be dropped", log_hash)
         end
       rescue => e
         # Stuff that should never happen
