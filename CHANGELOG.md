@@ -1,3 +1,10 @@
+## 6.2.2
+- Fixed a bug that forced users to URL encode the `password` option.
+  If you are currently manually escaping your passwords upgrading to this version
+  will break authentication. You should unescape your password if you have implemented
+  this workaround as it will otherwise be doubly encoded.
+  URL escaping is STILL required for passwords inline with URLs in the `hosts` option. 
+
 ## 6.2.1
 - When an HTTP error is encountered, log the response body instead of the request.
   The request body will still be logged at debug level.

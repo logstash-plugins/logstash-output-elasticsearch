@@ -87,6 +87,8 @@ module LogStash; module Outputs; class ElasticSearch
       #     `["https://127.0.0.1:9200/mypath"]` (If using a proxy on a subpath)
       # It is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `hosts` list
       # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes in Elasticsearch.
+      # 
+      # Any special characters present in the URLs here MUST be URL escaped! This means `#` should be put in as `%23` for instance.
       mod.config :hosts, :validate => :uri, :default => [::LogStash::Util::SafeURI.new("//127.0.0.1")], :list => true
 
       # This plugin uses the bulk index API for improved indexing performance.
