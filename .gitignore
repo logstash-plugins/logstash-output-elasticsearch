@@ -6,7 +6,7 @@ Gemfile.lock
 *~
 .ruby-version
 elasticsearch.tar.gz
-elasticsearch/
+/elasticsearch/*
 lumberjack.key
 target/
 vendor/

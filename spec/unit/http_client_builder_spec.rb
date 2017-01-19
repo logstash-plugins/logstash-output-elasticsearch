@@ -6,7 +6,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
   describe "auth setup with url encodable passwords" do
     let(:klass) { LogStash::Outputs::ElasticSearch::HttpClientBuilder }
     let(:user) { "foo@bar"}
-    let(:password) {"baz@blah" }
+    let(:password) {"bazblah" }
     let(:password_secured) do
       secured = double("password")
       allow(secured).to receive(:value).and_return(password)
@@ -22,6 +22,14 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
 
     it "should return the password verbatim" do
       expect(auth_setup[:password]).to eql(password)
+    end
+    
+    context "passwords that need escaping" do
+      let(:password) { "foo@bar#" }
+      
+      it "should escape the password" do
+        expect(auth_setup[:password]).to eql("foo%40bar%23")
+      end
     end
   end
 end
