@@ -10,3 +10,5 @@ elasticsearch.tar.gz
 lumberjack.key
 target/
 vendor/
+/spec/fixtures/server.key
+/spec/fixtures/server.crt

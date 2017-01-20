@@ -1,3 +1,7 @@
+## 6.2.4
+- Fix bug where using escaped characters in the password field would attempt to show a warning but instead crash.
+  The warning was also not necessary since escaped characters never worked there before.
+
 ## 6.2.3
 - Fixed a bug introduced in 6.2.2 where passwords needing escapes were not actually sent to ES properly
   encoded. 
