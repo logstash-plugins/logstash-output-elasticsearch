@@ -1,4 +1,5 @@
 require 'manticore'
+require 'cgi'
 
 module LogStash; module Outputs; class ElasticSearch; class HttpClient;
   class ManticoreAdapter
@@ -48,7 +49,13 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       params[:body] = body if body
 
       if url.user
-        params[:auth] = { :user => url.user, :password => url.password, :eager => true }
+        params[:auth] = { 
+          :user => url.user,
+          # We have to unescape the password here since manticore won't do it
+          # for us unless its part of the URL
+          :password => CGI.unescape(url.password), 
+          :eager => true 
+        }
       end
 
       request_uri = format_url(url, path)

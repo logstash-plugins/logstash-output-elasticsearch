@@ -1,3 +1,7 @@
+## 6.2.3
+- Fixed a bug introduced in 6.2.2 where passwords needing escapes were not actually sent to ES properly
+  encoded. 
+
 ## 6.2.2
 - Fixed a bug that forced users to URL encode the `password` option.
   If you are currently manually escaping your passwords upgrading to this version
