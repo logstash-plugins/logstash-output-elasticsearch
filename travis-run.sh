@@ -33,6 +33,11 @@ start_es() {
   return 0
 }
 
+start_nginx() {
+  ./start_nginx.sh &
+  sleep 5
+}
+
 if [[ "$INTEGRATION" != "true" ]]; then
   bundle exec rspec -fd spec
 else

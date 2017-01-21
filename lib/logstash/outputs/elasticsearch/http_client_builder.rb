@@ -124,20 +124,6 @@ module LogStash; module Outputs; class ElasticSearch;
       unsafe_password = password && password.value
       unsafe_escaped_password = unsafe_password ? CGI.escape(unsafe_password) : nil
       
-      # TODO: Remove this when we release LS6.0.0
-      if unsafe_password =~ /%[0-9A-Fa-f]{2}/
-        m <<-EOM
-        The Elasticsearch output was provided a password that looks like it includes URL encoded characters.
-        Previous versions of this plugin had a bug that required a workaround where users needed to manually
-        URL encode special characters in the password field. Given this, URL encoded strings will 
-        be doubly escaped making authentication fail. This may not apply to you.
-        If your password just happens to include string parts that simply look 
-        like URL encoded strings like '%2F' but are in fact just a part of your 
-        password then you can safely ignore this message. 
-        EOM
-        @logger.warn(m)
-      end
-      
       return {} unless user && unsafe_escaped_password
 
       {
