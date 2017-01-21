@@ -15,6 +15,10 @@ module LogStash; module Outputs; class ElasticSearch;
     VERSION_TYPES_PERMITTING_CONFLICT = ["external", "external_gt", "external_gte"]
 
     def register
+      if @password && @password.value == "changeme"
+        raise LogStash::ConfigurationError, "The password 'changeme' is an indication you should actually change this password before accessing Elasticsearch. To resolve this, you must change the password for the configured user to something other than 'changeme'."
+      end
+
       @stopping = Concurrent::AtomicBoolean.new(false)
       setup_hosts # properly sets @hosts
       build_client
