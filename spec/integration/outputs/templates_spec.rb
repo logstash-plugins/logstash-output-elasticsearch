@@ -12,15 +12,8 @@ describe "index template expected behavior", :integration => true, :version_less
   end
 
   before :each do
-    # Delete all templates first.
-    require "elasticsearch"
-
     # Clean ES of data before we start.
-    @es = get_client
-    @es.indices.delete_template(:name => "*")
-
-    # This can fail if there are no indexes, ignore failure.
-    @es.indices.delete(:index => "*") rescue nil
+    send_delete_all
 
     subject.register
 
@@ -35,57 +28,54 @@ describe "index template expected behavior", :integration => true, :version_less
       LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0 ] })
     ])
 
-    @es.indices.refresh
-
     # Wait or fail until everything's indexed.
-    Stud::try(20.times) do
-      r = @es.search
-      insist { r["hits"]["total"] } == 8
-    end
+    r = search_query_string("*")
+    expect(r["hits"]["total"]).to eq(8)
   end
 
   it "permits phrase searching on string fields" do
-    results = @es.search(:q => "message:\"sample message\"")
-    insist { results["hits"]["total"] } == 1
-    insist { results["hits"]["hits"][0]["_source"]["message"] } == "sample message here"
+    results = search_query_string("message:\"sample message\"")
+    expect(results["hits"]["total"]).to eq(1)
+    expect(results["hits"]["hits"][0]["_source"]["message"]).to eq("sample message here")
   end
 
   it "numbers dynamically map to a numeric type and permit range queries" do
-    results = @es.search(:q => "somevalue:[5 TO 105]")
-    insist { results["hits"]["total"] } == 2
+    results = search_query_string("somevalue:[5 TO 105]")
+    expect(results["hits"]["total"]).to eq(2)
 
     values = results["hits"]["hits"].collect { |r| r["_source"]["somevalue"] }
-    insist { values }.include?(10)
-    insist { values }.include?(100)
-    reject { values }.include?(1)
+    expect(values).to include(10)
+    expect(values).to include(100)
+    expect(values).not_to include(1)
   end
 
   it "does not create .raw field for the message field" do
-    results = @es.search(:q => "message.raw:\"sample message here\"")
-    insist { results["hits"]["total"] } == 0
+    results = search_query_string("message.raw:\"sample message here\"")
+    expect(results["hits"]["total"]).to eq(0)
   end
 
   it "creates .raw field for nested message fields" do
-    results = @es.search(:q => "somemessage.message.raw:\"sample nested message here\"")
-    insist { results["hits"]["total"] } == 1
+    results = search_query_string("somemessage.message.raw:\"sample nested message here\"")
+    expect(results["hits"]["total"]).to eq(1)
   end
 
   it "creates .raw field from any string field which is not_analyzed" do
-    results = @es.search(:q => "country.raw:\"us\"")
-    insist { results["hits"]["total"] } == 1
-    insist { results["hits"]["hits"][0]["_source"]["country"] } == "us"
+    results = search_query_string("country.raw:\"us\"")
+    expect(results["hits"]["total"]).to eq(1)
+    expect(results["hits"]["hits"][0]["_source"]["country"]).to eq("us")
 
     # partial or terms should not work.
-    results = @es.search(:q => "country.raw:\"u\"")
-    insist { results["hits"]["total"] } == 0
+    results = search_query_string("country.raw:\"u\"")
+    expect(results["hits"]["total"]).to eq(0)
   end
 
   it "make [geoip][location] a geo_point" do
-    expect(@es.indices.get_template(name: "logstash")["logstash"]["mappings"]["_default_"]["properties"]["geoip"]["properties"]["location"]["type"]).to eq("geo_point")
+    tmpl = send_json_request("/_template/logstash")
+    expect(tmpl["logstash"]["mappings"]["_default_"]["properties"]["geoip"]["properties"]["location"]["type"]).to eq("geo_point")
   end
 
   it "aggregate .raw results correctly " do
-    results = @es.search(:body => { "aggregations" => { "my_agg" => { "terms" => { "field" => "country.raw" } } } })["aggregations"]["my_agg"]
+    results = send_json_request(:get, "/_search", :body => { "aggregations" => { "my_agg" => { "terms" => { "field" => "country.raw" } } } })["aggregations"]["my_agg"]
     terms = results["buckets"].collect { |b| b["key"] }
 
     insist { terms }.include?("us")
@@ -94,5 +84,3 @@ describe "index template expected behavior", :integration => true, :version_less
     insist { terms }.include?("at")
   end
 end
-
-

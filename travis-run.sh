@@ -34,13 +34,34 @@ start_es() {
 }
 
 start_nginx() {
-  ./start_nginx.sh &
-  sleep 5
+  status_command='curl -k --silent --output /dev/stderr --write-out "%{http_code}" https://simpleuser:abc123@localhost:9900'
+
+  status=$($status_command | tr -d '"')
+  echo "Status is |$status|"
+  if [[ "$status" -ne "200" ]]; then
+    echo "nginx not started ($status)"
+    curl -k -i https://simpleuser:abc123@localhost:9900 & true 
+    echo "Starting nginx..."
+    ./start_nginx.sh &
+    sleep 5
+    echo "Sending request to nginx"
+  fi
+
+  status=$($status_command | tr -d '"')
+  if [[ "$status" -eq "200" ]]; then
+    echo "nginx started successfully!"
+  else
+    echo "NGINX could not be started successfully"
+    curl -k -i https://simpleuser:abc123@localhost:9900
+    exit 1
+  fi
 }
 
 if [[ "$INTEGRATION" != "true" ]]; then
   bundle exec rspec -fd spec
 else
+  start_nginx
+
   if [ "$1" -eq "" ]; then
     spec_path="spec"
   else

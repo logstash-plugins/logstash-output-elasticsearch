@@ -16,19 +16,10 @@ describe "Update actions", :integration => true, :version_greater_than_equal_to_
   end
 
   before :each do
-    @es = get_client
-    # Delete all templates first.
-    # Clean ES of data before we start.
-    @es.indices.delete_template(:name => "*")
-    # This can fail if there are no indexes, ignore failure.
-    @es.indices.delete(:index => "*") rescue nil
-    @es.index(
-      :index => 'logstash-update',
-      :type => 'logs',
-      :id => "123",
-      :body => { :message => 'Test', :counter => 1 }
-    )
-    @es.indices.refresh
+    send_delete_all
+    
+    doc = { :message => 'Test', :counter => 1 }
+    send_request(:put, "/logstash-update/logs/123", :body => doc)
   end
 
   it "should fail without a document_id" do
@@ -41,15 +32,15 @@ describe "Update actions", :integration => true, :version_greater_than_equal_to_
       subject = get_es_output({ 'document_id' => "456" } )
       subject.register
       subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-      expect {@es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+      expect(send_request(:get, "/logstash-update/logs/456").code).to eq(404)
     end
 
     it "should update existing document" do
       subject = get_es_output({ 'document_id' => "123" })
       subject.register
       subject.multi_receive([LogStash::Event.new("message" => "updated message here")])
-      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-      insist { r["_source"]["message"] } == 'updated message here'
+      r = send_json_request(:get, "/logstash-update/logs/123")
+      expect(r["_source"]["message"]).to eq('updated message here')
     end
 
     # The es ruby client treats the data field differently. Make sure this doesn't
@@ -58,9 +49,9 @@ describe "Update actions", :integration => true, :version_greater_than_equal_to_
       subject = get_es_output({ 'document_id' => "123" })
       subject.register
       subject.multi_receive([LogStash::Event.new("data" => "updated message here", "message" => "foo")])
-      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-      insist { r["_source"]["data"] } == 'updated message here'
-      insist { r["_source"]["message"] } == 'foo'
+      r = send_json_request(:get, "/logstash-update/logs/123")
+      expect(r["_source"]["data"]).to eq('updated message here')
+      expect(r["_source"]["message"]).to eq('foo')
     end
 
     it "should allow default (internal) version" do
@@ -95,16 +86,16 @@ describe "Update actions", :integration => true, :version_greater_than_equal_to_
       subject = get_es_output({ 'document_id' => "123", 'script' => 'scripted_update', 'script_type' => 'file' })
       subject.register
       subject.multi_receive([LogStash::Event.new("count" => 2)])
-      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-      insist { r["_source"]["counter"] } == 3
+      r = send_json_request(:get, "/logstash-update/logs/123")
+      expect(r["_source"]["counter"]).to eq(3)
     end
 
     it "should increment a counter with event/doc '[data][count]' nested variable" do
       subject = get_es_output({ 'document_id' => "123", 'script' => 'scripted_update_nested', 'script_type' => 'file' })
       subject.register
       subject.multi_receive([LogStash::Event.new("data" => { "count" => 3 })])
-      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-      insist { r["_source"]["counter"] } == 4
+      r = send_json_request(:get, "/logstash-update/logs/123")
+      expect(r["_source"]["counter"]).to eq(4)
     end
 
     it "should increment a counter with event/doc 'count' variable with inline script" do
@@ -116,8 +107,8 @@ describe "Update actions", :integration => true, :version_greater_than_equal_to_
       })
       subject.register
       subject.multi_receive([LogStash::Event.new("counter" => 3 )])
-      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-      insist { r["_source"]["counter"] } == 4
+      r = send_json_request(:get, "/logstash-update/logs/123")
+      expect(r["_source"]["counter"]).to eq(4)
     end
 
     it "should increment a counter with event/doc 'count' variable with event/doc as upsert and inline script" do
@@ -130,8 +121,8 @@ describe "Update actions", :integration => true, :version_greater_than_equal_to_
       })
       subject.register
       subject.multi_receive([LogStash::Event.new("counter" => 3 )])
-      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-      insist { r["_source"]["counter"] } == 4
+      r = send_json_request(:get, "/logstash-update/logs/123")
+      expect(r["_source"]["counter"]).to eq(4)
     end
 
     it "should, with new doc, set a counter with event/doc 'count' variable with event/doc as upsert and inline script" do
@@ -144,12 +135,12 @@ describe "Update actions", :integration => true, :version_greater_than_equal_to_
       })
       subject.register
       subject.multi_receive([LogStash::Event.new("counter" => 3 )])
-      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-      insist { r["_source"]["counter"] } == 3
+      r = send_json_request(:get, "/logstash-update/logs/456")
+      expect(r["_source"]["counter"]).to eq(3)
     end
 
     it "should increment a counter with event/doc 'count' variable with indexed script" do
-      @es.put_script lang: 'groovy', id: 'indexed_update', body: { script: 'ctx._source.counter += event["count"]' }
+      send_request(:put, "/_scripts/groovy/indexed_update", body: { script: 'ctx._source.counter += event["count"]' })
       subject = get_es_output({
         'document_id' => "123",
         'script' => 'indexed_update',
@@ -158,8 +149,8 @@ describe "Update actions", :integration => true, :version_greater_than_equal_to_
       })
       subject.register
       subject.multi_receive([LogStash::Event.new("count" => 4 )])
-      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-      insist { r["_source"]["counter"] } == 5
+      r = send_json_request(:get, "/logstash-update/logs/123")
+      expect(r["_source"]["counter"]).to eq(5)
     end
   end
 
@@ -168,16 +159,16 @@ describe "Update actions", :integration => true, :version_greater_than_equal_to_
       subject = get_es_output({ 'document_id' => "456", 'upsert' => '{"message": "upsert message"}' })
       subject.register
       subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-      insist { r["_source"]["message"] } == 'upsert message'
+      r = send_json_request(:get, "/logstash-update/logs/456")
+      expect(r["_source"]["message"]).to eq('upsert message')
     end
 
     it "should create new documents with event/doc as upsert" do
       subject = get_es_output({ 'document_id' => "456", 'doc_as_upsert' => true })
       subject.register
       subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-      r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-      insist { r["_source"]["message"] } == 'sample message here'
+      r = send_json_request(:get, "/logstash-update/logs/456")
+      expect(r["_source"]["message"]).to eq('sample message here')
     end
 
     it "should fail on documents with event/doc as upsert at external version" do
@@ -190,17 +181,16 @@ describe "Update actions", :integration => true, :version_greater_than_equal_to_
         subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_update', 'upsert' => '{"message": "upsert message"}', 'script_type' => 'file' })
         subject.register
         subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-        r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-        insist { r["_source"]["message"] } == 'upsert message'
+        r = send_json_request(:get, "/logstash-update/logs/456")
+        expect(r["_source"]["message"]).to eq('upsert message')
       end
 
       it "should create new documents with event/doc as script params" do
         subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_upsert', 'scripted_upsert' => true, 'script_type' => 'file' })
         subject.register
         subject.multi_receive([LogStash::Event.new("counter" => 1)])
-        @es.indices.refresh
-        r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-        insist { r["_source"]["counter"] } == 1
+        r = send_json_request(:get, "/logstash-update/logs/456")
+        expect(r["_source"]["counter"]).to eq(1)
       end
     end
   end

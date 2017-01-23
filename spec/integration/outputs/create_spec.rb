@@ -18,12 +18,7 @@ describe "client create actions", :integration => true do
   end
 
   before :each do
-    @es = get_client
-    # Delete all templates first.
-    # Clean ES of data before we start.
-    @es.indices.delete_template(:name => "*")
-    # This can fail if there are no indexes, ignore failure.
-    @es.indices.delete(:index => "*") rescue nil
+    send_delete_all
   end
 
   context "when action => create" do
@@ -31,12 +26,9 @@ describe "client create actions", :integration => true do
       subject = get_es_output("create", "id123")
       subject.register
       subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-      @es.indices.refresh
-      # Wait or fail until everything's indexed.
-      Stud::try(3.times) do
-        r = @es.search
-        insist { r["hits"]["total"] } == 1
-      end
+      send_refresh
+      r = search_query_string("*")
+      expect(r["hits"]["total"]).to eq(1)
     end
 
     it "should allow default (internal) version" do
