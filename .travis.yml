@@ -1,4 +1,8 @@
 ---
+addons:
+  apt:
+    packages:
+      - nginx
 sudo: false
 jdk: oraclejdk8
 env:

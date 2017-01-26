@@ -34,6 +34,9 @@ start_es() {
 }
 
 start_nginx() {
+  nginx=`which nginx`
+  echo "nginx Path: $nginx"
+
   status_command='curl -k --silent --output /dev/stderr --write-out "%{http_code}" https://simpleuser:abc123@localhost:9900'
 
   status=$($status_command | tr -d '"')
@@ -52,6 +55,7 @@ start_nginx() {
     echo "nginx started successfully!"
   else
     echo "NGINX could not be started successfully"
+    ps aux | grep [n]ginx
     curl -k -i https://simpleuser:abc123@localhost:9900
     exit 1
   fi
