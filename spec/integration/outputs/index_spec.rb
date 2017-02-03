@@ -44,7 +44,7 @@ describe "TARGET_BULK_BYTES", :integration => true do
   end
 end
 
-describe "indexing" do
+describe "indexing", :integration => true do
   let(:event) { LogStash::Event.new("message" => "Hello World!", "type" => type) }
   let(:index) { 10.times.collect { rand(10).to_s }.join("") }
   let(:type) { 10.times.collect { rand(10).to_s }.join("") }
@@ -82,6 +82,13 @@ describe "indexing" do
         expect(doc["_index"]).to eq(index)
       end
     end
+    
+    it "sets the correct content-type header" do
+      expect(subject.client.pool.adapter.client).to receive(:send).
+        with(anything, anything, {:headers => {"Content-Type" => "application/json"}, :body => anything}).
+        and_call_original
+      subject.multi_receive(events)
+    end
   end
 
   describe "an indexer with custom index_type", :integration => true do
@@ -105,7 +112,7 @@ describe "indexing" do
     it_behaves_like("an indexer")
   end
 
-  describe "a secured indexer", :integration => true do
+  describe "a secured indexer", :secure_integration => true do
     let(:user) { "simpleuser" }
     let(:password) { "abc123" }
     let(:cacert) { "spec/fixtures/server.crt" }
