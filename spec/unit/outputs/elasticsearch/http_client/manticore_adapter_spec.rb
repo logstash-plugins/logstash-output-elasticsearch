@@ -28,6 +28,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter do
       allow(resp).to receive(:code).and_return(200)
       expect(subject.manticore).to receive(:get).
         with(noauth_uri, {
+          :headers => {"Content-Type" => "application/json"},
           :auth => {
             :user => user,
             :password => password,

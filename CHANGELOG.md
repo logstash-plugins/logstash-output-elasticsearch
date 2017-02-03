@@ -1,3 +1,6 @@
+## 6.2.5
+- Send the Content-Type: application/json header that proper ES clients should send
+
 ## 6.2.4
 - Fix bug where using escaped characters in the password field would attempt to show a warning but instead crash.
   The warning was also not necessary since escaped characters never worked there before.

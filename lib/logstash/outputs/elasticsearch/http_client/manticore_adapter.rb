@@ -2,6 +2,8 @@ require 'manticore'
 require 'cgi'
 
 module LogStash; module Outputs; class ElasticSearch; class HttpClient;
+  DEFAULT_HEADERS = { "Content-Type" => "application/json" }
+  
   class ManticoreAdapter
     attr_reader :manticore, :logger
 
@@ -15,7 +17,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # We definitely don't need cookies
       options[:cookies] = false
 
-      @request_options = options[:headers] ? {:headers => @options[:headers]} : {}
+      @client_params = {:headers => DEFAULT_HEADERS.merge(options[:headers] || {})}
       
       if options[:proxy]
         options[:proxy] = manticore_proxy_hash(options[:proxy])
@@ -45,7 +47,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     # @see    Transport::Base#perform_request
     #
     def perform_request(url, method, path, params={}, body=nil)
-      params = (params || {}).merge @request_options
+      params = (params || {}).merge(@client_params)
       params[:body] = body if body
 
       if url.user
