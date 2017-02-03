@@ -3,7 +3,8 @@ addons:
   apt:
     packages:
       - nginx
-sudo: false
+# nginx does not like this
+# sudo: false
 jdk: oraclejdk8
 env:
 - INTEGRATION=false
