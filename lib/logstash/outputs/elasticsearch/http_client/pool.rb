@@ -231,10 +231,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         begin
           path = healthcheck_path
-          healthcheck_url = url
+          healthcheck_url = LogStash::Util::SafeURI.new(url.uri.clone)
+          healthcheck_url.query = nil
           if @absolute_healthcheck_path
-            healthcheck_url = ::LogStash::Util::SafeURI.new(healthcheck_path)
-            path = ROOT_URI_PATH
+            healthcheck_url.path = ROOT_URI_PATH
           end
           logger.info("Running health check to see if an Elasticsearch connection is working",
                         :healthcheck_url => healthcheck_url, :path => path)
