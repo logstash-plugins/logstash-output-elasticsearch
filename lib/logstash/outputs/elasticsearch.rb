@@ -176,14 +176,21 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # When a backend is marked down a HEAD request will be sent to this path in the
   # background to see if it has come back again before it is once again eligible
-  # to service requests. If you have custom firewall rules you may need to change
-  # this
+  # to service requests. If you have custom firewall rules you may need to change this
+  # NOTE: any query parameters present in the URL or query_params config option will be removed
   config :healthcheck_path, :validate => :string, :default => "/"
-  # When a `healthcheck_path` config is provided, this additional flag can be used to 
-  # specify whether it is an absolute URI or a relative path. 
-  # If this flag is true, `healthcheck_path` is expected to be a fully formed URL 
-  # with any basic auth credentials provided in the URL itself.
+
+  # When a `healthcheck_path` config is provided, this additional flag can be used to
+  # specify whether the healthcheck_path is appended to the existing path (default)
+  # or is treated as the absolute URL path.
+  #
+  # For example, if hosts url is "http://localhost:9200/es" and healthcheck_path is "/health",
+  # the health check url will be:
+  #
+  # * with `absolute_healthcheck_path: true`: "http://localhost:9200/es/health"
+  # * with `absolute_healthcheck_path: false`: "http://localhost:9200/health"
   config :absolute_healthcheck_path, :validate => :boolean, :default => false
+
   # How frequently, in seconds, to wait between resurrection attempts.
   # Resurrection is the process by which backend endpoints marked 'down' are checked
   # to see if they have come back to life

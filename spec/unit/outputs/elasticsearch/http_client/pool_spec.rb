@@ -44,22 +44,47 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       sleep(subject.resurrect_delay + 1)
     end
 
-    describe "absolute_healthcheck_path" do
-      let(:options) { super.merge(:absolute_healthcheck_path => true, :healthcheck_path => "http://abc:xyz@localhost:9200")}
-      let(:pool) { described_class.new(logger, adapter, initial_urls, options) }
+    describe "healthcheck url handling" do
+      let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200#{path}")] }
+      let(:healthcheck_path) { "/some/other/path" }
+      let(:absolute_healthcheck_path) { false }
+      let(:path) { "/meh" }
+      let(:options) { super.merge(:absolute_healthcheck_path => absolute_healthcheck_path, :path => path, :healthcheck_path => healthcheck_path) }
 
-      before do
-        pool.start
+      context "when using query params in the initial url" do
+        let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200?q=s")] }
+        it "is removed from the healthcheck request" do
+          expect(adapter).to receive(:perform_request) do |url, method, req_path, _, _|
+            expect(method).to eq(:head)
+            expect(url.query).to be_nil
+          end
+          subject.healthcheck!
+        end
       end
 
-      after do
-        pool.close
-      end
+      describe "absolute_healthcheck_path" do
+        context "when enabled" do
+          let(:absolute_healthcheck_path) { true }
+          it "should use the healthcheck_path as the absolute path" do
+            expect(adapter).to receive(:perform_request) do |url, method, req_path, _, _|
+              expect(method).to eq(:head)
+              expect(req_path).to eq(healthcheck_path)
+              expect(url.path).to eq("/")
+            end
+            subject.healthcheck!
+          end
+        end
 
-      context "when enabled" do
-        it "should use the healthcheck_path as URL to do a health check" do
-          expect(adapter).to receive(:perform_request).with(::LogStash::Util::SafeURI.new(subject.healthcheck_path), :head, "/", {}, nil)
-          pool.healthcheck!
+        context "when disabled" do
+          let(:absolute_healthcheck_path) { false }
+          it "should use the healthcheck_path as a relative path" do
+            expect(adapter).to receive(:perform_request) do |url, method, req_path, _, _|
+              expect(method).to eq(:head)
+              expect(req_path).to eq(healthcheck_path)
+              expect(url.path).to eq(path)
+            end
+            subject.healthcheck!
+          end
         end
       end
     end
