@@ -2,8 +2,6 @@ require 'manticore'
 require 'cgi'
 
 module LogStash; module Outputs; class ElasticSearch; class HttpClient;
-  DEFAULT_HEADERS = { "Content-Type" => "application/json" }
-  
   class ManticoreAdapter
     attr_reader :manticore, :logger
 
@@ -23,7 +21,13 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         options[:proxy] = manticore_proxy_hash(options[:proxy])
       end
       
-      @manticore = ::Manticore::Client.new(options)
+      @manticore = ::Manticore::Client.new(options) do |http_client_builder, request_builder|
+        if options[:cache_redirect]
+          # We'll manage redirects and cache them
+          @logger.info("Disabling Manticore redirect handling")
+          http_client_builder.disable_redirect_handling
+        end
+      end
     end
     
     # Transform the proxy option to a hash. Manticore's support for non-hash
@@ -72,7 +76,9 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # 404s are excluded because they are valid codes in the case of
       # template installation. We might need a better story around this later
       # but for our current purposes this is correct
-      if resp.code < 200 || resp.code > 299 && resp.code != 404
+      if resp.code == 302 && resp.headers["location"]
+        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::RedirectError.new(resp.headers["location"])
+      elsif resp.code < 200 || resp.code > 299 && resp.code != 404
         raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(resp.code, request_uri, body, resp.body)
       end
 
