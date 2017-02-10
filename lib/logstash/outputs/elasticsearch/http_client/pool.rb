@@ -27,14 +27,26 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         "Elasticsearch Unreachable: [#{@url}][#{original_error.class}] #{original_error.message}"
       end
     end
+    class RedirectError < Error
+      attr_reader :location
 
-    attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :healthcheck_path, :absolute_healthcheck_path
+      def initialize(location)
+        @location = location
+      end
+      
+      def message
+        "Elasticsearch returned an HTTP redirect to #{@location}"
+      end
+    end
+
+    attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :healthcheck_path, :absolute_healthcheck_path, :cache_redirect
 
     ROOT_URI_PATH = '/'.freeze
 
     DEFAULT_OPTIONS = {
       :healthcheck_path => ROOT_URI_PATH,
       :absolute_healthcheck_path => false,
+      :cache_redirect => false,
       :scheme => 'http',
       :resurrect_delay => 5,
       :sniffing => false,
@@ -50,6 +62,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @url_normalizer = options[:url_normalizer]
       DEFAULT_OPTIONS.merge(options).tap do |merged|
         @healthcheck_path = merged[:healthcheck_path]
+        @cache_redirect = merged[:cache_redirect]
         @absolute_healthcheck_path = merged[:absolute_healthcheck_path]
         @resurrect_delay = merged[:resurrect_delay]
         @sniffing = merged[:sniffing]
@@ -242,6 +255,15 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           # If no exception was raised it must have succeeded!
           logger.warn("Restored connection to ES instance", :url => healthcheck_url.sanitized)
           @state_mutex.synchronize { meta[:state] = :alive }
+        rescue RedirectError => e
+          if @cache_redirect
+            logger.info("Caching HTTP redirect: #{e.location}")
+            redirect = LogStash::Util::SafeURI.new(e.location)
+            update_urls([redirect])
+          else
+            logger.error("Received a redirect but redirect caching is disabled: #{e.location}")
+            raise e
+          end
         rescue HostUnreachableError, BadResponseCodeError => e
           logger.warn("Attempted to resurrect connection to dead ES instance, but got an error.", url: url.sanitized, error_type: e.class, error: e.message)
         end
@@ -356,6 +378,9 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     rescue BadResponseCodeError => e
       # These aren't discarded from the pool because these are often very transient
       # errors
+      raise e
+    rescue RedirectError => e
+      logger.warn("Received unexpected HTTP redirect", :e => e)
       raise e
     rescue => e
       logger.warn("UNEXPECTED POOL ERROR", :e => e)

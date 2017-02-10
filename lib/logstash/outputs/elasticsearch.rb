@@ -103,6 +103,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # not also set this field. That will raise an error at startup
   config :path, :validate => :string
 
+  # Follow and cache HTTP redirects
+  config :cache_redirect, :validate => :boolean, :default => false
+
   # Pass a set of key value pairs as the URL query string. This query string is added
   # to every host listed in the 'hosts' configuration. If the 'hosts' list contains
   # urls that already have query strings, the one specified here will be appended.

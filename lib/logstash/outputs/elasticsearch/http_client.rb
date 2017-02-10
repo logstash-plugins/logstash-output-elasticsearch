@@ -36,7 +36,9 @@ module LogStash; module Outputs; class ElasticSearch;
     # * `:user` - String. The user to use for authentication.
     # * `:password` - String. The password to use for authentication.
     # * `:timeout` - Float. A duration value, in seconds, after which a socket
-    #    operation or request will be aborted if not yet successfull
+    #    operation or request will be aborted if not yet successful
+    # * `:cache_redirect` - Boolean. Determine if HTTP 302 responses will
+    #    update `:hosts`
     # * `:client_settings` - a hash; see below for keys.
     #
     # The `client_settings` key is a has that can contain other settings:
@@ -221,6 +223,7 @@ module LogStash; module Outputs; class ElasticSearch;
       adapter_options = {
         :socket_timeout => timeout,
         :request_timeout => timeout,
+        :cache_redirect => options[:cache_redirect]
       }
 
       adapter_options[:proxy] = client_settings[:proxy] if client_settings[:proxy]
@@ -251,6 +254,7 @@ module LogStash; module Outputs; class ElasticSearch;
         :sniffer_delay => options[:sniffer_delay],
         :healthcheck_path => options[:healthcheck_path],
         :absolute_healthcheck_path => options[:absolute_healthcheck_path],
+        :cache_redirect => options[:cache_redirect],
         :resurrect_delay => options[:resurrect_delay],
         :url_normalizer => self.method(:host_to_url)
       }
