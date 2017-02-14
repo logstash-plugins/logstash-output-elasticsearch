@@ -4,6 +4,8 @@ require "base64"
 require 'logstash/outputs/elasticsearch/http_client/pool'
 require 'logstash/outputs/elasticsearch/http_client/manticore_adapter'
 require 'cgi'
+require 'zlib'
+require 'stringio'
 
 module LogStash; module Outputs; class ElasticSearch;
   # This is a constant instead of a config option because
@@ -22,6 +24,31 @@ module LogStash; module Outputs; class ElasticSearch;
   TARGET_BULK_BYTES = 20 * 1024 * 1024 # 20MiB
 
   class HttpClient
+    # Gzip library from rails ActiveSupport
+    module Gzip
+        class Stream < StringIO
+            def initialize(*)
+            super
+            set_encoding "BINARY"
+            end
+            def close; rewind; end
+        end
+
+        # Decompresses a gzipped string.
+        def self.decompress(source)
+            Zlib::GzipReader.new(StringIO.new(source)).read
+        end
+
+        # Compresses a string using gzip.
+        def self.compress(source, level=Zlib::DEFAULT_COMPRESSION, strategy=Zlib::DEFAULT_STRATEGY)
+            output = Stream.new
+            gz = Zlib::GzipWriter.new(output, level, strategy)
+            gz.write(source)
+            gz.close
+            output.string
+        end
+    end
+
     attr_reader :client, :options, :logger, :pool, :action_count, :recv_count
     # This is here in case we use DEFAULT_OPTIONS in the future
     # DEFAULT_OPTIONS = {
@@ -129,8 +156,13 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def bulk_send(bulk_body)
-      # Discard the URL
-      url, response = @pool.post("_bulk", nil, bulk_body)
+      params = {}
+      if use_gzip then 
+        params[:headers] = {"Content-Encoding" => "gzip"}
+        bulk_body = Gzip::compress(bulk_body)
+      end
+      # Discard the URL 
+      url, response = @pool.post("_bulk", params, bulk_body)
       LogStash::Json.load(response.body)
     end
 
@@ -213,6 +245,10 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def ssl_options
       client_settings.fetch(:ssl, {})
+    end
+
+    def use_gzip
+      client_settings.fetch(:use_gzip, {})
     end
 
     def build_adapter(options)

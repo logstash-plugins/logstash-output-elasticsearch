@@ -203,6 +203,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/conn/PoolingHttpClientConnectionManager.html#setValidateAfterInactivity(int)[these docs for more info]
   config :validate_after_inactivity, :validate => :number, :default => 10000
 
+  # Enable or disable gzip compression
+  config :use_gzip, :validate => :boolean, :default => false
+
   def build_client
     @client ||= ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
   end

@@ -47,7 +47,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     # @see    Transport::Base#perform_request
     #
     def perform_request(url, method, path, params={}, body=nil)
-      params = (params || {}).merge(@client_params)
+      params = (params || {}).merge(@client_params) { |key, oldval, newval| (oldval.class.to_s == 'Hash' && newval.class.to_s == 'Hash') ? oldval.merge(newval) : newval }
       params[:body] = body if body
 
       if url.user
