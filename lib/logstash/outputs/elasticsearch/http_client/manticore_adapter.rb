@@ -47,7 +47,11 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     # @see    Transport::Base#perform_request
     #
     def perform_request(url, method, path, params={}, body=nil)
-      params = (params || {}).merge(@client_params) { |key, oldval, newval| (oldval.class.to_s == 'Hash' && newval.class.to_s == 'Hash') ? oldval.merge(newval) : newval }
+      # Perform 2-level deep merge on the params, so if the passed params and client params will both have hashes stored on a key they
+      # will be merged as well, instead of choosing just one of the values
+      params = (params || {}).merge(@client_params) { |key, oldval, newval|
+        (oldval.is_a?(Hash) == 'Hash' && newval.is_a?(Hash)) ? oldval.merge(newval) : newval 
+      }
       params[:body] = body if body
 
       if url.user

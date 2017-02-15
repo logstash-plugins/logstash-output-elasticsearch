@@ -204,7 +204,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :validate_after_inactivity, :validate => :number, :default => 10000
 
   # Enable or disable gzip compression
-  config :use_gzip, :validate => :boolean, :default => false
+  config :upload_compression, :validate => :boolean, :default => false
 
   def build_client
     @client ||= ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)

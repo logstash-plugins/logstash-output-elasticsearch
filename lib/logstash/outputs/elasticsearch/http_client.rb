@@ -157,7 +157,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def bulk_send(bulk_body)
       params = {}
-      if use_gzip then 
+      if upload_compression then 
         params[:headers] = {"Content-Encoding" => "gzip"}
         bulk_body = Gzip::compress(bulk_body)
       end
@@ -247,8 +247,8 @@ module LogStash; module Outputs; class ElasticSearch;
       client_settings.fetch(:ssl, {})
     end
 
-    def use_gzip
-      client_settings.fetch(:use_gzip, {})
+    def upload_compression
+      client_settings.fetch(:upload_compression, {})
     end
 
     def build_adapter(options)
