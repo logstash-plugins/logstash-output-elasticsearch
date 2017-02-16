@@ -103,6 +103,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # not also set this field. That will raise an error at startup
   config :path, :validate => :string
 
+  # HTTP Path to perform the _bulk requests to
+  # this defaults to a concatenation of the path parameter and "_bulk"
+  config :bulk_path, :validate => :string
+
   # Pass a set of key value pairs as the URL query string. This query string is added
   # to every host listed in the 'hosts' configuration. If the 'hosts' list contains
   # urls that already have query strings, the one specified here will be appended.
@@ -145,6 +149,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # How long to wait, in seconds, between sniffing attempts
   config :sniffing_delay, :validate => :number, :default => 5
 
+  # HTTP Path to be used for the sniffing requests
+  # the default value is computed by concatenating the path value and "_nodes/http"
+  # if sniffing_path is set it will be used as an absolute path
+  # do not use full URL here, only paths, e.g. "/sniff/_nodes/http"
+  config :sniffing_path, :validate => :string
+
   # Set the address of a forward HTTP proxy.
   # This used to accept hashes as arguments but now only accepts
   # arguments of the URI type to prevent leaking credentials.
@@ -171,22 +181,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # which is bad.
   config :pool_max_per_route, :validate => :number, :default => 100
 
-  # When a backend is marked down a HEAD request will be sent to this path in the
-  # background to see if it has come back again before it is once again eligible
-  # to service requests. If you have custom firewall rules you may need to change this
-  # NOTE: any query parameters present in the URL or query_params config option will be removed
-  config :healthcheck_path, :validate => :string, :default => "/"
-
-  # When a `healthcheck_path` config is provided, this additional flag can be used to
-  # specify whether the healthcheck_path is appended to the existing path (default)
-  # or is treated as the absolute URL path.
-  #
-  # For example, if hosts url is "http://localhost:9200/es" and healthcheck_path is "/health",
-  # the health check url will be:
-  #
-  # * with `absolute_healthcheck_path: true`: "http://localhost:9200/es/health"
-  # * with `absolute_healthcheck_path: false`: "http://localhost:9200/health"
-  config :absolute_healthcheck_path, :validate => :boolean, :default => false
+  # HTTP Path where a HEAD request is sent when a backend is marked down
+  # the request is sent in the background to see if it has come back again
+  # before it is once again eligible to service requests.
+  # If you have custom firewall rules you may need to change this
+  config :healthcheck_path, :validate => :string
 
   # How frequently, in seconds, to wait between resurrection attempts.
   # Resurrection is the process by which backend endpoints marked 'down' are checked
