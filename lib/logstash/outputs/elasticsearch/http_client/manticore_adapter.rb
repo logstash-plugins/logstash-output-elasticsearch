@@ -79,7 +79,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       resp
     end
 
-    def format_url(url, path)
+    def format_url(url, path=nil)
 
       request_uri = url.uri
 
@@ -92,7 +92,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         # and restore it after this operation
         query = request_uri.query
         request_uri = URI.join(request_uri, relative_path)
-        request_uri.query = query
+        request_uri.query = query if query
       else
         request_uri = request_uri.clone
       end

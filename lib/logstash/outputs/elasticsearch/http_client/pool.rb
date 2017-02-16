@@ -28,13 +28,14 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
     end
 
-    attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :healthcheck_path, :absolute_healthcheck_path
+    attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :healthcheck_path, :sniffing_path, :bulk_path
 
     ROOT_URI_PATH = '/'.freeze
 
     DEFAULT_OPTIONS = {
       :healthcheck_path => ROOT_URI_PATH,
-      :absolute_healthcheck_path => false,
+      :sniffing_path => "/_nodes/http",
+      :bulk_path => "/_bulk",
       :scheme => 'http',
       :resurrect_delay => 5,
       :sniffing => false,
@@ -49,8 +50,9 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       raise ArgumentError, "No URL Normalizer specified!" unless options[:url_normalizer]
       @url_normalizer = options[:url_normalizer]
       DEFAULT_OPTIONS.merge(options).tap do |merged|
+        @bulk_path = merged[:bulk_path]
+        @sniffing_path = merged[:sniffing_path]
         @healthcheck_path = merged[:healthcheck_path]
-        @absolute_healthcheck_path = merged[:absolute_healthcheck_path]
         @resurrect_delay = merged[:resurrect_delay]
         @sniffing = merged[:sniffing]
         @sniffer_delay = merged[:sniffer_delay]
@@ -152,7 +154,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     ES2_SNIFF_RE_URL  = /([^\/]*)?\/?([^:]*):([0-9]+)/
     # Sniffs and returns the results. Does not update internal URLs!
     def check_sniff
-      url, resp = perform_request(:get, '_nodes/http')
+      _, resp = perform_request(:get, @sniffing_path)
       parsed = LogStash::Json.load(resp.body)
       
       nodes = parsed['nodes']
@@ -230,17 +232,11 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # Try to keep locking granularity low such that we don't affect IO...
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         begin
-          path = healthcheck_path
-          healthcheck_url = LogStash::Util::SafeURI.new(url.uri.clone)
-          healthcheck_url.query = nil
-          if @absolute_healthcheck_path
-            healthcheck_url.path = ROOT_URI_PATH
-          end
           logger.info("Running health check to see if an Elasticsearch connection is working",
-                        :healthcheck_url => healthcheck_url, :path => path)
-          response = perform_request_to_url(healthcheck_url, :head, path)
+                        :healthcheck_url => url, :path => @healthcheck_path)
+          response = perform_request_to_url(url, :head, @healthcheck_path)
           # If no exception was raised it must have succeeded!
-          logger.warn("Restored connection to ES instance", :url => healthcheck_url.sanitized)
+          logger.warn("Restored connection to ES instance", :url => url.sanitized)
           @state_mutex.synchronize { meta[:state] = :alive }
         rescue HostUnreachableError, BadResponseCodeError => e
           logger.warn("Attempted to resurrect connection to dead ES instance, but got an error.", url: url.sanitized, error_type: e.class, error: e.message)
