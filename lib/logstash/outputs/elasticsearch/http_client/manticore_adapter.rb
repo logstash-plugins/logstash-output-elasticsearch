@@ -50,7 +50,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # Perform 2-level deep merge on the params, so if the passed params and client params will both have hashes stored on a key they
       # will be merged as well, instead of choosing just one of the values
       params = (params || {}).merge(@client_params) { |key, oldval, newval|
-        (oldval.is_a?(Hash) == 'Hash' && newval.is_a?(Hash)) ? oldval.merge(newval) : newval 
+        (oldval.is_a?(Hash) && newval.is_a?(Hash)) ? oldval.merge(newval) : newval
       }
       params[:body] = body if body
 
