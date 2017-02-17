@@ -24,31 +24,6 @@ module LogStash; module Outputs; class ElasticSearch;
   TARGET_BULK_BYTES = 20 * 1024 * 1024 # 20MiB
 
   class HttpClient
-    # Gzip library from rails ActiveSupport
-    module Gzip
-        class Stream < StringIO
-            def initialize(*)
-            super
-            set_encoding "BINARY"
-            end
-            def close; rewind; end
-        end
-
-        # Decompresses a gzipped string.
-        def self.decompress(source)
-            Zlib::GzipReader.new(StringIO.new(source)).read
-        end
-
-        # Compresses a string using gzip.
-        def self.compress(source, level=Zlib::DEFAULT_COMPRESSION, strategy=Zlib::DEFAULT_STRATEGY)
-            output = Stream.new
-            gz = Zlib::GzipWriter.new(output, level, strategy)
-            gz.write(source)
-            gz.close
-            output.string
-        end
-    end
-
     attr_reader :client, :options, :logger, :pool, :action_count, :recv_count
     # This is here in case we use DEFAULT_OPTIONS in the future
     # DEFAULT_OPTIONS = {
@@ -127,24 +102,25 @@ module LogStash; module Outputs; class ElasticSearch;
         end
       end
 
-      bulk_body = ""
+      body_stream = StringIO.new
+      if upload_compression 
+        body_stream.set_encoding "BINARY"
+        stream_writer = Zlib::GzipWriter.new(body_stream, Zlib::DEFAULT_COMPRESSION, Zlib::DEFAULT_STRATEGY)
+      else 
+        stream_writer = body_stream
+      end
       bulk_responses = []
       bulk_actions.each do |action|
         as_json = action.is_a?(Array) ?
                     action.map {|line| LogStash::Json.dump(line)}.join("\n") :
                     LogStash::Json.dump(action)
         as_json << "\n"
-
-        if (bulk_body.bytesize + as_json.bytesize) > TARGET_BULK_BYTES
-          bulk_responses << bulk_send(bulk_body)
-          bulk_body = as_json
-        else
-          bulk_body << as_json
-        end
+        stream_writer.write(as_json)
+        bulk_responses << bulk_send(body_stream) if (body_stream.size + as_json.bytesize) > TARGET_BULK_BYTES
       end
-
-      bulk_responses << bulk_send(bulk_body) if bulk_body.size > 0
-
+      stream_writer.close if upload_compression
+      bulk_responses << bulk_send(body_stream) if body_stream.size > 0
+      body_stream.close if !upload_compression
       join_bulk_responses(bulk_responses)
     end
 
@@ -155,14 +131,11 @@ module LogStash; module Outputs; class ElasticSearch;
       }
     end
 
-    def bulk_send(bulk_body)
-      params = {}
-      if upload_compression then 
-        params[:headers] = {"Content-Encoding" => "gzip"}
-        bulk_body = Gzip::compress(bulk_body)
-      end
+    def bulk_send(body_stream)
+      params = upload_compression ?  {:headers => {"Content-Encoding" => "gzip"}} : {}
       # Discard the URL 
-      url, response = @pool.post("_bulk", params, bulk_body)
+      url, response = @pool.post("_bulk", params, body_stream.string)
+      body_stream.rewind
       LogStash::Json.load(response.body)
     end
 
