@@ -115,8 +115,8 @@ module LogStash; module Outputs; class ElasticSearch;
                     action.map {|line| LogStash::Json.dump(line)}.join("\n") :
                     LogStash::Json.dump(action)
         as_json << "\n"
-        stream_writer.write(as_json)
         bulk_responses << bulk_send(body_stream) if (body_stream.size + as_json.bytesize) > TARGET_BULK_BYTES
+        stream_writer.write(as_json)
       end
       stream_writer.close if upload_compression
       bulk_responses << bulk_send(body_stream) if body_stream.size > 0
@@ -135,7 +135,8 @@ module LogStash; module Outputs; class ElasticSearch;
       params = upload_compression ?  {:headers => {"Content-Encoding" => "gzip"}} : {}
       # Discard the URL 
       url, response = @pool.post("_bulk", params, body_stream.string)
-      body_stream.rewind
+      body_stream.truncate(0)
+      body_stream.seek(0)
       LogStash::Json.load(response.body)
     end
 
