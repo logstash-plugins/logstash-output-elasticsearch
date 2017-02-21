@@ -14,9 +14,7 @@ module LogStash; module Outputs; class ElasticSearch;
       
       common_options = {
         :client_settings => client_settings,
-        :resurrect_delay => params["resurrect_delay"],
-        :healthcheck_path => params["healthcheck_path"],
-        :absolute_healthcheck_path => params["absolute_healthcheck_path"]
+        :resurrect_delay => params["resurrect_delay"]
       }
 
       if params["sniffing"]
@@ -27,7 +25,25 @@ module LogStash; module Outputs; class ElasticSearch;
       common_options[:timeout] = params["timeout"] if params["timeout"]
 
       if params["path"]
-        client_settings[:path] = "/#{params["path"]}/".gsub(/\/+/, "/") # Normalize slashes
+        client_settings[:path] = dedup_slashes("/#{params["path"]}/")
+      end
+
+      common_options[:bulk_path] = if params["bulk_path"]
+         dedup_slashes("/#{params["bulk_path"]}")
+      else
+         dedup_slashes("/#{params["path"]}/_bulk")
+      end
+
+      common_options[:sniffing_path] = if params["sniffing_path"]
+         dedup_slashes("/#{params["sniffing_path"]}")
+      else
+         dedup_slashes("/#{params["path"]}/_nodes/http")
+      end
+
+      common_options[:healthcheck_path] = if params["healthcheck_path"]
+         dedup_slashes("/#{params["healthcheck_path"]}")
+      else
+         dedup_slashes("/#{params["path"]}")
       end
 
       if params["parameters"]
@@ -78,9 +94,11 @@ module LogStash; module Outputs; class ElasticSearch;
       }
       common_options.merge! update_options if params["action"] == 'update'
 
-      LogStash::Outputs::ElasticSearch::HttpClient.new(
-        common_options.merge(:hosts => hosts, :logger => logger)
-      )
+      create_http_client(common_options.merge(:hosts => hosts, :logger => logger))
+    end
+
+    def self.create_http_client(options)
+      LogStash::Outputs::ElasticSearch::HttpClient.new(options)
     end
 
     def self.setup_ssl(logger, params)
@@ -131,6 +149,11 @@ module LogStash; module Outputs; class ElasticSearch;
         :user => user,
         :password => unsafe_escaped_password
       }
+    end
+
+    private
+    def self.dedup_slashes(url)
+      url.gsub(/\/+/, "/")
     end
   end
 end; end; end

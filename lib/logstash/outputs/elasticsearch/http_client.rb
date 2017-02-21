@@ -60,6 +60,7 @@ module LogStash; module Outputs; class ElasticSearch;
       @pool = build_pool(@options)
       # mutex to prevent requests and sniffing to access the
       # connection pool at the same time
+      @bulk_path = @options[:bulk_path]
     end
     
     def build_url_template
@@ -134,7 +135,7 @@ module LogStash; module Outputs; class ElasticSearch;
     def bulk_send(body_stream)
       params = upload_compression ?  {:headers => {"Content-Encoding" => "gzip"}} : {}
       # Discard the URL 
-      url, response = @pool.post("_bulk", params, body_stream.string)
+      _, response = @pool.post(@bulk_path, params, body_stream.string)
       if !body_stream.closed?
         body_stream.truncate(0)
         body_stream.seek(0)
@@ -146,7 +147,6 @@ module LogStash; module Outputs; class ElasticSearch;
       @pool.close
     end
 
-    
     def calculate_property(uris, property, default, sniff_check)
       values = uris.map(&property).uniq
 
@@ -261,8 +261,8 @@ module LogStash; module Outputs; class ElasticSearch;
       pool_options = {
         :sniffing => sniffing,
         :sniffer_delay => options[:sniffer_delay],
+        :sniffing_path => options[:sniffing_path],
         :healthcheck_path => options[:healthcheck_path],
-        :absolute_healthcheck_path => options[:absolute_healthcheck_path],
         :resurrect_delay => options[:resurrect_delay],
         :url_normalizer => self.method(:host_to_url)
       }

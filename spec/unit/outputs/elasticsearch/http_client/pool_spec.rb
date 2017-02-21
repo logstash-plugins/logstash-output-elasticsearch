@@ -45,46 +45,29 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     end
 
     describe "healthcheck url handling" do
-      let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200#{path}")] }
-      let(:healthcheck_path) { "/some/other/path" }
-      let(:absolute_healthcheck_path) { false }
-      let(:path) { "/meh" }
-      let(:options) { super.merge(:absolute_healthcheck_path => absolute_healthcheck_path, :path => path, :healthcheck_path => healthcheck_path) }
+      let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
 
-      context "when using query params in the initial url" do
-        let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200?q=s")] }
-        it "is removed from the healthcheck request" do
+      context "and not setting healthcheck_path" do
+        it "performs the healthcheck to the root" do
           expect(adapter).to receive(:perform_request) do |url, method, req_path, _, _|
             expect(method).to eq(:head)
-            expect(url.query).to be_nil
+            expect(url.path).to be_empty
+            expect(req_path).to eq("/")
           end
           subject.healthcheck!
         end
       end
 
-      describe "absolute_healthcheck_path" do
-        context "when enabled" do
-          let(:absolute_healthcheck_path) { true }
-          it "should use the healthcheck_path as the absolute path" do
-            expect(adapter).to receive(:perform_request) do |url, method, req_path, _, _|
-              expect(method).to eq(:head)
-              expect(req_path).to eq(healthcheck_path)
-              expect(url.path).to eq("/")
-            end
-            subject.healthcheck!
+      context "and setting healthcheck_path" do
+        let(:healthcheck_path) { "/my/health" }
+        let(:options) { super.merge(:healthcheck_path => healthcheck_path) }
+        it "performs the healthcheck to the healthcheck_path" do
+          expect(adapter).to receive(:perform_request) do |url, method, req_path, _, _|
+            expect(method).to eq(:head)
+            expect(url.path).to be_empty
+            expect(req_path).to eq(healthcheck_path)
           end
-        end
-
-        context "when disabled" do
-          let(:absolute_healthcheck_path) { false }
-          it "should use the healthcheck_path as a relative path" do
-            expect(adapter).to receive(:perform_request) do |url, method, req_path, _, _|
-              expect(method).to eq(:head)
-              expect(req_path).to eq(healthcheck_path)
-              expect(url.path).to eq(path)
-            end
-            subject.healthcheck!
-          end
+          subject.healthcheck!
         end
       end
     end
