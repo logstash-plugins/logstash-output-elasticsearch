@@ -1,3 +1,10 @@
+## 7.0.0
+- introduce customization of bulk, healthcheck and sniffing paths with the behaviour:
+  - if not set: the default value will be used
+  - if not set and path is also set: the default is appended to path
+  - if set: the set value will be used, ignoring the default and path setting
+- removes absolute_healthcheck_path and query_parameters
+
 ## 6.2.6
 - Fixed: Change how the healthcheck_path is treated: either append it to any existing path (default) or replace any existing path
   Also ensures that the healthcheck url contains no query parameters regarless of hosts urls contains them or query_params being set. #554
