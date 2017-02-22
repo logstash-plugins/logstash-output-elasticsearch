@@ -4,6 +4,8 @@ require "base64"
 require 'logstash/outputs/elasticsearch/http_client/pool'
 require 'logstash/outputs/elasticsearch/http_client/manticore_adapter'
 require 'cgi'
+require 'zlib'
+require 'stringio'
 
 module LogStash; module Outputs; class ElasticSearch;
   # This is a constant instead of a config option because
@@ -101,24 +103,25 @@ module LogStash; module Outputs; class ElasticSearch;
         end
       end
 
-      bulk_body = ""
+      body_stream = StringIO.new
+      if upload_compression 
+        body_stream.set_encoding "BINARY"
+        stream_writer = Zlib::GzipWriter.new(body_stream, Zlib::DEFAULT_COMPRESSION, Zlib::DEFAULT_STRATEGY)
+      else 
+        stream_writer = body_stream
+      end
       bulk_responses = []
       bulk_actions.each do |action|
         as_json = action.is_a?(Array) ?
                     action.map {|line| LogStash::Json.dump(line)}.join("\n") :
                     LogStash::Json.dump(action)
         as_json << "\n"
-
-        if (bulk_body.bytesize + as_json.bytesize) > TARGET_BULK_BYTES
-          bulk_responses << bulk_send(bulk_body)
-          bulk_body = as_json
-        else
-          bulk_body << as_json
-        end
+        bulk_responses << bulk_send(body_stream) if (body_stream.size + as_json.bytesize) > TARGET_BULK_BYTES
+        stream_writer.write(as_json)
       end
-
-      bulk_responses << bulk_send(bulk_body) if bulk_body.size > 0
-
+      stream_writer.close if upload_compression
+      bulk_responses << bulk_send(body_stream) if body_stream.size > 0
+      body_stream.close if !upload_compression
       join_bulk_responses(bulk_responses)
     end
 
@@ -129,8 +132,14 @@ module LogStash; module Outputs; class ElasticSearch;
       }
     end
 
-    def bulk_send(bulk_body)
-      _, response = @pool.post(@bulk_path, nil, bulk_body)
+    def bulk_send(body_stream)
+      params = upload_compression ?  {:headers => {"Content-Encoding" => "gzip"}} : {}
+      # Discard the URL 
+      _, response = @pool.post(@bulk_path, params, body_stream.string)
+      if !body_stream.closed?
+        body_stream.truncate(0)
+        body_stream.seek(0)
+      end
       LogStash::Json.load(response.body)
     end
 
@@ -212,6 +221,10 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def ssl_options
       client_settings.fetch(:ssl, {})
+    end
+
+    def upload_compression
+      client_settings.fetch(:upload_compression, {})
     end
 
     def build_adapter(options)

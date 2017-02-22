@@ -25,6 +25,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'addressable', "~> 2.3.0" # used by FTW. V 2.5.0 is ruby 2.0 only.
   s.add_development_dependency 'logstash-codec-plain'
   s.add_development_dependency 'json' # used by spec/unit/outputs/elasticsearch/http_client/pool_spec.rb
+  s.add_development_dependency 'gzip' # used by spec/integration/outputs/index_spec.rb
 
   if RUBY_PLATFORM == 'java'
     s.platform = RUBY_PLATFORM

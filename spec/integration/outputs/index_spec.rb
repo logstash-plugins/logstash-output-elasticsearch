@@ -1,5 +1,13 @@
 require_relative "../../../spec/es_spec_helper"
 require "logstash/outputs/elasticsearch"
+require "stringio"
+require "gzip"
+
+RSpec::Matchers.define :a_valid_gzip_encoded_string do
+  match { |data|
+    expect { Zlib::GzipReader.new(StringIO.new(data)).read }.not_to raise_error
+  }
+end 
 
 describe "TARGET_BULK_BYTES", :integration => true do
   let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
@@ -110,6 +118,22 @@ describe "indexing", :integration => true do
       }
     }
     it_behaves_like("an indexer")
+  end
+
+  describe "with upload compression turned on" do
+    let(:config) {
+      {
+        "hosts" => get_host_port,
+        "index" => index,
+        "upload_compression" => true
+      }
+      it "sets the correct content-encoding header and body is compressed" do
+        expect(subject.client.pool.adapter.client).to receive(:send).
+          with(anything, anything, {:headers => {"Content-Encoding" => "gzip"}, :body => a_valid_gzip_encoded_string}).
+          and_call_original
+        subject.multi_receive(events)
+      end
+    }
   end
 
   describe "a secured indexer", :secure_integration => true do
