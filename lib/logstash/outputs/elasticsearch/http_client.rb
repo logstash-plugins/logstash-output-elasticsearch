@@ -104,7 +104,7 @@ module LogStash; module Outputs; class ElasticSearch;
       end
 
       body_stream = StringIO.new
-      if upload_compression 
+      if http_compression
         body_stream.set_encoding "BINARY"
         stream_writer = Zlib::GzipWriter.new(body_stream, Zlib::DEFAULT_COMPRESSION, Zlib::DEFAULT_STRATEGY)
       else 
@@ -119,9 +119,9 @@ module LogStash; module Outputs; class ElasticSearch;
         bulk_responses << bulk_send(body_stream) if (body_stream.size + as_json.bytesize) > TARGET_BULK_BYTES
         stream_writer.write(as_json)
       end
-      stream_writer.close if upload_compression
+      stream_writer.close if http_compression
       bulk_responses << bulk_send(body_stream) if body_stream.size > 0
-      body_stream.close if !upload_compression
+      body_stream.close if !http_compression
       join_bulk_responses(bulk_responses)
     end
 
@@ -133,7 +133,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def bulk_send(body_stream)
-      params = upload_compression ?  {:headers => {"Content-Encoding" => "gzip"}} : {}
+      params = http_compression ?  {:headers => {"Accept-Encoding" => "gzip,deflate", "Content-Encoding" => "gzip"}} : {}
       # Discard the URL 
       _, response = @pool.post(@bulk_path, params, body_stream.string)
       if !body_stream.closed?
@@ -223,8 +223,8 @@ module LogStash; module Outputs; class ElasticSearch;
       client_settings.fetch(:ssl, {})
     end
 
-    def upload_compression
-      client_settings.fetch(:upload_compression, {})
+    def http_compression
+      client_settings.fetch(:http_compression, {})
     end
 
     def build_adapter(options)

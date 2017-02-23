@@ -19,7 +19,7 @@ describe "indexing with upload compression", :integration => true, :version_grea
     {
       "hosts" => get_host_port,
       "index" => index,
-      "upload_compression" => true
+      "http_compression" => true
     }
   }
   subject { LogStash::Outputs::ElasticSearch.new(config) }
@@ -57,7 +57,7 @@ describe "indexing with upload compression", :integration => true, :version_grea
 
   it "sets the correct content-encoding header and body is compressed" do
     expect(subject.client.pool.adapter.client).to receive(:send).
-      with(anything, anything, {:headers=>{"Content-Encoding"=>"gzip", "Content-Type"=>"application/json"}, :body => a_valid_gzip_encoded_string}).
+      with(anything, anything, {:headers=>{"Accept-Encoding" => "gzip,deflate", "Content-Encoding"=>"gzip", "Content-Type"=>"application/json"}, :body => a_valid_gzip_encoded_string}).
       and_call_original
     subject.multi_receive(events)
   end
