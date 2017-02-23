@@ -82,8 +82,7 @@ module LogStash; module Outputs; class ElasticSearch;
         begin
           submit_actions = submit(submit_actions)
           if submit_actions && submit_actions.size > 0
-            @logger.error("Retrying individual actions")
-            submit_actions.each {|action| @logger.error("Action", action) }
+            @logger.info("Retrying individual bulk actions that failed or were rejected by the previous bulk request.", :count => submit_actions.size)
           end
         rescue => e
           @logger.error("Encountered an unexpected error submitting a bulk request! Will retry.",
