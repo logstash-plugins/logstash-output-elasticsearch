@@ -67,8 +67,8 @@ require "forwardable"
 #
 # This plugin supports request and response compression. Response compression is enabled by default and 
 # for Elasticsearch versions 5.0 and later, the user doesn't have to set any configs in Elasticsearch for 
-# it to send back compressed response. For version before 5.0, `http.compression` must be set to `true` to 
-# take advantage of response compression using this plugin
+# it to send back compressed response. For versions before 5.0, `http.compression` must be set to `true` in 
+# Elasticsearch to take advantage of response compression when using this plugin
 #
 # For requests compression, regardless of the Elasticsearch version, users have to enable `http_compression` 
 # setting in their Logstash config file.
