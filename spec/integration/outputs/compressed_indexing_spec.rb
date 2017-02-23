@@ -9,7 +9,7 @@ RSpec::Matchers.define :a_valid_gzip_encoded_string do
   }
 end
 
-describe "indexing with upload compression", :integration => true, :version_greater_than_equal_to_5x => true do
+describe "indexing with http_compression turned on", :integration => true, :version_greater_than_equal_to_5x => true do
   let(:event) { LogStash::Event.new("message" => "Hello World!", "type" => type) }
   let(:index) { 10.times.collect { rand(10).to_s }.join("") }
   let(:type) { 10.times.collect { rand(10).to_s }.join("") }
@@ -57,7 +57,7 @@ describe "indexing with upload compression", :integration => true, :version_grea
 
   it "sets the correct content-encoding header and body is compressed" do
     expect(subject.client.pool.adapter.client).to receive(:send).
-      with(anything, anything, {:headers=>{"Accept-Encoding" => "gzip,deflate", "Content-Encoding"=>"gzip", "Content-Type"=>"application/json"}, :body => a_valid_gzip_encoded_string}).
+      with(anything, anything, {:headers=>{"Content-Encoding"=>"gzip", "Content-Type"=>"application/json"}, :body => a_valid_gzip_encoded_string}).
       and_call_original
     subject.multi_receive(events)
   end

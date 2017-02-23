@@ -202,7 +202,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/conn/PoolingHttpClientConnectionManager.html#setValidateAfterInactivity(int)[these docs for more info]
   config :validate_after_inactivity, :validate => :number, :default => 10000
 
-  # Enable or disable gzip compression on requests and responses
+  # Enable gzip compression on requests. Note that response compression is on by default for Elasticsearch v5.0 and beyond
   config :http_compression, :validate => :boolean, :default => false
 
   def build_client

@@ -133,7 +133,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def bulk_send(body_stream)
-      params = http_compression ?  {:headers => {"Accept-Encoding" => "gzip,deflate", "Content-Encoding" => "gzip"}} : {}
+      params = http_compression ? {:headers => {"Content-Encoding" => "gzip"}} : {}
       # Discard the URL 
       _, response = @pool.post(@bulk_path, params, body_stream.string)
       if !body_stream.closed?
