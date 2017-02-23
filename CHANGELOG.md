@@ -1,3 +1,6 @@
+## 7.1.0
+ - Add support to compress requests using the new `upload_compression` option.
+
 ## 7.0.0
 - introduce customization of bulk, healthcheck and sniffing paths with the behaviour:
   - if not set: the default value will be used
