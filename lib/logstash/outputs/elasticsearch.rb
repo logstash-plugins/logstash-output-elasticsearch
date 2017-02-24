@@ -147,7 +147,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # It can be either .jks or .p12
   config :keystore, :validate => :path
 
-  # Set the truststore password
+  # Set the keystore password
   config :keystore_password, :validate => :password
 
   # This setting asks Elasticsearch for the list of all cluster nodes and adds them to the hosts list.
