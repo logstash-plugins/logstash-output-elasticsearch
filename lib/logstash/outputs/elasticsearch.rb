@@ -62,6 +62,17 @@ require "forwardable"
 #
 # Keep in mind that a connection with keepalive enabled will
 # not reevaluate its DNS value while the keepalive is in effect.
+#
+# ==== HTTP Compression
+#
+# This plugin supports request and response compression. Response compression is enabled by default and 
+# for Elasticsearch versions 5.0 and later, the user doesn't have to set any configs in Elasticsearch for 
+# it to send back compressed response. For versions before 5.0, `http.compression` must be set to `true` in 
+# Elasticsearch[https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http] to take advantage of response compression when using this plugin
+#
+# For requests compression, regardless of the Elasticsearch version, users have to enable `http_compression` 
+# setting in their Logstash config file.
+#
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   declare_threadsafe!
 
@@ -202,8 +213,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/conn/PoolingHttpClientConnectionManager.html#setValidateAfterInactivity(int)[these docs for more info]
   config :validate_after_inactivity, :validate => :number, :default => 10000
 
-  # Enable or disable gzip compression
-  config :upload_compression, :validate => :boolean, :default => false
+  # Enable gzip compression on requests. Note that response compression is on by default for Elasticsearch v5.0 and beyond
+  config :http_compression, :validate => :boolean, :default => false
 
   def build_client
     @client ||= ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
