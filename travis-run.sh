@@ -33,6 +33,24 @@ start_es() {
   return 0
 }
 
+download_gradle() {
+  echo $PWD
+  local version="3.2.1"
+  curl -sL https://services.gradle.org/distributions/gradle-$version-bin.zip > gradle.zip
+  unzip -d . gradle.zip
+  mv gradle-* gradle
+}
+
+build_es() {
+  branch=$1
+  git clone https://github.com/elastic/elasticsearch.git es_src
+  cd es_src
+  gradle :distribution:zip:assemble
+  unzip -d $TRAVIS_BUILD_DIR distribution/zip/build/distributions/elasticsearch-*.zip
+  mv $TRAVIS_BUILD_DIR/elasticsearch-* $TRAVIS_BUILD_DIR/elasticsearch
+  cd $TRAVIS_BUILD_DIR
+}
+
 start_nginx() {
   ./start_nginx.sh &
   sleep 5
@@ -46,20 +64,31 @@ else
   else
     spec_path="$1"
   fi
-  if [[ "$ES_VERSION" == 5.* ]]; then
-    setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
-    start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
-    # Run all tests which are for versions > 5 but don't run ones tagged < 5.x. Include ingest, new template
-    bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_greater_than_equal_to_5x --tag ~version_less_than_5x $spec_path
-  elif [[ "$ES_VERSION" == 2.* ]]; then
-    setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
-    start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
-    # Run all tests which are for versions < 5 but don't run ones tagged 5.x and above. Skip ingest, new template
-    bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_less_than_5x --tag ~version_greater_than_equal_to_5x $spec_path
-  else
-    setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
-    start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
-    # Still have to support ES versions < 2.x so run tests for those.
-    bundle exec rspec -fd --tag ~secure_integration --tag integration --tag ~version_greater_than_equal_to_5x --tag ~version_greater_than_equal_to_2x $spec_path
-  fi
+
+  case "$ES_VERSION" in
+      5.*)
+          setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
+          start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
+          # Run all tests which are for versions > 5 but don't run ones tagged < 5.x. Include ingest, new template
+          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_greater_than_equal_to_5x --tag ~version_less_than_5x $spec_path
+          ;;
+      2.*)
+          setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
+          start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
+          # Run all tests which are for versions < 5 but don't run ones tagged 5.x and above. Skip ingest, new template
+          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_less_than_5x --tag ~version_greater_than_equal_to_5x $spec_path
+          ;;
+      1.*)
+          setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
+          start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
+          # Still have to support ES versions < 2.x so run tests for those.
+          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag ~version_greater_than_equal_to_5x --tag ~version_greater_than_equal_to_2x $spec_path
+          ;;
+      *)
+          download_gradle
+          build_es master
+          start_es
+          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_greater_than_equal_to_5x --tag ~version_less_than_5x $spec_path
+          ;;
+  esac
 fi

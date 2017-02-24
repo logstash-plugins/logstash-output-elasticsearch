@@ -43,6 +43,7 @@ describe "Ingest pipeline execution behavior", :integration => true, :version_gr
 
     # register pipeline
     req = ftw_client.put(ingest_url, :body => apache_logs_pipeline)
+    req.headers["Content-Type"] = "application/json"
     ftw_client.execute(req)
 
     #TODO: Use esclient

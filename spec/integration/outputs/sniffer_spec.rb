@@ -38,7 +38,7 @@ describe "pool sniffer", :integration => true do
   end
   
   # We do a more thorough check on these versions because we can more reliably guess the ip
-  describe("Complex sniff parsing ES 5x/2x", :version_greater_than_equal_to_2x => true) do
+  describe("Complex sniff parsing ES 6x/5x/2x", :version_greater_than_equal_to_2x => true) do
     include_examples("sniff parsing", true)
   end
 end

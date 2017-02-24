@@ -3,12 +3,19 @@ sudo: false
 jdk: oraclejdk8
 env:
 - INTEGRATION=false
-- INTEGRATION=true ES_VERSION=1.7.5 TEST_DEBUG=true
-- INTEGRATION=true ES_VERSION=2.3.4 TEST_DEBUG=true
-- INTEGRATION=true ES_VERSION=5.1.1 TEST_DEBUG=true
+- INTEGRATION=true ES_VERSION=1.7.6 TEST_DEBUG=true
+- INTEGRATION=true ES_VERSION=2.4.4 TEST_DEBUG=true
+- INTEGRATION=true ES_VERSION=5.2.1 TEST_DEBUG=true
+- INTEGRATION=true ES_VERSION=master TEST_DEBUG=true
 language: ruby
 cache: bundler
 rvm:
 - jruby-1.7.25
+before_script:
+  export PATH=$PATH:$TRAVIS_BUILD_DIR/gradle/bin/
 script: "./travis-run.sh"
 before_install: []
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
