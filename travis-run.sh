@@ -33,6 +33,9 @@ start_es() {
   return 0
 }
 
+# Ruby build environment does not have gradle in the env, so we need to download it
+# Gradle is added to the PATH in the before_script step and *has* to stay there and
+# not here because this script runs in a different bash shell.
 download_gradle() {
   echo $PWD
   local version="3.2.1"
@@ -41,6 +44,7 @@ download_gradle() {
   mv gradle-* gradle
 }
 
+# Builds any branch of ES and runs tests against it. Default is master
 build_es() {
   branch=$1
   git clone https://github.com/elastic/elasticsearch.git es_src

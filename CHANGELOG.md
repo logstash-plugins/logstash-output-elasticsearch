@@ -1,3 +1,9 @@
+## 7.2.0
+ - Support 6.0.0-alpha1 version of Elasticsearch by adding a separate 6x template
+ - Note: This version is backwards compatible w.r.t. config, but for ES 6.0.0, `_all` has been
+    removed. This BWC issue only affects ES version 6.x; older versions
+    can be used with this plugin as is.
+
 ## 7.1.0
  - Add support to compress requests using the new `http_compression` option.
 
