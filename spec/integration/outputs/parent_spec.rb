@@ -10,12 +10,9 @@ shared_examples "a parent indexer" do
 
     before do
       # Add mapping and a parent document
-      index_url = "http://#{get_host_port()}/#{index}"
-      ftw = FTW::Agent.new
       mapping = { "mappings" => { "#{type}" => { "_parent" => { "type" => "#{type}_parent" } } } }
-      ftw.put!("#{index_url}", :body => mapping.to_json)
-      pdoc = { "foo" => "bar" }
-      ftw.put!("#{index_url}/#{type}_parent/test", :body => pdoc.to_json)
+      send_request(:put, "#{index}", :body => mapping.to_json)
+      send_request(:put, "#{index}/#{type}_parent/test", :body => {"foo" => "bar"})
 
       subject.register
       subject.multi_receive(event_count.times.map { LogStash::Event.new("link_to" => "test", "message" => "Hello World!", "type" => type) })
@@ -23,20 +20,15 @@ shared_examples "a parent indexer" do
 
 
     it "ships events" do
-      index_url = "http://#{get_host_port()}/#{index}"
-
-      ftw = FTW::Agent.new
-      ftw.post!("#{index_url}/_refresh")
+      send_request(:post,"#{index}/_refresh")
 
       # Wait until all events are available.
       Stud::try(10.times) do
         query = { "query" => { "has_parent" => { "type" => "#{type}_parent", "query" => { "match" => { "foo" => "bar" } } } } }
         data = ""
-        response = ftw.post!("#{index_url}/_count", :body => query.to_json)
-        response.read_body { |chunk| data << chunk }
-        result = LogStash::Json.load(data)
+        result = send_json_request(:post, "#{index}/_count", :body => query.to_json)
         cur_count = result["count"]
-        insist { cur_count } == event_count
+        expect(cur_count).to eq(event_count)
       end
     end
 end

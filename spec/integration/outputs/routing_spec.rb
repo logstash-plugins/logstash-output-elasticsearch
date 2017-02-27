@@ -17,20 +17,14 @@ shared_examples "a routing indexer" do
 
 
     it "ships events" do
-      index_url = "http://#{get_host_port()}/#{index}"
-
-      ftw = FTW::Agent.new
-      ftw.post!("#{index_url}/_refresh")
+      send_refresh
 
       # Wait until all events are available.
       Stud::try(10.times) do
-        data = ""
-
-        response = ftw.get!("#{index_url}/_count?q=*&routing=#{routing}")
-        response.read_body { |chunk| data << chunk }
-        result = LogStash::Json.load(data)
-        cur_count = result["count"]
-        insist { cur_count } == event_count
+        response = send_json_request(:get, "#{index}/_count", :query => {routing: routing})
+        
+        cur_count = response["count"]
+        expect(cur_count).to eq(event_count)
       end
     end
 end

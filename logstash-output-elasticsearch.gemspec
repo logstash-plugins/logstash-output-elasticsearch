@@ -21,8 +21,6 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'stud', ['>= 0.0.17', '~> 0.0']
   s.add_runtime_dependency 'cabin', ['~> 0.6']
   s.add_runtime_dependency "logstash-core-plugin-api", ">= 1.60", "<= 2.99"
-  s.add_development_dependency 'ftw', '~> 0.0.42'
-  s.add_development_dependency 'addressable', "~> 2.3.0" # used by FTW. V 2.5.0 is ruby 2.0 only.
   s.add_development_dependency 'logstash-codec-plain'
   s.add_development_dependency 'json' # used by spec/unit/outputs/elasticsearch/http_client/pool_spec.rb
   s.add_development_dependency 'gzip' # used by spec/integration/outputs/index_spec.rb
@@ -35,5 +33,4 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'logstash-devutils'
   s.add_development_dependency 'flores'
   # Still used in some specs, we should remove this ASAP
-  s.add_development_dependency 'elasticsearch'
 end

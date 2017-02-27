@@ -1,5 +1,10 @@
 ---
-sudo: false
+addons:
+  apt:
+    packages:
+      - nginx
+# nginx does not like this
+# sudo: false
 jdk: oraclejdk8
 env:
 - INTEGRATION=false

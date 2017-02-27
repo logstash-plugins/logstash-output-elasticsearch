@@ -39,15 +39,8 @@ describe "failures in bulk class expected behavior", :integration => true do
   end
 
   before :each do
-    # Delete all templates first.
-    require "elasticsearch"
     allow(Stud).to receive(:stoppable_sleep)
-
-    # Clean ES of data before we start.
-    @es = get_client
-    @es.indices.delete_template(:name => "*")
-    @es.indices.delete(:index => "*")
-    @es.indices.refresh
+    send_delete_all
   end
 
   after :each do
@@ -137,8 +130,8 @@ describe "failures in bulk class expected behavior", :integration => true do
     subject.multi_receive([invalid_event])
     subject.close
 
-    @es.indices.refresh
-    r = @es.search
+    send_delete_all
+    r = search_query_string("*")
     expect(r["hits"]["total"]).to eql(0)
   end
 
@@ -148,8 +141,7 @@ describe "failures in bulk class expected behavior", :integration => true do
     subject.register
     subject.multi_receive([event1])
     subject.close
-    @es.indices.refresh
-    r = @es.search
+    r = search_query_string("*")
     expect(r["hits"]["total"]).to eql(1)
   end
 
@@ -158,8 +150,7 @@ describe "failures in bulk class expected behavior", :integration => true do
     subject.multi_receive([invalid_event, event1])
     subject.close
 
-    @es.indices.refresh
-    r = @es.search
+    r = search_query_string("*")
     expect(r["hits"]["total"]).to eql(1)
   end
 end
