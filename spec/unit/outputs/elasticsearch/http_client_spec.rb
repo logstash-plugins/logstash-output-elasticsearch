@@ -121,6 +121,20 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     end
   end
 
+  describe "get" do
+    subject { described_class.new(base_options) }
+    let(:body) { "foobar" }
+    let(:path) { "/hello-id" }
+    let(:get_response) {
+      double("response", :body => LogStash::Json::dump( { "body" => body }))
+    }
+
+    it "returns the hash response" do
+      expect(subject.pool).to receive(:get).with(path, nil).and_return([nil, get_response])
+      expect(subject.get(path)["body"]).to eq(body)
+    end
+  end
+
   describe "join_bulk_responses" do
     subject { described_class.new(base_options) }
 

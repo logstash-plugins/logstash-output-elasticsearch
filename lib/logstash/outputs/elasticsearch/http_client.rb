@@ -143,6 +143,11 @@ module LogStash; module Outputs; class ElasticSearch;
       LogStash::Json.load(response.body)
     end
 
+    def get(path)
+      url, response = @pool.get(path, nil)
+      LogStash::Json.load(response.body)
+    end
+
     def close
       @pool.close
     end
