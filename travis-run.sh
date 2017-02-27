@@ -16,7 +16,9 @@ setup_es() {
     tar -xzf elasticsearch.tar.gz --strip-components=1 -C ./elasticsearch/.
   fi
   rm -f elasticsearch/config/scripts || true
-  ln -sn ../../spec/fixtures/scripts elasticsearch/config/.
+  mkdir -p elasticsearch/config/scripts
+  cp $TRAVIS_BUILD_DIR/spec/fixtures/scripts/groovy/* elasticsearch/config/scripts
+  cp $TRAVIS_BUILD_DIR/spec/fixtures/scripts/painless/* elasticsearch/config/scripts
 }
 
 start_es() {
@@ -52,6 +54,8 @@ build_es() {
   gradle :distribution:zip:assemble
   unzip -d $TRAVIS_BUILD_DIR distribution/zip/build/distributions/elasticsearch-*.zip
   mv $TRAVIS_BUILD_DIR/elasticsearch-* $TRAVIS_BUILD_DIR/elasticsearch
+  mkdir -p elasticsearch/config/scripts
+  cp $TRAVIS_BUILD_DIR/spec/fixtures/scripts/painless/* elasticsearch/config/scripts
   cd $TRAVIS_BUILD_DIR
 }
 
@@ -74,13 +78,13 @@ else
           setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
           start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
           # Run all tests which are for versions > 5 but don't run ones tagged < 5.x. Include ingest, new template
-          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_greater_than_equal_to_5x --tag ~version_less_than_5x $spec_path
+          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag update_tests:groovy --tag ~version_less_than_5x $spec_path
           ;;
       2.*)
           setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
           start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
           # Run all tests which are for versions < 5 but don't run ones tagged 5.x and above. Skip ingest, new template
-          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_less_than_5x --tag ~version_greater_than_equal_to_5x $spec_path
+          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_less_than_5x --tag update_tests:groovy --tag ~version_greater_than_equal_to_5x $spec_path
           ;;
       1.*)
           setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
@@ -92,7 +96,7 @@ else
           download_gradle
           build_es master
           start_es
-          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_greater_than_equal_to_5x --tag ~version_less_than_5x $spec_path
+          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag ~update_tests:groovy --tag ~version_less_than_5x $spec_path
           ;;
   esac
 fi
