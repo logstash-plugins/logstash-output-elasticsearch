@@ -1,6 +1,6 @@
 require_relative "../../../spec/es_spec_helper"
 
-describe "Update actions using groovy scripts", :integration => true, :update_tests => 'groovy' do
+describe "Update actions using groovy scripts", :integration => true, :update_tests => 'groovy', :version_greater_than_equal_to_2x => true do
   require "logstash/outputs/elasticsearch"
 
   def get_es_output( options={} )

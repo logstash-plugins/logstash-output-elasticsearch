@@ -54,9 +54,9 @@ build_es() {
   gradle :distribution:zip:assemble
   unzip -d $TRAVIS_BUILD_DIR distribution/zip/build/distributions/elasticsearch-*.zip
   mv $TRAVIS_BUILD_DIR/elasticsearch-* $TRAVIS_BUILD_DIR/elasticsearch
+  cd $TRAVIS_BUILD_DIR
   mkdir -p elasticsearch/config/scripts
   cp $TRAVIS_BUILD_DIR/spec/fixtures/scripts/painless/* elasticsearch/config/scripts
-  cd $TRAVIS_BUILD_DIR
 }
 
 start_nginx() {
