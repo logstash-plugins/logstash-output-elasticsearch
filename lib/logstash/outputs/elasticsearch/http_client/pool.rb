@@ -163,8 +163,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         return nil
       else
         case major_version(nodes)
-        when 5
-          sniff_5x(nodes)
+        when 5, 6
+          sniff_5x_and_above(nodes)
         when 2
           sniff_2x_1x(nodes)
         when 1
@@ -180,7 +180,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       k,v = nodes.first; v['version'].split('.').first.to_i
     end
     
-    def sniff_5x(nodes)
+    def sniff_5x_and_above(nodes)
       nodes.map do |id,info|
         if info["http"]
           uri = LogStash::Util::SafeURI.new(info["http"]["publish_address"])
