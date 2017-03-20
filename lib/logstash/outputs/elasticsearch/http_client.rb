@@ -116,7 +116,9 @@ module LogStash; module Outputs; class ElasticSearch;
                     action.map {|line| LogStash::Json.dump(line)}.join("\n") :
                     LogStash::Json.dump(action)
         as_json << "\n"
-        bulk_responses << bulk_send(body_stream) if (body_stream.size + as_json.bytesize) > TARGET_BULK_BYTES
+        if (body_stream.size + as_json.bytesize) > TARGET_BULK_BYTES
+          bulk_responses << bulk_send(body_stream) unless body_stream.size == 0
+        end
         stream_writer.write(as_json)
       end
       stream_writer.close if http_compression
@@ -234,7 +236,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def http_compression
-      client_settings.fetch(:http_compression, {})
+      client_settings.fetch(:http_compression, false)
     end
 
     def build_adapter(options)
