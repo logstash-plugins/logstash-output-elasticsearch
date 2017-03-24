@@ -1,3 +1,6 @@
+## 7.2.1
+ - Expose a `#post` method in the http client class to be use by other modules
+
 ## 7.2.0
  - Support 6.0.0-alpha1 version of Elasticsearch by adding a separate 6x template
  - Note: This version is backwards compatible w.r.t. config, but for ES 6.0.0, `_all` has been

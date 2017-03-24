@@ -148,6 +148,11 @@ module LogStash; module Outputs; class ElasticSearch;
       LogStash::Json.load(response.body)
     end
 
+    def post(path, params = {}, body_string)
+      url, response = @pool.post(path, params, body_string)
+      LogStash::Json.load(response.body)
+    end
+
     def close
       @pool.close
     end
