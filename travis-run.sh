@@ -40,7 +40,7 @@ start_es() {
 # not here because this script runs in a different bash shell.
 download_gradle() {
   echo $PWD
-  local version="3.2.1"
+  local version="3.3"
   curl -sL https://services.gradle.org/distributions/gradle-$version-bin.zip > gradle.zip
   unzip -d . gradle.zip
   mv gradle-* gradle
