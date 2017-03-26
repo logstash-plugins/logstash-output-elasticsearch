@@ -1,12 +1,11 @@
 {
   "template" : "logstash-*",
-  "version" : 50001,
+  "version" : 60001,
   "settings" : {
     "index.refresh_interval" : "5s"
   },
   "mappings" : {
     "_default_" : {
-      "_all" : {"enabled" : true, "norms" : false},
       "dynamic_templates" : [ {
         "message_field" : {
           "path_match" : "message",
@@ -29,8 +28,8 @@
         }
       } ],
       "properties" : {
-        "@timestamp": { "type": "date", "include_in_all": false },
-        "@version": { "type": "keyword", "include_in_all": false },
+        "@timestamp": { "type": "date"},
+        "@version": { "type": "keyword"},
         "geoip"  : {
           "dynamic": true,
           "properties" : {

@@ -8,6 +8,7 @@ require "stud/buffer"
 require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
 require "uri" # for escaping user input
+require "forwardable"
 
 # This plugin is the recommended method of storing logs in Elasticsearch.
 # If you plan on using the Kibana web interface, you'll want to use this output.
@@ -15,10 +16,22 @@ require "uri" # for escaping user input
 # This output only speaks the HTTP protocol. HTTP is the preferred protocol for interacting with Elasticsearch as of Logstash 2.0.
 # We strongly encourage the use of HTTP over the node protocol for a number of reasons. HTTP is only marginally slower,
 # yet far easier to administer and work with. When using the HTTP protocol one may upgrade Elasticsearch versions without having
-# to upgrade Logstash in lock-step. For those still wishing to use the node or transport protocols please see
-# the <<plugins-outputs-elasticsearch_java,elasticsearch_java output plugin>>.
-#
+# to upgrade Logstash in lock-step. 
+# 
 # You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
+#
+# ==== Template management for Elasticsearch 5.x
+# Index template for this version (Logstash 5.0) has been changed to reflect Elasticsearch's mapping changes in version 5.0.
+# Most importantly, the subfield for string multi-fields has changed from `.raw` to `.keyword` to match ES default
+# behavior.
+#
+# ** Users installing ES 5.x and LS 5.x **
+# This change will not affect you and you will continue to use the ES defaults.
+#
+# ** Users upgrading from LS 2.x to LS 5.x with ES 5.x **
+# LS will not force upgrade the template, if `logstash` template already exists. This means you will still use
+# `.raw` for sub-fields coming from 2.x. If you choose to use the new template, you will have to reindex your data after
+# the new template is installed.
 #
 # ==== Retry Policy
 #
@@ -35,6 +48,10 @@ require "uri" # for escaping user input
 # NOTE: 409 exceptions are no longer retried. Please set a higher `retry_on_conflict` value if you experience 409 exceptions.
 # It is more performant for Elasticsearch to retry these exceptions than this plugin.
 #
+# ==== Batch Sizes ====
+# This plugin attempts to send batches of events as a single request. However, if
+# a request exceeds 20MB we will break it up until multiple batch requests. If a single document exceeds 20MB it will be sent as a single request.
+#
 # ==== DNS Caching
 #
 # This plugin uses the JVM to lookup DNS entries and is subject to the value of https://docs.oracle.com/javase/7/docs/technotes/guides/net/properties.html[networkaddress.cache.ttl],
@@ -45,6 +62,17 @@ require "uri" # for escaping user input
 #
 # Keep in mind that a connection with keepalive enabled will
 # not reevaluate its DNS value while the keepalive is in effect.
+#
+# ==== HTTP Compression
+#
+# This plugin supports request and response compression. Response compression is enabled by default and 
+# for Elasticsearch versions 5.0 and later, the user doesn't have to set any configs in Elasticsearch for 
+# it to send back compressed response. For versions before 5.0, `http.compression` must be set to `true` in 
+# Elasticsearch[https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http] to take advantage of response compression when using this plugin
+#
+# For requests compression, regardless of the Elasticsearch version, users have to enable `http_compression` 
+# setting in their Logstash config file.
+#
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   declare_threadsafe!
 
@@ -86,6 +114,15 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # not also set this field. That will raise an error at startup
   config :path, :validate => :string
 
+  # HTTP Path to perform the _bulk requests to
+  # this defaults to a concatenation of the path parameter and "_bulk"
+  config :bulk_path, :validate => :string
+
+  # Pass a set of key value pairs as the URL query string. This query string is added
+  # to every host listed in the 'hosts' configuration. If the 'hosts' list contains
+  # urls that already have query strings, the one specified here will be appended.
+  config :parameters, :validate => :hash
+
   # Enable SSL/TLS secured communication to Elasticsearch cluster. Leaving this unspecified will use whatever scheme
   # is specified in the URLs listed in 'hosts'. If no explicit protocol is specified plain HTTP will be used.
   # If SSL is explicitly disabled here the plugin will refuse to start if an HTTPS URL is given in 'hosts'
@@ -110,7 +147,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # It can be either .jks or .p12
   config :keystore, :validate => :path
 
-  # Set the truststore password
+  # Set the keystore password
   config :keystore_password, :validate => :password
 
   # This setting asks Elasticsearch for the list of all cluster nodes and adds them to the hosts list.
@@ -123,17 +160,22 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # How long to wait, in seconds, between sniffing attempts
   config :sniffing_delay, :validate => :number, :default => 5
 
+  # HTTP Path to be used for the sniffing requests
+  # the default value is computed by concatenating the path value and "_nodes/http"
+  # if sniffing_path is set it will be used as an absolute path
+  # do not use full URL here, only paths, e.g. "/sniff/_nodes/http"
+  config :sniffing_path, :validate => :string
+
   # Set the address of a forward HTTP proxy.
-  # Can be either a string, such as `http://localhost:123` or a hash in the form
-  # of `{host: 'proxy.org' port: 80 scheme: 'http'}`.
-  # Note, this is NOT a SOCKS proxy, but a plain HTTP proxy
-  config :proxy
+  # This used to accept hashes as arguments but now only accepts
+  # arguments of the URI type to prevent leaking credentials.
+  config :proxy, :validate => :uri
 
   # Set the timeout, in seconds, for network operations and requests sent Elasticsearch. If
   # a timeout occurs, the request will be retried.
-  config :timeout, :validate => :number
+  config :timeout, :validate => :number, :default => 60
 
-  # Set the Elasticsearch errors in the whitelist that you don't want to log. 
+  # Set the Elasticsearch errors in the whitelist that you don't want to log.
   # A useful example is when you want to skip all 409 errors
   # which are `document_already_exists_exception`.
   config :failure_type_logging_whitelist, :validate => :array, :default => []
@@ -150,11 +192,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # which is bad.
   config :pool_max_per_route, :validate => :number, :default => 100
 
-  # When a backend is marked down a HEAD request will be sent to this path in the
-  # background to see if it has come back again before it is once again eligible
-  # to service requests. If you have custom firewall rules you may need to change
-  # this
-  config :healthcheck_path, :validate => :string, :default => "/"
+  # HTTP Path where a HEAD request is sent when a backend is marked down
+  # the request is sent in the background to see if it has come back again
+  # before it is once again eligible to service requests.
+  # If you have custom firewall rules you may need to change this
+  config :healthcheck_path, :validate => :string
 
   # How frequently, in seconds, to wait between resurrection attempts.
   # Resurrection is the process by which backend endpoints marked 'down' are checked
@@ -168,12 +210,26 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # metadata format, thus those values should be cleaned. Default: false
   config :remove_empty_action_params, :validate => :boolean, :default => false
 
+  # How long to wait before checking if the connection is stale before executing a request on a connection using keepalive.
+  # You may want to set this lower, if you get connection errors regularly
+  # Quoting the Apache commons docs (this client is based Apache Commmons):
+  # 'Defines period of inactivity in milliseconds after which persistent connections must
+  # be re-validated prior to being leased to the consumer. Non-positive value passed to
+  # this method disables connection validation. This check helps detect connections that
+  # have become stale (half-closed) while kept inactive in the pool.'
+  # See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/conn/PoolingHttpClientConnectionManager.html#setValidateAfterInactivity(int)[these docs for more info]
+  config :validate_after_inactivity, :validate => :number, :default => 10000
+
+  # Enable gzip compression on requests. Note that response compression is on by default for Elasticsearch v5.0 and beyond
+  config :http_compression, :validate => :boolean, :default => false
+
   def build_client
-    @client = ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
+    @client ||= ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
   end
 
   def close
     @stopping.make_true
+    @client.close if @client
   end
 
   @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }

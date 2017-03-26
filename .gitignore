@@ -1,6 +1,14 @@
+*.swp
 *.gem
 Gemfile.lock
 .bundle
 .idea
 *~
 .ruby-version
+elasticsearch.tar.gz
+/elasticsearch/*
+lumberjack.key
+target/
+vendor/
+/spec/fixtures/server.key
+/spec/fixtures/server.crt

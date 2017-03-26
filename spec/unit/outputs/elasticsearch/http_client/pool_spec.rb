@@ -5,10 +5,28 @@ require "json"
 describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:logger) { Cabin::Channel.get }
   let(:adapter) { LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter.new(logger) }
-  let(:initial_urls) { [URI.parse("http://localhost:9200")] }
-  let(:options) { {:resurrect_delay => 2} } # Shorten the delay a bit to speed up tests
+  let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
+  let(:options) { {:resurrect_delay => 2, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
 
   subject { described_class.new(logger, adapter, initial_urls, options) }
+
+  let(:manticore_double) { double("manticore a") }
+  before do
+
+    response_double = double("manticore response").as_null_object
+    # Allow healtchecks
+    allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
+    allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
+    allow(manticore_double).to receive(:close)
+
+    allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
+
+    subject.start
+  end
+
+  after do
+    subject.close
+  end
 
   describe "initialization" do
     it "should be successful" do
@@ -22,8 +40,36 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     end
 
     it "should attempt to resurrect connections after the ressurrect delay" do
-      expect(subject).to receive(:resurrect_dead!).once
+      expect(subject).to receive(:healthcheck!).once
       sleep(subject.resurrect_delay + 1)
+    end
+
+    describe "healthcheck url handling" do
+      let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
+
+      context "and not setting healthcheck_path" do
+        it "performs the healthcheck to the root" do
+          expect(adapter).to receive(:perform_request) do |url, method, req_path, _, _|
+            expect(method).to eq(:head)
+            expect(url.path).to be_empty
+            expect(req_path).to eq("/")
+          end
+          subject.healthcheck!
+        end
+      end
+
+      context "and setting healthcheck_path" do
+        let(:healthcheck_path) { "/my/health" }
+        let(:options) { super.merge(:healthcheck_path => healthcheck_path) }
+        it "performs the healthcheck to the healthcheck_path" do
+          expect(adapter).to receive(:perform_request) do |url, method, req_path, _, _|
+            expect(method).to eq(:head)
+            expect(url.path).to be_empty
+            expect(req_path).to eq(healthcheck_path)
+          end
+          subject.healthcheck!
+        end
+      end
     end
   end
 
@@ -39,31 +85,6 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
         expect(subject.sniffer_alive?).to eql(true)
       end
     end
-
-    describe "check sniff" do
-      context "with a good sniff result" do
-        let(:sniff_resp_path) { File.dirname(__FILE__) + '/../../../../fixtures/5x_node_resp.json' }
-        let(:sniff_resp) { double("resp") }
-        let(:sniff_resp_body) { File.open(sniff_resp_path).read }
-        
-        before do
-          allow(subject).to receive(:perform_request).
-                              with(:get, '_nodes').
-                              and_return([double('url'), sniff_resp])
-          allow(sniff_resp).to receive(:body).and_return(sniff_resp_body)
-        end
-        
-        it "should execute a sniff without error" do
-          expect { subject.check_sniff }.not_to raise_error
-        end
-
-        it "should return the correct sniff URL list" do
-          url_strs = subject.check_sniff.map(&:to_s)
-          expect(url_strs).to include("http://127.0.0.1:9200")
-          expect(url_strs).to include("http://127.0.0.1:9201")
-        end
-      end
-    end
   end
 
   describe "closing" do
@@ -72,6 +93,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       allow(adapter).to receive(:close).and_call_original
       allow(subject).to receive(:wait_for_in_use_connections).and_call_original
       allow(subject).to receive(:in_use_connections).and_return([subject.empty_url_meta()],[])
+      allow(subject).to receive(:start)
       subject.close
     end
 
@@ -98,13 +120,16 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     context "with only one URL in the list" do
       it "should use the only URL in 'with_connection'" do
         subject.with_connection do |c|
-          expect(c).to eql(initial_urls.first)
+          expect(c).to eq(initial_urls.first)
         end
       end
     end
 
     context "with multiple URLs in the list" do
-      let(:initial_urls) { [ URI.parse("http://localhost:9200"), URI.parse("http://localhost:9201"), URI.parse("http://localhost:9202") ] }
+      before :each do
+        allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil)
+      end
+      let(:initial_urls) { [ ::LogStash::Util::SafeURI.new("http://localhost:9200"), ::LogStash::Util::SafeURI.new("http://localhost:9201"), ::LogStash::Util::SafeURI.new("http://localhost:9202") ] }
 
       it "should minimize the number of connections to a single URL" do
         connected_urls = []
@@ -128,14 +153,14 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
         # The resurrectionist will call this to check on the backend
         response = double("response")
-        expect(adapter).to receive(:perform_request).with(u, 'HEAD', subject.healthcheck_path, {}, nil).and_return(response)
+        expect(adapter).to receive(:perform_request).with(u, :head, subject.healthcheck_path, {}, nil).and_return(response)
 
         subject.return_connection(u)
         subject.mark_dead(u, Exception.new)
 
-        expect(subject.url_meta(u)[:dead]).to eql(true)
+        expect(subject.url_meta(u)[:state]).to eql(:dead)
         sleep subject.resurrect_delay + 1
-        expect(subject.url_meta(u)[:dead]).to eql(false)
+        expect(subject.url_meta(u)[:state]).to eql(:alive)
       end
     end
   end

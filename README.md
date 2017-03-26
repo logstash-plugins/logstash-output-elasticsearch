@@ -47,14 +47,10 @@ bundle exec rspec
 
 - Run integration tests
 
-Dependencies: [Docker](http://docker.com)
-
-Before the test suite is run, we will load and run an
-Elasticsearch instance within a docker container. This container 
-will be cleaned up when suite has finished.
-
 ```sh
-bundle exec rspec --tag integration
+export INTEGRATION=true
+export ES_VERSION=5.1.1
+./travis-run.sh 
 ```
 
 ### 2. Running your unpublished Plugin in Logstash

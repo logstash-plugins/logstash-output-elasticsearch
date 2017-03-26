@@ -6,6 +6,13 @@ module LogStash; module Outputs; class ElasticSearch;
 
     RETRYABLE_CODES = [429, 503]
     SUCCESS_CODES = [200, 201]
+    CONFLICT_CODE = 409
+
+    # When you use external versioning, you are communicating that you want
+    # to ignore conflicts. More obviously, since an external version is a 
+    # constant part of the incoming document, we should not retry, as retrying
+    # will never succeed. 
+    VERSION_TYPES_PERMITTING_CONFLICT = ["external", "external_gt", "external_gte"]
 
     def register
       @stopping = Concurrent::AtomicBoolean.new(false)
@@ -14,13 +21,17 @@ module LogStash; module Outputs; class ElasticSearch;
       install_template
       check_action_validity
 
-      @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts)
+      @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized))
     end
 
     # Receive an array of events and immediately attempt to index them (no buffering)
     def multi_receive(events)
-      events.each_slice(@flush_size) do |slice|
-        retrying_submit(slice.map {|e| event_action_tuple(e) })
+      if @flush_size
+        events.each_slice(@flush_size) do |slice|
+          retrying_submit(slice.map {|e| event_action_tuple(e) })
+        end
+      else
+        retrying_submit(events.map {|e| event_action_tuple(e)})
       end
     end
 
@@ -59,20 +70,19 @@ module LogStash; module Outputs; class ElasticSearch;
       VALID_HTTP_ACTIONS
     end
 
-    def retrying_submit(actions)      
+    def retrying_submit(actions)
       # Initially we submit the full list of actions
       submit_actions = actions
 
       sleep_interval = @retry_initial_interval
 
       while submit_actions && submit_actions.length > 0
-        
+
         # We retry with whatever is didn't succeed
         begin
           submit_actions = submit(submit_actions)
           if submit_actions && submit_actions.size > 0
-            @logger.error("Retrying individual actions")
-            submit_actions.each {|action| @logger.error("Action", action) }
+            @logger.info("Retrying individual bulk actions that failed or were rejected by the previous bulk request.", :count => submit_actions.size)
           end
         rescue => e
           @logger.error("Encountered an unexpected error submitting a bulk request! Will retry.",
@@ -103,7 +113,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def submit(actions)
       bulk_response = safe_bulk(actions)
-      
+
       # If the response is nil that means we were in a retry loop
       # and aborted since we're shutting down
       # If it did return and there are no errors we're good as well
@@ -116,8 +126,12 @@ module LogStash; module Outputs; class ElasticSearch;
         status = action_props["status"]
         failure  = action_props["error"]
         action = actions[idx]
+        action_params = action[1]
 
         if SUCCESS_CODES.include?(status)
+          next
+        elsif CONFLICT_CODE == status && VERSION_TYPES_PERMITTING_CONFLICT.include?(action_params[:version_type])
+          @logger.debug "Ignoring external version conflict: status[#{status}] failure[#{failure}] version[#{action_params[:version]}] version_type[#{action_params[:version_type]}]"
           next
         elsif RETRYABLE_CODES.include?(status)
           @logger.info "retrying failed action with response code: #{status} (#{failure})"
@@ -142,7 +156,7 @@ module LogStash; module Outputs; class ElasticSearch;
       }
 
       if @pipeline
-        params[:pipeline] = @pipeline
+        params[:pipeline] = event.sprintf(@pipeline)
       end
 
      if @parent
@@ -153,6 +167,14 @@ module LogStash; module Outputs; class ElasticSearch;
         params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
         params[:_script] = event.sprintf(@script) if @script != ""
         params[:_retry_on_conflict] = @retry_on_conflict
+      end
+
+      if @version
+        params[:version] = event.sprintf(@version)
+      end
+
+      if @version_type
+        params[:version_type] = event.sprintf(@version_type)
       end
 
       if @remove_empty_action_params
@@ -212,14 +234,17 @@ module LogStash; module Outputs; class ElasticSearch;
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         if RETRYABLE_CODES.include?(e.response_code)
-          log_hash = {:code => e.response_code, :url => e.url}
+          log_hash = {:code => e.response_code, :url => e.url.sanitized}
           log_hash[:body] = e.body if @logger.debug? # Generally this is too verbose
           @logger.error("Attempted to send a bulk request to elasticsearch but received a bad HTTP response code!", log_hash)
 
           sleep_interval = sleep_for_interval(sleep_interval)
           retry unless @stopping.true?
         else
-          @logger.error("Got a bad response code from server, but this code is not considered retryable. Request will be dropped", :code => e.response_code)
+          log_hash = {:code => e.response_code, 
+                      :response_body => e.response_body}
+          log_hash[:request_body] = e.request_body if @logger.debug?
+          @logger.error("Got a bad response code from server, but this code is not considered retryable. Request will be dropped", log_hash)
         end
       rescue => e
         # Stuff that should never happen
@@ -234,7 +259,7 @@ module LogStash; module Outputs; class ElasticSearch;
         @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
 
         # We retry until there are no errors! Errors should all go to the retry queue
-        sleep_interval = sleep_for_interval(sleep_interval)        
+        sleep_interval = sleep_for_interval(sleep_interval)
         retry unless @stopping.true?
       end
     end
