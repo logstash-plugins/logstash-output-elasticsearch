@@ -1,3 +1,5 @@
+require 'forwardable' # Needed for logstash core SafeURI. We need to patch this in core: https://github.com/elastic/logstash/pull/5978
+
 module LogStash; module Outputs; class ElasticSearch
   module CommonConfigs
     def self.included(mod)
@@ -16,15 +18,18 @@ module LogStash; module Outputs; class ElasticSearch
       # otherwise the document type will be assigned the value of 'logs'
       mod.config :document_type, :validate => :string
 
-      # Starting in Logstash 1.3 (unless you set option `manage_template` to false)
-      # a default mapping template for Elasticsearch will be applied, if you do not
-      # already have one set to match the index pattern defined (default of
-      # `logstash-%{+YYYY.MM.dd}`), minus any variables.  For example, in this case
-      # the template will be applied to all indices starting with `logstash-*`
+      # From Logstash 1.3 onwards, a template is applied to Elasticsearch during
+      # Logstash's startup if one with the name `template_name` does not already exist.
+      # By default, the contents of this template is the default template for
+      # `logstash-%{+YYYY.MM.dd}` which always matches indices based on the pattern
+      # `logstash-*`.  Should you require support for other index names, or would like
+      # to change the mappings in the template in general, a custom template can be
+      # specified by setting `template` to the path of a template file.
       #
-      # If you have dynamic templating (e.g. creating indices based on field names)
-      # then you should set `manage_template` to false and use the REST API to upload
-      # your templates manually.
+      # Setting `manage_template` to false disables this feature.  If you require more
+      # control over template creation, (e.g. creating indices dynamically based on
+      # field names) you should set `manage_template` to false and use the REST
+      # API to apply your templates manually.
       mod.config :manage_template, :validate => :boolean, :default => true
 
       # This configuration option defines how the template is named inside Elasticsearch.
@@ -56,6 +61,15 @@ module LogStash; module Outputs; class ElasticSearch
       # Elasticsearch with the same ID.
       mod.config :document_id, :validate => :string
 
+      # The version to use for indexing. Use sprintf syntax like `%{my_version}` to use a field value here.
+      # See https://www.elastic.co/blog/elasticsearch-versioning-support.
+      mod.config :version, :validate => :string
+      
+      # The version_type to use for indexing.
+      # See https://www.elastic.co/blog/elasticsearch-versioning-support.
+      # See also https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types
+      mod.config :version_type, :validate => ["internal", 'external', "external_gt", "external_gte", "force"]
+
       # A routing override to be applied to all processed events.
       # This can be dynamic using the `%{foo}` syntax.
       mod.config :routing, :validate => :string
@@ -73,15 +87,17 @@ module LogStash; module Outputs; class ElasticSearch
       #     `["https://127.0.0.1:9200/mypath"]` (If using a proxy on a subpath)
       # It is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `hosts` list
       # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes in Elasticsearch.
-      mod.config :hosts, :validate => :array, :default => ["127.0.0.1"]
+      # 
+      # Any special characters present in the URLs here MUST be URL escaped! This means `#` should be put in as `%23` for instance.
+      mod.config :hosts, :validate => :uri, :default => [::LogStash::Util::SafeURI.new("//127.0.0.1")], :list => true
 
       # This plugin uses the bulk index API for improved indexing performance.
-      # This setting defines the maximum sized bulk request Logstash will make
-      # You you may want to increase this to be in line with your pipeline's batch size.
+      # This setting defines the maximum sized bulk request Logstash will make.
+      # You may want to increase this to be in line with your pipeline's batch size.
       # If you specify a number larger than the batch size of your pipeline it will have no effect,
       # save for the case where a filter increases the size of an inflight batch by outputting
       # events.
-      mod.config :flush_size, :validate => :number, :default => 500
+      mod.config :flush_size, :validate => :number, :deprecate => "This setting is no longer necessary as we now try to restrict bulk requests to sane sizes. See the 'Batch Sizes' section of the docs. If you think you still need to restrict payloads based on the number, not size, of events, please open a ticket."
 
       # The amount of time since last flush before a flush is forced.
       #
@@ -114,8 +130,8 @@ module LogStash; module Outputs; class ElasticSearch
       #  file    : "script" contains the name of script stored in elasticseach's config directory
       mod.config :script_type, :validate => ["inline", 'indexed', "file"], :default => ["inline"]
 
-      # Set the language of the used script
-      mod.config :script_lang, :validate => :string, :default => ""
+      # Set the language of the used script. If not set, this defaults to painless in ES 5.0
+      mod.config :script_lang, :validate => :string, :default => "painless"
 
       # Set variable name passed to script (scripted update)
       mod.config :script_var_name, :validate => :string, :default => "event"
@@ -137,7 +153,8 @@ module LogStash; module Outputs; class ElasticSearch
       # for more info
       mod.config :retry_on_conflict, :validate => :number, :default => 1
 
-      # Set which ingest pipeline you wish to execute for an event
+      # Set which ingest pipeline you wish to execute for an event. You can also use event dependent configuration
+      # here like `pipeline => "%{INGEST_PIPELINE}"`
       mod.config :pipeline, :validate => :string, :default => nil
     end
   end

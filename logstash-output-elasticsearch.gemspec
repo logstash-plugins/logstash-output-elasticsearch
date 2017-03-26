@@ -1,7 +1,6 @@
 Gem::Specification.new do |s|
-
   s.name            = 'logstash-output-elasticsearch'
-  s.version         = '4.1.3'
+  s.version         = '7.2.1'
   s.licenses        = ['apache-2.0']
   s.summary         = "Logstash Output to Elasticsearch"
   s.description     = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using $LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program"
@@ -23,7 +22,10 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'cabin', ['~> 0.6']
   s.add_runtime_dependency "logstash-core-plugin-api", ">= 1.60", "<= 2.99"
   s.add_development_dependency 'ftw', '~> 0.0.42'
+  s.add_development_dependency 'addressable', "~> 2.3.0" # used by FTW. V 2.5.0 is ruby 2.0 only.
   s.add_development_dependency 'logstash-codec-plain'
+  s.add_development_dependency 'json' # used by spec/unit/outputs/elasticsearch/http_client/pool_spec.rb
+  s.add_development_dependency 'gzip' # used by spec/integration/outputs/index_spec.rb
 
   if RUBY_PLATFORM == 'java'
     s.platform = RUBY_PLATFORM
@@ -31,7 +33,6 @@ Gem::Specification.new do |s|
   end
 
   s.add_development_dependency 'logstash-devutils'
-  s.add_development_dependency 'longshoreman'
   s.add_development_dependency 'flores'
   # Still used in some specs, we should remove this ASAP
   s.add_development_dependency 'elasticsearch'

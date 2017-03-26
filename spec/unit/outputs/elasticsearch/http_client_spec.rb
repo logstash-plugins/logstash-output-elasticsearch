@@ -3,7 +3,19 @@ require "logstash/outputs/elasticsearch/http_client"
 require "java"
 
 describe LogStash::Outputs::ElasticSearch::HttpClient do
-  let(:base_options) { {:hosts => ["127.0.0.1"], :logger => Cabin::Channel.get }}
+  let(:ssl) { nil }
+  let(:base_options) do
+    opts = {
+      :hosts => [::LogStash::Util::SafeURI.new("127.0.0.1")],
+      :logger => Cabin::Channel.get
+    }
+
+    if !ssl.nil? # Shortcut to set this
+      opts[:client_settings] = {:ssl => {:enabled => ssl}}
+    end
+
+    opts
+  end
 
   describe "Host/URL Parsing" do
     subject { described_class.new(base_options) }
@@ -12,71 +24,83 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     let(:ipv6_hostname) { "[::1]" }
     let(:ipv4_hostname) { "127.0.0.1" }
     let(:port) { 9202 }
-    let(:hostname_port) { "#{hostname}:#{port}"}
-    let(:http_hostname_port) { "http://#{hostname_port}"}
-    let(:https_hostname_port) { "https://#{hostname_port}"}
-    let(:http_hostname_port_path) { "http://#{hostname_port}/path"}
-
+    let(:hostname_port) { "#{hostname}:#{port}" }
+    let(:hostname_port_uri) { ::LogStash::Util::SafeURI.new("//#{hostname_port}") }
+    let(:http_hostname_port) { ::LogStash::Util::SafeURI.new("http://#{hostname_port}") }
+    let(:https_hostname_port) { ::LogStash::Util::SafeURI.new("https://#{hostname_port}") }
+    let(:http_hostname_port_path) { ::LogStash::Util::SafeURI.new("http://#{hostname_port}/path") }
+    
     shared_examples("proper host handling") do
       it "should properly transform a host:port string to a URL" do
-        expect(subject.send(:host_to_url, hostname_port).to_s).to eql(http_hostname_port)
-      end
-
-      it "should raise an error when a partial URL is an invalid format" do
-        expect {
-          subject.send(:host_to_url, "#{hostname_port}/")
-        }.to raise_error(LogStash::ConfigurationError)
+        expect(subject.host_to_url(hostname_port_uri)).to eq(http_hostname_port)
       end
 
       it "should not raise an error with a / for a path" do
-        expect(subject.send(:host_to_url, "#{http_hostname_port}/").to_s).to eql("#{http_hostname_port}/")
+        expect(subject.host_to_url(::LogStash::Util::SafeURI.new("#{http_hostname_port}/"))).to eq(LogStash::Util::SafeURI.new("#{http_hostname_port}/"))
       end
 
       it "should parse full URLs correctly" do
-        expect(subject.send(:host_to_url, http_hostname_port).to_s).to eql(http_hostname_port)
-      end
-
-      it "should reject full URLs with usernames and passwords" do
-        expect {
-          subject.send(:host_to_url, "http://user:password@host.domain")
-        }.to raise_error(LogStash::ConfigurationError)
+        expect(subject.host_to_url(http_hostname_port)).to eq(http_hostname_port)
       end
 
       describe "ssl" do
-        it "should refuse to handle an http url when ssl is true" do
-          expect {
-            subject.send(:host_to_url, http_hostname_port, true)
-          }.to raise_error(LogStash::ConfigurationError)
+        context "when SSL is true" do
+          let(:ssl) { true }
+          let(:base_options) { super.merge(:hosts => [http_hostname_port]) }
+
+          it "should refuse to handle an http url" do
+            expect {
+              subject.host_to_url(http_hostname_port)
+            }.to raise_error(LogStash::ConfigurationError)
+          end
         end
 
-        it "should refuse to handle an https url when ssl is false" do
-          expect {
-            subject.send(:host_to_url, https_hostname_port, false)
-          }.to raise_error(LogStash::ConfigurationError)
+        context "when SSL is false" do
+          let(:ssl) { false }
+          let(:base_options) { super.merge(:hosts => [https_hostname_port]) }
+          
+          it "should refuse to handle an https url" do
+            expect {
+              subject.host_to_url(https_hostname_port)
+            }.to raise_error(LogStash::ConfigurationError)
+          end
         end
 
-        it "should handle an ssl url correctly when SSL is nil" do
-          expect(subject.send(:host_to_url, https_hostname_port, nil).to_s).to eql(https_hostname_port)
-        end
-
-        it "should raise an exception if an unexpected value is passed in" do
-          expect { subject.send(:host_to_url, https_hostname_port, {})}.to raise_error(ArgumentError)
-        end
+        describe "ssl is nil" do
+          let(:base_options) { super.merge(:hosts => [https_hostname_port]) }
+          it "should handle an ssl url correctly when SSL is nil" do
+            subject
+            expect(subject.host_to_url(https_hostname_port)).to eq(https_hostname_port)
+          end
+        end       
       end
 
       describe "path" do
+        let(:url) { http_hostname_port_path }
+        let(:base_options) { super.merge(:hosts => [url]) }
+        
         it "should allow paths in a url" do
-          expect(subject.send(:host_to_url, http_hostname_port_path, nil).to_s).to eql(http_hostname_port_path)
+          expect(subject.host_to_url(url)).to eq(url)
         end
 
-        it "should not allow paths in two places" do
-          expect {
-            subject.send(:host_to_url, http_hostname_port_path, false, "/otherpath")
-          }.to raise_error(LogStash::ConfigurationError)
+        context "with the path option set" do
+          let(:base_options) { super.merge(:client_settings => {:path => "/otherpath"}) }
+          
+          it "should not allow paths in two places" do
+            expect {
+              subject.host_to_url(url)
+            }.to raise_error(LogStash::ConfigurationError)
+          end
         end
-
-        it "should automatically insert a / in front of path overlays if needed" do
-          expect(subject.send(:host_to_url, http_hostname_port, false, "otherpath")).to eql(URI.parse(http_hostname_port + "/otherpath"))
+        
+        context "with a path missing a leading /" do
+          let(:url) { http_hostname_port }
+          let(:base_options) { super.merge(:client_settings => {:path => "otherpath"}) }
+          
+          
+          it "should automatically insert a / in front of path overlays" do
+            expect(subject.host_to_url(url)).to eq(LogStash::Util::SafeURI.new(url + "/otherpath"))
+          end
         end
       end
     end
@@ -94,6 +118,63 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     describe "an ipv6 host" do
       let(:hostname) { ipv6_hostname }
       include_examples("proper host handling")
+    end
+  end
+
+  describe "get" do
+    subject { described_class.new(base_options) }
+    let(:body) { "foobar" }
+    let(:path) { "/hello-id" }
+    let(:get_response) {
+      double("response", :body => LogStash::Json::dump( { "body" => body }))
+    }
+
+    it "returns the hash response" do
+      expect(subject.pool).to receive(:get).with(path, nil).and_return([nil, get_response])
+      expect(subject.get(path)["body"]).to eq(body)
+    end
+  end
+
+  describe "join_bulk_responses" do
+    subject { described_class.new(base_options) }
+
+    context "when items key is available" do
+      require "json"
+      let(:bulk_response) {
+        LogStash::Json.load ('[{
+          "items": [{
+            "delete": {
+              "_index":   "website",
+              "_type":    "blog",
+              "_id":      "123",
+              "_version": 2,
+              "status":   200,
+              "found":    true
+            }
+          }],
+          "errors": false
+        }]')
+      }
+      it "should be handled properly" do
+        s = subject.send(:join_bulk_responses, bulk_response)
+        expect(s["errors"]).to be false
+        expect(s["items"].size).to be 1
+      end
+    end
+
+    context "when items key is not available" do
+      require "json"
+      let(:bulk_response) {
+        JSON.parse ('[{
+          "took": 4,
+          "errors": false
+        }]')
+      }
+      it "should be handled properly" do
+        s = subject.send(:join_bulk_responses, bulk_response)
+        expect(s["errors"]).to be false
+        expect(s["items"].size).to be 0
+      end
     end
   end
 

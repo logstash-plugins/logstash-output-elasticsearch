@@ -10,10 +10,15 @@ trap finish EXIT
 
 setup_es() {
   download_url=$1
-  curl -sL $download_url > elasticsearch.tar.gz
-  mkdir elasticsearch
-  tar -xzf elasticsearch.tar.gz --strip-components=1 -C ./elasticsearch/.
-  ln -sn ../../spec/fixtures/scripts elasticsearch/config/.
+  if [[ ! -d elasticsearch ]]; then
+    curl -sL $download_url > elasticsearch.tar.gz
+    mkdir elasticsearch
+    tar -xzf elasticsearch.tar.gz --strip-components=1 -C ./elasticsearch/.
+  fi
+  rm -f elasticsearch/config/scripts || true
+  mkdir -p elasticsearch/config/scripts
+  cp $TRAVIS_BUILD_DIR/spec/fixtures/scripts/groovy/* elasticsearch/config/scripts
+  cp $TRAVIS_BUILD_DIR/spec/fixtures/scripts/painless/* elasticsearch/config/scripts
 }
 
 start_es() {
@@ -30,20 +35,68 @@ start_es() {
   return 0
 }
 
+# Ruby build environment does not have gradle in the env, so we need to download it
+# Gradle is added to the PATH in the before_script step and *has* to stay there and
+# not here because this script runs in a different bash shell.
+download_gradle() {
+  echo $PWD
+  local version="3.3"
+  curl -sL https://services.gradle.org/distributions/gradle-$version-bin.zip > gradle.zip
+  unzip -d . gradle.zip
+  mv gradle-* gradle
+}
+
+# Builds any branch of ES and runs tests against it. Default is master
+build_es() {
+  branch=$1
+  git clone https://github.com/elastic/elasticsearch.git es_src
+  cd es_src
+  gradle :distribution:zip:assemble
+  unzip -d $TRAVIS_BUILD_DIR distribution/zip/build/distributions/elasticsearch-*.zip
+  mv $TRAVIS_BUILD_DIR/elasticsearch-* $TRAVIS_BUILD_DIR/elasticsearch
+  cd $TRAVIS_BUILD_DIR
+  mkdir -p elasticsearch/config/scripts
+  cp $TRAVIS_BUILD_DIR/spec/fixtures/scripts/painless/* elasticsearch/config/scripts
+}
+
+start_nginx() {
+  ./start_nginx.sh &
+  sleep 5
+}
+
 if [[ "$INTEGRATION" != "true" ]]; then
   bundle exec rspec -fd spec
 else
-  if [[ "$ES_VERSION" == 5.* ]]; then
-    setup_es https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/$ES_VERSION/elasticsearch-$ES_VERSION.tar.gz
-    start_es -Ees.script.inline=true -Ees.script.indexed=true -Ees.script.file=true
-    bundle exec rspec -fd spec --tag integration --tag version_5x --tag integration_2x_plus
-  elif [[ "$ES_VERSION" == 2.* ]]; then
-    setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
-    start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
-    bundle exec rspec -fd spec --tag integration --tag ~version_5x
+  if [ "$1" -eq "" ]; then
+    spec_path="spec"
   else
-    setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
-    start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
-    bundle exec rspec -fd spec --tag integration --tag ~version_5x --tag ~version_2x_plus
+    spec_path="$1"
   fi
+
+  case "$ES_VERSION" in
+      5.*)
+          setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
+          start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
+          # Run all tests which are for versions > 5 but don't run ones tagged < 5.x. Include ingest, new template
+          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag update_tests:groovy --tag ~version_less_than_5x $spec_path
+          ;;
+      2.*)
+          setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
+          start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
+          # Run all tests which are for versions < 5 but don't run ones tagged 5.x and above. Skip ingest, new template
+          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_less_than_5x --tag update_tests:groovy --tag ~version_greater_than_equal_to_5x $spec_path
+          ;;
+      1.*)
+          setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
+          start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
+          # Still have to support ES versions < 2.x so run tests for those.
+          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag ~version_greater_than_equal_to_5x --tag ~version_greater_than_equal_to_2x $spec_path
+          ;;
+      *)
+          download_gradle
+          build_es master
+          start_es
+          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag ~update_tests:groovy --tag ~version_less_than_5x $spec_path
+          ;;
+  esac
 fi

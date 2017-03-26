@@ -1,0 +1,2 @@
+ctx._source.counter += params.event.count
+

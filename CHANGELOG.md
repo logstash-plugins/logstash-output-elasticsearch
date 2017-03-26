@@ -1,5 +1,114 @@
+## 7.2.1
+ - Expose a `#post` method in the http client class to be use by other modules
+
+## 7.2.0
+ - Support 6.0.0-alpha1 version of Elasticsearch by adding a separate 6x template
+ - Note: This version is backwards compatible w.r.t. config, but for ES 6.0.0, `_all` has been
+    removed. This BWC issue only affects ES version 6.x; older versions
+    can be used with this plugin as is.
+
+## 7.1.0
+ - Add support to compress requests using the new `http_compression` option.
+
+## 7.0.0
+- introduce customization of bulk, healthcheck and sniffing paths with the behaviour:
+  - if not set: the default value will be used
+  - if not set and path is also set: the default is appended to path
+  - if set: the set value will be used, ignoring the default and path setting
+- removes absolute_healthcheck_path and query_parameters
+
+## 6.2.6
+- Fixed: Change how the healthcheck_path is treated: either append it to any existing path (default) or replace any existing path
+  Also ensures that the healthcheck url contains no query parameters regarless of hosts urls contains them or query_params being set. #554
+
+## 6.2.5
+- Send the Content-Type: application/json header that proper ES clients should send
+
+## 6.2.4
+- Fix bug where using escaped characters in the password field would attempt to show a warning but instead crash.
+  The warning was also not necessary since escaped characters never worked there before.
+
+## 6.2.3
+- Fixed a bug introduced in 6.2.2 where passwords needing escapes were not actually sent to ES properly
+  encoded. 
+
+## 6.2.2
+- Fixed a bug that forced users to URL encode the `password` option.
+  If you are currently manually escaping your passwords upgrading to this version
+  will break authentication. You should unescape your password if you have implemented
+  this workaround as it will otherwise be doubly encoded.
+  URL escaping is STILL required for passwords inline with URLs in the `hosts` option. 
+
+## 6.2.1
+- When an HTTP error is encountered, log the response body instead of the request.
+  The request body will still be logged at debug level.
+
+## 6.2.0
+- Add version number / version conflict support
+
+## 6.1.0
+- Add option to use an absolute healthcheck path
+
+## 6.0.0
+- Proxies requiring auth now always work when a URL is specified
+- It is no longer possible to specify a proxy as a hash due to security reasons 
+- Fix URL normalization logic to correctly apply all settings to sniffed hosts
+- Proxies requiring auth now always work when a URL is specified
+- Switch internals to new LogStash::Util::SafeURI type for more defensive approach to logging credentials
+
+## 5.4.1
+- Correctly sniff against ES 5.x clusters
+
+## 5.4.0
+- Perform healthcheck against hosts right after startup / sniffing
+- Add support for custom query parameters
+
+## 5.3.5
+- Docs: Remove mention of using the elasticsearch_java output plugin because it is no longer supported
+
+## 5.3.4
+- Add `sprintf` or event dependent configuration when specifying ingest pipeline
+
+## 5.3.3
+- Hide user/password in connection pool
+
+## 5.3.2
+- Use byte size, not char count for bulk operation size checks
+
+## 5.3.1
+- depends on Adressable ~> 2.3.0 to satisfy development dependency of the core ([logstash/#6204](https://github.com/elastic/logstash/issues/6204))
+
+## 5.3.0
+- Bulk operations will now target 20MB chunks at a time to reduce heap usage
+
+## 5.2.0
+- Change default lang for scripts to be painless, inline with ES 5.0. Earlier there was no default.
+
+## 5.1.2
+- Hide credentials in exceptions and log messages ([#482](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/482))
+- [internal] Remove dependency on longshoreman project
+
+## 5.1.1
+- Hide user and password from the URL logged during sniffing process.
+
+## 5.1.0
+- Add check_connection_timeout parameter (default 10m)
+- Set default timeout to 60s
+
+## 5.0.0
+- Breaking Change: Index template for 5.0 has been changed to reflect Elasticsearch's mapping changes. Most importantly,
+the subfield for string multi-fields has changed from `.raw` to `.keyword` to match ES default behavior. ([#386](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/386))
+
+**Users installing ES 5.x and LS 5.x**
+This change will not affect you and you will continue to use the ES defaults.
+
+**Users upgrading from LS 2.x to LS 5.x with ES 5.x**
+LS will not force upgrade the template, if `logstash` template already exists. This means you will still use
+`.raw` for sub-fields coming from 2.x. If you choose to use the new template, you will have to reindex your data after
+the new template is installed.
+
 ## 4.1.3
-  - Relax constraint on logstash-core-plugin-api to >= 1.60 <= 2.99
+- Relax constraint on logstash-core-plugin-api to >= 1.60 <= 2.99
 
 ## 4.1.2
 

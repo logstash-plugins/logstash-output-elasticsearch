@@ -1,15 +1,20 @@
+require 'cgi'
+
 module LogStash; module Outputs; class ElasticSearch;
   module HttpClientBuilder
     def self.build(logger, hosts, params)
       client_settings = {
         :pool_max => params["pool_max"],
         :pool_max_per_route => params["pool_max_per_route"],
+        :check_connection_timeout => params["validate_after_inactivity"],
+        :http_compression => params["http_compression"]
       }
-
+      
+      client_settings[:proxy] = params["proxy"] if params["proxy"]
+      
       common_options = {
         :client_settings => client_settings,
-        :resurrect_delay => params["resurrect_delay"],
-        :healthcheck_path => params["healthcheck_path"]
+        :resurrect_delay => params["resurrect_delay"]
       }
 
       if params["sniffing"]
@@ -20,14 +25,49 @@ module LogStash; module Outputs; class ElasticSearch;
       common_options[:timeout] = params["timeout"] if params["timeout"]
 
       if params["path"]
-        client_settings[:path] = "/#{params["path"]}/".gsub(/\/+/, "/") # Normalize slashes
+        client_settings[:path] = dedup_slashes("/#{params["path"]}/")
+      end
+
+      common_options[:bulk_path] = if params["bulk_path"]
+         dedup_slashes("/#{params["bulk_path"]}")
+      else
+         dedup_slashes("/#{params["path"]}/_bulk")
+      end
+
+      common_options[:sniffing_path] = if params["sniffing_path"]
+         dedup_slashes("/#{params["sniffing_path"]}")
+      else
+         dedup_slashes("/#{params["path"]}/_nodes/http")
+      end
+
+      common_options[:healthcheck_path] = if params["healthcheck_path"]
+         dedup_slashes("/#{params["healthcheck_path"]}")
+      else
+         dedup_slashes("/#{params["path"]}")
+      end
+
+      if params["parameters"]
+        client_settings[:parameters] = params["parameters"]
       end
 
       logger.debug? && logger.debug("Normalizing http path", :path => params["path"], :normalized => client_settings[:path])
 
       client_settings.merge! setup_ssl(logger, params)
-      client_settings.merge! setup_proxy(logger, params)
       common_options.merge! setup_basic_auth(logger, params)
+
+      external_version_types = ["external", "external_gt", "external_gte"]
+      # External Version validation
+      raise(
+        LogStash::ConfigurationError,
+        "External versioning requires the presence of a version number."
+      ) if external_version_types.include?(params.fetch('version_type', '')) and params.fetch("version", nil) == nil
+ 
+
+      # Create API setup
+      raise(
+        LogStash::ConfigurationError,
+        "External versioning is not supported by the create action."
+      ) if params['action'] == 'create' and external_version_types.include?(params.fetch('version_type', ''))
 
       # Update API setup
       raise( LogStash::ConfigurationError,
@@ -39,6 +79,11 @@ module LogStash; module Outputs; class ElasticSearch;
         "Specifying action => 'update' needs a document_id."
       ) if params['action'] == 'update' and params.fetch('document_id', '') == ''
 
+      raise(
+        LogStash::ConfigurationError,
+        "External versioning is not supported by the update action. See https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-update.html."
+      ) if params['action'] == 'update' and external_version_types.include?(params.fetch('version_type', ''))
+
       # Update API setup
       update_options = {
         :doc_as_upsert => params["doc_as_upsert"],
@@ -49,30 +94,15 @@ module LogStash; module Outputs; class ElasticSearch;
       }
       common_options.merge! update_options if params["action"] == 'update'
 
-      LogStash::Outputs::ElasticSearch::HttpClient.new(
-        common_options.merge(:hosts => hosts, :logger => logger)
-      )
+      create_http_client(common_options.merge(:hosts => hosts, :logger => logger))
     end
 
-    def self.setup_proxy(logger, params)
-      proxy = params["proxy"]
-      return {} unless proxy
-
-      # Symbolize keys
-      proxy = if proxy.is_a?(Hash)
-                Hash[proxy.map {|k,v| [k.to_sym, v]}]
-              elsif proxy.is_a?(String)
-                proxy
-              else
-                raise LogStash::ConfigurationError, "Expected 'proxy' to be a string or hash, not '#{proxy}''!"
-              end
-
-      return {:proxy => proxy}
+    def self.create_http_client(options)
+      LogStash::Outputs::ElasticSearch::HttpClient.new(options)
     end
 
     def self.setup_ssl(logger, params)
-      # If we have HTTPS hosts we act like SSL is enabled
-      params["ssl"] = true if params["hosts"].any? {|h| h.start_with?("https://")}
+      params["ssl"] = true if params["hosts"].any? {|h| h.scheme == "https" }
       return {} if params["ssl"].nil?
 
       return {:ssl => {:enabled => false}} if params["ssl"] == false
@@ -110,12 +140,20 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def self.setup_basic_auth(logger, params)
       user, password = params["user"], params["password"]
-      return {} unless user && password
+      unsafe_password = password && password.value
+      unsafe_escaped_password = unsafe_password ? CGI.escape(unsafe_password) : nil
+      
+      return {} unless user && unsafe_escaped_password
 
       {
         :user => user,
-        :password => password.value
+        :password => unsafe_escaped_password
       }
+    end
+
+    private
+    def self.dedup_slashes(url)
+      url.gsub(/\/+/, "/")
     end
   end
 end; end; end
