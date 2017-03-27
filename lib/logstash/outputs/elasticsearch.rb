@@ -10,6 +10,16 @@ require "thread" # for safe queueing
 require "uri" # for escaping user input
 require "forwardable"
 
+# .Compatibility Note
+# [NOTE]
+# ================================================================================
+# Starting with Elasticsearch 5.3, there's an {ref}modules-http.html[HTTP setting]
+# called `http.content_type.required`. If this option is set to `true`, and you
+# are using Logstash 2.4 through 5.2, you need to update the Elasticsearch output
+# plugin to version 6.2.5 or higher.
+# 
+# ================================================================================
+#
 # This plugin is the recommended method of storing logs in Elasticsearch.
 # If you plan on using the Kibana web interface, you'll want to use this output.
 #

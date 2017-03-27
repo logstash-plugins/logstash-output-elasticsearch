@@ -1,3 +1,6 @@
+## 7.2.2
+ - Docs: Add requirement to use version 6.2.5 or higher to support sending Content-Type headers.
+
 ## 7.2.1
  - Expose a `#post` method in the http client class to be use by other modules
 
