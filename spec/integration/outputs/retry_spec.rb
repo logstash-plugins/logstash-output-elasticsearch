@@ -8,6 +8,7 @@ describe "failures in bulk class expected behavior", :integration => true do
   let(:event2) { LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0] }, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0}) }
   let(:action2) { ["index", {:_id=>nil, :_routing=>nil, :_index=>"logstash-2014.11.17", :_type=>"logs"}, event2] }
   let(:invalid_event) { LogStash::Event.new("geoip" => { "location" => "notlatlon" }, "@timestamp" => "2014-11-17T20:37:17.223Z") }
+  let(:retryable_codes) { [429, 502, 503, 504] }
 
   def mock_actions_with_response(*resp)
     raise ArgumentError, "Cannot mock actions until subject is registered and has a client!" unless subject.client
@@ -88,24 +89,16 @@ describe "failures in bulk class expected behavior", :integration => true do
     subject.multi_receive([event1, event1, event1, event2])
   end
 
-  it "should retry actions with response status of 429" do
-    subject.register
+  retryable_codes.each do |code|
+    it "should retry actions with response status of #{code}" do
+      subject.register
 
-    mock_actions_with_response({"errors" => true, "statuses" => [429]},
-                               {"errors" => false})
-    expect(subject).to receive(:submit).with([action1]).twice.and_call_original
+      mock_actions_with_response({"errors" => true, "statuses" => [code]},
+                                 {"errors" => false})
+      expect(subject).to receive(:submit).with([action1]).twice.and_call_original
 
-    subject.multi_receive([event1])
-  end
-
-  it "should retry actions with response status of 502" do
-    subject.register
-
-    mock_actions_with_response({"errors" => true, "statuses" => [502]},
-                               {"errors" => false})
-    expect(subject).to receive(:submit).with([action1]).twice.and_call_original
-
-    subject.multi_receive([event1])
+      subject.multi_receive([event1])
+    end
   end
 
   it "should retry an event infinitely until a non retryable status occurs" do

@@ -151,6 +151,7 @@ module LogStash; module Outputs; class ElasticSearch;
           next
         else
           # only log what the user whitelisted
+          puts status
           @logger.info "retrying failed action with response code: #{status} (#{failure})" if !failure_type_logging_whitelist.include?(failure["type"])
           actions_to_retry << action
         end
