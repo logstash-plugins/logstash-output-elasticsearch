@@ -146,7 +146,7 @@ module LogStash; module Outputs; class ElasticSearch;
             # TODO: Change this to send a map with { :status => status, :action => action } in the future
             @dlq_writer.write(event, "Could not index event to Elasticsearch. status: #{status}, action: #{action}, response: #{response}")
           else
-            @logger.warn "Failed action.", status: status, action: action, response: response
+            @logger.warn "Could not index event to Elasticsearch.", status: status, action: action, response: response
           end
           next
         else
