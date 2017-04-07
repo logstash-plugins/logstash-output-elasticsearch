@@ -1,5 +1,4 @@
 require "logstash/outputs/elasticsearch/template_manager"
-java_import org.logstash.common.DeadLetterQueueFactory
 
 module LogStash; module Outputs; class ElasticSearch;
   module Common
@@ -17,7 +16,8 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def register
       @stopping = Concurrent::AtomicBoolean.new(false)
-      @dlq_writer = LogStash::Util::DeadLetterQueueFactory::get(self)
+      # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
+      @dlq_writer = LogStash::Util.const_defined?(:DeadLetterQueueFactory)? LogStash::Util::DeadLetterQueueFactory::get(self): nil
       setup_hosts # properly sets @hosts
       build_client
       install_template
@@ -141,7 +141,13 @@ module LogStash; module Outputs; class ElasticSearch;
           next
         elsif DLQ_CODES.include?(status)
           action_event = action[2]
-          @dlq_writer.write(event, "Could not index event to Elasticsearch. status: #{status}, action: #{action}, response: #{response}")
+          # To support bwc, we check if DLQ exists. otherwise we log and drop event (previous behavior)
+          if @dlq_writer
+            # TODO: Change this to send a map with { :status => status, :action => action } in the future
+            @dlq_writer.write(event, "Could not index event to Elasticsearch. status: #{status}, action: #{action}, response: #{response}")
+          else
+            @logger.warn "Failed action.", status: status, action: action, response: response
+          end
           next
         else
           # only log what the user whitelisted
