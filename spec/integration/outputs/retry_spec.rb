@@ -98,6 +98,16 @@ describe "failures in bulk class expected behavior", :integration => true do
     subject.multi_receive([event1])
   end
 
+  it "should retry actions with response status of 502" do
+    subject.register
+
+    mock_actions_with_response({"errors" => true, "statuses" => [502]},
+                               {"errors" => false})
+    expect(subject).to receive(:submit).with([action1]).twice.and_call_original
+
+    subject.multi_receive([event1])
+  end
+
   it "should retry an event infinitely until a non retryable status occurs" do
     expect(subject).to receive(:submit).with([action1]).exactly(6).times.and_call_original
     subject.register
@@ -107,7 +117,7 @@ describe "failures in bulk class expected behavior", :integration => true do
                                {"errors" => true, "statuses" => [429]},
                                {"errors" => true, "statuses" => [429]},
                                {"errors" => true, "statuses" => [429]},
-                               {"errors" => true, "statuses" => [500]})
+                               {"errors" => true, "statuses" => [400]})
 
     subject.multi_receive([event1])
   end
@@ -126,7 +136,7 @@ describe "failures in bulk class expected behavior", :integration => true do
                                {"errors" => true, "statuses" => [429]},
                                {"errors" => true, "statuses" => [429]},
                                {"errors" => true, "statuses" => [429]},
-                               {"errors" => true, "statuses" => [500]})
+                               {"errors" => true, "statuses" => [400]})
 
     subject.multi_receive([event1])
   end
