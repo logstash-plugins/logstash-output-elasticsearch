@@ -1,10 +1,11 @@
 require "logstash/outputs/elasticsearch/template_manager"
+java_import org.logstash.common.DeadLetterQueueFactory
 
 module LogStash; module Outputs; class ElasticSearch;
   module Common
     attr_reader :client, :hosts
 
-    RETRYABLE_CODES = [429, 503]
+    DLQ_CODES = [400]
     SUCCESS_CODES = [200, 201]
     CONFLICT_CODE = 409
 
@@ -16,6 +17,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def register
       @stopping = Concurrent::AtomicBoolean.new(false)
+      @dlq_writer = LogStash::Util::DeadLetterQueueFactory::get(self)
       setup_hosts # properly sets @hosts
       build_client
       install_template
@@ -128,16 +130,23 @@ module LogStash; module Outputs; class ElasticSearch;
         action = actions[idx]
         action_params = action[1]
 
+        # Retry logic: If it is success, we move on. If it is a failure, we have 3 paths:
+        # - For 409, we log and drop. there is nothing we can do
+        # - For a mapping error, we send to dead letter queue for a human to intervene at a later point.
+        # - For everything else there's mastercard. Yep, and we retry indefinitely. This should fix #572 and other transient network issues
         if SUCCESS_CODES.include?(status)
           next
         elsif CONFLICT_CODE == status && VERSION_TYPES_PERMITTING_CONFLICT.include?(action_params[:version_type])
           @logger.debug "Ignoring external version conflict: status[#{status}] failure[#{failure}] version[#{action_params[:version]}] version_type[#{action_params[:version_type]}]"
           next
-        elsif RETRYABLE_CODES.include?(status)
-          @logger.info "retrying failed action with response code: #{status} (#{failure})"
+        elsif DLQ_CODES.include?(status)
+          action_event = action[2]
+          @dlq_writer.write(event, config_name, id, "Could not index event to Elasticsearch. status: #{status}, action: #{action}, response: #{response}")
+          next
+        else
+          # only log what the user whitelisted
+          @logger.info "retrying failed action with response code: #{status} (#{failure})" if !failure_type_logging_whitelist.include?(failure["type"])
           actions_to_retry << action
-        elsif !failure_type_logging_whitelist.include?(failure["type"])
-          @logger.warn "Failed action.", status: status, action: action, response: response
         end
       end
 
