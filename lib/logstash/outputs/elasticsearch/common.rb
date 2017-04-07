@@ -4,7 +4,7 @@ module LogStash; module Outputs; class ElasticSearch;
   module Common
     attr_reader :client, :hosts
 
-    DLQ_CODES = [400]
+    DLQ_CODES = [400, 404]
     SUCCESS_CODES = [200, 201]
     CONFLICT_CODE = 409
 
