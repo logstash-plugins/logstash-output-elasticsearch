@@ -141,7 +141,7 @@ module LogStash; module Outputs; class ElasticSearch;
           next
         elsif DLQ_CODES.include?(status)
           action_event = action[2]
-          @dlq_writer.write(event, config_name, id, "Could not index event to Elasticsearch. status: #{status}, action: #{action}, response: #{response}")
+          @dlq_writer.write(event, "Could not index event to Elasticsearch. status: #{status}, action: #{action}, response: #{response}")
           next
         else
           # only log what the user whitelisted
