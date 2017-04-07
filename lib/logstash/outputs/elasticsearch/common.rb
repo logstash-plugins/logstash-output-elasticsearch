@@ -17,7 +17,7 @@ module LogStash; module Outputs; class ElasticSearch;
     def register
       @stopping = Concurrent::AtomicBoolean.new(false)
       # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
-      @dlq_writer = LogStash::Util.const_defined?(:DeadLetterQueueFactory)? LogStash::Util::DeadLetterQueueFactory::get(self): nil
+      @dlq_writer = respond_to?(:execution_context) ? execution_context.dlq_writer : nil
       setup_hosts # properly sets @hosts
       build_client
       install_template
@@ -136,8 +136,8 @@ module LogStash; module Outputs; class ElasticSearch;
         # - For everything else there's mastercard. Yep, and we retry indefinitely. This should fix #572 and other transient network issues
         if SUCCESS_CODES.include?(status)
           next
-        elsif CONFLICT_CODE == status && VERSION_TYPES_PERMITTING_CONFLICT.include?(action_params[:version_type])
-          @logger.debug "Ignoring external version conflict: status[#{status}] failure[#{failure}] version[#{action_params[:version]}] version_type[#{action_params[:version_type]}]"
+        elsif CONFLICT_CODE == status
+          @logger.warn "Failed action.", status: status, action: action, response: response if !failure_type_logging_whitelist.include?(failure["type"])
           next
         elsif DLQ_CODES.include?(status)
           action_event = action[2]
@@ -151,7 +151,6 @@ module LogStash; module Outputs; class ElasticSearch;
           next
         else
           # only log what the user whitelisted
-          puts status
           @logger.info "retrying failed action with response code: #{status} (#{failure})" if !failure_type_logging_whitelist.include?(failure["type"])
           actions_to_retry << action
         end
