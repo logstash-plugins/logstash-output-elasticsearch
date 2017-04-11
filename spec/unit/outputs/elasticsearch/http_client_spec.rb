@@ -7,7 +7,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
   let(:base_options) do
     opts = {
       :hosts => [::LogStash::Util::SafeURI.new("127.0.0.1")],
-      :logger => Cabin::Channel.get
+      :logger => Cabin::Channel.get,
+      :metric => ::LogStash::Instrument::NamespacedNullMetric.new(:dummy_metric)
     }
 
     if !ssl.nil? # Shortcut to set this

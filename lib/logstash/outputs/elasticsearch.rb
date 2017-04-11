@@ -227,6 +227,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :http_compression, :validate => :boolean, :default => false
 
   def build_client
+    params["metric"] = metric
     @client ||= ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
   end
 

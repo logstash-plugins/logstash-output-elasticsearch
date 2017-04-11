@@ -25,6 +25,8 @@ module LogStash; module Outputs; class ElasticSearch;
 
       install_template
       check_action_validity
+      @bulk_request_metrics = metric.namespace(:bulk_requests)
+      @document_level_metrics = metric.namespace(:documents)
 
       @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
     end
@@ -156,8 +158,15 @@ module LogStash; module Outputs; class ElasticSearch;
 
       # If the response is nil that means we were in a retry loop
       # and aborted since we're shutting down
+      return if bulk_response.nil?
+
       # If it did return and there are no errors we're good as well
-      return if bulk_response.nil? || !bulk_response["errors"]
+      if bulk_response["errors"]
+        @bulk_request_metrics.increment(:with_errors)
+      else
+        @bulk_request_metrics.increment(:successes)
+        return
+      end
 
       actions_to_retry = []
       bulk_response["items"].each_with_index do |response,idx|
@@ -173,8 +182,10 @@ module LogStash; module Outputs; class ElasticSearch;
         # - For a mapping error, we send to dead letter queue for a human to intervene at a later point.
         # - For everything else there's mastercard. Yep, and we retry indefinitely. This should fix #572 and other transient network issues
         if DOC_SUCCESS_CODES.include?(status)
+          @document_level_metrics.increment(:successes)
           next
         elsif DOC_CONFLICT_CODE == status
+          @document_level_metrics.increment(:non_retryable_failures)
           @logger.warn "Failed action.", status: status, action: action, response: response if !failure_type_logging_whitelist.include?(failure["type"])
           next
         elsif DOC_DLQ_CODES.include?(status)
@@ -186,9 +197,11 @@ module LogStash; module Outputs; class ElasticSearch;
           else
             @logger.warn "Could not index event to Elasticsearch.", status: status, action: action, response: response
           end
+          @document_level_metrics.increment(:non_retryable_failures)
           next
         else
           # only log what the user whitelisted
+          @document_level_metrics.increment(:retryable_failures)
           @logger.info "retrying failed action with response code: #{status} (#{failure})" if !failure_type_logging_whitelist.include?(failure["type"])
           actions_to_retry << action
         end
@@ -239,6 +252,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
         # We retry until there are no errors! Errors should all go to the retry queue
         sleep_interval = sleep_for_interval(sleep_interval)
+        @bulk_request_metrics.increment(:failures)
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::NoConnectionAvailableError => e
         @logger.error(
@@ -249,8 +263,10 @@ module LogStash; module Outputs; class ElasticSearch;
         )
         Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
         sleep_interval = next_sleep_interval(sleep_interval)
+        @bulk_request_metrics.increment(:failures)
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        @bulk_request_metrics.increment(:failures)
         log_hash = {:code => e.response_code, :url => e.url.sanitized.to_s}
         log_hash[:body] = e.response_body if @logger.debug? # Generally this is too verbose
         message = "Encountered a retryable error. Will Retry with exponential backoff "
@@ -280,6 +296,7 @@ module LogStash; module Outputs; class ElasticSearch;
         @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
 
         sleep_interval = sleep_for_interval(sleep_interval)
+        @bulk_request_metrics.increment(:failures)
         retry unless @stopping.true?
       end
     end

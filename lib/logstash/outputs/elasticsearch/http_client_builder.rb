@@ -14,6 +14,7 @@ module LogStash; module Outputs; class ElasticSearch;
       
       common_options = {
         :client_settings => client_settings,
+        :metric => params["metric"],
         :resurrect_delay => params["resurrect_delay"]
       }
 

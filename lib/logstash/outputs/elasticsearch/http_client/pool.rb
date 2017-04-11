@@ -45,6 +45,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def initialize(logger, adapter, initial_urls=[], options={})
       @logger = logger
       @adapter = adapter
+      @metric = options[:metric]
       @initial_urls = initial_urls
       
       raise ArgumentError, "No URL Normalizer specified!" unless options[:url_normalizer]
@@ -161,8 +162,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     # Sniffs and returns the results. Does not update internal URLs!
     def check_sniff
       _, url_meta, resp = perform_request(:get, @sniffing_path)
+      @metric.increment(:sniff_requests)
       parsed = LogStash::Json.load(resp.body)
-      
       nodes = parsed['nodes']
       if !nodes || nodes.empty?
         @logger.warn("Sniff returned no nodes! Will not update hosts.")
