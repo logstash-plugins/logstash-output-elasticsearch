@@ -40,7 +40,7 @@ module LogStash; module Outputs; class ElasticSearch;
     # Convert the event into a 3-tuple of action, params, and event
     def event_action_tuple(event)
       params = event_action_params(event)
-      action = event.sprintf(@action)
+      action = safe_event_sprintf(event, @action)
       [action, params, event]
     end
 
@@ -164,23 +164,23 @@ module LogStash; module Outputs; class ElasticSearch;
       type = get_event_type(event)
 
       params = {
-        :_id => @document_id ? event.sprintf(@document_id) : nil,
-        :_index => event.sprintf(@index),
+        :_id => @document_id ? safe_event_sprintf(event, @document_id) : nil,
+        :_index => safe_event_sprintf(event, @index),
         :_type => type,
-        :_routing => @routing ? event.sprintf(@routing) : nil
+        :_routing => @routing ? safe_event_sprintf(event, @routing) : nil
       }
 
       if @pipeline
-        params[:pipeline] = event.sprintf(@pipeline)
+        params[:pipeline] = safe_event_sprintf(event, @pipeline)
       end
 
      if @parent
-        params[:parent] = event.sprintf(@parent)
+        params[:parent] = safe_event_sprintf(event, @parent)
       end
 
       if @action == 'update'
-        params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
-        params[:_script] = event.sprintf(@script) if @script != ""
+        params[:_upsert] = LogStash::Json.load(safe_event_sprintf(event, @upsert)) if @upsert != ""
+        params[:_script] = safe_event_sprintf(event, @script) if @script != ""
         params[:_retry_on_conflict] = @retry_on_conflict
       end
 
@@ -199,7 +199,7 @@ module LogStash; module Outputs; class ElasticSearch;
     def get_event_type(event)
       # Set the 'type' value for the index.
       type = if @document_type
-               event.sprintf(@document_type)
+               safe_event_sprintf(event, @document_type)
              else
                event.get("type") || "logs"
              end
@@ -273,6 +273,11 @@ module LogStash; module Outputs; class ElasticSearch;
         sleep_interval = sleep_for_interval(sleep_interval)
         retry unless @stopping.true?
       end
+    end
+
+    def safe_event_sprintf(event, expression)
+      result = event.sprintf(expression)
+      result.match(/%{/) ? nil : result
     end
   end
 end; end; end
