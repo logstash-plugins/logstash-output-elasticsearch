@@ -102,6 +102,42 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
         expect(subject.sniffer_alive?).to eql(true)
       end
     end
+    describe "absolute_sniffing_path" do
+      let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200#{path}")] }
+      let(:path) { "/meh" }
+      let(:options) { super.merge(:absolute_sniffing_path => absolute_sniffing_path, :path => path, :sniffing_path => sniffing_path) }
+      let(:sniffing_path) { "/some/other/path" }
+      let(:absolute_sniffing_path) { false }
+      let(:response) { double("manticore_response") }
+
+      before(:each) { allow(response).to receive(:body).and_return("{}") }
+
+      context "when enabled" do
+        let(:absolute_sniffing_path) { true }
+        it "should use the sniffing_path as the absolute path" do
+          expect(subject).to receive(:perform_request_to_url) do |url, method, req_path, _, _|
+            expect(method).to eq(:get)
+            expect(req_path).to eq(sniffing_path)
+            expect(url.path).to eq("/")
+            response
+          end
+          subject.check_sniff
+        end
+      end
+
+      context "when disabled" do
+        let(:absolute_sniffing_path) { false }
+        it "should use the sniffing_path as a relative path" do
+          expect(subject).to receive(:perform_request_to_url) do |url, method, req_path, _, _|
+            expect(method).to eq(:get)
+            expect(req_path).to eq(sniffing_path)
+            expect(url.path).to eq(path)
+            response
+          end
+          subject.check_sniff
+        end
+      end
+    end
   end
 
   describe "closing" do

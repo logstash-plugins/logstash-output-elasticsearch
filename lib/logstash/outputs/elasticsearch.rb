@@ -188,6 +188,24 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # * with `absolute_healthcheck_path: false`: "http://localhost:9200/health"
   config :absolute_healthcheck_path, :validate => :boolean, :default => false
 
+  # If sniffing is enabled, this plugin will periodically execute a request
+  # to one of the nodes to retrieve the list of other nodes eligible to receive
+  # bulk requests. By default this path is `_nodes/http` but if you need to set
+  # it to something else, this is the place
+  # NOTE: any query parameters present in the URL or query_params config option will be removed
+  config :sniffing_path, :validate => :string, :default => "_nodes/http"
+
+  # When a `sniffing_path` config is provided, this additional flag can be used to
+  # specify whether this sniffing_path is appended to the existing path (default)
+  # or is treated as the absolute URL path.
+  #
+  # For example, if hosts url is "http://localhost:9200/es" and sniffing_path is "/_sniffing",
+  # the sniffing request will be sent to:
+  #
+  # * with `absolute_sniffing_path: true`: "http://localhost:9200/es/_sniffing"
+  # * with `absolute_sniffing_path: false`: "http://localhost:9200/_sniffing"
+  config :absolute_sniffing_path, :validate => :boolean, :default => false
+
   # How frequently, in seconds, to wait between resurrection attempts.
   # Resurrection is the process by which backend endpoints marked 'down' are checked
   # to see if they have come back to life

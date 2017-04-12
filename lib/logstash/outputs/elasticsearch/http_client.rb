@@ -251,6 +251,8 @@ module LogStash; module Outputs; class ElasticSearch;
         :sniffer_delay => options[:sniffer_delay],
         :healthcheck_path => options[:healthcheck_path],
         :absolute_healthcheck_path => options[:absolute_healthcheck_path],
+        :sniffing_path => options[:sniffing_path],
+        :absolute_sniffing_path => options[:absolute_sniffing_path],
         :resurrect_delay => options[:resurrect_delay],
         :url_normalizer => self.method(:host_to_url)
       }
