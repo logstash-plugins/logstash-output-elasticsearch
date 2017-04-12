@@ -28,13 +28,15 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
     end
 
-    attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :healthcheck_path, :absolute_healthcheck_path
+    attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :healthcheck_path, :absolute_healthcheck_path, :sniffing_path, :absolute_sniffing_path
 
     ROOT_URI_PATH = '/'.freeze
 
     DEFAULT_OPTIONS = {
       :healthcheck_path => ROOT_URI_PATH,
       :absolute_healthcheck_path => false,
+      :sniffing_path => '_nodes/http',
+      :absolute_sniffing_path => false,
       :scheme => 'http',
       :resurrect_delay => 5,
       :sniffing => false,
@@ -51,6 +53,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       DEFAULT_OPTIONS.merge(options).tap do |merged|
         @healthcheck_path = merged[:healthcheck_path]
         @absolute_healthcheck_path = merged[:absolute_healthcheck_path]
+        @sniffing_path = merged[:sniffing_path]
+        @absolute_sniffing_path = merged[:absolute_sniffing_path]
         @resurrect_delay = merged[:resurrect_delay]
         @sniffing = merged[:sniffing]
         @sniffer_delay = merged[:sniffer_delay]
@@ -152,9 +156,17 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     ES2_SNIFF_RE_URL  = /([^\/]*)?\/?([^:]*):([0-9]+)/
     # Sniffs and returns the results. Does not update internal URLs!
     def check_sniff
-      url, resp = perform_request(:get, '_nodes/http')
+      resp = nil
+      with_connection do |url|
+        sniffing_url = url.clone
+        sniffing_url.query = nil
+        if @absolute_sniffing_path
+          sniffing_url.path = ROOT_URI_PATH
+        end
+        resp = perform_request_to_url(sniffing_url, :get, @sniffing_path, {}, nil)
+      end
       parsed = LogStash::Json.load(resp.body)
-      
+
       nodes = parsed['nodes']
       if !nodes || nodes.empty?
         @logger.warn("Sniff returned no nodes! Will not update hosts.")
