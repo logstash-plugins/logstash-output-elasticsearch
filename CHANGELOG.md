@@ -1,3 +1,6 @@
+## 6.3.0
+- Add support for customizing sniffing_path with absolute_sniffing_path
+
 ## 6.2.6
 - Fixed: Change how the healthcheck_path is treated: either append it to any existing path (default) or replace any existing path
   Also ensures that the healthcheck url contains no query parameters regarless of hosts urls contains them or query_params being set. #554
