@@ -91,24 +91,9 @@ module LogStash; module Outputs; class ElasticSearch
       # Any special characters present in the URLs here MUST be URL escaped! This means `#` should be put in as `%23` for instance.
       mod.config :hosts, :validate => :uri, :default => [::LogStash::Util::SafeURI.new("//127.0.0.1")], :list => true
 
-      # This plugin uses the bulk index API for improved indexing performance.
-      # This setting defines the maximum sized bulk request Logstash will make.
-      # You may want to increase this to be in line with your pipeline's batch size.
-      # If you specify a number larger than the batch size of your pipeline it will have no effect,
-      # save for the case where a filter increases the size of an inflight batch by outputting
-      # events.
-      mod.config :flush_size, :validate => :number, :deprecate => "This setting is no longer necessary as we now try to restrict bulk requests to sane sizes. See the 'Batch Sizes' section of the docs. If you think you still need to restrict payloads based on the number, not size, of events, please open a ticket."
+      mod.config :flush_size, :validate => :number, :deprecated => "This setting is no longer necessary as we now try to restrict bulk requests to sane sizes. See the 'Batch Sizes' section of the docs. If you think you still need to restrict payloads based on the number, not size, of events, please open a ticket."
 
-      # The amount of time since last flush before a flush is forced.
-      #
-      # This setting helps ensure slow event rates don't get stuck in Logstash.
-      # For example, if your `flush_size` is 100, and you have received 10 events,
-      # and it has been more than `idle_flush_time` seconds since the last flush,
-      # Logstash will flush those 10 events automatically.
-      #
-      # This helps keep both fast and slow log streams moving along in
-      # near-real-time.
-      mod.config :idle_flush_time, :validate => :number, :default => 1
+      mod.config :idle_flush_time, :validate => :number, :default => 1, :deprecated => "This is a no-op now as every pipeline batch is flushed synchronously obviating the need for this option."
 
       # Set upsert content for update mode.s
       # Create a new document with this parameter as json string if `document_id` doesn't exists
