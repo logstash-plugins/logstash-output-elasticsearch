@@ -1,6 +1,12 @@
 #!/bin/bash
 set -ex
 
+# Set the build dir to ./ if not set by travis
+BUILD_DIR=./
+if [ -z "$TRAVIS_BUILD_DIR" ]; then
+	BUILD_DIR=$TRAVIS_BUILD_DIR
+fi
+
 function finish {
   last_result=$?
   set +e
