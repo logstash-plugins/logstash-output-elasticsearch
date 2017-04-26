@@ -1,3 +1,7 @@
+## 7.3.0
+ - Log 429 errors as debug instead of error. These aren't actual errors and cause users undue concern.
+   This status code is triggered when ES wants LS to backoff, which it does correctly (exponentially)
+
 ## 7.2.2
  - Docs: Add requirement to use version 6.2.5 or higher to support sending Content-Type headers.
 
