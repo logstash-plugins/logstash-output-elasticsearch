@@ -247,7 +247,17 @@ module LogStash; module Outputs; class ElasticSearch;
         if RETRYABLE_CODES.include?(e.response_code)
           log_hash = {:code => e.response_code, :url => e.url.sanitized}
           log_hash[:body] = e.body if @logger.debug? # Generally this is too verbose
-          @logger.error("Attempted to send a bulk request to elasticsearch but received a bad HTTP response code!", log_hash)
+          message = "Encountered a retryable error. Will Retry with exponential backoff "
+
+          # We treat 429s as a special case because these really aren't errors, but
+          # rather just ES telling us to back off a bit, which we do.
+          # The other retryable codes are 502 and 503, which are true errors
+          # Even though we retry the user should be made aware of these
+          if e.response_code == 429
+            @logger.debug(message, log_hash)
+          else
+            @logger.error(message, log_hash)
+          end
 
           sleep_interval = sleep_for_interval(sleep_interval)
           retry unless @stopping.true?
