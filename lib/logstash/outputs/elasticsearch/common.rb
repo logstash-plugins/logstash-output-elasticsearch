@@ -17,7 +17,8 @@ module LogStash; module Outputs; class ElasticSearch;
     def register
       @stopping = Concurrent::AtomicBoolean.new(false)
       # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
-      @dlq_writer = respond_to?(:execution_context) ? execution_context.dlq_writer : nil
+      @dlq_writer = supports_dlq? ? execution_context.dlq_writer : nil
+
       setup_hosts # properly sets @hosts
       build_client
       install_template
@@ -283,6 +284,10 @@ module LogStash; module Outputs; class ElasticSearch;
         sleep_interval = sleep_for_interval(sleep_interval)
         retry unless @stopping.true?
       end
+    end
+
+    def supports_dlq?
+      respond_to?(:execution_context) && execution_context.respond_to?(:dlq_writer)
     end
   end
 end; end; end
