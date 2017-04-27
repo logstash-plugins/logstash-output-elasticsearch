@@ -1,3 +1,6 @@
+## 7.3.1
+ - Fix the backwards compatibility layer used for detecting DLQ capabilities in logstash core
+
 ## 7.3.0
  - Log 429 errors as debug instead of error. These aren't actual errors and cause users undue concern.
    This status code is triggered when ES wants LS to backoff, which it does correctly (exponentially)
