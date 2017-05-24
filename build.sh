@@ -2,8 +2,8 @@
 set -ex
 
 # Set the build dir to ./ if not set by travis
-BUILD_DIR=./
-if [ -z "$TRAVIS_BUILD_DIR" ]; then
+BUILD_DIR=$PWD
+if [[ -z "$TRAVIS_BUILD_DIR" && "$TRAVIS_BUILD_DIR" -ne "" ]]; then
 	BUILD_DIR=$TRAVIS_BUILD_DIR
 fi
 
@@ -23,8 +23,8 @@ setup_es() {
   fi
   rm -f elasticsearch/config/scripts || true
   mkdir -p elasticsearch/config/scripts
-  cp $TRAVIS_BUILD_DIR/spec/fixtures/scripts/groovy/* elasticsearch/config/scripts
-  cp $TRAVIS_BUILD_DIR/spec/fixtures/scripts/painless/* elasticsearch/config/scripts
+  cp $BUILD_DIR/spec/fixtures/scripts/groovy/* elasticsearch/config/scripts
+  cp $BUILD_DIR/spec/fixtures/scripts/painless/* elasticsearch/config/scripts
 }
 
 start_es() {
@@ -73,7 +73,7 @@ start_nginx() {
 if [[ "$INTEGRATION" != "true" ]]; then
   bundle exec rspec -fd spec
 else
-  if [ "$1" -eq "" ]; then
+  if [[ "$1" -eq "" ]]; then
     spec_path="spec"
   else
     spec_path="$1"
