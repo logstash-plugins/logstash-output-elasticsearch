@@ -202,8 +202,41 @@ describe "outputs/elasticsearch" do
 
     end
 
-  end
+    context "429 errors" do
+      let(:event) { ::LogStash::Event.new("foo" => "bar") }
+      let(:error) do 
+        ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(
+          429, double("url").as_null_object, double("request body"), double("response body")
+        )
+      end
+      let(:logger) { double("logger").as_null_object }
 
+      before(:each) do
+        i = 0
+        bulk_param =  [["index", anything, event.to_hash]]
+
+        allow(eso).to receive(:logger).and_return(logger)
+
+        # Fail the first time bulk is called, succeed the next time
+        allow(eso.client).to receive(:bulk).with(bulk_param) do
+          i += 1
+          if i == 1
+            raise error
+          end
+        end
+        eso.multi_receive([event])
+      end
+
+      it "should retry the 429 till it goes away" do
+        expect(eso.client).to have_received(:bulk).twice
+      end
+
+      it "should log a debug message" do
+        expect(eso.logger).to have_received(:debug).with(/Encountered a retryable error/i, anything)
+      end
+    end
+  end
+  
   context "with timeout set" do
     let(:listener) { Flores::Random.tcp_listener }
     let(:port) { listener[2] }

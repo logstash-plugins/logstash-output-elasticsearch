@@ -4,6 +4,11 @@ module LogStash; module Outputs; class ElasticSearch;
   module Common
     attr_reader :client, :hosts
 
+    # These are codes for temporary recoverable conditions
+    # 429 just means that ES has too much traffic ATM
+    # 503 means it , or a proxy is temporarily unavailable
+    RETRYABLE_CODES = [429, 503]
+
     DLQ_CODES = [400, 404]
     SUCCESS_CODES = [200, 201]
     CONFLICT_CODE = 409
@@ -252,16 +257,16 @@ module LogStash; module Outputs; class ElasticSearch;
 
           # We treat 429s as a special case because these really aren't errors, but
           # rather just ES telling us to back off a bit, which we do.
-          # The other retryable codes are 502 and 503, which are true errors
+          # The other retryable code is 503, which are true errors
           # Even though we retry the user should be made aware of these
           if e.response_code == 429
-            @logger.debug(message, log_hash)
+            logger.debug(message, log_hash)
           else
-            @logger.error(message, log_hash)
+            logger.error(message, log_hash)
           end
 
           sleep_interval = sleep_for_interval(sleep_interval)
-          retry unless @stopping.true?
+          retry
         else
           log_hash = {:code => e.response_code, 
                       :response_body => e.response_body}
