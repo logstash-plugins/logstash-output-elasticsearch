@@ -1,3 +1,7 @@
+## 7.3.2
+ - Fix error where a 429 would cause this output to crash
+ - Wait for all inflight requests to complete before stopping
+
 ## 7.3.1
  - Fix the backwards compatibility layer used for detecting DLQ capabilities in logstash core
 
