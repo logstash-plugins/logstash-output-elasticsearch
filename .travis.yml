@@ -1,21 +1,30 @@
 ---
 sudo: false
-jdk: oraclejdk8
-env:
-- INTEGRATION=false
-- INTEGRATION=true ES_VERSION=1.7.6 TEST_DEBUG=true
-- INTEGRATION=true ES_VERSION=2.4.4 TEST_DEBUG=true
-- INTEGRATION=true ES_VERSION=5.2.1 TEST_DEBUG=true
-- INTEGRATION=true ES_VERSION=master TEST_DEBUG=true
 language: ruby
 cache: bundler
+env:
+ - INTEGRATION=false
+ - INTEGRATION=true ES_VERSION=1.7.6 TEST_DEBUG=true
+ - INTEGRATION=true ES_VERSION=2.4.4 TEST_DEBUG=true
+ - INTEGRATION=true ES_VERSION=5.2.1 TEST_DEBUG=true
+ - INTEGRATION=true ES_VERSION=master TEST_DEBUG=true
 rvm:
-- jruby-1.7.25
-before_script:
-  export PATH=$PATH:$TRAVIS_BUILD_DIR/gradle/bin/
-script: "./build.sh"
-before_install: []
+  - jruby-1.7.25
+matrix:
+  include:
+    - rvm: jruby-1.7.25
+      env: LOGSTASH_BRANCH=master
+    - rvm: jruby-1.7.25
+      env: LOGSTASH_BRANCH=5.x
+    - rvm: jruby-9.1.9.0
+      env: LOGSTASH_BRANCH=feature/9000
+  allow_failures:
+    - rvm: jruby-9.1.9.0
+  fast_finish: true
+install: true
+script: ci/build.sh
+jdk: oraclejdk8
 addons:
   apt:
-    packages:
-      - oracle-java8-installer
+   packages:
+    - oracle-java8-installer
