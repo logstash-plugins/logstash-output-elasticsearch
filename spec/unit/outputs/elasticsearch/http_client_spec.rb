@@ -32,7 +32,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     
     shared_examples("proper host handling") do
       it "should properly transform a host:port string to a URL" do
-        expect(subject.host_to_url(hostname_port_uri)).to eq(http_hostname_port)
+        expect(subject.host_to_url(hostname_port_uri).to_s).to eq(http_hostname_port.to_s + "/")
       end
 
       it "should not raise an error with a / for a path" do
@@ -40,7 +40,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       end
 
       it "should parse full URLs correctly" do
-        expect(subject.host_to_url(http_hostname_port)).to eq(http_hostname_port)
+        expect(subject.host_to_url(http_hostname_port).to_s).to eq(http_hostname_port.to_s + "/")
       end
 
       describe "ssl" do
@@ -70,7 +70,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
           let(:base_options) { super.merge(:hosts => [https_hostname_port]) }
           it "should handle an ssl url correctly when SSL is nil" do
             subject
-            expect(subject.host_to_url(https_hostname_port)).to eq(https_hostname_port)
+            expect(subject.host_to_url(https_hostname_port).to_s).to eq(https_hostname_port.to_s + "/")
           end
         end       
       end
@@ -99,7 +99,9 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
           
           
           it "should automatically insert a / in front of path overlays" do
-            expect(subject.host_to_url(url)).to eq(LogStash::Util::SafeURI.new(url + "/otherpath"))
+            expected = url.clone
+            expected.path = url.path + "/otherpath"
+            expect(subject.host_to_url(url)).to eq(expected)
           end
         end
       end
