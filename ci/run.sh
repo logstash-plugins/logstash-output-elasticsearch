@@ -72,6 +72,7 @@ start_nginx() {
   sleep 5
 }
 
+bundle install
 if [[ "$INTEGRATION" != "true" ]]; then
   bundle exec rspec -fd spec
 else
