@@ -1,6 +1,8 @@
 #!/bin/bash
 set -ex
 
+export PATH=$PATH:$TRAVIS_BUILD_DIR/gradle/bin/
+
 # Set the build dir to ./ if not set by travis
 BUILD_DIR=$PWD
 if [[ -z "$TRAVIS_BUILD_DIR" && "$TRAVIS_BUILD_DIR" -ne "" ]]; then
