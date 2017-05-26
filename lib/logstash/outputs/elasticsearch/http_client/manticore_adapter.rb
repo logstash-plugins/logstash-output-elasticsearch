@@ -84,19 +84,19 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def format_url(url, path=nil)
-
-      request_uri = url.uri
+      request_uri = url.clone
 
       if path
         # Combine the paths using the minimal # of /s
         # First, we make sure the path is relative so URI.join does
         # the right thing
         relative_path = path && path.start_with?("/") ? path[1..-1] : path
-        # because URI.join obliterates the query parameter, we need to save it
-        # and restore it after this operation
-        query = request_uri.query
-        request_uri = URI.join(request_uri, relative_path)
-        request_uri.query = query if query
+
+        if !request_uri.path
+          request_uri.path = path
+        else
+          request_uri.path = "#{request_uri.path}/#{relative_path}"
+        end
       else
         request_uri = request_uri.clone
       end
@@ -106,8 +106,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       request_uri.user = nil
       request_uri.password = nil
 
-      # Wrap this with a safe URI defensively against careless handling later
-      ::LogStash::Util::SafeURI.new(request_uri)
+      request_uri
     end
 
     def close
