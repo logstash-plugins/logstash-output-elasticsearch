@@ -20,6 +20,10 @@ module LogStash; module Outputs; class ElasticSearch;
     VERSION_TYPES_PERMITTING_CONFLICT = ["external", "external_gt", "external_gte"]
 
     def register
+      if @password && @password.value == "changeme"
+        raise LogStash::ConfigurationError, "The password 'changeme' is an indication you should actually change this password before accessing Elasticsearch. To resolve this, you must change the password for the configured user to something other than 'changeme'."
+      end
+
       @stopping = Concurrent::AtomicBoolean.new(false)
       # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
       @dlq_writer = supports_dlq? ? execution_context.dlq_writer : nil

@@ -474,4 +474,21 @@ describe "outputs/elasticsearch" do
       end
     end
   end
+
+  context "for safety" do
+    context "when the password is 'changeme'" do
+      let(:config) do
+        {
+          "user" => "elastic",
+          "password" => "changeme"
+        }
+      end
+
+      subject { LogStash::Outputs::ElasticSearch.new(config) }
+
+      it "the configuration should be rejected" do
+        expect { subject.register }.to raise_error(LogStash::ConfigurationError, /changeme/)
+      end
+    end
+  end
 end
