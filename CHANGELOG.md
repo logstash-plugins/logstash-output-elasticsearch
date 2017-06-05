@@ -1,3 +1,6 @@
+## 7.3.3
+ - Fix JRuby 9k incompatibilities and use new URI class that is JRuby 9k compatible
+
 ## 7.3.2
  - Fix error where a 429 would cause this output to crash
  - Wait for all inflight requests to complete before stopping
