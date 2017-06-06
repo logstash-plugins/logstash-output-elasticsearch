@@ -20,6 +20,7 @@ matrix:
       env: LOGSTASH_BRANCH=feature/9000
   allow_failures:
     - rvm: jruby-9.1.9.0
+    - env: INTEGRATION=true ES_VERSION=master TEST_DEBUG=true
   fast_finish: true
 install: true
 script: ci/build.sh
