@@ -50,24 +50,46 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter do
     subject { described_class.new(double("logger"), {}) }
 
     it "should add the path argument to the uri's path" do
-      expect(subject.format_url(url, path).path).to eq("/path//_bulk")
+      expect(java.net.URI.new(subject.format_url(url, path)).path).to eq("/path/_bulk")
     end
 
     context "when uri contains query parameters" do
       let(:query_params) { "query=value&key=value2" }
       let(:url) { ::LogStash::Util::SafeURI.new("http://localhost:9200/path/?#{query_params}") }
+      let(:formatted) { java.net.URI.new(subject.format_url(url, path))}
 
       it "should retain query_params after format" do
-        expect(subject.format_url(url, path).query).to eq(query_params)
+        expect(formatted.query).to eq(query_params)
+      end
+      
+      context "and the path contains query parameters" do
+        let(:path) { "/special_path?specialParam=123" }
+        
+        it "should join the query correctly" do
+          expect(formatted.query).to eq(query_params + "&specialParam=123")
+        end
+      end
+    end
+    
+    context "when the path contains query parameters" do
+      let(:path) { "/special_bulk?pathParam=1"}
+      let(:formatted) { java.net.URI.new(subject.format_url(url, path)) }
+      
+      it "should add the path correctly" do
+        expect(formatted.path).to eq("#{url.path}special_bulk")
+      end 
+      
+      it "should add the query parameters correctly" do
+        expect(formatted.query).to eq("pathParam=1")
       end
     end
 
     context "when uri contains credentials" do
       let(:url) { ::LogStash::Util::SafeURI.new("http://myuser:mypass@localhost:9200") }
+      let(:formatted) { java.net.URI.new(subject.format_url(url, path)) }
 
       it "should remove credentials after format" do
-        expect(subject.format_url(url, path).user).to be_nil
-        expect(subject.format_url(url, path).password).to be_nil
+        expect(formatted.user_info).to be_nil
       end
     end
   end
