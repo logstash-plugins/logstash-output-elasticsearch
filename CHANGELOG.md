@@ -1,3 +1,6 @@
+## 7.3.4
+ - Fix incorrect handling of bulk_path containing ?s
+
 ## 7.3.3
  - Fix JRuby 9k incompatibilities and use new URI class that is JRuby 9k compatible
 

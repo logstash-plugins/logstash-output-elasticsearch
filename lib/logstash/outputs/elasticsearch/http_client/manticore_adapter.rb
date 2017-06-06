@@ -66,7 +66,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
       request_uri = format_url(url, path)
 
-      resp = @manticore.send(method.downcase, request_uri.to_s, params)
+      resp = @manticore.send(method.downcase, request_uri, params)
 
       # Manticore returns lazy responses by default
       # We want to block for our usage, this will wait for the repsonse
@@ -83,30 +83,30 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       resp
     end
 
-    def format_url(url, path=nil)
+    def format_url(url, path_and_query=nil)
       request_uri = url.clone
-
-      if path
-        # Combine the paths using the minimal # of /s
-        # First, we make sure the path is relative so URI.join does
-        # the right thing
-        relative_path = path && path.start_with?("/") ? path[1..-1] : path
-
-        if !request_uri.path
-          request_uri.path = path
-        else
-          request_uri.path = "#{request_uri.path}/#{relative_path}"
-        end
-      else
-        request_uri = request_uri.clone
-      end
-
+      
       # We excise auth info from the URL in case manticore itself tries to stick
       # sensitive data in a thrown exception or log data
       request_uri.user = nil
       request_uri.password = nil
 
-      request_uri
+      return request_uri.to_s if path_and_query.nil?
+      
+      parsed_path_and_query = java.net.URI.new(path_and_query)
+      
+      query = request_uri.query
+      parsed_query = parsed_path_and_query.query
+      
+      new_query_parts = [request_uri.query, parsed_path_and_query.query].select do |part|
+        part && !part.empty? # Skip empty nil and ""
+      end
+      
+      request_uri.query = new_query_parts.join("&") unless new_query_parts.empty?
+      
+      request_uri.path = "#{request_uri.path}/#{parsed_path_and_query.path}".gsub(/\/{2,}/, "/")
+        
+      request_uri.to_s
     end
 
     def close
