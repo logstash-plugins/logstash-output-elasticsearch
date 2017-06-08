@@ -1,3 +1,6 @@
+## 7.3.5
+ - Fix incorrect variable reference when DLQing events
+
 ## 7.3.4
  - Fix incorrect handling of bulk_path containing ?s
 

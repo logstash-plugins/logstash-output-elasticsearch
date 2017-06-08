@@ -150,7 +150,7 @@ module LogStash; module Outputs; class ElasticSearch;
           # To support bwc, we check if DLQ exists. otherwise we log and drop event (previous behavior)
           if @dlq_writer
             # TODO: Change this to send a map with { :status => status, :action => action } in the future
-            @dlq_writer.write(event, "Could not index event to Elasticsearch. status: #{status}, action: #{action}, response: #{response}")
+            @dlq_writer.write(action_event, "Could not index event to Elasticsearch. status: #{status}, action: #{action}, response: #{response}")
           else
             @logger.warn "Could not index event to Elasticsearch.", status: status, action: action, response: response
           end
