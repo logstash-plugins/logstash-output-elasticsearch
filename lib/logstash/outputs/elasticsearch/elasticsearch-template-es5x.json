@@ -23,7 +23,7 @@
           "mapping" : {
             "type" : "text", "norms" : false,
             "fields" : {
-              "keyword" : { "type": "keyword" }
+              "keyword" : { "type": "keyword", "ignore_above": 256 }
             }
           }
         }
