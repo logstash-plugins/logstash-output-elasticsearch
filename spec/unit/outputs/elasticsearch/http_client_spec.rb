@@ -4,6 +4,7 @@ require "java"
 
 describe LogStash::Outputs::ElasticSearch::HttpClient do
   let(:ssl) { nil }
+  let(:hosts) { [::LogStash::Util::SafeURI.new("127.0.0.1")] }
   let(:base_options) do
     opts = {
       :hosts => [::LogStash::Util::SafeURI.new("127.0.0.1")],
@@ -121,6 +122,19 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     describe "an ipv6 host" do
       let(:hostname) { ipv6_hostname }
       include_examples("proper host handling")
+    end
+  end
+
+  describe "#password" do
+    subject { described_class.new(base_options) }
+    context "when using empty password" do
+      before :each do
+        hosts.first.user = "test"
+        hosts.first.password = ""
+      end
+      it "returns empty string" do
+        expect(subject.password).to eq("")
+      end
     end
   end
 
