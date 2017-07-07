@@ -29,7 +29,7 @@ module LogStash; module Outputs; class ElasticSearch;
       install_template
       check_action_validity
 
-      @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized))
+      @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
     end
 
     # Receive an array of events and immediately attempt to index them (no buffering)
@@ -251,7 +251,7 @@ module LogStash; module Outputs; class ElasticSearch;
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         if RETRYABLE_CODES.include?(e.response_code)
-          log_hash = {:code => e.response_code, :url => e.url.sanitized}
+          log_hash = {:code => e.response_code, :url => e.url.sanitized.to_s}
           log_hash[:body] = e.body if @logger.debug? # Generally this is too verbose
           message = "Encountered a retryable error. Will Retry with exponential backoff "
 
