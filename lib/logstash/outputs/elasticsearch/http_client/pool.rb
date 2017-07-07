@@ -236,10 +236,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
                         :healthcheck_url => url, :path => @healthcheck_path)
           response = perform_request_to_url(url, :head, @healthcheck_path)
           # If no exception was raised it must have succeeded!
-          logger.warn("Restored connection to ES instance", :url => url.sanitized)
+          logger.warn("Restored connection to ES instance", :url => url.sanitized.to_s)
           @state_mutex.synchronize { meta[:state] = :alive }
         rescue HostUnreachableError, BadResponseCodeError => e
-          logger.warn("Attempted to resurrect connection to dead ES instance, but got an error.", url: url.sanitized, error_type: e.class, error: e.message)
+          logger.warn("Attempted to resurrect connection to dead ES instance, but got an error.", url: url.sanitized.to_s, error_type: e.class, error: e.message)
         end
       end
     end
