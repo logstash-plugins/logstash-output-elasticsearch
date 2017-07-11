@@ -44,7 +44,7 @@ describe "TARGET_BULK_BYTES", :integration => true do
   end
 end
 
-describe "indexing", :integration => true do
+describe "indexing" do
   let(:event) { LogStash::Event.new("message" => "Hello World!", "type" => type) }
   let(:index) { 10.times.collect { rand(10).to_s }.join("") }
   let(:type) { 10.times.collect { rand(10).to_s }.join("") }
@@ -115,7 +115,7 @@ describe "indexing", :integration => true do
   describe "a secured indexer", :secure_integration => true do
     let(:user) { "simpleuser" }
     let(:password) { "abc123" }
-    let(:cacert) { "spec/fixtures/server.crt" }
+    let(:cacert) { "spec/fixtures/test_certs/test.crt" }
     let(:es_url) {"https://localhost:9900"}
     let(:config) do
       {
@@ -123,7 +123,7 @@ describe "indexing", :integration => true do
         "user" => user,
         "password" => password,
         "ssl" => true,
-        "cacert" => "spec/fixtures/server.crt",
+        "cacert" => "spec/fixtures/test_certs/test.crt",
         "index" => index
       }
     end
@@ -153,16 +153,12 @@ describe "indexing", :integration => true do
         {
           "hosts" => ["https://#{user}:#{CGI.escape(password)}@localhost:9900"],
           "ssl" => true,
-          "cacert" => "spec/fixtures/server.crt",
+          "cacert" => "spec/fixtures/test_certs/test.crt",
           "index" => index
         }
       end
       
-      begin
-        include_examples("an indexer")
-      rescue => e
-        require 'pry'; binding.pry
-      end
+      include_examples("an indexer")
     end
   end
 end

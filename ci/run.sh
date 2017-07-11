@@ -27,6 +27,17 @@ setup_es() {
   mkdir -p elasticsearch/config/scripts
   cp $BUILD_DIR/spec/fixtures/scripts/groovy/* elasticsearch/config/scripts
   cp $BUILD_DIR/spec/fixtures/scripts/painless/* elasticsearch/config/scripts
+
+  if [[ "$SECURE_INTEGRATION" == "true" ]]; then
+    yes y | elasticsearch/bin/elasticsearch-plugin install x-pack
+
+    es_yml=elasticsearch/config/elasticsearch.yml
+    cp -rv $BUILD_DIR/spec/fixtures/test_certs elasticsearch/config/test_certs
+    echo "xpack.security.http.ssl.enabled: true" >> $es_yml
+    echo "xpack.ssl.key: $BUILD_DIR/elasticsearch/config/test_certs/test.key" >> $es_yml
+    echo "xpack.ssl.certificate: $BUILD_DIR/elasticsearch/config/test_certs/test.crt" >> $es_yml
+    echo "xpack.ssl.certificate_authorities: [ '$BUILD_DIR/elasticsearch/config/test_certs/ca/ca.crt' ]" >> $es_yml
+  fi
 }
 
 start_es() {
@@ -40,6 +51,20 @@ start_es() {
     sleep 1
   done
   echo "Elasticsearch is Up !"
+
+  if [[ "$SECURE_INTEGRATION" == "true" ]]; then
+    curl -XPUT 'http://elastic:changeme@localhost:9200/_xpack/security/user/elastic/_password' -H "Content-Type: application/json" -d '{
+      "password" : "testpass"
+    }'
+
+    curl -XPOST 'http://elastic:testpass@localhost:9200/_xpack/security/user/simpleuser' -H "Content-Type: application/json" -d '{
+      "password" : "abc123",
+      "full_name" : "John Doe",
+      "email" : "john.doe@anony.mous",
+      "roles" : [ "superuser" ]
+    }'
+  fi
+
   return 0
 }
 
@@ -72,7 +97,7 @@ start_nginx() {
   sleep 5
 }
 
-bundle install
+# UNCOMMENT BEFORE COMMIT bundle install
 if [[ "$INTEGRATION" != "true" ]]; then
   bundle exec rspec -fd spec
 else
@@ -82,12 +107,17 @@ else
     spec_path="$1"
   fi
 
+  tag_args="--tag ~secure_integration --tag integration"
+  if [[ "$SECURE_INTEGRATION" == "true" ]]; then
+    tag_args="--tag secure_integration"
+  fi
+
   case "$ES_VERSION" in
       5.*)
           setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
           start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
           # Run all tests which are for versions > 5 but don't run ones tagged < 5.x. Include ingest, new template
-          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag update_tests:groovy --tag ~version_less_than_5x $spec_path
+          bundle exec rspec -fd $tag_args --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag update_tests:groovy --tag ~version_less_than_5x $spec_path
           ;;
       2.*)
           setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
