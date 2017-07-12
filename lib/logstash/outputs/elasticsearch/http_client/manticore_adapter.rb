@@ -55,11 +55,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       params[:body] = body if body
 
       if url.user
+        raw_url = java.net.URI.new(url.uri.to_s)
+        user,password = raw_url.userInfo.split(":")
+
         params[:auth] = { 
-          :user => url.user,
-          # We have to unescape the password here since manticore won't do it
-          # for us unless its part of the URL
-          :password => CGI.unescape(url.password), 
+          :user => user,
+          :password => password, 
           :eager => true 
         }
       end

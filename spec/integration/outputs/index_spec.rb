@@ -154,16 +154,16 @@ describe "indexing" do
     it_behaves_like("an indexer", true)
     
     describe "with a password requiring escaping" do
-      let(:user) { "fancyuser" }
+      let(:user) { "f@ncyuser" }
       let(:password) { "ab%12#" }
       
       include_examples("an indexer", true)
     end
     
-    describe "with a password requiring escaping in the URL" do
+    describe "with a user/password requiring escaping in the URL" do
       let(:config) do
         {
-          "hosts" => ["https://#{user}:#{CGI.escape(password)}@localhost:9200"],
+          "hosts" => ["https://#{CGI.escape(user)}:#{CGI.escape(password)}@localhost:9200"],
           "ssl" => true,
           "cacert" => "spec/fixtures/test_certs/test.crt",
           "index" => index

@@ -69,7 +69,7 @@ start_es() {
       "roles" : [ "superuser" ]
     }'
 
-    curl -XPOST -k 'https://elastic:testpass@localhost:9200/_xpack/security/user/fancyuser' -H "Content-Type: application/json" -d '{
+    curl -XPOST -k 'https://elastic:testpass@localhost:9200/_xpack/security/user/f%40ncyuser' -H "Content-Type: application/json" -d '{
       "password" : "ab%12#",
       "full_name" : "John Doe",
       "email" : "john.doe@anony.mous",
@@ -110,7 +110,7 @@ start_nginx() {
   sleep 5
 }
 
-# UNCOMMENT BEFORE COMMIT bundle install
+#bundle install
 if [[ "$INTEGRATION" != "true" ]]; then
   bundle exec rspec -fd spec
 else
