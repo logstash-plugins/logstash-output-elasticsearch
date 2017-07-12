@@ -48,7 +48,7 @@ describe "indexing" do
   let(:event) { LogStash::Event.new("message" => "Hello World!", "type" => type) }
   let(:index) { 10.times.collect { rand(10).to_s }.join("") }
   let(:type) { 10.times.collect { rand(10).to_s }.join("") }
-  let(:event_count) { 10000 + rand(500) }
+  let(:event_count) { 1 + rand(2) }
   let(:config) { "not implemented" }
   let(:events) { event_count.times.map { event }.to_a }
   subject { LogStash::Outputs::ElasticSearch.new(config) }
@@ -64,7 +64,7 @@ describe "indexing" do
     subject.register
   end
   
-  shared_examples "an indexer" do
+  shared_examples "an indexer" do |secure|
     it "ships events" do
       subject.multi_receive(events)
 
@@ -84,8 +84,20 @@ describe "indexing" do
     end
     
     it "sets the correct content-type header" do
+      expected_manticore_opts = {:headers => {"Content-Type" => "application/json"}, :body => anything}
+      if secure
+        expected_manticore_opts = {
+          :headers => {"Content-Type" => "application/json"}, 
+          :body => anything, 
+          :auth => {
+            :user => user,
+            :password => password,
+            :eager => true
+          }}
+      end
+
       expect(subject.client.pool.adapter.client).to receive(:send).
-        with(anything, anything, {:headers => {"Content-Type" => "application/json"}, :body => anything}).
+        with(anything, anything, expected_manticore_opts).
         and_call_original
       subject.multi_receive(events)
     end
@@ -116,10 +128,10 @@ describe "indexing" do
     let(:user) { "simpleuser" }
     let(:password) { "abc123" }
     let(:cacert) { "spec/fixtures/test_certs/test.crt" }
-    let(:es_url) {"https://localhost:9900"}
+    let(:es_url) {"https://localhost:9200"}
     let(:config) do
       {
-        "hosts" => ["localhost:9900"],
+        "hosts" => ["localhost:9200"],
         "user" => user,
         "password" => password,
         "ssl" => true,
@@ -139,26 +151,26 @@ describe "indexing" do
         }
       }
     end
-    it_behaves_like("an indexer") 
+    it_behaves_like("an indexer", true)
     
     describe "with a password requiring escaping" do
       let(:user) { "fancyuser" }
       let(:password) { "ab%12#" }
       
-      include_examples("an indexer")
+      include_examples("an indexer", true)
     end
     
     describe "with a password requiring escaping in the URL" do
       let(:config) do
         {
-          "hosts" => ["https://#{user}:#{CGI.escape(password)}@localhost:9900"],
+          "hosts" => ["https://#{user}:#{CGI.escape(password)}@localhost:9200"],
           "ssl" => true,
           "cacert" => "spec/fixtures/test_certs/test.crt",
           "index" => index
         }
       end
       
-      include_examples("an indexer")
+      include_examples("an indexer", true)
     end
   end
 end

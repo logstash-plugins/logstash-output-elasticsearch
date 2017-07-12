@@ -12,7 +12,7 @@ fi
 function finish {
   last_result=$?
   set +e
-  [[ $last_result -ne 0 ]] && cat /tmp/elasticsearch.log
+  [[ $last_result -ne 0 ]] # && cat /tmp/elasticsearch.log
 }
 trap finish EXIT
 
@@ -45,7 +45,12 @@ start_es() {
   elasticsearch/bin/elasticsearch $es_args > /tmp/elasticsearch.log 2>/dev/null &
   count=120
   echo "Waiting for elasticsearch to respond..."
-  while ! curl --silent localhost:9200 && [[ $count -ne 0 ]]; do
+  es_url="http://localhost:9200" 
+  if [[ "$SECURE_INTEGRATION" == "true" ]]; then
+    es_url="https://localhost:9200 -k"
+  fi
+
+  while ! curl --silent $es_url && [[ $count -ne 0 ]]; do
     count=$(( $count - 1 ))
     [[ $count -eq 0 ]] && return 1
     sleep 1
@@ -53,16 +58,24 @@ start_es() {
   echo "Elasticsearch is Up !"
 
   if [[ "$SECURE_INTEGRATION" == "true" ]]; then
-    curl -XPUT 'http://elastic:changeme@localhost:9200/_xpack/security/user/elastic/_password' -H "Content-Type: application/json" -d '{
+    curl -XPUT -k 'https://elastic:changeme@localhost:9200/_xpack/security/user/elastic/_password' -H "Content-Type: application/json" -d '{
       "password" : "testpass"
     }'
 
-    curl -XPOST 'http://elastic:testpass@localhost:9200/_xpack/security/user/simpleuser' -H "Content-Type: application/json" -d '{
+    curl -XPOST -k 'https://elastic:testpass@localhost:9200/_xpack/security/user/simpleuser' -H "Content-Type: application/json" -d '{
       "password" : "abc123",
       "full_name" : "John Doe",
       "email" : "john.doe@anony.mous",
       "roles" : [ "superuser" ]
     }'
+
+    curl -XPOST -k 'https://elastic:testpass@localhost:9200/_xpack/security/user/fancyuser' -H "Content-Type: application/json" -d '{
+      "password" : "ab%12#",
+      "full_name" : "John Doe",
+      "email" : "john.doe@anony.mous",
+      "roles" : [ "superuser" ]
+    }'
+
   fi
 
   return 0
