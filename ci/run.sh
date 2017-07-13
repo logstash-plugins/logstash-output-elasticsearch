@@ -114,7 +114,7 @@ start_nginx() {
 
 bundle install
 if [[ "$INTEGRATION" != "true" ]]; then
-  bundle exec rspec -fd spec ~integration 
+  bundle exec rspec -fd spec -t ~integration 
 else
   if [[ "$1" -eq "" ]]; then
     spec_path="spec"
