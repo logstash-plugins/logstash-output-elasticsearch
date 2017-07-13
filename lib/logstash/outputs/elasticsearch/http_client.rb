@@ -158,10 +158,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def calculate_property(uris, property, default, sniff_check)
-      values = uris.map do |u| 
-        v = u.send(property)
-        v && v.is_a?(String) ? v : nil
-      end.compact.uniq
+      values = uris.map(&property).compact.uniq
 
       if sniff_check && values.size > 1
         raise LogStash::ConfigurationError, "Cannot have multiple values for #{property} in hosts when sniffing is enabled!"
