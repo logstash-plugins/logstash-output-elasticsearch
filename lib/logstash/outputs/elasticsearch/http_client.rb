@@ -158,10 +158,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def calculate_property(uris, property, default, sniff_check)
-      values = uris.map do |u| 
-        v = u.send(property)
-        v && v.is_a?(String) ? v : nil
-      end.compact.uniq
+      values = uris.map(&property).compact.uniq
 
       if sniff_check && values.size > 1
         raise LogStash::ConfigurationError, "Cannot have multiple values for #{property} in hosts when sniffing is enabled!"
@@ -297,12 +294,15 @@ module LogStash; module Outputs; class ElasticSearch;
       escaped_password = CGI.escape(unescaped_password) if unescaped_password
       userinfo = escaped_user && escaped_password  ? "#{escaped_user}:#{escaped_password}@" : nil 
 
-      escaped_path = CGI.escape(h.path) if !h.path.nil? && !h.path.empty? && h.path != "/"
+      computed_path = self.path
+      computed_path = h.path if !h.path.nil? && !h.path.empty? && h.path != "/"
+
+      computed_port = h.port || self.port
 
       parameters = client_settings[:parameters]
       escaped_query = if parameters && !parameters.empty?
-        combined = uri.query ?
-          Hash[URI::decode_www_form(uri.query)].merge(parameters) :
+        combined = h.query ?
+          Hash[URI::decode_www_form(h.query)].merge(parameters) :
           parameters
         str = combined.flat_map {|k,v|
           values = Array(v)
@@ -310,9 +310,13 @@ module LogStash; module Outputs; class ElasticSearch;
         }.join("&")
 
         "?#{str}"
+      else
+        h.query
       end
 
-      uri_str = "#{scheme}://#{userinfo}#{h.host}:#{h.port}#{escaped_path}#{escaped_query}"
+      require 'pry'; binding.pry
+
+      uri_str = "#{scheme}://#{userinfo}#{h.host}:#{computed_port}#{computed_path}#{escaped_query}"
       ::LogStash::Util::SafeURI.new(uri_str)
     end
 

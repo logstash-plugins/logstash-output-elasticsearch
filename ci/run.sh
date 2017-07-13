@@ -150,7 +150,7 @@ else
           download_gradle
           build_es master
           start_es
-          bundle exec rspec -fd --extra_tag_args --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag ~update_tests:groovy --tag ~version_less_than_5x $spec_path
+          bundle exec rspec -fd $extra_tag_args --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag ~update_tests:groovy --tag ~version_less_than_5x $spec_path
           ;;
   esac
 fi
