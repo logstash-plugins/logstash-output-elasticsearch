@@ -28,6 +28,7 @@ setup_es() {
   cp $BUILD_DIR/spec/fixtures/scripts/groovy/* elasticsearch/config/scripts
   cp $BUILD_DIR/spec/fixtures/scripts/painless/* elasticsearch/config/scripts
 
+  # If we're running with xpack SSL/Users enabled...
   if [[ "$SECURE_INTEGRATION" == "true" ]]; then
     yes y | elasticsearch/bin/elasticsearch-plugin install x-pack
 
@@ -62,6 +63,7 @@ start_es() {
       "password" : "testpass"
     }'
 
+    # These are the two users used for secure integration tests
     curl -XPOST -k 'https://elastic:testpass@localhost:9200/_xpack/security/user/simpleuser' -H "Content-Type: application/json" -d '{
       "password" : "abc123",
       "full_name" : "John Doe",
@@ -120,9 +122,9 @@ else
     spec_path="$1"
   fi
 
-  tag_args="--tag ~secure_integration --tag integration"
+  extra_tag_args="--tag ~secure_integration --tag integration"
   if [[ "$SECURE_INTEGRATION" == "true" ]]; then
-    tag_args="--tag secure_integration"
+    extra_tag_args="--tag secure_integration"
   fi
 
   case "$ES_VERSION" in
@@ -130,25 +132,25 @@ else
           setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
           start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
           # Run all tests which are for versions > 5 but don't run ones tagged < 5.x. Include ingest, new template
-          bundle exec rspec -fd $tag_args --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag update_tests:groovy --tag ~version_less_than_5x $spec_path
+          bundle exec rspec -fd $extra_tag_args --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag update_tests:groovy --tag ~version_less_than_5x $spec_path
           ;;
       2.*)
           setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
           start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
           # Run all tests which are for versions < 5 but don't run ones tagged 5.x and above. Skip ingest, new template
-          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_less_than_5x --tag update_tests:groovy --tag ~version_greater_than_equal_to_5x $spec_path
+          bundle exec rspec -fd $extra_tag_args --tag version_less_than_5x --tag update_tests:groovy --tag ~version_greater_than_equal_to_5x $spec_path
           ;;
       1.*)
           setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
           start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
           # Still have to support ES versions < 2.x so run tests for those.
-          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag ~version_greater_than_equal_to_5x --tag ~version_greater_than_equal_to_2x $spec_path
+          bundle exec rspec -fd $extra_tag_args --tag ~version_greater_than_equal_to_5x --tag ~version_greater_than_equal_to_2x $spec_path
           ;;
       *)
           download_gradle
           build_es master
           start_es
-          bundle exec rspec -fd --tag ~secure_integration --tag integration --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag ~update_tests:groovy --tag ~version_less_than_5x $spec_path
+          bundle exec rspec -fd --extra_tag_args --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag ~update_tests:groovy --tag ~version_less_than_5x $spec_path
           ;;
   esac
 fi
