@@ -158,7 +158,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def calculate_property(uris, property, default, sniff_check)
-      values = uris.map(&property).uniq
+      values = uris.map(&property).compact.uniq
 
       if sniff_check && values.size > 1
         raise LogStash::ConfigurationError, "Cannot have multiple values for #{property} in hosts when sniffing is enabled!"
@@ -286,32 +286,31 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def host_to_url(h)
-      # Build a naked URI class to be wrapped in a SafeURI before returning
-      # do NOT log this! It could leak passwords
-      uri_klass = @url_template[:scheme] == 'https' ? URI::HTTPS : URI::HTTP
-      uri = uri_klass.build(@url_template)
+      scheme = @url_template[:scheme] || 'http'
 
-      uri.user = h.user || user
-      uri.password = h.password || password
-      uri.host = h.host if h.host
-      uri.port = h.port if h.port
-      uri.path = h.path if !h.path.nil? && !h.path.empty? &&  h.path != "/"
-      uri.query = h.query
-      
+      unescaped_user = (h.user || user)
+      escaped_user = CGI.escape(unescaped_user) if unescaped_user
+      unescaped_password = (h.password || password)
+      escaped_password = CGI.escape(unescaped_password) if unescaped_password
+      userinfo = escaped_user && escaped_password  ? "#{escaped_user}:#{escaped_password}@" : nil 
+
+      escaped_path = CGI.escape(h.path) if !h.path.nil? && !h.path.empty? && h.path != "/"
+
       parameters = client_settings[:parameters]
-      if parameters && !parameters.empty?
+      escaped_query = if parameters && !parameters.empty?
         combined = uri.query ?
           Hash[URI::decode_www_form(uri.query)].merge(parameters) :
           parameters
-        query_str = combined.flat_map {|k,v|
+        str = combined.flat_map {|k,v|
           values = Array(v)
           values.map {|av| "#{k}=#{av}"}
         }.join("&")
-        
-        uri.query = query_str
+
+        "?#{str}"
       end
 
-      ::LogStash::Util::SafeURI.new(uri.normalize)
+      uri_str = "#{scheme}://#{userinfo}#{h.host}:#{h.port}#{escaped_path}#{escaped_query}"
+      ::LogStash::Util::SafeURI.new(uri_str)
     end
 
     def template_exists?(name)
