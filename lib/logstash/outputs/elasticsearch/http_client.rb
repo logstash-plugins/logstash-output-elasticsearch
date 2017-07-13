@@ -287,7 +287,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def host_to_url(h)
       # Never override the calculated scheme
-      raw_scheme = @url_template[:scheme]
+      raw_scheme = @url_template[:scheme] || 'http'
 
       raw_user = h.user || @url_template[:user]
       raw_password = h.password || @url_template[:password]
@@ -296,13 +296,13 @@ module LogStash; module Outputs; class ElasticSearch;
       raw_host = h.host # Always replace this!
       raw_port =  h.port || @url_template[:port]
 
-      raw_path = h.path || @url_template[:path]
+      raw_path = !h.path.nil? && !h.path.empty? &&  h.path != "/" ? h.path : @url_template[:path]
       prefixed_raw_path = raw_path && !raw_path.empty? ? raw_path : "/"
 
       parameters = client_settings[:parameters]
       raw_query = if parameters && !parameters.empty?
                     combined = h.query ?
-                      Hash[URI::decode_www_form(uri.query)].merge(parameters) :
+                      Hash[URI::decode_www_form(h.query)].merge(parameters) :
                       parameters
                     query_str = combined.flat_map {|k,v|
                       values = Array(v)
@@ -310,14 +310,10 @@ module LogStash; module Outputs; class ElasticSearch;
                     }.join("&")
                     query_str
                   else
-                    query_str
+                    h.query
                   end
       prefixed_raw_query = raw_query && !raw_query.empty? ? "?#{raw_query}" : nil
       
-      if raw_host.nil? || raw_host.empty?
-        require 'pry'; binding.pry
-      end
-
       raw_url = "#{raw_scheme}://#{postfixed_userinfo}#{raw_host}:#{raw_port}#{prefixed_raw_path}#{prefixed_raw_query}"
 
       ::LogStash::Util::SafeURI.new(raw_url)
