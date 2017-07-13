@@ -141,12 +141,13 @@ module LogStash; module Outputs; class ElasticSearch;
     def self.setup_basic_auth(logger, params)
       user, password = params["user"], params["password"]
       unsafe_password = password && password.value
+      unsafe_escaped_password = unsafe_password ? CGI.escape(unsafe_password) : nil
       
-      return {} unless user && unsafe_password
+      return {} unless user && unsafe_escaped_password
 
       {
         :user => user,
-        :password => unsafe_password
+        :password => unsafe_escaped_password
       }
     end
 
