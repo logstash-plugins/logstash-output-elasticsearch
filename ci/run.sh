@@ -12,7 +12,7 @@ fi
 function finish {
   last_result=$?
   set +e
-  [[ $last_result -ne 0 ]] # && cat /tmp/elasticsearch.log
+  [[ $last_result -ne 0 ]] && cat /tmp/elasticsearch.log
 }
 trap finish EXIT
 
@@ -110,7 +110,7 @@ start_nginx() {
   sleep 5
 }
 
-#bundle install
+bundle install
 if [[ "$INTEGRATION" != "true" ]]; then
   bundle exec rspec -fd spec
 else
