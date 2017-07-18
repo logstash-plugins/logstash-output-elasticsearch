@@ -1,3 +1,7 @@
+## 7.3.7
+ - Properly support characters needing escaping in users / passwords across multiple SafeURI implementions (pre/post LS 5.5.1)
+ - Logstash 5.5.0 does NOT work with this release as it has a broken SafeURI implementation
+
 ## 7.3.5
  - Fix incorrect variable reference when DLQing events
 
