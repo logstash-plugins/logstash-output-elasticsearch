@@ -6,10 +6,9 @@ env:
  - INTEGRATION=false
  - INTEGRATION=true ES_VERSION=1.7.6 TEST_DEBUG=true
  - INTEGRATION=true ES_VERSION=2.4.4 TEST_DEBUG=true
- - INTEGRATION=true ES_VERSION=5.2.1 TEST_DEBUG=true
+ - INTEGRATION=true ES_VERSION=5.5.0 TEST_DEBUG=true
  - INTEGRATION=true ES_VERSION=master TEST_DEBUG=true
  - SECURE_INTEGRATION=true INTEGRATION=true ES_VERSION=5.5.0 TEST_DEBUG=true 
- - SECURE_INTEGRATION=true INTEGRATION=true ES_VERSION=master TEST_DEBUG=true
 rvm:
   - jruby-1.7.25
 matrix:
@@ -20,7 +19,6 @@ matrix:
       env: LOGSTASH_BRANCH=5.x
   allow_failures:
     - env: INTEGRATION=true ES_VERSION=master TEST_DEBUG=true
-    - env: SECURE_INTEGRATION=true INTEGRATION=true ES_VERSION=master TEST_DEBUG=true
   fast_finish: true
 install: true
 script: ci/build.sh
