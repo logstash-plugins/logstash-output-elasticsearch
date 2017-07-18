@@ -56,7 +56,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
       if url.user
         params[:auth] = { 
-          :user => url.user,
+          :user => CGI.unescape(url.user),
           # We have to unescape the password here since manticore won't do it
           # for us unless its part of the URL
           :password => CGI.unescape(url.password), 

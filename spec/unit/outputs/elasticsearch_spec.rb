@@ -171,13 +171,15 @@ describe "outputs/elasticsearch" do
     end
 
     describe "without a port specified" do
+      let(:options) { super.merge('hosts' => 'localhost') }
       it "should properly set the default port (9200) on the HTTP client" do
         expect(manticore_url.port).to eql(9200)
       end
     end
     describe "with a port other than 9200 specified" do
+      let(:options) { super.merge('hosts' => 'localhost:9202') }
       it "should properly set the specified port on the HTTP client" do
-        expect(manticore_urls.any? {|u| u.port == 9202}).to eql(true)
+        expect(manticore_url.port).to eql(9202)
       end
     end
 

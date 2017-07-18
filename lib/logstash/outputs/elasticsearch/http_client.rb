@@ -286,32 +286,37 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def host_to_url(h)
-      # Build a naked URI class to be wrapped in a SafeURI before returning
-      # do NOT log this! It could leak passwords
-      uri_klass = @url_template[:scheme] == 'https' ? URI::HTTPS : URI::HTTP
-      uri = uri_klass.build(@url_template)
+      # Never override the calculated scheme
+      raw_scheme = @url_template[:scheme] || 'http'
 
-      uri.user = h.user || user
-      uri.password = h.password || password
-      uri.host = h.host if h.host
-      uri.port = h.port if h.port
-      uri.path = h.path if !h.path.nil? && !h.path.empty? &&  h.path != "/"
-      uri.query = h.query
-      
+      raw_user = h.user || @url_template[:user]
+      raw_password = h.password || @url_template[:password]
+      postfixed_userinfo = raw_user && raw_password ? "#{raw_user}:#{raw_password}@" : nil
+
+      raw_host = h.host # Always replace this!
+      raw_port =  h.port || @url_template[:port]
+
+      raw_path = !h.path.nil? && !h.path.empty? &&  h.path != "/" ? h.path : @url_template[:path]
+      prefixed_raw_path = raw_path && !raw_path.empty? ? raw_path : "/"
+
       parameters = client_settings[:parameters]
-      if parameters && !parameters.empty?
-        combined = uri.query ?
-          Hash[URI::decode_www_form(uri.query)].merge(parameters) :
-          parameters
-        query_str = combined.flat_map {|k,v|
-          values = Array(v)
-          values.map {|av| "#{k}=#{av}"}
-        }.join("&")
-        
-        uri.query = query_str
-      end
+      raw_query = if parameters && !parameters.empty?
+                    combined = h.query ?
+                      Hash[URI::decode_www_form(h.query)].merge(parameters) :
+                      parameters
+                    query_str = combined.flat_map {|k,v|
+                      values = Array(v)
+                      values.map {|av| "#{k}=#{av}"}
+                    }.join("&")
+                    query_str
+                  else
+                    h.query
+                  end
+      prefixed_raw_query = raw_query && !raw_query.empty? ? "?#{raw_query}" : nil
+      
+      raw_url = "#{raw_scheme}://#{postfixed_userinfo}#{raw_host}:#{raw_port}#{prefixed_raw_path}#{prefixed_raw_query}"
 
-      ::LogStash::Util::SafeURI.new(uri.normalize)
+      ::LogStash::Util::SafeURI.new(raw_url)
     end
 
     def template_exists?(name)
