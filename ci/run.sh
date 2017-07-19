@@ -18,6 +18,7 @@ trap finish EXIT
 
 setup_es() {
   download_url=$1
+  xpack_download_url=$2
   if [[ ! -d elasticsearch ]]; then
     curl -sL $download_url > elasticsearch.tar.gz
     mkdir elasticsearch
@@ -30,7 +31,12 @@ setup_es() {
 
   # If we're running with xpack SSL/Users enabled...
   if [[ "$SECURE_INTEGRATION" == "true" ]]; then
-    yes y | elasticsearch/bin/elasticsearch-plugin install x-pack
+    if [[ "$xpack_download_url" == "" ]]; then
+      yes y | elasticsearch/bin/elasticsearch-plugin install x-pack
+    else
+      curl -sL $xpack_download_url > elasticsearch/xpack.zip
+      yes y | elasticsearch/bin/elasticsearch-plugin install file://$BUILD_DIR/elasticsearch/xpack.zip
+    fi
 
     es_yml=elasticsearch/config/elasticsearch.yml
     cp -rv $BUILD_DIR/spec/fixtures/test_certs elasticsearch/config/test_certs
@@ -49,6 +55,9 @@ start_es() {
   es_url="http://localhost:9200" 
   if [[ "$SECURE_INTEGRATION" == "true" ]]; then
     es_url="https://localhost:9200 -k"
+
+    elasticsearch/bin/x-pack/users useradd simpleuser -p abc123 -r superuser
+    elasticsearch/bin/x-pack/users useradd 'f@ncyuser' -p 'ab%12#' -r superuser
   fi
 
   while ! curl --silent $es_url && [[ $count -ne 0 ]]; do
@@ -57,28 +66,6 @@ start_es() {
     sleep 1
   done
   echo "Elasticsearch is Up !"
-
-  if [[ "$SECURE_INTEGRATION" == "true" ]]; then
-    curl -XPUT -k 'https://elastic:changeme@localhost:9200/_xpack/security/user/elastic/_password' -H "Content-Type: application/json" -d '{
-      "password" : "testpass"
-    }'
-
-    # These are the two users used for secure integration tests
-    curl -XPOST -k 'https://elastic:testpass@localhost:9200/_xpack/security/user/simpleuser' -H "Content-Type: application/json" -d '{
-      "password" : "abc123",
-      "full_name" : "John Doe",
-      "email" : "john.doe@anony.mous",
-      "roles" : [ "superuser" ]
-    }'
-
-    curl -XPOST -k 'https://elastic:testpass@localhost:9200/_xpack/security/user/f%40ncyuser' -H "Content-Type: application/json" -d '{
-      "password" : "ab%12#",
-      "full_name" : "John Doe",
-      "email" : "john.doe@anony.mous",
-      "roles" : [ "superuser" ]
-    }'
-
-  fi
 
   return 0
 }
@@ -128,6 +115,12 @@ else
   fi
 
   case "$ES_VERSION" in
+      6.*)
+        setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-SNAPSHOT.tar.gz https://snapshots.elastic.co/downloads/packs/x-pack/x-pack-$ES_VERSION-SNAPSHOT.zip
+        start_es
+        # Run all tests which are for versions > 5 but don't run ones tagged < 5.x. Include ingest, new template
+        bundle exec rspec -fd $extra_tag_args --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag update_tests:groovy --tag ~version_less_than_5x $spec_path
+        ;;
       5.*)
           setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
           start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
