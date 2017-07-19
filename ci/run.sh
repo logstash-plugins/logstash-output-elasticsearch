@@ -56,7 +56,10 @@ start_es() {
   if [[ "$SECURE_INTEGRATION" == "true" ]]; then
     es_url="https://localhost:9200 -k"
 
-    elasticsearch/bin/x-pack/users useradd simpleuser -p abc123 -r superuser
+    # Needed for travis. On travis the `users` script will fail because it will first try and write
+    # to /etc/elasticsearch
+    export CONF_DIR=$BUILD_DIR/elasticsearch/config
+    elasticsearch/bin/x-pack/users useradd simpleuser -p abc123 -r superuser --
     elasticsearch/bin/x-pack/users useradd 'f@ncyuser' -p 'ab%12#' -r superuser
   fi
 
