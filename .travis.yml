@@ -21,6 +21,7 @@ matrix:
       env: LOGSTASH_BRANCH=5.x
   allow_failures:
     - env: INTEGRATION=true ES_VERSION=master TEST_DEBUG=true
+    - env: INTEGRATION=true ES_VERSION=6.0.0-beta1 TEST_DEBUG=true
   fast_finish: true
 install: true
 script: ci/build.sh
