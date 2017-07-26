@@ -17,8 +17,10 @@ matrix:
   include:
     - rvm: jruby-9.1.10.0
       env: LOGSTASH_BRANCH=master
+    - rvm: jruby-9.1.10.0
+      env: LOGSTASH_BRANCH=6.x
     - rvm: jruby-1.7.25
-      env: LOGSTASH_BRANCH=5.x
+      env: LOGSTASH_BRANCH=5.6
   allow_failures:
     - env: INTEGRATION=true ES_VERSION=master TEST_DEBUG=true
     - env: INTEGRATION=true ES_VERSION=6.0.0-beta1 TEST_DEBUG=true
