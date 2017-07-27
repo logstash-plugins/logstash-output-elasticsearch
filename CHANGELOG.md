@@ -1,5 +1,6 @@
-##  7.3.8
- - Fix bug where java class names were logged rather than actual host names in various scenarios
+## 8.0.0
+ - Breaking: make deprecated options :flush_size and :idle_flush_time obsolete
+ - Remove obsolete options :max_retries and :retry_max_items
 
 ## 7.3.7
  - Properly support characters needing escaping in users / passwords across multiple SafeURI implementions (pre/post LS 5.5.1)
