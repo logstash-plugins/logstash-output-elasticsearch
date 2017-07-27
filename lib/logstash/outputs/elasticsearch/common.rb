@@ -34,13 +34,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     # Receive an array of events and immediately attempt to index them (no buffering)
     def multi_receive(events)
-      if @flush_size
-        events.each_slice(@flush_size) do |slice|
-          retrying_submit(slice.map {|e| event_action_tuple(e) })
-        end
-      else
-        retrying_submit(events.map {|e| event_action_tuple(e)})
-      end
+      retrying_submit(events.map {|e| event_action_tuple(e)})
     end
 
     # Convert the event into a 3-tuple of action, params, and event

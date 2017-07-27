@@ -234,15 +234,6 @@ Set the Elasticsearch errors in the whitelist that you don't want to log.
 A useful example is when you want to skip all 409 errors
 which are `document_already_exists_exception`.
 
-[id="plugins-{type}s-{plugin}-flush_size"]
-===== `flush_size`  (DEPRECATED)
-
-  * DEPRECATED WARNING: This configuration item is deprecated and may not be available in future versions.
-  * Value type is <<number,number>>
-  * There is no default value for this setting.
-
-
-
 [id="plugins-{type}s-{plugin}-healthcheck_path"]
 ===== `healthcheck_path` 
 
@@ -279,15 +270,6 @@ Any special characters present in the URLs here MUST be URL escaped! This means 
   * Default value is `false`
 
 Enable gzip compression on requests. Note that response compression is on by default for Elasticsearch v5.0 and beyond
-
-[id="plugins-{type}s-{plugin}-idle_flush_time"]
-===== `idle_flush_time`  (DEPRECATED)
-
-  * DEPRECATED WARNING: This configuration item is deprecated and may not be available in future versions.
-  * Value type is <<number,number>>
-  * Default value is `1`
-
-
 
 [id="plugins-{type}s-{plugin}-index"]
 ===== `index` 
