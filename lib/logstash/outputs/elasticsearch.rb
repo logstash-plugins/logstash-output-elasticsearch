@@ -51,9 +51,13 @@ require "forwardable"
 #
 # The following errors are retried infinitely:
 #
-# - Network errors (inability to connect)
-# - 429 (Too many requests) and
-# - 503 (Service unavailable) errors
+# - Network errors (Inability to connect)
+# - 404 (Not found) Indicating an upstream proxy has no matching route
+# - 429 (Too many requests) Graceful backoff indication by Elastic
+# - 500 (Internal Server Error) when an ES node disconnect occurs this is temporarily returned
+# - 502 (Bad gateway) During shutdown a proxy might return this
+# - 503 (Service unavailable) Proxy returns an unavailable service
+# - 504 (Gateway timed out) Proxy backend timed out
 #
 # NOTE: 409 exceptions are no longer retried. Please set a higher `retry_on_conflict` value if you experience 409 exceptions.
 # It is more performant for Elasticsearch to retry these exceptions than this plugin.
