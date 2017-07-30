@@ -7,10 +7,11 @@ module LogStash; module Outputs; class ElasticSearch;
     # These are codes for temporary recoverable conditions
     # 404 indicates an endpoint is not found (yet)
     # 429 just means that ES has too much traffic ATM
+    # 500 when an ES node disconnect occurs this is temporarily returned
     # 502 occurs when a proxy fails a request to ES (could happen during node shutdown)
     # 503 means ES, or a proxy is temporarily unavailable
     # 504 when using a proxy, indicates the backend timed out
-    RETRYABLE_CODES = [404, 429, 502, 503, 504]
+    RETRYABLE_CODES = [404, 429, 500, 502, 503, 504]
 
     DLQ_CODES = [400]
     SUCCESS_CODES = [200, 201]

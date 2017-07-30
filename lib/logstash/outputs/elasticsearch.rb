@@ -54,6 +54,7 @@ require "forwardable"
 # - Network errors (Inability to connect)
 # - 404 (Not found) Indicating an upstream proxy has no matching route
 # - 429 (Too many requests) Graceful backoff indication by Elastic
+# - 500 (Internal Server Error) when an ES node disconnect occurs this is temporarily returned
 # - 502 (Bad gateway) During shutdown a proxy might return this
 # - 503 (Service unavailable) Proxy returns an unavailable service
 # - 504 (Gateway timed out) Proxy backend timed out
