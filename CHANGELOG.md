@@ -1,6 +1,8 @@
 ## 8.0.0
  - Breaking: make deprecated options :flush_size and :idle_flush_time obsolete
  - Remove obsolete options :max_retries and :retry_max_items
+ - Fix: handling of initial single big event
+ - Fix: typo was enabling http compression by default this returns it back to false
 
 ## 7.3.7
  - Properly support characters needing escaping in users / passwords across multiple SafeURI implementions (pre/post LS 5.5.1)
