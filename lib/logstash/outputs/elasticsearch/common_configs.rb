@@ -78,6 +78,9 @@ module LogStash; module Outputs; class ElasticSearch
       # This can be dynamic using the `%{foo}` syntax.
       mod.config :parent, :validate => :string, :default => nil
 
+      # For child documents, name of the join field
+      mod.config :join_field, :validate => :string, :default => nil
+
       # Sets the host(s) of the remote instance. If given an array it will load balance requests across the hosts specified in the `hosts` parameter.
       # Remember the `http` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http[http] address (eg. 9200, not 9300).
       #     `"127.0.0.1"`
