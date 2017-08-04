@@ -176,8 +176,15 @@ module LogStash; module Outputs; class ElasticSearch;
         params[:pipeline] = event.sprintf(@pipeline)
       end
 
-     if @parent
-        params[:parent] = event.sprintf(@parent)
+      if @parent
+        if @join_field
+          join_value = event.get(@join_field)
+          parent_value = event.sprintf(@parent)
+          event.set(@join_field, { "name" => join_value, "parent" => parent_value })
+          params[:_routing] = event.sprintf(@parent)
+        else
+          params[:parent] = event.sprintf(@parent)
+        end
       end
 
       if @action == 'update'
