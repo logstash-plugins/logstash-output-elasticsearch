@@ -14,9 +14,9 @@ module LogStash; module Outputs; class ElasticSearch;
     CONFLICT_CODE = 409
 
     # When you use external versioning, you are communicating that you want
-    # to ignore conflicts. More obviously, since an external version is a 
+    # to ignore conflicts. More obviously, since an external version is a
     # constant part of the incoming document, we should not retry, as retrying
-    # will never succeed. 
+    # will never succeed.
     VERSION_TYPES_PERMITTING_CONFLICT = ["external", "external_gt", "external_gte"]
 
     def register
@@ -262,7 +262,7 @@ module LogStash; module Outputs; class ElasticSearch;
           sleep_interval = sleep_for_interval(sleep_interval)
           retry
         else
-          log_hash = {:code => e.response_code, 
+          log_hash = {:code => e.response_code,
                       :response_body => e.response_body}
           log_hash[:request_body] = e.request_body if @logger.debug?
           @logger.error("Got a bad response code from server, but this code is not considered retryable. Request will be dropped", log_hash)
