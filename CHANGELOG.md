@@ -1,3 +1,6 @@
+## 8.0.1
+  - Fix some documentation issues
+
 ## 8.0.0
  - Breaking: make deprecated options :flush_size and :idle_flush_time obsolete
  - Remove obsolete options :max_retries and :retry_max_items
