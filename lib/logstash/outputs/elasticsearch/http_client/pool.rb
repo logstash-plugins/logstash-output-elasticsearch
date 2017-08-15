@@ -46,7 +46,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @logger = logger
       @adapter = adapter
       @initial_urls = initial_urls
-      
+
       raise ArgumentError, "No URL Normalizer specified!" unless options[:url_normalizer]
       @url_normalizer = options[:url_normalizer]
       DEFAULT_OPTIONS.merge(options).tap do |merged|
@@ -65,7 +65,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @url_info = {}
       @stopping = false
     end
-    
+
     def start
       update_urls(@initial_urls)
       start_resurrectionist
@@ -156,7 +156,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def check_sniff
       _, resp = perform_request(:get, @sniffing_path)
       parsed = LogStash::Json.load(resp.body)
-      
+
       nodes = parsed['nodes']
       if !nodes || nodes.empty?
         @logger.warn("Sniff returned no nodes! Will not update hosts.")
@@ -175,11 +175,11 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         end
       end
     end
-    
+
     def major_version(nodes)
       k,v = nodes.first; v['version'].split('.').first.to_i
     end
-    
+
     def sniff_5x_and_above(nodes)
       nodes.map do |id,info|
         if info["http"]
@@ -187,12 +187,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         end
       end.compact
     end
-    
+
     def sniff_2x_1x(nodes)
       nodes.map do |id,info|
         # TODO Make sure this works with shield. Does that listed
         # stuff as 'https_address?'
-        
+
         addr_str = info['http_address'].to_s
         next unless addr_str # Skip hosts with HTTP disabled
 
@@ -281,7 +281,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
     def update_urls(new_urls)
       return if new_urls.nil?
-      
+
       # Normalize URLs
       new_urls = new_urls.map(&method(:normalize_url))
 
@@ -311,14 +311,14 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           logger.info("Elasticsearch pool URLs updated", :changes => state_changes)
         end
       end
-      
+
       # Run an inline healthcheck anytime URLs are updated
       # This guarantees that during startup / post-startup
       # sniffing we don't have idle periods waiting for the
       # periodic sniffer to allow new hosts to come online
-      healthcheck! 
+      healthcheck!
     end
-    
+
     def size
       @state_mutex.synchronize { @url_info.size }
     end

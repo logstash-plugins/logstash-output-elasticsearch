@@ -12,7 +12,7 @@ describe "outputs/elasticsearch" do
         "manage_template" => false
       }
     }
-    
+
     let(:eso) { LogStash::Outputs::ElasticSearch.new(options) }
 
     let(:manticore_urls) { eso.client.pool.urls }
@@ -23,19 +23,19 @@ describe "outputs/elasticsearch" do
     before(:each) do
       if do_register
         eso.register
-        
-        # Rspec mocks can't handle background threads, so... we can't use any 
+
+        # Rspec mocks can't handle background threads, so... we can't use any
         allow(eso.client.pool).to receive(:start_resurrectionist)
         allow(eso.client.pool).to receive(:start_sniffer)
         allow(eso.client.pool).to receive(:healthcheck!)
         eso.client.pool.adapter.manticore.respond_with(:body => "{}")
       end
     end
-    
+
     after(:each) do
-      eso.close 
+      eso.close
     end
-    
+
     describe "getting a document type" do
       it "should default to 'logs'" do
         expect(eso.send(:get_event_type, LogStash::Event.new)).to eql("logs")
@@ -70,25 +70,25 @@ describe "outputs/elasticsearch" do
         end
       end
     end
-    
+
     describe "with auth" do
       let(:user) { "myuser" }
       let(:password) { ::LogStash::Util::Password.new("mypassword") }
-      
+
       shared_examples "an authenticated config" do
         it "should set the URL auth correctly" do
           expect(manticore_url.user).to eq user
         end
       end
-        
+
       context "as part of a URL" do
         let(:options) {
           super.merge("hosts" => ["http://#{user}:#{password.value}@localhost:9200"])
         }
-        
+
         include_examples("an authenticated config")
       end
-      
+
       context "as a hash option" do
           let(:options) {
             super.merge!(
@@ -96,7 +96,7 @@ describe "outputs/elasticsearch" do
               "password" => password
             )
         }
-        
+
         include_examples("an authenticated config")
       end
     end
@@ -200,7 +200,7 @@ describe "outputs/elasticsearch" do
 
     context "429 errors" do
       let(:event) { ::LogStash::Event.new("foo" => "bar") }
-      let(:error) do 
+      let(:error) do
         ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(
           429, double("url").as_null_object, double("request body"), double("response body")
         )
@@ -232,7 +232,7 @@ describe "outputs/elasticsearch" do
       end
     end
   end
-  
+
   context "with timeout set" do
     let(:listener) { Flores::Random.tcp_listener }
     let(:port) { listener[2] }
@@ -284,10 +284,10 @@ describe "outputs/elasticsearch" do
   end
 
   describe "SSL end to end" do
-    let(:manticore_double) do 
-      double("manticoreX#{self.inspect}") 
+    let(:manticore_double) do
+      double("manticoreX#{self.inspect}")
     end
-    
+
     let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
 
     before(:each) do
@@ -296,23 +296,23 @@ describe "outputs/elasticsearch" do
       allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
       allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
       allow(manticore_double).to receive(:close)
-        
+
       allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
       eso.register
     end
-    
+
     after(:each) do
       eso.close
     end
-    
-    
+
+
     shared_examples("an encrypted client connection") do
       it "should enable SSL in manticore" do
         expect(eso.client.pool.urls.map(&:scheme).uniq).to eql(['https'])
       end
     end
 
-      
+
     context "With the 'ssl' option" do
       let(:options) { {"ssl" => true}}
 
