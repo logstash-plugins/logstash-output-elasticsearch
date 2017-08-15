@@ -1,3 +1,6 @@
+## 8.0.2
+  - Fix bug where logging errors for bad response codes would raise an unhandled exception
+
 ## 8.0.1
   - Fix some documentation issues
 
