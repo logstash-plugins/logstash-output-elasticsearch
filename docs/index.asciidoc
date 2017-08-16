@@ -55,17 +55,18 @@ the new template is installed.
 
 ==== Retry Policy
 
-The retry policy has changed significantly in the 2.2.0 release.
+The retry policy has changed significantly in the 8.1.1 release.
 This plugin uses the Elasticsearch bulk API to optimize its imports into Elasticsearch. These requests may experience
-either partial or total failures.
+either partial or total failures. The bulk API sends batches of requests to an HTTP endpoint. Error codes for the HTTP
+request are handled differently than error codes for individual documents.
 
-The following errors are retried infinitely:
+HTTP requests to the bulk API are expected to return a 200 response code. All other response codes are retried indefinitely.
 
-- Network errors (inability to connect)
-- 429 (Too many requests) and
-- 503 (Service unavailable) errors
+The following document errors are handled as follows:
+- 400 and 404 errors are sent to the DLQ if enabled. If a DLQ is not enabled a log message will be emitted and the event will be dropped.
+- 409 errors (conflict) are logged as a warning and dropped. 
 
-NOTE: 409 exceptions are no longer retried. Please set a higher `retry_on_conflict` value if you experience 409 exceptions.
+Note that 409 exceptions are no longer retried. Please set a higher `retry_on_conflict` value if you experience 409 exceptions.
 It is more performant for Elasticsearch to retry these exceptions than this plugin.
 
 ==== Batch Sizes ====
