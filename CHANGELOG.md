@@ -1,5 +1,10 @@
+## 8.1.1
+  - Retry all non-200 responses of the bulk API indefinitely
+  - Improve documentation on retry codes
+
 ## 8.1.0
   - Support Elasticsearch 6.x join field type
+## 8.0.2
   - Fix bug where logging errors for bad response codes would raise an unhandled exception
 
 ## 8.0.1

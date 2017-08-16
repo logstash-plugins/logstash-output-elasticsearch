@@ -206,8 +206,10 @@ describe "outputs/elasticsearch" do
         )
       end
       let(:logger) { double("logger").as_null_object }
+      let(:response) { { :errors => [], :items => [] } }
 
       before(:each) do
+
         i = 0
         bulk_param =  [["index", anything, event.to_hash]]
 
@@ -219,7 +221,7 @@ describe "outputs/elasticsearch" do
           if i == 1
             raise error
           end
-        end
+        end.and_return(response)
         eso.multi_receive([event])
       end
 
