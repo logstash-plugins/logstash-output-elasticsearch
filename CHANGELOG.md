@@ -1,4 +1,5 @@
-## 8.0.2
+## 8.1.0
+  - Support Elasticsearch 6.x join field type
   - Fix bug where logging errors for bad response codes would raise an unhandled exception
 
 ## 8.0.1
