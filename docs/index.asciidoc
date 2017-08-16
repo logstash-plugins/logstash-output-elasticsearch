@@ -535,6 +535,8 @@ If SSL is explicitly disabled here the plugin will refuse to start if an HTTPS U
   * Value type is <<boolean,boolean>>
   * Default value is `true`
 
+This option does not work currently, see: https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/433
+
 Option to validate the server's certificate. Disabling this severely compromises security.
 For more information on disabling certificate verification please read
 https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
