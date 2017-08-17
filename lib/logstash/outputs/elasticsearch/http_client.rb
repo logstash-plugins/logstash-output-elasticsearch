@@ -61,6 +61,7 @@ module LogStash; module Outputs; class ElasticSearch;
       # mutex to prevent requests and sniffing to access the
       # connection pool at the same time
       @bulk_path = @options[:bulk_path]
+      @es_major_version = get_version["number"][0].to_i
     end
     
     def build_url_template
@@ -357,7 +358,7 @@ module LogStash; module Outputs; class ElasticSearch;
         when 'inline'
           source['script']['inline'] = args.delete(:_script)
         end
-        source['script']['lang'] = @options[:script_lang] if @options[:script_lang] != ''
+        source['script']['lang'] = @options[:script_lang] if @options[:script_lang] != '' && @es_major_version <= 5
       else
         source = { 'doc' => source }
         if @options[:doc_as_upsert]
