@@ -354,7 +354,7 @@ module LogStash; module Outputs; class ElasticSearch;
         when 'indexed'
           source['script']['id'] = args.delete(:_script)
         when 'file'
-          source['script']['file'] = args.delete(:_script)
+          source['script']['file'] = args.delete(:_script) if @es_major_version <= 5
         when 'inline'
           source['script']['inline'] = args.delete(:_script)
         end
