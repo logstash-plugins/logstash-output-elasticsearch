@@ -4,14 +4,10 @@ module LogStash; module Outputs; class ElasticSearch;
   module Common
     attr_reader :client, :hosts
 
-    # These are codes for temporary recoverable conditions
-    # 429 just means that ES has too much traffic ATM
-    # 503 means it , or a proxy is temporarily unavailable
-    RETRYABLE_CODES = [429, 503]
-
-    DLQ_CODES = [400, 404]
-    SUCCESS_CODES = [200, 201]
-    CONFLICT_CODE = 409
+    # These codes apply to documents, not at the request level
+    DOC_DLQ_CODES = [400, 404]
+    DOC_SUCCESS_CODES = [200, 201]
+    DOC_CONFLICT_CODE = 409
 
     # When you use external versioning, you are communicating that you want
     # to ignore conflicts. More obviously, since an external version is a 
@@ -134,12 +130,12 @@ module LogStash; module Outputs; class ElasticSearch;
         # - For 409, we log and drop. there is nothing we can do
         # - For a mapping error, we send to dead letter queue for a human to intervene at a later point.
         # - For everything else there's mastercard. Yep, and we retry indefinitely. This should fix #572 and other transient network issues
-        if SUCCESS_CODES.include?(status)
+        if DOC_SUCCESS_CODES.include?(status)
           next
-        elsif CONFLICT_CODE == status
+        elsif DOC_CONFLICT_CODE == status
           @logger.warn "Failed action.", status: status, action: action, response: response if !failure_type_logging_whitelist.include?(failure["type"])
           next
-        elsif DLQ_CODES.include?(status)
+        elsif DOC_DLQ_CODES.include?(status)
           action_event = action[2]
           # To support bwc, we check if DLQ exists. otherwise we log and drop event (previous behavior)
           if @dlq_writer
@@ -251,29 +247,22 @@ module LogStash; module Outputs; class ElasticSearch;
         sleep_interval = next_sleep_interval(sleep_interval)
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-        if RETRYABLE_CODES.include?(e.response_code)
-          log_hash = {:code => e.response_code, :url => e.url.sanitized.to_s}
-          log_hash[:body] = e.body if @logger.debug? # Generally this is too verbose
-          message = "Encountered a retryable error. Will Retry with exponential backoff "
+        log_hash = {:code => e.response_code, :url => e.url.sanitized.to_s}
+        log_hash[:body] = e.body if @logger.debug? # Generally this is too verbose
+        message = "Encountered a retryable error. Will Retry with exponential backoff "
 
-          # We treat 429s as a special case because these really aren't errors, but
-          # rather just ES telling us to back off a bit, which we do.
-          # The other retryable code is 503, which are true errors
-          # Even though we retry the user should be made aware of these
-          if e.response_code == 429
-            logger.debug(message, log_hash)
-          else
-            logger.error(message, log_hash)
-          end
-
-          sleep_interval = sleep_for_interval(sleep_interval)
-          retry
+        # We treat 429s as a special case because these really aren't errors, but
+        # rather just ES telling us to back off a bit, which we do.
+        # The other retryable code is 503, which are true errors
+        # Even though we retry the user should be made aware of these
+        if e.response_code == 429
+          logger.debug(message, log_hash)
         else
-          log_hash = {:code => e.response_code, 
-                      :response_body => e.response_body}
-          log_hash[:request_body] = e.request_body if @logger.debug?
-          @logger.error("Got a bad response code from server, but this code is not considered retryable. Request will be dropped", log_hash)
+          logger.error(message, log_hash)
         end
+
+        sleep_interval = sleep_for_interval(sleep_interval)
+        retry
       rescue => e
         # Stuff that should never happen
         # For all other errors print out full connection issues
@@ -286,7 +275,6 @@ module LogStash; module Outputs; class ElasticSearch;
 
         @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
 
-        # We retry until there are no errors! Errors should all go to the retry queue
         sleep_interval = sleep_for_interval(sleep_interval)
         retry unless @stopping.true?
       end
