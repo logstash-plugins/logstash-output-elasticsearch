@@ -71,8 +71,8 @@ if ESHelper.es_version_satisfies?("<= 5.x")
   end
 end
 
-if ESHelper.es_version_satisfies?(">= 6")
-  context "when using elasticsearch 6.x and above", :integration => true do
+if ESHelper.es_version_satisfies?(">= 5.6")
+  context "when using elasticsearch 5.6 and above", :integration => true do
 
     shared_examples "a join field based parent indexer" do
       let(:index) { 10.times.collect { rand(10).to_s }.join("") }
