@@ -52,7 +52,7 @@ start_es() {
   elasticsearch/bin/elasticsearch $es_args > /tmp/elasticsearch.log 2>/dev/null &
   count=120
   echo "Waiting for elasticsearch to respond..."
-  es_url="http://localhost:9200" 
+  es_url="http://localhost:9200"
   if [[ "$SECURE_INTEGRATION" == "true" ]]; then
     es_url="https://localhost:9200 -k"
 
@@ -71,6 +71,11 @@ start_es() {
   echo "Elasticsearch is Up !"
 
   return 0
+}
+
+get_es_distribution_version() {
+  local version_string=$(elasticsearch/bin/elasticsearch -v -V | tr "," " " | cut -d " " -f 2)
+  echo $version_string
 }
 
 # Ruby build environment does not have gradle in the env, so we need to download it
@@ -118,35 +123,36 @@ else
   fi
 
   case "$ES_VERSION" in
-      6.*)
-        setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-SNAPSHOT.tar.gz https://snapshots.elastic.co/downloads/packs/x-pack/x-pack-$ES_VERSION-SNAPSHOT.zip
-        start_es
-        # Run all tests which are for versions > 5 but don't run ones tagged < 5.x. Include ingest, new template
-        bundle exec rspec -fd $extra_tag_args --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag update_tests:groovy --tag ~version_less_than_5x $spec_path
-        ;;
-      5.*)
-          setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
-          start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
-          # Run all tests which are for versions > 5 but don't run ones tagged < 5.x. Include ingest, new template
-          bundle exec rspec -fd $extra_tag_args --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag update_tests:groovy --tag ~version_less_than_5x $spec_path
-          ;;
-      2.*)
-          setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
-          start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
-          # Run all tests which are for versions < 5 but don't run ones tagged 5.x and above. Skip ingest, new template
-          bundle exec rspec -fd $extra_tag_args --tag version_less_than_5x --tag update_tests:groovy --tag ~version_greater_than_equal_to_5x $spec_path
-          ;;
-      1.*)
-          setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
-          start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
-          # Still have to support ES versions < 2.x so run tests for those.
-          bundle exec rspec -fd $extra_tag_args --tag ~version_greater_than_equal_to_5x --tag ~version_greater_than_equal_to_2x $spec_path
-          ;;
-      *)
-          download_gradle
-          build_es master
-          start_es
-          bundle exec rspec -fd $extra_tag_args --tag version_greater_than_equal_to_5x --tag update_tests:painless --tag ~update_tests:groovy --tag ~version_less_than_5x $spec_path
-          ;;
+    6.*)
+      setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-SNAPSHOT.tar.gz https://snapshots.elastic.co/downloads/packs/x-pack/x-pack-$ES_VERSION-SNAPSHOT.zip
+      es_distribution_version=$(get_es_distribution_version)
+      start_es
+      bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
+      ;;
+    5.*)
+      setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
+      es_distribution_version=$(get_es_distribution_version)
+      start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
+      bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag es_version:$es_distribution_version --tag update_tests:groovy $spec_path
+      ;;
+    2.*)
+      setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
+      es_distribution_version=$(get_es_distribution_version)
+      start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
+      bundle exec rspec -fd $extra_tag_args --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
+      ;;
+    1.*)
+      setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
+      es_distribution_version=$(get_es_distribution_version)
+      start_es -Des.script.inline=on -Des.script.indexed=on -Des.script.file=on
+      bundle exec rspec -fd $extra_tag_args --tag es_version:$es_distribution_version $spec_path
+      ;;
+    *)
+      download_gradle
+      build_es master
+      es_distribution_version=$(get_es_distribution_version)
+      start_es
+      bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag ~update_tests:groovy --tag es_version:$es_distribution_version $spec_path
+      ;;
   esac
 fi
