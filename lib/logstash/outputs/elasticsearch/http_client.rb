@@ -140,6 +140,13 @@ module LogStash; module Outputs; class ElasticSearch;
         body_stream.truncate(0)
         body_stream.seek(0)
       end
+
+      if response.code != 200
+        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(
+          response.code, @bulk_path, body_stream.to_s, response.body
+        )
+      end
+
       LogStash::Json.load(response.body)
     end
 

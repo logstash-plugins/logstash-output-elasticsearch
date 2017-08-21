@@ -1,3 +1,7 @@
+## 7.4.0
+  - Retry all non-200 responses of the bulk API indefinitely
+  - Improve documentation on retry codes
+
 ##  7.3.8
  - Fix bug where java class names were logged rather than actual host names in various scenarios
 
