@@ -358,7 +358,13 @@ module LogStash; module Outputs; class ElasticSearch;
         when 'inline'
           source['script']['inline'] = args.delete(:_script)
         end
-        source['script']['lang'] = @options[:script_lang] if @options[:script_lang] != '' && @es_major_version <= 5
+        if @options[:script_type] == 'indexed'
+          # Indexed type should not need lang if ES >= 6
+          source['script']['lang'] = @options[:script_lang] if @options[:script_lang] != '' && @es_major_version <= 5
+        else
+          # But otherwise it's important to be there.
+          source['script']['lang'] = @options[:script_lang] if @options[:script_lang] != ''
+        end
       else
         source = { 'doc' => source }
         if @options[:doc_as_upsert]
