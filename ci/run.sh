@@ -1,13 +1,13 @@
 #!/bin/bash
 set -ex
 
-export PATH=$PATH:$TRAVIS_BUILD_DIR/gradle/bin/
-
 # Set the build dir to ./ if not set by travis
 BUILD_DIR=$PWD
 if [[ -z "$TRAVIS_BUILD_DIR" && "$TRAVIS_BUILD_DIR" -ne "" ]]; then
-	BUILD_DIR=$TRAVIS_BUILD_DIR
+  BUILD_DIR=$TRAVIS_BUILD_DIR
 fi
+
+export PATH=$BUILD_DIR/gradle/bin:$PATH
 
 function finish {
   last_result=$?
@@ -90,11 +90,11 @@ build_es() {
   git clone https://github.com/elastic/elasticsearch.git es_src
   cd es_src
   gradle :distribution:zip:assemble
-  unzip -d $TRAVIS_BUILD_DIR distribution/zip/build/distributions/elasticsearch-*.zip
-  mv $TRAVIS_BUILD_DIR/elasticsearch-* $TRAVIS_BUILD_DIR/elasticsearch
-  cd $TRAVIS_BUILD_DIR
+  unzip -d $BUILD_DIR distribution/zip/build/distributions/elasticsearch-*.zip
+  mv $BUILD_DIR/elasticsearch-* $BUILD_DIR/elasticsearch
+  cd $BUILD_DIR
   mkdir -p elasticsearch/config/scripts
-  cp $TRAVIS_BUILD_DIR/spec/fixtures/scripts/painless/* elasticsearch/config/scripts
+  cp $BUILD_DIR/spec/fixtures/scripts/painless/* elasticsearch/config/scripts
 }
 
 start_nginx() {
