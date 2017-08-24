@@ -18,7 +18,7 @@ module LogStash; module Outputs; class ElasticSearch;
     def register
       @stopping = Concurrent::AtomicBoolean.new(false)
       # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
-      @dlq_writer = supports_dlq? ? execution_context.dlq_writer : nil
+      @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
 
       setup_hosts # properly sets @hosts
       build_client
@@ -280,8 +280,11 @@ module LogStash; module Outputs; class ElasticSearch;
       end
     end
 
-    def supports_dlq?
-      respond_to?(:execution_context) && execution_context.respond_to?(:dlq_writer)
+    def dlq_enabled?
+      # TODO there should be a better way to query if DLQ is enabled
+      # See more in: https://github.com/elastic/logstash/issues/8064
+      respond_to?(:execution_context) && execution_context.respond_to?(:dlq_writer) &&
+        !execution_context.dlq_writer.inner_writer.is_a?(::LogStash::Util::DummyDeadLetterQueueWriter)
     end
   end
 end; end; end
