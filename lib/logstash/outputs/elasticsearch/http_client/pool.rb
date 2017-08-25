@@ -238,7 +238,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         begin
           logger.info("Running health check to see if an Elasticsearch connection is working",
                         :healthcheck_url => url, :path => @healthcheck_path)
-          response = perform_request_to_url(url, :get, @healthcheck_path)
+          response = perform_request_to_url(url, :head, @healthcheck_path)
           # If no exception was raised it must have succeeded!
           logger.warn("Restored connection to ES instance", :url => url.sanitized.to_s)
           # We reconnected to this node, check its ES version
