@@ -107,6 +107,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @state_mutex.synchronize { @url_info }
     end
 
+    def connected_es_versions
+      @state_mutex.synchronize do
+        @url_info.values.select {|v| v[:state] == :alive }.map {|v| v[:version] }
+      end
+    end
+
     def urls
       url_info.keys
     end
@@ -154,7 +160,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     ES2_SNIFF_RE_URL  = /([^\/]*)?\/?([^:]*):([0-9]+)/
     # Sniffs and returns the results. Does not update internal URLs!
     def check_sniff
-      _, resp = perform_request(:get, @sniffing_path)
+      _, url_meta, resp = perform_request(:get, @sniffing_path)
       parsed = LogStash::Json.load(resp.body)
       
       nodes = parsed['nodes']
@@ -162,12 +168,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         @logger.warn("Sniff returned no nodes! Will not update hosts.")
         return nil
       else
-        case major_version(nodes)
+        case major_version(url_meta[:version])
         when 5, 6
           sniff_5x_and_above(nodes)
-        when 2
-          sniff_2x_1x(nodes)
-        when 1
+        when 2, 1
           sniff_2x_1x(nodes)
         else
           @logger.warn("Could not determine version for nodes in ES cluster!")
@@ -176,8 +180,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
     end
     
-    def major_version(nodes)
-      k,v = nodes.first; v['version'].split('.').first.to_i
+    def major_version(version_string)
+      version_string.split('.').first.to_i
     end
     
     def sniff_5x_and_above(nodes)
@@ -234,10 +238,15 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         begin
           logger.info("Running health check to see if an Elasticsearch connection is working",
                         :healthcheck_url => url, :path => @healthcheck_path)
-          response = perform_request_to_url(url, :head, @healthcheck_path)
+          response = perform_request_to_url(url, :get, @healthcheck_path)
           # If no exception was raised it must have succeeded!
           logger.warn("Restored connection to ES instance", :url => url.sanitized.to_s)
-          @state_mutex.synchronize { meta[:state] = :alive }
+          # We reconnected to this node, check its ES version
+          es_version = get_es_version(url)
+          @state_mutex.synchronize do
+            meta[:version] = es_version
+            meta[:state] = :alive
+          end
         rescue HostUnreachableError, BadResponseCodeError => e
           logger.warn("Attempted to resurrect connection to dead ES instance, but got an error.", url: url.sanitized.to_s, error_type: e.class, error: e.message)
         end
@@ -253,15 +262,16 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def perform_request(method, path, params={}, body=nil)
-      with_connection do |url|
+      with_connection do |url, url_meta|
         resp = perform_request_to_url(url, method, path, params, body)
-        [url, resp]
+        [url, url_meta, resp]
       end
     end
 
     [:get, :put, :post, :delete, :patch, :head].each do |method|
       define_method(method) do |path, params={}, body=nil|
-        perform_request(method, path, params, body)
+        _, _, response = perform_request(method, path, params, body)
+        response
       end
     end
 
@@ -323,8 +333,13 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @state_mutex.synchronize { @url_info.size }
     end
 
+    def es_versions
+      @state_mutex.synchronize { @url_info.size }
+    end
+
     def add_url(url)
       @url_info[url] ||= empty_url_meta
+      @url_info[url][:version] = get_es_version(url)
     end
 
     def remove_url(url)
@@ -344,7 +359,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # Custom error class used here so that users may retry attempts if they receive this error
       # should they choose to
       raise NoConnectionAvailableError, "No Available connections" unless url
-      yield url
+      yield url, url_meta
     rescue HostUnreachableError => e
       # Mark the connection as dead here since this is likely not transient
       mark_dead(url, e)
@@ -414,6 +429,11 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           @url_info[url][:in_use] -= 1
         end
       end
+    end
+
+    def get_es_version(url)
+      request = perform_request_to_url(url, :get, ROOT_URI_PATH)
+      LogStash::Json.load(request.body)["version"]["number"]
     end
   end
 end; end; end; end;

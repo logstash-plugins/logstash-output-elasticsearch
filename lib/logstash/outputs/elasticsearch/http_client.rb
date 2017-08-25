@@ -82,9 +82,8 @@ module LogStash; module Outputs; class ElasticSearch;
       template_put(name, template)
     end
 
-    def get_version
-      url, response = @pool.get("")
-      LogStash::Json.load(response.body)["version"]
+    def connected_es_versions
+      @pool.connected_es_versions
     end
 
     def bulk(actions)
@@ -137,7 +136,7 @@ module LogStash; module Outputs; class ElasticSearch;
     def bulk_send(body_stream)
       params = http_compression ? {:headers => {"Content-Encoding" => "gzip"}} : {}
       # Discard the URL 
-      _, response = @pool.post(@bulk_path, params, body_stream.string)
+      response = @pool.post(@bulk_path, params, body_stream.string)
       if !body_stream.closed?
         body_stream.truncate(0)
         body_stream.seek(0)
@@ -153,12 +152,12 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def get(path)
-      url, response = @pool.get(path, nil)
+      response = @pool.get(path, nil)
       LogStash::Json.load(response.body)
     end
 
     def post(path, params = {}, body_string)
-      url, response = @pool.post(path, params, body_string)
+      response = @pool.post(path, params, body_string)
       LogStash::Json.load(response.body)
     end
 
@@ -329,15 +328,14 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def template_exists?(name)
-      url, response = @pool.head("/_template/#{name}")
+      response = @pool.head("/_template/#{name}")
       response.code >= 200 && response.code <= 299
     end
 
     def template_put(name, template)
       path = "_template/#{name}"
       logger.info("Installing elasticsearch template to #{path}")
-      url, response = @pool.put(path, nil, LogStash::Json.dump(template))
-      response
+      @pool.put(path, nil, LogStash::Json.dump(template))
     end
 
     # Build a bulk item for an elasticsearch update action

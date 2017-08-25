@@ -12,12 +12,10 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     private
-    def self.get_es_version(client)
-      client.get_version
-    end
-
     def self.get_es_major_version(client)
-      get_es_version(client)["number"][0]
+      # get the elasticsearch version of each node in the pool and
+      # pick the biggest major version
+      client.connected_es_versions.uniq.map {|version| version.split(".").first.to_i}.sort.last
     end
 
     def self.get_template(path, es_major_version)
