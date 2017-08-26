@@ -339,7 +339,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
     def add_url(url)
       @url_info[url] ||= empty_url_meta
-      @url_info[url][:version] = get_es_version(url)
     end
 
     def remove_url(url)
