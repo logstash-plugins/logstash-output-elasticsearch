@@ -132,7 +132,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     }
 
     it "returns the hash response" do
-      expect(subject.pool).to receive(:get).with(path, nil).and_return([nil, get_response])
+      expect(subject.pool).to receive(:get).with(path, nil).and_return(get_response)
       expect(subject.get(path)["body"]).to eq(body)
     end
   end
