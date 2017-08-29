@@ -21,6 +21,9 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
     allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
 
+    allow(subject).to receive(:connected_es_versions).with(any_args).and_return(["0.0.0"])
+    allow(subject).to receive(:get_es_version).with(any_args).and_return("0.0.0")
+
     subject.start
   end
 
