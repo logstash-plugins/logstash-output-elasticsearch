@@ -10,9 +10,11 @@ if ESHelper.es_version_satisfies?(">= 5")
         "index" => "logstash-update",
         "template_overwrite" => true,
         "hosts" => get_host_port(),
-        "action" => "update",
-        "script_lang" => "painless"
+        "action" => "update"
       }
+      if ESHelper.es_version_satisfies?('<6')
+        settings.merge!({"script_lang" => "painless"})
+      end
       LogStash::Outputs::ElasticSearch.new(settings.merge!(options))
     end
 
@@ -53,7 +55,6 @@ if ESHelper.es_version_satisfies?(">= 5")
         subject = get_es_output({
           'document_id' => "123",
           'script' => 'ctx._source.counter += params.event.counter',
-          'script_lang' => 'painless',
           'script_type' => 'inline'
         })
         subject.register
@@ -67,7 +68,6 @@ if ESHelper.es_version_satisfies?(">= 5")
           'document_id' => "123",
           'doc_as_upsert' => true,
           'script' => 'if( ctx._source.containsKey("counter") ){ ctx._source.counter += params.event.counter; } else { ctx._source.counter = params.event.counter; }',
-          'script_lang' => 'painless',
           'script_type' => 'inline'
         })
         subject.register
@@ -81,7 +81,6 @@ if ESHelper.es_version_satisfies?(">= 5")
           'document_id' => "456",
           'doc_as_upsert' => true,
           'script' => 'if( ctx._source.containsKey("counter") ){ ctx._source.counter += params.event.counter; } else { ctx._source.counter = params.event.counter; }',
-          'script_lang' => 'painless',
           'script_type' => 'inline'
         })
         subject.register
@@ -95,7 +94,6 @@ if ESHelper.es_version_satisfies?(">= 5")
         subject = get_es_output({
           'document_id' => "123",
           'script' => 'indexed_update',
-          'script_lang' => 'painless',
           'script_type' => 'indexed'
         })
         subject.register
