@@ -1,6 +1,6 @@
 require_relative "../../../spec/es_spec_helper"
 
-if ESHelper.es_version_satisfies?(">= 2")
+if ESHelper.es_version_satisfies?('>= 2', '< 6')
   describe "Update actions using groovy scripts", :integration => true, :update_tests => 'groovy' do
     require "logstash/outputs/elasticsearch"
 
