@@ -135,21 +135,44 @@ if ESHelper.es_version_satisfies?(">= 5")
     end
 
     context "updates with scripted upsert" do
-      it "should create new documents with upsert content" do
-        subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_update', 'upsert' => '{"message": "upsert message"}', 'script_type' => 'file' })
-        subject.register
-        subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-        r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-        insist { r["_source"]["message"] } == 'upsert message'
+      if ESHelper.es_version_satisfies?('<6')
+        context 'with file based scripts' do
+          it "should create new documents with upsert content" do
+            subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_update', 'upsert' => '{"message": "upsert message"}', 'script_type' => 'file' })
+            subject.register
+            subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
+            r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+            insist { r["_source"]["message"] } == 'upsert message'
+          end
+
+          it "should create new documents with event/doc as script params" do
+            subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_upsert', 'scripted_upsert' => true, 'script_type' => 'file' })
+            subject.register
+            subject.multi_receive([LogStash::Event.new("counter" => 1)])
+            @es.indices.refresh
+            r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+            insist { r["_source"]["counter"] } == 1
+          end
+        end
       end
 
-      it "should create new documents with event/doc as script params" do
-        subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_upsert', 'scripted_upsert' => true, 'script_type' => 'file' })
-        subject.register
-        subject.multi_receive([LogStash::Event.new("counter" => 1)])
-        @es.indices.refresh
-        r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
-        insist { r["_source"]["counter"] } == 1
+      context 'with an inline script' do
+        it "should create new documents with upsert content" do
+          subject = get_es_output({ 'document_id' => "456", 'script' => 'ctx._source.counter = params.event.counter', 'upsert' => '{"message": "upsert message"}', 'script_type' => 'inline' })
+          subject.register
+          subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
+          r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+          insist { r["_source"]["message"] } == 'upsert message'
+        end
+
+        it "should create new documents with event/doc as script params" do
+          subject = get_es_output({ 'document_id' => "456", 'script' => 'ctx._source.counter = params.event.counter', 'scripted_upsert' => true, 'script_type' => 'inline' })
+          subject.register
+          subject.multi_receive([LogStash::Event.new("counter" => 1)])
+          @es.indices.refresh
+          r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+          insist { r["_source"]["counter"] } == 1
+        end
       end
     end
   end
