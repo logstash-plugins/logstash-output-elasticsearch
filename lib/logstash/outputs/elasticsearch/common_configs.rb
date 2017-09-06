@@ -12,11 +12,9 @@ module LogStash; module Outputs; class ElasticSearch
       # Joda formats are defined http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html[here].
       mod.config :index, :validate => :string, :default => "logstash-%{+YYYY.MM.dd}"
 
-      # The document type to write events to. Generally you should try to write only
-      # similar events to the same 'type'. String expansion `%{foo}` works here.
-      # Unless you set 'document_type', the event 'type' will be used if it exists
-      # otherwise the document type will be assigned the value of 'logs'
-      mod.config :document_type, :validate => :string
+      mod.config :document_type, 
+        :validate => :string, 
+        :deprecated => "Elasticsearch 6.0 no longer supports multiple document types per index. This setting will be removed in the next major release."
 
       # From Logstash 1.3 onwards, a template is applied to Elasticsearch during
       # Logstash's startup if one with the name `template_name` does not already exist.
