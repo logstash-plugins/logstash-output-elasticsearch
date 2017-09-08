@@ -1,3 +1,6 @@
+## 7.4.3
+  - Docs: Add DLQ policy section
+
 ## 7.4.2
   - Use `#response_body` instead of `#body` when debugging response from the server #679
 
