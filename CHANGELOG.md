@@ -1,3 +1,6 @@
+## 8.1.2
+  - Docs: Add DLQ policy section
+
 ## 8.1.1
   - Retry all non-200 responses of the bulk API indefinitely
   - Improve documentation on retry codes
