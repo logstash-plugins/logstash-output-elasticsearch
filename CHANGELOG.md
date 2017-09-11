@@ -1,13 +1,17 @@
+## 8.2.1
+  - Docs: Fix link syntax
+
 ## 8.2.0
   - Improved Elasticsearch version handling
   - Improved event error logging when DLQ is disabled in Logstash
-
+  
 ## 8.1.1
   - Retry all non-200 responses of the bulk API indefinitely
   - Improve documentation on retry codes
 
 ## 8.1.0
   - Support Elasticsearch 6.x join field type
+  
 ## 8.0.2
   - Fix bug where logging errors for bad response codes would raise an unhandled exception
 
