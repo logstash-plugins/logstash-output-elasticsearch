@@ -1,5 +1,9 @@
-## 8.1.2
+## 8.2.1
   - Docs: Add DLQ policy section
+
+## 8.2.0
+  - Improved Elasticsearch version handling
+  - Improved event error logging when DLQ is disabled in Logstash
 
 ## 8.1.1
   - Retry all non-200 responses of the bulk API indefinitely
