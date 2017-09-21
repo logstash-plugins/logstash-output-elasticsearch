@@ -1,3 +1,6 @@
+## 8.2.1
+  - Docs: Add DLQ policy section
+
 ## 8.2.0
   - Improved Elasticsearch version handling
   - Improved event error logging when DLQ is disabled in Logstash

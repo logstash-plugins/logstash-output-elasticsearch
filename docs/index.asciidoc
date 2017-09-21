@@ -23,7 +23,7 @@ include::{include_path}/plugin_header.asciidoc[]
 .Compatibility Note
 [NOTE]
 ================================================================================
-Starting with Elasticsearch 5.3, there's an {ref}modules-http.html[HTTP setting]
+Starting with Elasticsearch 5.3, there's an {ref}/modules-http.html[HTTP setting]
 called `http.content_type.required`. If this option is set to `true`, and you
 are using Logstash 2.4 through 5.2, you need to update the Elasticsearch output
 plugin to version 6.2.5 or higher.
@@ -41,14 +41,17 @@ to upgrade Logstash in lock-step.
 You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
 
 ==== Template management for Elasticsearch 5.x
+
 Index template for this version (Logstash 5.0) has been changed to reflect Elasticsearch's mapping changes in version 5.0.
 Most importantly, the subfield for string multi-fields has changed from `.raw` to `.keyword` to match ES default
 behavior.
 
-** Users installing ES 5.x and LS 5.x **
+**Users installing ES 5.x and LS 5.x**
+
 This change will not affect you and you will continue to use the ES defaults.
 
-** Users upgrading from LS 2.x to LS 5.x with ES 5.x **
+**Users upgrading from LS 2.x to LS 5.x with ES 5.x**
+
 LS will not force upgrade the template, if `logstash` template already exists. This means you will still use
 `.raw` for sub-fields coming from 2.x. If you choose to use the new template, you will have to reindex your data after
 the new template is installed.
@@ -63,13 +66,27 @@ request are handled differently than error codes for individual documents.
 HTTP requests to the bulk API are expected to return a 200 response code. All other response codes are retried indefinitely.
 
 The following document errors are handled as follows:
-- 400 and 404 errors are sent to the DLQ if enabled. If a DLQ is not enabled a log message will be emitted and the event will be dropped.
-- 409 errors (conflict) are logged as a warning and dropped. 
+
+* 400 and 404 errors are sent to the dead letter queue (DLQ), if enabled. If a DLQ is not enabled, a log message will be emitted, and the event will be dropped. See <<dlq-policy>> for more info.
+* 409 errors (conflict) are logged as a warning and dropped. 
 
 Note that 409 exceptions are no longer retried. Please set a higher `retry_on_conflict` value if you experience 409 exceptions.
 It is more performant for Elasticsearch to retry these exceptions than this plugin.
 
-==== Batch Sizes ====
+[[dlq-policy]]
+==== DLQ Policy
+
+Mapping (404) errors from Elasticsearch can lead to data loss. Unfortunately
+mapping errors cannot be handled without human intervention and without looking
+at the field that caused the mapping mismatch. If the DLQ is enabled, the
+original events causing the mapping errors are stored in a file that can be
+processed at a later time. Often times, the offending field can be removed and
+re-indexed to Elasticsearch. If the DLQ is not enabled, and a mapping error
+happens, the problem is logged as a warning, and the event is dropped. See
+<<dead-letter-queues>> for more information about processing events in the DLQ.
+
+==== Batch Sizes
+
 This plugin attempts to send batches of events as a single request. However, if
 a request exceeds 20MB we will break it up until multiple batch requests. If a single document exceeds 20MB it will be sent as a single request.
 
