@@ -1,8 +1,7 @@
-## 7.4.3
-  - Docs: Add DLQ policy section
-
 ## 7.4.2
   - Use `#response_body` instead of `#body` when debugging response from the server #679
+  - Docs: Add DLQ policy section
+  - Fix passing of String instead of SafeURI to BadURIError
 
 ## 7.4.1
   - Properly detect if DLQ is supported and enabled
