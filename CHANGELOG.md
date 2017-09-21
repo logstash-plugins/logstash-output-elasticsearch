@@ -1,3 +1,6 @@
+## 7.4.2
+  - Use `#response_body` instead of `#body` when debugging response from the server #679
+
 ## 7.4.1
   - Properly detect if DLQ is supported and enabled
 
