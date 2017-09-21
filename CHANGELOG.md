@@ -1,3 +1,6 @@
+## 7.4.1
+  - Properly detect if DLQ is supported and enabled
+
 ## 7.4.0
   - Retry all non-200 responses of the bulk API indefinitely
   - Improve documentation on retry codes
