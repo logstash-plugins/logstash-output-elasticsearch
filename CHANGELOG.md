@@ -1,3 +1,6 @@
+## 7.4.2
+  - Fix bug where logging errors for bad response codes would raise an unhandled exception
+
 ## 7.4.1
   - Properly detect if DLQ is supported and enabled
 
@@ -7,6 +10,19 @@
 
 ##  7.3.8
  - Fix bug where java class names were logged rather than actual host names in various scenarios
+
+## 8.0.2
+  - Fix bug where logging errors for bad response codes would raise an unhandled exception
+
+## 8.0.1
+  - Fix some documentation issues
+
+## 8.0.0
+ - Breaking: make deprecated options :flush_size and :idle_flush_time obsolete
+ - Remove obsolete options :max_retries and :retry_max_items
+ - Fix: handling of initial single big event
+ - Fix: typo was enabling http compression by default this returns it back to false
+>>>>>>> a4e18a8... Fix error in instantiating bad response code exceptions
 
 ## 7.3.7
  - Properly support characters needing escaping in users / passwords across multiple SafeURI implementions (pre/post LS 5.5.1)

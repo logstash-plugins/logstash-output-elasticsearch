@@ -66,7 +66,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
       request_uri = format_url(url, path)
 
-      resp = @manticore.send(method.downcase, request_uri, params)
+      resp = @manticore.send(method.downcase, request_uri.to_s, params)
 
       # Manticore returns lazy responses by default
       # We want to block for our usage, this will wait for the repsonse
@@ -106,7 +106,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       
       request_uri.path = "#{request_uri.path}/#{parsed_path_and_query.path}".gsub(/\/{2,}/, "/")
         
-      request_uri.to_s
+      request_uri
     end
 
     def close
