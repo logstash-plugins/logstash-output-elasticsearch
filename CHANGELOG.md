@@ -1,3 +1,6 @@
+### 8.2.2
+  - Use `#response_body` instead of `#body` when debugging response from the server #679
+
 ## 8.2.1
   - Docs: Add DLQ policy section
 
