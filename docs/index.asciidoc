@@ -477,7 +477,8 @@ Set script name for scripted update mode
   * Value type is <<string,string>>
   * Default value is `"painless"`
 
-Set the language of the used script. If not set, this defaults to painless in ES 5.0
+Set the language of the used script. If not set, this defaults to painless in ES 5.0.
+When using indexed (stored) scripts on Elasticsearch 6 and higher, you must set this parameter to `""` (empty string).
 
 [id="plugins-{type}s-{plugin}-script_type"]
 ===== `script_type` 
