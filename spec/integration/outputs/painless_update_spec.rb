@@ -96,9 +96,9 @@ if ESHelper.es_version_satisfies?(">= 5")
       context 'with an indexed script' do
         it "should increment a counter with event/doc 'count' variable with indexed script" do
           if ESHelper.es_version_satisfies?('<6')
-            @es.perform_request(:put, "_scripts/painless/indexed_update", {}, {"script": "ctx._source.counter += params.event.count"})
+            @es.perform_request(:put, "_scripts/painless/indexed_update", {}, {"script" => "ctx._source.counter += params.event.count" })
           else
-            @es.perform_request(:put, "_scripts/indexed_update", {}, {"script": {"source":"ctx._source.counter += params.event.count", "lang": "painless"}})
+            @es.perform_request(:put, "_scripts/indexed_update", {}, {"script" => {"source" => "ctx._source.counter += params.event.count", "lang" => "painless"}})
           end
 
           plugin_parameters = {
