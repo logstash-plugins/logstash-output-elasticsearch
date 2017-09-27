@@ -93,20 +93,29 @@ if ESHelper.es_version_satisfies?(">= 5")
         insist { r["_source"]["counter"] } == 3
       end
 
-      if ESHelper.es_version_satisfies?('<6')
-        context 'with an indexed script' do
-          it "should increment a counter with event/doc 'count' variable with indexed script" do
-            @es.put_script lang: 'painless', id: 'indexed_update', body: { script: 'ctx._source.counter += params.event.count' }
-            subject = get_es_output({
-              'document_id' => "123",
-              'script' => 'indexed_update',
-              'script_type' => 'indexed'
-            })
-            subject.register
-            subject.multi_receive([LogStash::Event.new("count" => 4 )])
-            r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
-            insist { r["_source"]["counter"] } == 5
+      context 'with an indexed script' do
+        it "should increment a counter with event/doc 'count' variable with indexed script" do
+          if ESHelper.es_version_satisfies?('<6')
+            @es.perform_request(:put, "_scripts/painless/indexed_update", {}, {"script" => "ctx._source.counter += params.event.count" })
+          else
+            @es.perform_request(:put, "_scripts/indexed_update", {}, {"script" => {"source" => "ctx._source.counter += params.event.count", "lang" => "painless"}})
           end
+
+          plugin_parameters = {
+            'document_id' => "123",
+            'script' => 'indexed_update',
+            'script_type' => 'indexed'
+          }
+
+          if ESHelper.es_version_satisfies?('>= 6.0.0')
+            plugin_parameters.merge!('script_lang' => '')
+          end
+
+          subject = get_es_output(plugin_parameters)
+          subject.register
+          subject.multi_receive([LogStash::Event.new("count" => 4 )])
+          r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
+          insist { r["_source"]["counter"] } == 5
         end
       end
      end
