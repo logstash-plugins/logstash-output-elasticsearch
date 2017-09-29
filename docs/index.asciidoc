@@ -243,7 +243,7 @@ It will be removed in the next major version of Logstash.
 This sets the document type to write events to. Generally you should try to write only
 similar events to the same 'type'. String expansion `%{foo}` works here.
 Unless you set 'document_type', the event 'type' will be used if it exists
-otherwise the document type will be assigned the value of 'logs'
+otherwise the document type will be assigned the value of 'doc'.
 
 [id="plugins-{type}s-{plugin}-failure_type_logging_whitelist"]
 ===== `failure_type_logging_whitelist` 
