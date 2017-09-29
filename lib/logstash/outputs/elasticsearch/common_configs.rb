@@ -14,7 +14,7 @@ module LogStash; module Outputs; class ElasticSearch
 
       mod.config :document_type, 
         :validate => :string, 
-        :deprecated => "Elasticsearch 6.0 no longer supports multiple document types per index. This setting will be removed in the next major release."
+        :deprecated => "Document types are being deprecated in Elasticsearch 6.0, and removed entirely in 7.0. You should avoid this feature"
 
       # From Logstash 1.3 onwards, a template is applied to Elasticsearch during
       # Logstash's startup if one with the name `template_name` does not already exist.
