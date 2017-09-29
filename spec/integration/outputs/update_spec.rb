@@ -24,7 +24,7 @@ if ESHelper.es_version_satisfies?(">= 2")
       @es.indices.delete(:index => "*") rescue nil
       @es.index(
         :index => 'logstash-update',
-        :type => 'logs',
+        :type => 'doc',
         :id => "123",
         :body => { :message => 'Test', :counter => 1 }
       )
@@ -41,14 +41,14 @@ if ESHelper.es_version_satisfies?(">= 2")
         subject = get_es_output({ 'document_id' => "456" } )
         subject.register
         subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-        expect {@es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+        expect {@es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
       end
 
       it "should update existing document" do
         subject = get_es_output({ 'document_id' => "123" })
         subject.register
         subject.multi_receive([LogStash::Event.new("message" => "updated message here")])
-        r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
+        r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "123", :refresh => true)
         insist { r["_source"]["message"] } == 'updated message here'
       end
 
@@ -58,7 +58,7 @@ if ESHelper.es_version_satisfies?(">= 2")
         subject = get_es_output({ 'document_id' => "123" })
         subject.register
         subject.multi_receive([LogStash::Event.new("data" => "updated message here", "message" => "foo")])
-        r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
+        r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "123", :refresh => true)
         insist { r["_source"]["data"] } == 'updated message here'
         insist { r["_source"]["message"] } == 'foo'
       end
@@ -95,7 +95,7 @@ if ESHelper.es_version_satisfies?(">= 2")
         subject = get_es_output({ 'document_id' => "456", 'upsert' => '{"message": "upsert message"}' })
         subject.register
         subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-        r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+        r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
         insist { r["_source"]["message"] } == 'upsert message'
       end
 
@@ -103,7 +103,7 @@ if ESHelper.es_version_satisfies?(">= 2")
         subject = get_es_output({ 'document_id' => "456", 'doc_as_upsert' => true })
         subject.register
         subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-        r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+        r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
         insist { r["_source"]["message"] } == 'sample message here'
       end
 

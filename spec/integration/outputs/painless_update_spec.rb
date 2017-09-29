@@ -27,7 +27,7 @@ if ESHelper.es_version_satisfies?(">= 5")
       @es.indices.delete(:index => "*") rescue nil
       @es.index(
         :index => 'logstash-update',
-        :type => 'logs',
+        :type => 'doc',
         :id => "123",
         :body => { :message => 'Test', :counter => 1 }
       )
@@ -41,7 +41,7 @@ if ESHelper.es_version_satisfies?(">= 5")
             subject = get_es_output({ 'document_id' => "123", 'script' => 'scripted_update', 'script_type' => 'file' })
             subject.register
             subject.multi_receive([LogStash::Event.new("count" => 2)])
-            r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
+            r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "123", :refresh => true)
             insist { r["_source"]["counter"] } == 3
           end
 
@@ -49,7 +49,7 @@ if ESHelper.es_version_satisfies?(">= 5")
             subject = get_es_output({ 'document_id' => "123", 'script' => 'scripted_update_nested', 'script_type' => 'file' })
             subject.register
             subject.multi_receive([LogStash::Event.new("data" => { "count" => 3 })])
-            r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
+            r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "123", :refresh => true)
             insist { r["_source"]["counter"] } == 4
           end
         end
@@ -63,7 +63,7 @@ if ESHelper.es_version_satisfies?(">= 5")
         })
         subject.register
         subject.multi_receive([LogStash::Event.new("counter" => 3 )])
-        r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
+        r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "123", :refresh => true)
         insist { r["_source"]["counter"] } == 4
       end
 
@@ -76,7 +76,7 @@ if ESHelper.es_version_satisfies?(">= 5")
         })
         subject.register
         subject.multi_receive([LogStash::Event.new("counter" => 3 )])
-        r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
+        r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "123", :refresh => true)
         insist { r["_source"]["counter"] } == 4
       end
 
@@ -89,7 +89,7 @@ if ESHelper.es_version_satisfies?(">= 5")
         })
         subject.register
         subject.multi_receive([LogStash::Event.new("counter" => 3 )])
-        r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+        r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
         insist { r["_source"]["counter"] } == 3
       end
 
@@ -114,7 +114,7 @@ if ESHelper.es_version_satisfies?(">= 5")
           subject = get_es_output(plugin_parameters)
           subject.register
           subject.multi_receive([LogStash::Event.new("count" => 4 )])
-          r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "123", :refresh => true)
+          r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "123", :refresh => true)
           insist { r["_source"]["counter"] } == 5
         end
       end
@@ -125,7 +125,7 @@ if ESHelper.es_version_satisfies?(">= 5")
         subject = get_es_output({ 'document_id' => "456", 'upsert' => '{"message": "upsert message"}' })
         subject.register
         subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-        r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+        r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
         insist { r["_source"]["message"] } == 'upsert message'
       end
 
@@ -133,7 +133,7 @@ if ESHelper.es_version_satisfies?(">= 5")
         subject = get_es_output({ 'document_id' => "456", 'doc_as_upsert' => true })
         subject.register
         subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-        r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+        r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
         insist { r["_source"]["message"] } == 'sample message here'
       end
 
@@ -150,7 +150,7 @@ if ESHelper.es_version_satisfies?(">= 5")
             subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_update', 'upsert' => '{"message": "upsert message"}', 'script_type' => 'file' })
             subject.register
             subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-            r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+            r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
             insist { r["_source"]["message"] } == 'upsert message'
           end
 
@@ -159,7 +159,7 @@ if ESHelper.es_version_satisfies?(">= 5")
             subject.register
             subject.multi_receive([LogStash::Event.new("counter" => 1)])
             @es.indices.refresh
-            r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+            r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
             insist { r["_source"]["counter"] } == 1
           end
         end
@@ -170,7 +170,7 @@ if ESHelper.es_version_satisfies?(">= 5")
           subject = get_es_output({ 'document_id' => "456", 'script' => 'ctx._source.counter = params.event.counter', 'upsert' => '{"message": "upsert message"}', 'script_type' => 'inline' })
           subject.register
           subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-          r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+          r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
           insist { r["_source"]["message"] } == 'upsert message'
         end
 
@@ -179,7 +179,7 @@ if ESHelper.es_version_satisfies?(">= 5")
           subject.register
           subject.multi_receive([LogStash::Event.new("counter" => 1)])
           @es.indices.refresh
-          r = @es.get(:index => 'logstash-update', :type => 'logs', :id => "456", :refresh => true)
+          r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
           insist { r["_source"]["counter"] } == 1
         end
       end

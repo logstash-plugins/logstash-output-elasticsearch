@@ -37,8 +37,8 @@ describe "outputs/elasticsearch" do
     end
     
     describe "getting a document type" do
-      it "should default to 'logs'" do
-        expect(eso.send(:get_event_type, LogStash::Event.new)).to eql("logs")
+      it "should default to 'doc'" do
+        expect(eso.send(:get_event_type, LogStash::Event.new)).to eql("doc")
       end
 
       it "should get the type from the event if nothing else specified in the config" do

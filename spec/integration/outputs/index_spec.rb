@@ -113,8 +113,8 @@ describe "indexing" do
     it_behaves_like("an indexer")
   end
 
-  describe "an indexer with no type value set (default to logs)", :integration => true do
-    let(:type) { "logs" }
+  describe "an indexer with no type value set (default to doc)", :integration => true do
+    let(:type) { "doc" }
     let(:config) {
       {
         "hosts" => get_host_port,
