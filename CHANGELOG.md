@@ -1,3 +1,7 @@
+### 9.0.0
+  - Change default document type to 'doc' from 'logs' to align with beats and reflect the generic nature of logstash.
+  - Deprecate 'document_type' option
+
 ### 8.2.2
   - Use `#response_body` instead of `#body` when debugging response from the server #679
 
