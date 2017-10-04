@@ -247,7 +247,7 @@ module LogStash; module Outputs; class ElasticSearch;
         sleep_interval = next_sleep_interval(sleep_interval)
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-        log_hash = {:code => e.response_code, :url => e.url.sanitized.to_s}
+        log_hash = {:code => e.response_code, :url => e.url.to_s}
         log_hash[:body] = e.response_body if @logger.debug? # Generally this is too verbose
         message = "Encountered a retryable error. Will Retry with exponential backoff "
 
