@@ -516,11 +516,8 @@ if enabled, script is in charge of creating non-existent document (scripted upda
   * Value type is <<boolean,boolean>>
   * Default value is `false`
 
-This setting asks Elasticsearch for the list of all cluster nodes and adds them to the hosts list.
-Note: This will return ALL nodes with HTTP enabled (including master nodes!). If you use
-this with master nodes, you probably want to disable HTTP on them by setting
-`http.enabled` to false in their elasticsearch.yml. You can either use the `sniffing` option or
-manually enter multiple Elasticsearch hosts using the `hosts` parameter.
+This setting asks Elasticsearch for the list of all cluster nodes and adds the data serving nodes to the hosts list.
+Note: This will skip nodes that do not have the data role enabled (ie. master only nodes).
 
 [id="plugins-{type}s-{plugin}-sniffing_delay"]
 ===== `sniffing_delay` 
