@@ -186,6 +186,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     
     def sniff_5x_and_above(nodes)
       nodes.map do |id,info|
+        # Only connect to nodes that serve data
+        # this will skip connecting to coordinating, ingest, tribe, and master only nodes
+        next if info["roles"] && !info["roles"].include?("data")
+
         if info["http"]
           uri = LogStash::Util::SafeURI.new(info["http"]["publish_address"])
         end
