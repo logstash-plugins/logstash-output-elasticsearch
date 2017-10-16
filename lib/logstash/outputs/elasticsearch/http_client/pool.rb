@@ -186,6 +186,9 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     
     def sniff_5x_and_above(nodes)
       nodes.map do |id,info|
+        # Skip master-only nodes
+        next if info["roles"] && info["roles"] == ["master"]
+
         if info["http"]
           uri = LogStash::Util::SafeURI.new(info["http"]["publish_address"])
         end

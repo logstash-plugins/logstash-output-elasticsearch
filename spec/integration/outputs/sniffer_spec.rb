@@ -10,38 +10,91 @@ describe "pool sniffer", :integration => true do
   let(:options) { {:resurrect_delay => 2, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
 
   subject { LogStash::Outputs::ElasticSearch::HttpClient::Pool.new(logger, adapter, initial_urls, options) }
-  
-  before do
-    subject.start
-  end
-  
-  shared_examples("sniff parsing") do |check_exact|
-    it "should execute a sniff without error" do
-      expect { subject.check_sniff }.not_to raise_error
-    end
 
-    it "should return the correct sniff URL list" do
-      uris = subject.check_sniff
-      
-      # ES 1.x returned the public hostname by default. This is hard to approximate
-      # so for ES1.x we don't check the *exact* hostname
-      if check_exact
-        expect(uris).to include(::LogStash::Util::SafeURI.new("//#{get_host_port}"))
-      else
+  describe("Simple sniff parsing")  do
+    before(:each) { subject.start }
+
+    context "with single node" do
+      it "should execute a sniff without error" do
+        expect { subject.check_sniff }.not_to raise_error
+      end
+
+      it "should return single sniff URL" do
+        uris = subject.check_sniff
+
         expect(uris.size).to eq(1)
+      end
+
+      it "should return the correct sniff URL" do
+        if ESHelper.es_version_satisfies?(">= 2")
+          # We do a more thorough check on these versions because we can more reliably guess the ip
+          uris = subject.check_sniff
+
+          expect(uris).to include(::LogStash::Util::SafeURI.new("//#{get_host_port}"))
+        else
+          # ES 1.x returned the public hostname by default. This is hard to approximate
+          # so for ES1.x we don't check the *exact* hostname
+          skip
+        end
       end
     end
   end
-  
-  describe("Simple sniff parsing")  do
-    include_examples("sniff parsing", false)
-  end
-  
-  # We do a more thorough check on these versions because we can more reliably guess the ip
 
-  if ESHelper.es_version_satisfies?(">= 2")
-    describe("Complex sniff parsing ES 6x/5x/2x") do
-      include_examples("sniff parsing", true)
+  if ESHelper.es_version_satisfies?("<= 2")
+    describe("Complex sniff parsing ES 2x/1x") do
+      before(:each) do
+        response_double = double("_nodes/http", body: File.read("spec/fixtures/_nodes/2x_1x.json"))
+        allow(subject).to receive(:perform_request).and_return([nil, { version: "2.0" }, response_double])
+        subject.start
+      end
+
+      context "with multiple nodes but single http-enabled data node" do
+        it "should execute a sniff without error" do
+          expect { subject.check_sniff }.not_to raise_error
+        end
+
+        it "should return one sniff URL" do
+          uris = subject.check_sniff
+
+          expect(uris.size).to eq(1)
+        end
+
+        it "should return the correct sniff URL" do
+          if ESHelper.es_version_satisfies?(">= 2")
+            # We do a more thorough check on these versions because we can more reliably guess the ip
+            uris = subject.check_sniff
+
+            expect(uris).to include(::LogStash::Util::SafeURI.new("http://localhost:9201"))
+          else
+            # ES 1.x returned the public hostname by default. This is hard to approximate
+            # so for ES1.x we don't check the *exact* hostname
+            skip
+          end
+        end
+      end
+    end
+  end
+
+  if ESHelper.es_version_satisfies?(">= 5")
+    describe("Complex sniff parsing ES 6x/5x") do
+      before(:each) do
+        response_double = double("_nodes/http", body: File.read("spec/fixtures/_nodes/5x_and_above.json"))
+        allow(subject).to receive(:perform_request).and_return([nil, { version: "5.0" }, response_double])
+        subject.start
+      end
+
+      context "with mixed master-only, data-only, and data + master nodes" do
+        it "should execute a sniff without error" do
+          expect { subject.check_sniff }.not_to raise_error
+        end
+
+        it "should return the correct sniff URLs" do
+          # ie. without the master-only node
+          uris = subject.check_sniff
+
+          expect(uris).to include(::LogStash::Util::SafeURI.new("http://localhost:9201"), ::LogStash::Util::SafeURI.new("http://localhost:9202"), ::LogStash::Util::SafeURI.new("http://localhost:9203"))
+        end
+      end
     end
   end
 end
