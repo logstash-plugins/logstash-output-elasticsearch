@@ -67,8 +67,8 @@ HTTP requests to the bulk API are expected to return a 200 response code. All ot
 
 The following document errors are handled as follows:
 
-* 400 and 404 errors are sent to the dead letter queue (DLQ), if enabled. If a DLQ is not enabled, a log message will be emitted, and the event will be dropped. See <<dlq-policy>> for more info.
-* 409 errors (conflict) are logged as a warning and dropped. 
+  * 400 and 404 errors are sent to the dead letter queue (DLQ), if enabled. If a DLQ is not enabled, a log message will be emitted, and the event will be dropped. See <<dlq-policy>> for more info.
+  * 409 errors (conflict) are logged as a warning and dropped. 
 
 Note that 409 exceptions are no longer retried. Please set a higher `retry_on_conflict` value if you experience 409 exceptions.
 It is more performant for Elasticsearch to retry these exceptions than this plugin.
