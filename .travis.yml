@@ -3,32 +3,32 @@ sudo: false
 language: ruby
 cache: bundler
 env:
- - INTEGRATION=false
- - INTEGRATION=true ES_VERSION=1.7.6 TEST_DEBUG=true
- - INTEGRATION=true ES_VERSION=2.4.4 TEST_DEBUG=true
- - INTEGRATION=true ES_VERSION=5.5.0 TEST_DEBUG=true
- - INTEGRATION=true ES_VERSION=5.6.0 TEST_DEBUG=true
- - INTEGRATION=true ES_VERSION=master TEST_DEBUG=true
- - SECURE_INTEGRATION=true INTEGRATION=true ES_VERSION=5.5.0 TEST_DEBUG=true
- - INTEGRATION=true ES_VERSION=6.0.0-beta2 TEST_DEBUG=true
- - SECURE_INTEGRATION=true INTEGRATION=true ES_VERSION=6.0.0-beta2 TEST_DEBUG=true
+- INTEGRATION=false
+- INTEGRATION=true ES_VERSION=1.7.6 TEST_DEBUG=true
+- INTEGRATION=true ES_VERSION=2.4.4 TEST_DEBUG=true
+- INTEGRATION=true ES_VERSION=5.5.0 TEST_DEBUG=true
+- INTEGRATION=true ES_VERSION=5.6.0 TEST_DEBUG=true
+- INTEGRATION=true ES_VERSION=master TEST_DEBUG=true
+- SECURE_INTEGRATION=true INTEGRATION=true ES_VERSION=5.5.0 TEST_DEBUG=true
+- INTEGRATION=true ES_VERSION=6.0.0-beta2 TEST_DEBUG=true
+- SECURE_INTEGRATION=true INTEGRATION=true ES_VERSION=6.0.0-beta2 TEST_DEBUG=true
 rvm:
-  - jruby-1.7.25
+- jruby-1.7.25
 matrix:
   include:
-    - rvm: jruby-9.1.10.0
-      env: LOGSTASH_BRANCH=master
-    - rvm: jruby-9.1.10.0
-      env: LOGSTASH_BRANCH=6.x
-    - rvm: jruby-1.7.25
-      env: LOGSTASH_BRANCH=5.6
-  allow_failures:
-    - env: INTEGRATION=true ES_VERSION=master TEST_DEBUG=true
+  - rvm: jruby-9.1.13.0
+    env: LOGSTASH_BRANCH=master
+  - rvm: jruby-9.1.13.0
+    env: LOGSTASH_BRANCH=6.x
+  - rvm: jruby-9.1.13.0
+    env: LOGSTASH_BRANCH=6.0
+  - rvm: jruby-1.7.27
+    env: LOGSTASH_BRANCH=5.6
   fast_finish: true
 install: true
 script: ci/build.sh
 jdk: oraclejdk8
 addons:
   apt:
-   packages:
+    packages:
     - oracle-java8-installer
