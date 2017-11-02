@@ -633,7 +633,7 @@ Set the truststore password
   * Value type is <<string,string>>
   * Default value is `""`
 
-Set upsert content for update mode.s
+Set upsert content for update mode.
 Create a new document with this parameter as json string if `document_id` doesn't exists
 
 [id="plugins-{type}s-{plugin}-user"]
