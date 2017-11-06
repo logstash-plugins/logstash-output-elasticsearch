@@ -129,17 +129,11 @@ else
       start_es
       bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
       ;;
-    5.6.*)
-      setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-SNAPSHOT.tar.gz
-      es_distribution_version=$(get_es_distribution_version)
-      start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
-      bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
-      ;;
     5.*)
       setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
       es_distribution_version=$(get_es_distribution_version)
       start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
-      bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag es_version:$es_distribution_version --tag update_tests:groovy $spec_path
+      bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
       ;;
     2.*)
       setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
