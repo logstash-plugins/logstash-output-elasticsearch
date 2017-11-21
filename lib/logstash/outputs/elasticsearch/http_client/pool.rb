@@ -113,6 +113,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
     end
 
+    def maximum_seen_major_version
+      @state_mutex.synchronize do
+        @maximum_seen_major_version
+      end
+    end
+
     def urls
       url_info.keys
     end
@@ -245,6 +251,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           es_version = get_es_version(url)
           @state_mutex.synchronize do
             meta[:version] = es_version
+            major = major_version(es_version)
+            @maximum_seen_major_version = major if !@maximum_seen_major_version || major > @maximum_seen_major_version
             meta[:state] = :alive
           end
         rescue HostUnreachableError, BadResponseCodeError => e

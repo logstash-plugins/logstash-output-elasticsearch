@@ -4,7 +4,7 @@ module LogStash; module Outputs; class ElasticSearch
     def self.install_template(plugin)
       return unless plugin.manage_template
       plugin.logger.info("Using mapping template from", :path => plugin.template)
-      template = get_template(plugin.template, get_es_major_version(plugin.client))
+      template = get_template(plugin.template, plugin.maximum_seen_major_version)
       plugin.logger.info("Attempting to install template", :manage_template => template)
       install(plugin.client, plugin.template_name, template, plugin.template_overwrite)
     rescue => e
@@ -12,12 +12,6 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     private
-    def self.get_es_major_version(client)
-      # get the elasticsearch version of each node in the pool and
-      # pick the biggest major version
-      client.connected_es_versions.uniq.map {|version| version.split(".").first.to_i}.max
-    end
-
     def self.get_template(path, es_major_version)
       template_path = path || default_template_path(es_major_version)
       read_template_file(template_path)

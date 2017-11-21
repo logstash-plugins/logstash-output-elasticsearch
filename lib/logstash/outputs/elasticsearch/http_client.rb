@@ -86,6 +86,10 @@ module LogStash; module Outputs; class ElasticSearch;
       @pool.connected_es_versions
     end
 
+    def maximum_seen_major_version
+      @pool.maximum_seen_major_version
+    end
+
     def bulk(actions)
       @action_count ||= 0
       @action_count += actions.size
