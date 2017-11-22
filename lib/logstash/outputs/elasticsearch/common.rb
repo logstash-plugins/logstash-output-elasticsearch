@@ -217,7 +217,7 @@ module LogStash; module Outputs; class ElasticSearch;
       type = if @document_type
                event.sprintf(@document_type)
              else
-               if maximum_seen_major_version > 6
+               if maximum_seen_major_version < 6
                  event.get("type") || DEFAULT_EVENT_TYPE
                else
                  DEFAULT_EVENT_TYPE
