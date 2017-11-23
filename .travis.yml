@@ -23,6 +23,8 @@ matrix:
     env: LOGSTASH_BRANCH=6.0
   - rvm: jruby-1.7.27
     env: LOGSTASH_BRANCH=5.6
+  allow_failures:
+  - env: INTEGRATION=true ES_VERSION=master TEST_DEBUG=true
   fast_finish: true
 install: true
 script: ci/build.sh
