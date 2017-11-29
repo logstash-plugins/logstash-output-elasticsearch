@@ -49,6 +49,10 @@ module LogStash; module Outputs; class ElasticSearch;
       end
     end
 
+    def maximum_seen_major_version
+      client.maximum_seen_major_version
+    end
+
     def install_template
       TemplateManager.install_template(self)
     end
