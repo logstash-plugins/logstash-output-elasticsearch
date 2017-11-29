@@ -82,10 +82,6 @@ module LogStash; module Outputs; class ElasticSearch;
       template_put(name, template)
     end
 
-    def connected_es_versions
-      @pool.connected_es_versions
-    end
-
     def maximum_seen_major_version
       @pool.maximum_seen_major_version
     end

@@ -5,26 +5,6 @@ require "json"
 
 describe LogStash::Outputs::ElasticSearch::TemplateManager do
 
-  describe ".get_es_major_version" do
-    let(:client) { double("client") }
-
-    before(:each) do
-      allow(client).to receive(:connected_es_versions).and_return(["5.3.0"])
-    end
-
-    it "picks the largest major version" do
-      expect(described_class.get_es_major_version(client)).to eq(5)
-    end
-    context "if there are nodes with multiple major versions" do
-      before(:each) do
-        allow(client).to receive(:connected_es_versions).and_return(["5.3.0", "6.0.0"])
-      end
-      it "picks the largest major version" do
-        expect(described_class.get_es_major_version(client)).to eq(6)
-      end
-    end
-  end
-
   describe ".default_template_path" do
     context "elasticsearch 1.x" do
       it "chooses the 2x template" do

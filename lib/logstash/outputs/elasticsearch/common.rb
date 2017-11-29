@@ -23,13 +23,6 @@ module LogStash; module Outputs; class ElasticSearch;
       setup_hosts # properly sets @hosts
       build_client
 
-      # Wait until at least one host connects and we have a version
-      until maximum_seen_major_version
-        @logger.info("ES Output starting, determining ES version...")
-        sleep 1
-      end
-      @logger.info("ES Output version determined", :es_version => maximum_seen_major_version)
-
       install_template
       check_action_validity
 
@@ -54,10 +47,6 @@ module LogStash; module Outputs; class ElasticSearch;
         @logger.info("No 'host' set in elasticsearch output. Defaulting to localhost")
         @hosts.replace(["localhost"])
       end
-    end
-
-    def maximum_seen_major_version
-      client.maximum_seen_major_version
     end
 
     def install_template
@@ -217,7 +206,7 @@ module LogStash; module Outputs; class ElasticSearch;
       type = if @document_type
                event.sprintf(@document_type)
              else
-               if maximum_seen_major_version < 6
+               if client.maximum_seen_major_version < 6
                  event.get("type") || DEFAULT_EVENT_TYPE
                else
                  DEFAULT_EVENT_TYPE

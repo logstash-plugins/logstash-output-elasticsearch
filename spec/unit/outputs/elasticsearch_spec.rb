@@ -2,7 +2,31 @@ require_relative "../../../spec/es_spec_helper"
 require "flores/random"
 require "logstash/outputs/elasticsearch"
 
-describe "outputs/elasticsearch" do
+describe LogStash::Outputs::ElasticSearch do
+  subject { described_class.new(options) }
+  let(:options) { {} }
+  let(:maximum_seen_major_version) { rand(100) }
+
+  let(:do_register) { true }
+
+  before(:each) do
+    if do_register
+      subject.register
+
+      # Rspec mocks can't handle background threads, so... we can't use any
+      allow(subject.client.pool).to receive(:start_resurrectionist)
+      allow(subject.client.pool).to receive(:start_sniffer)
+      allow(subject.client.pool).to receive(:healthcheck!)
+      allow(subject.client).to receive(:maximum_seen_major_version).and_return(maximum_seen_major_version)
+      subject.client.pool.adapter.manticore.respond_with(:body => "{}")
+    end
+  end
+
+  after(:each) do
+    subject.close
+  end
+
+
   context "with an active instance" do
     let(:options) {
       {
@@ -12,57 +36,51 @@ describe "outputs/elasticsearch" do
         "manage_template" => false
       }
     }
-    
-    let(:eso) { LogStash::Outputs::ElasticSearch.new(options) }
 
-    let(:manticore_urls) { eso.client.pool.urls }
+    let(:manticore_urls) { subject.client.pool.urls }
     let(:manticore_url) { manticore_urls.first }
-
-    let(:do_register) { true }
-
-    before(:each) do
-      if do_register
-        eso.register
-        
-        # Rspec mocks can't handle background threads, so... we can't use any 
-        allow(eso.client.pool).to receive(:start_resurrectionist)
-        allow(eso.client.pool).to receive(:start_sniffer)
-        allow(eso.client.pool).to receive(:healthcheck!)
-        eso.client.pool.adapter.manticore.respond_with(:body => "{}")
-      end
-    end
-    
-    after(:each) do
-      eso.close 
-    end
     
     describe "getting a document type" do
       it "should default to 'doc'" do
-        expect(eso.send(:get_event_type, LogStash::Event.new)).to eql("doc")
+        expect(subject.send(:get_event_type, LogStash::Event.new)).to eql("doc")
       end
 
-      it "should get the type from the event if nothing else specified in the config" do
-        expect(eso.send(:get_event_type, LogStash::Event.new("type" => "foo"))).to eql("foo")
+      context "if document_type isn't set" do
+        let(:options) { super.merge("document_type" => nil)}
+        context "for 6.x elasticsearch clusters" do
+          let(:maximum_seen_major_version) { 6 }
+          it "should return 'doc'" do
+            expect(subject.send(:get_event_type, LogStash::Event.new("type" => "foo"))).to eql("doc")
+          end
+        end
+
+        context "for < 6.0 elasticsearch clusters" do
+          let(:maximum_seen_major_version) { 5 }
+          it "should get the type from the event" do
+            expect(subject.send(:get_event_type, LogStash::Event.new("type" => "foo"))).to eql("foo")
+          end
+        end
       end
 
       context "with 'document type set'" do
         let(:options) { super.merge("document_type" => "bar")}
         it "should get the event type from the 'document_type' setting" do
-          expect(eso.send(:get_event_type, LogStash::Event.new())).to eql("bar")
+          expect(subject.send(:get_event_type, LogStash::Event.new())).to eql("bar")
         end
       end
 
-      context "with a bad type" do
+      context "with a bad type event field in a < 6.0 es cluster" do
+        let(:maximum_seen_major_version) { 5 }
         let(:type_arg) { ["foo"] }
-        let(:result) { eso.send(:get_event_type, LogStash::Event.new("type" => type_arg)) }
+        let(:result) { subject.send(:get_event_type, LogStash::Event.new("type" => type_arg)) }
 
         before do
-          allow(eso.instance_variable_get(:@logger)).to receive(:warn)
+          allow(subject.instance_variable_get(:@logger)).to receive(:warn)
           result
         end
 
         it "should call @logger.warn and return nil" do
-          expect(eso.instance_variable_get(:@logger)).to have_received(:warn).with(/Bad event type!/, anything).once
+          expect(subject.instance_variable_get(:@logger)).to have_received(:warn).with(/Bad event type!/, anything).once
         end
 
         it "should set the type to the stringified value" do
@@ -103,7 +121,7 @@ describe "outputs/elasticsearch" do
 
     describe "with path" do
       it "should properly create a URI with the path" do
-        expect(eso.path).to eql(options["path"])
+        expect(subject.path).to eql(options["path"])
       end
 
         it "should properly set the path on the HTTP client adding slashes" do
@@ -129,7 +147,7 @@ describe "outputs/elasticsearch" do
         let(:client_host_path) { manticore_url.path }
 
         it "should initialize without error" do
-          expect { eso }.not_to raise_error
+          expect { subject }.not_to raise_error
         end
 
         it "should use the URI path" do
@@ -145,7 +163,7 @@ describe "outputs/elasticsearch" do
           end
 
           it "should initialize without error" do
-            expect { eso }.not_to raise_error
+            expect { subject }.not_to raise_error
           end
 
           it "should use the option path" do
@@ -164,7 +182,7 @@ describe "outputs/elasticsearch" do
           end
 
           it "should initialize with an error" do
-            expect { eso.register }.to raise_error(LogStash::ConfigurationError)
+            expect { subject.register }.to raise_error(LogStash::ConfigurationError)
           end
         end
       end
@@ -188,12 +206,12 @@ describe "outputs/elasticsearch" do
       let(:events_tuples) { [double("one t"), double("two t"), double("three t")] }
 
       before do
-        allow(eso).to receive(:retrying_submit).with(anything)
+        allow(subject).to receive(:retrying_submit).with(anything)
         events.each_with_index do |e,i|
           et = events_tuples[i]
-          allow(eso).to receive(:event_action_tuple).with(e).and_return(et)
+          allow(subject).to receive(:event_action_tuple).with(e).and_return(et)
         end
-        eso.multi_receive(events)
+        subject.multi_receive(events)
       end
 
     end
@@ -213,24 +231,24 @@ describe "outputs/elasticsearch" do
         i = 0
         bulk_param =  [["index", anything, event.to_hash]]
 
-        allow(eso).to receive(:logger).and_return(logger)
+        allow(subject).to receive(:logger).and_return(logger)
 
         # Fail the first time bulk is called, succeed the next time
-        allow(eso.client).to receive(:bulk).with(bulk_param) do
+        allow(subject.client).to receive(:bulk).with(bulk_param) do
           i += 1
           if i == 1
             raise error
           end
         end.and_return(response)
-        eso.multi_receive([event])
+        subject.multi_receive([event])
       end
 
       it "should retry the 429 till it goes away" do
-        expect(eso.client).to have_received(:bulk).twice
+        expect(subject.client).to have_received(:bulk).twice
       end
 
       it "should log a debug message" do
-        expect(eso.logger).to have_received(:debug).with(/Encountered a retryable error/i, anything)
+        expect(subject.logger).to have_received(:debug).with(/Encountered a retryable error/i, anything)
       end
     end
   end
@@ -245,19 +263,16 @@ describe "outputs/elasticsearch" do
         "timeout" => 0.1, # fast timeout
       }
     end
-    let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
 
     before do
-      eso.register
-
       # Expect a timeout to be logged.
-      expect(eso.logger).to receive(:error).with(/Attempted to send a bulk request to Elasticsearch/i, anything).at_least(:once)
-      expect(eso.client).to receive(:bulk).at_least(:twice).and_call_original
+      expect(subject.logger).to receive(:error).with(/Attempted to send a bulk request to Elasticsearch/i, anything).at_least(:once)
+      expect(subject.client).to receive(:bulk).at_least(:twice).and_call_original
     end
 
     it "should fail after the timeout" do
       #pending("This is tricky now that we do healthchecks on instantiation")
-      Thread.new { eso.multi_receive([LogStash::Event.new]) }
+      Thread.new { subject.multi_receive([LogStash::Event.new]) }
 
       # Allow the timeout to occur
       sleep 6
@@ -265,19 +280,19 @@ describe "outputs/elasticsearch" do
   end
 
   describe "the action option" do
-    subject(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
     context "with a sprintf action" do
-      let(:options) { {"action" => "%{myactionfield}"} }
+      let(:options) { {"action" => "%{myactionfield}" } }
 
       let(:event) { LogStash::Event.new("myactionfield" => "update", "message" => "blah") }
 
       it "should interpolate the requested action value when creating an event_action_tuple" do
-        expect(eso.event_action_tuple(event).first).to eql("update")
+        expect(subject.event_action_tuple(event).first).to eql("update")
       end
     end
 
     context "with an invalid action" do
       let(:options) { {"action" => "SOME Garbaaage"} }
+      let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
 
       it "should raise a configuration error" do
         expect { subject.register }.to raise_error(LogStash::ConfigurationError)
@@ -289,8 +304,6 @@ describe "outputs/elasticsearch" do
     let(:manticore_double) do 
       double("manticoreX#{self.inspect}") 
     end
-    
-    let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
 
     before(:each) do
       response_double = double("manticore response").as_null_object
@@ -300,17 +313,12 @@ describe "outputs/elasticsearch" do
       allow(manticore_double).to receive(:close)
         
       allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
-      eso.register
+      subject.register
     end
-    
-    after(:each) do
-      eso.close
-    end
-    
     
     shared_examples("an encrypted client connection") do
       it "should enable SSL in manticore" do
-        expect(eso.client.pool.urls.map(&:scheme).uniq).to eql(['https'])
+        expect(subject.client.pool.urls.map(&:scheme).uniq).to eql(['https'])
       end
     end
 
@@ -330,22 +338,22 @@ describe "outputs/elasticsearch" do
   describe "retry_on_conflict" do
     let(:num_retries) { 123 }
     let(:event) { LogStash::Event.new("message" => "blah") }
-    subject(:eso) {LogStash::Outputs::ElasticSearch.new(options.merge('retry_on_conflict' => num_retries))}
+    let(:options) { { 'retry_on_conflict' => num_retries } }
 
     context "with a regular index" do
-      let(:options) { {"action" => "index"} }
+      let(:options) { super.merge("action" => "index") }
 
       it "should interpolate the requested action value when creating an event_action_tuple" do
-        action, params, event_data = eso.event_action_tuple(event)
+        action, params, event_data = subject.event_action_tuple(event)
         expect(params).not_to include({:_retry_on_conflict => num_retries})
       end
     end
 
     context "using a plain update" do
-      let(:options) { {"action" => "update", "retry_on_conflict" => num_retries} }
+      let(:options) { super.merge("action" => "update", "retry_on_conflict" => num_retries, "document_id" => 1) } 
 
       it "should interpolate the requested action value when creating an event_action_tuple" do
-        action, params, event_data = eso.event_action_tuple(event)
+        action, params, event_data = subject.event_action_tuple(event)
         expect(params).to include({:_retry_on_conflict => num_retries})
       end
     end
@@ -353,17 +361,17 @@ describe "outputs/elasticsearch" do
 
   describe "sleep interval calculation" do
     let(:retry_max_interval) { 64 }
-    subject(:eso) { LogStash::Outputs::ElasticSearch.new("retry_max_interval" => retry_max_interval) }
+    let(:options) { { "retry_max_interval" => retry_max_interval } }
 
     it "should double the given value" do
-      expect(eso.next_sleep_interval(2)).to eql(4)
-      expect(eso.next_sleep_interval(32)).to eql(64)
+      expect(subject.next_sleep_interval(2)).to eql(4)
+      expect(subject.next_sleep_interval(32)).to eql(64)
     end
 
     it "should not increase the value past the max retry interval" do
       sleep_interval = 2
       100.times do
-        sleep_interval = eso.next_sleep_interval(sleep_interval)
+        sleep_interval = subject.next_sleep_interval(sleep_interval)
         expect(sleep_interval).to be <= retry_max_interval
       end
     end
@@ -371,14 +379,15 @@ describe "outputs/elasticsearch" do
 
   describe "stale connection check" do
     let(:validate_after_inactivity) { 123 }
-    subject(:eso) { LogStash::Outputs::ElasticSearch.new("validate_after_inactivity" => validate_after_inactivity) }
+    let(:options) { { "validate_after_inactivity" => validate_after_inactivity } }
+    let(:do_register) { false }
 
-    before do
+    before :each do
       allow(::Manticore::Client).to receive(:new).with(any_args).and_call_original
-      subject.register
     end
 
-    it "should set the correct http client option for 'validate_after_inactivity" do
+    it "should set the correct http client option for 'validate_after_inactivity'" do
+      subject.register
       expect(::Manticore::Client).to have_received(:new) do |options|
         expect(options[:check_connection_timeout]).to eq(validate_after_inactivity)
       end
@@ -387,21 +396,11 @@ describe "outputs/elasticsearch" do
 
   describe "custom parameters" do
 
-    let(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
-
-    let(:manticore_urls) { eso.client.pool.urls }
+    let(:manticore_urls) { subject.client.pool.urls }
     let(:manticore_url) { manticore_urls.first }
 
     let(:custom_parameters_hash) { { "id" => 1, "name" => "logstash" } }
     let(:custom_parameters_query) { custom_parameters_hash.map {|k,v| "#{k}=#{v}" }.join("&") }
-
-    before(:each) do
-      eso.register
-    end
-
-    after(:each) do
-      eso.close rescue nil
-    end
 
     context "using non-url hosts" do
 
@@ -415,7 +414,7 @@ describe "outputs/elasticsearch" do
       }
 
       it "creates a URI with the added parameters" do
-        expect(eso.parameters).to eql(custom_parameters_hash)
+        expect(subject.parameters).to eql(custom_parameters_hash)
       end
 
       it "sets the query string on the HTTP client" do

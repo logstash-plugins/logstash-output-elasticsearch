@@ -14,6 +14,7 @@ describe "whitelisting error types in expected behavior" do
 
     subject.register
 
+    allow(subject.client).to receive(:maximum_seen_major_version).and_return(0)
     allow(subject.client).to receive(:bulk).and_return(
       {
         "errors" => true,
