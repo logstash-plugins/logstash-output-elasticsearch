@@ -242,8 +242,10 @@ Note: This option is deprecated due to the https://www.elastic.co/guide/en/elast
 It will be removed in the next major version of Logstash.
 This sets the document type to write events to. Generally you should try to write only
 similar events to the same 'type'. String expansion `%{foo}` works here.
-Unless you set 'document_type', the event 'type' will be used if it exists
-otherwise the document type will be assigned the value of 'doc'.
+If you don't set a value for this option:
+
+- for elasticsearch clusters 6.x and above: the value of 'doc' will be used;
+- for elasticsearch clusters 5.x and below: the event's 'type' field will be used, if the field is not present the value of 'doc' will be used.
 
 [id="plugins-{type}s-{plugin}-failure_type_logging_whitelist"]
 ===== `failure_type_logging_whitelist` 

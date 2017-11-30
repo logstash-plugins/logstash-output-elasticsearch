@@ -7,11 +7,12 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:adapter) { LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter.new(logger) }
   let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
   let(:options) { {:resurrect_delay => 2, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
+  let(:es_node_versions) { [ "0.0.0" ] }
 
   subject { described_class.new(logger, adapter, initial_urls, options) }
 
   let(:manticore_double) { double("manticore a") }
-  before do
+  before(:each) do
 
     response_double = double("manticore response").as_null_object
     # Allow healtchecks
@@ -21,10 +22,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
     allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
 
-    allow(subject).to receive(:connected_es_versions).with(any_args).and_return(["0.0.0"])
-    allow(subject).to receive(:get_es_version).with(any_args).and_return("0.0.0")
-
-    subject.start
+    allow(subject).to receive(:get_es_version).with(any_args).and_return(*es_node_versions)
   end
 
   after do
@@ -34,10 +32,12 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   describe "initialization" do
     it "should be successful" do
       expect { subject }.not_to raise_error
+      subject.start
     end
   end
 
   describe "the resurrectionist" do
+    before(:each) { subject.start }
     it "should start the resurrectionist when created" do
       expect(subject.resurrectionist_alive?).to eql(true)
     end
@@ -77,6 +77,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   end
 
   describe "the sniffer" do
+    before(:each) { subject.start }
     it "should not start the sniffer by default" do
       expect(subject.sniffer_alive?).to eql(nil)
     end
@@ -92,6 +93,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
   describe "closing" do
     before do
+      subject.start
       # Simulate a single in use connection on the first check of this
       allow(adapter).to receive(:close).and_call_original
       allow(subject).to receive(:wait_for_in_use_connections).and_call_original
@@ -120,6 +122,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   end
 
   describe "connection management" do
+    before(:each) { subject.start }
     context "with only one URL in the list" do
       it "should use the only URL in 'with_connection'" do
         subject.with_connection do |c|
@@ -164,6 +167,29 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
         expect(subject.url_meta(u)[:state]).to eql(:dead)
         sleep subject.resurrect_delay + 1
         expect(subject.url_meta(u)[:state]).to eql(:alive)
+      end
+    end
+  end
+
+  describe "version tracking" do
+    let(:initial_urls) { [
+      ::LogStash::Util::SafeURI.new("http://somehost:9200"),
+      ::LogStash::Util::SafeURI.new("http://otherhost:9201")
+    ] }
+
+    before(:each) do
+      allow(subject).to receive(:perform_request_to_url).and_return(nil)
+      subject.start
+    end
+
+    it "picks the largest major version" do
+      expect(subject.maximum_seen_major_version).to eq(0)
+    end
+
+    context "if there are nodes with multiple major versions" do
+      let(:es_node_versions) { [ "0.0.0", "6.0.0" ] }
+      it "picks the largest major version" do
+        expect(subject.maximum_seen_major_version).to eq(6)
       end
     end
   end

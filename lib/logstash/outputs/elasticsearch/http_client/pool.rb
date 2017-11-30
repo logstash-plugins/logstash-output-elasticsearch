@@ -107,9 +107,9 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @state_mutex.synchronize { @url_info }
     end
 
-    def connected_es_versions
+    def maximum_seen_major_version
       @state_mutex.synchronize do
-        @url_info.values.select {|v| v[:state] == :alive }.map {|v| v[:version] }
+        @maximum_seen_major_version
       end
     end
 
@@ -245,6 +245,14 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           es_version = get_es_version(url)
           @state_mutex.synchronize do
             meta[:version] = es_version
+            major = major_version(es_version)
+            if !@maximum_seen_major_version
+              @logger.info("ES Output version determined", :es_version => @maximum_seen_major_version)
+              set_new_major_version(major)
+            elsif major > @maximum_seen_major_version
+              @logger.warn("Detected a node with a higher major version than previously observed. This could be the result of an elasticsearch cluster upgrade.", :previous_major => @maximum_seen_major_version, :new_major => major, :node_url => url)
+              set_new_major_version(major)
+            end
             meta[:state] = :alive
           end
         rescue HostUnreachableError, BadResponseCodeError => e
@@ -433,6 +441,13 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def get_es_version(url)
       request = perform_request_to_url(url, :get, ROOT_URI_PATH)
       LogStash::Json.load(request.body)["version"]["number"]
+    end
+
+    def set_new_major_version(version)
+      @maximum_seen_major_version = version
+      if @maximum_seen_major_version >= 6
+        @logger.warn("Detected a 6.x and above cluster: the `type` event field won't be used to determine the document _type", :es_version => @maximum_seen_major_version)
+      end
     end
   end
 end; end; end; end;
