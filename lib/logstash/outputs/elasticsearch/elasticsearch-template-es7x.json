@@ -5,7 +5,7 @@
     "index.refresh_interval" : "5s"
   },
   "mappings" : {
-    "doc" : {
+    "_doc" : {
       "dynamic_templates" : [ {
         "message_field" : {
           "path_match" : "message",
