@@ -247,7 +247,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
             meta[:version] = es_version
             major = major_version(es_version)
             if !@maximum_seen_major_version
-              @logger.info("ES Output version determined", :es_version => @maximum_seen_major_version)
+              @logger.info("ES Output version determined", :es_version => major)
               set_new_major_version(major)
             elsif major > @maximum_seen_major_version
               @logger.warn("Detected a node with a higher major version than previously observed. This could be the result of an elasticsearch cluster upgrade.", :previous_major => @maximum_seen_major_version, :new_major => major, :node_url => url)
