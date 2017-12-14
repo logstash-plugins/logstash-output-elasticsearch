@@ -123,8 +123,14 @@ else
   fi
 
   case "$ES_VERSION" in
+    6.2.*) # unreleased - use snapshot builds
+      setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-SNAPSHOT.tar.gz https://snapshots.elastic.co/downloads/packs/x-pack/x-pack-${ES_VERSION}-SNAPSHOT.zip
+      es_distribution_version=$(get_es_distribution_version)
+      start_es
+      bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
+      ;;
     6.*)
-      setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-SNAPSHOT.tar.gz https://snapshots.elastic.co/downloads/packs/x-pack/x-pack-$ES_VERSION-SNAPSHOT.zip
+      setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz https://artifacts.elastic.co/downloads/packs/x-pack/x-pack-${ES_VERSION}.zip
       es_distribution_version=$(get_es_distribution_version)
       start_es
       bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
