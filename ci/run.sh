@@ -83,7 +83,7 @@ get_es_distribution_version() {
 # not here because this script runs in a different bash shell.
 download_gradle() {
   echo $PWD
-  local version="3.3"
+  local version="4.3"
   curl -sL https://services.gradle.org/distributions/gradle-$version-bin.zip > gradle.zip
   unzip -d . gradle.zip
   mv gradle-* gradle
