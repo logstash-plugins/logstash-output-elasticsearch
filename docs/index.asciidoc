@@ -67,8 +67,8 @@ HTTP requests to the bulk API are expected to return a 200 response code. All ot
 
 The following document errors are handled as follows:
 
-* 400 and 404 errors are sent to the dead letter queue (DLQ), if enabled. If a DLQ is not enabled, a log message will be emitted, and the event will be dropped. See <<dlq-policy>> for more info.
-* 409 errors (conflict) are logged as a warning and dropped. 
+  * 400 and 404 errors are sent to the dead letter queue (DLQ), if enabled. If a DLQ is not enabled, a log message will be emitted, and the event will be dropped. See <<dlq-policy>> for more info.
+  * 409 errors (conflict) are logged as a warning and dropped. 
 
 Note that 409 exceptions are no longer retried. Please set a higher `retry_on_conflict` value if you experience 409 exceptions.
 It is more performant for Elasticsearch to retry these exceptions than this plugin.
@@ -242,8 +242,10 @@ Note: This option is deprecated due to the https://www.elastic.co/guide/en/elast
 It will be removed in the next major version of Logstash.
 This sets the document type to write events to. Generally you should try to write only
 similar events to the same 'type'. String expansion `%{foo}` works here.
-Unless you set 'document_type', the event 'type' will be used if it exists
-otherwise the document type will be assigned the value of 'doc'.
+If you don't set a value for this option:
+
+- for elasticsearch clusters 6.x and above: the value of 'doc' will be used;
+- for elasticsearch clusters 5.x and below: the event's 'type' field will be used, if the field is not present the value of 'doc' will be used.
 
 [id="plugins-{type}s-{plugin}-failure_type_logging_whitelist"]
 ===== `failure_type_logging_whitelist` 
@@ -630,7 +632,7 @@ Set the truststore password
   * Value type is <<string,string>>
   * Default value is `""`
 
-Set upsert content for update mode.s
+Set upsert content for update mode.
 Create a new document with this parameter as json string if `document_id` doesn't exists
 
 [id="plugins-{type}s-{plugin}-user"]
