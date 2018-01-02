@@ -1,3 +1,9 @@
+## 9.0.2
+  - Ignore event's type field for the purpose of setting document `_type` if cluster is es 6.x or above
+
+## 9.0.1
+  - Update gemspec summary
+
 ### 9.0.0
   - Change default document type to 'doc' from 'logs' to align with beats and reflect the generic nature of logstash.
   - Deprecate 'document_type' option

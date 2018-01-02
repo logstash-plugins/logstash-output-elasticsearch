@@ -83,7 +83,7 @@ get_es_distribution_version() {
 # not here because this script runs in a different bash shell.
 download_gradle() {
   echo $PWD
-  local version="3.3"
+  local version="4.3"
   curl -sL https://services.gradle.org/distributions/gradle-$version-bin.zip > gradle.zip
   unzip -d . gradle.zip
   mv gradle-* gradle
@@ -123,23 +123,23 @@ else
   fi
 
   case "$ES_VERSION" in
-    6.*)
-      setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-SNAPSHOT.tar.gz https://snapshots.elastic.co/downloads/packs/x-pack/x-pack-$ES_VERSION-SNAPSHOT.zip
+    6.2.*) # unreleased - use snapshot builds
+      setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-SNAPSHOT.tar.gz https://snapshots.elastic.co/downloads/packs/x-pack/x-pack-${ES_VERSION}-SNAPSHOT.zip
       es_distribution_version=$(get_es_distribution_version)
       start_es
       bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
       ;;
-    5.6.*)
-      setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-SNAPSHOT.tar.gz
+    6.*)
+      setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz https://artifacts.elastic.co/downloads/packs/x-pack/x-pack-${ES_VERSION}.zip
       es_distribution_version=$(get_es_distribution_version)
-      start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
+      start_es
       bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
       ;;
     5.*)
       setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
       es_distribution_version=$(get_es_distribution_version)
       start_es -Escript.inline=true -Escript.stored=true -Escript.file=true
-      bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag es_version:$es_distribution_version --tag update_tests:groovy $spec_path
+      bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
       ;;
     2.*)
       setup_es https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-$ES_VERSION.tar.gz

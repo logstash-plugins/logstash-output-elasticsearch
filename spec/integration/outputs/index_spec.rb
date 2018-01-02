@@ -78,7 +78,11 @@ describe "indexing" do
       response = http_client.get("#{index_url}/_search?q=*&size=1000")
       result = LogStash::Json.load(response.body)
       result["hits"]["hits"].each do |doc|
-        expect(doc["_type"]).to eq(type)
+        if ESHelper.es_version_satisfies?(">= 6")
+          expect(doc["_type"]).to eq("doc")
+        else
+          expect(doc["_type"]).to eq(type)
+        end
         expect(doc["_index"]).to eq(index)
       end
     end
