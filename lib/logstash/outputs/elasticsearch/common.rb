@@ -165,6 +165,7 @@ module LogStash; module Outputs; class ElasticSearch;
         @bulk_request_metrics.increment(:with_errors)
       else
         @bulk_request_metrics.increment(:successes)
+        @document_level_metrics.increment(:successes, actions.size)
         return
       end
 
