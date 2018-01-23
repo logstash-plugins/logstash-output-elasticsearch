@@ -1,0 +1,27 @@
+{
+  "cluster_name" : "dev",
+  "nodes" : {
+    "Ur_68iBvTlm7Xr1HgSsh6w" : {
+      "name" : "dev-es-master01",
+      "transport_address" : "http://localhost:9200",
+      "host" : "127.0.0.1",
+      "ip" : "127.0.0.1",
+      "version" : "2.4.6",
+      "build" : "5376dca"
+    },
+    "sari4do3RG-mgh2CIZeHwA" : {
+      "name" : "dev-es-data01",
+      "transport_address" : "http://localhost:9201",
+      "host" : "127.0.0.1",
+      "ip" : "127.0.0.1",
+      "version" : "2.4.6",
+      "build" : "5376dca",
+      "http_address" : "127.0.0.1:9201",
+      "http" : {
+        "bound_address" : [ "[::1]:9201", "127.0.0.1:9201" ],
+        "publish_address" : "127.0.0.1:9201",
+        "max_content_length_in_bytes" : 104857600
+      }
+    }
+  }
+}

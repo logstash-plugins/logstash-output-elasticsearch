@@ -14,71 +14,90 @@ describe "pool sniffer", :integration => true do
   describe("Simple sniff parsing")  do
     before(:each) { subject.start }
 
-    context "with only one URL in the list" do
+    context "with single node" do
       it "should execute a sniff without error" do
         expect { subject.check_sniff }.not_to raise_error
       end
 
-      it "should return the correct sniff URL list" do
+      it "should return single sniff URL" do
         uris = subject.check_sniff
 
-        # ES 1.x returned the public hostname by default. This is hard to approximate
-        # so for ES1.x we don't check the *exact* hostname
         expect(uris.size).to eq(1)
       end
-    end
 
-    context "with multiple URLs in the list no roles" do
-      before :each do
-        allow(adapter).to receive(:perform_request).with(anything, :get, subject.sniffing_path, {}, nil)
-      end
-      let(:initial_urls) { [ ::LogStash::Util::SafeURI.new("http://localhost:9200"), ::LogStash::Util::SafeURI.new("http://localhost:9201"), ::LogStash::Util::SafeURI.new("http://localhost:9202") ] }
+      it "should return the correct sniff URL" do
+        if ESHelper.es_version_satisfies?(">= 2")
+          # We do a more thorough check on these versions because we can more reliably guess the ip
+          uris = subject.check_sniff
 
-      it "should execute a sniff without error" do
-        expect { subject.check_sniff }.not_to raise_error
-      end
-
-      it "should return the correct sniff URL list" do
-        uris = subject.check_sniff
-
-        # Without roles we should expect to see all nodes returned
-        expect(uris.size).to eq(3)
+          expect(uris).to include(::LogStash::Util::SafeURI.new("//#{get_host_port}"))
+        else
+          # ES 1.x returned the public hostname by default. This is hard to approximate
+          # so for ES1.x we don't check the *exact* hostname
+          skip
+        end
       end
     end
   end
 
-  if ESHelper.es_version_satisfies?(">= 2")
-    # We do a more thorough check on these versions because we can more reliably guess the ip
-    describe("Complex sniff parsing ES 6x/5x/2x") do
-      before(:each) { subject.start }
-
-      context "with only one URL in the list" do
-        it "should execute a sniff without error" do
-          expect { subject.check_sniff }.not_to raise_error
-        end
-
-        it "should return the correct sniff URL list" do
-          uris = subject.check_sniff
-
-          expect(uris).to include(::LogStash::Util::SafeURI.new("//#{get_host_port}"))
-        end
+  if ESHelper.es_version_satisfies?("<= 2")
+    describe("Complex sniff parsing ES 2x/1x") do
+      before(:each) do
+        response_double = double("_nodes/http", body: File.read("spec/fixtures/_nodes/2x_1x.json"))
+        allow(subject).to receive(:perform_request).and_return([nil, { version: "2.0" }, response_double])
+        subject.start
       end
 
-      context "with multiple URLs in the list but single data node" do
-        before :each do
-          allow(adapter).to receive(:perform_request).with(anything, :get, subject.sniffing_path, {}, nil).to_return(nil, nil, {body: File.read("spec/fixtures/_nodes.json")})
-        end
-
+      context "with multiple nodes but single http-enabled data node" do
         it "should execute a sniff without error" do
           expect { subject.check_sniff }.not_to raise_error
         end
 
-        it "should return the correct sniff URL list" do
+        it "should return one sniff URL" do
           uris = subject.check_sniff
 
-          # With roles there should only be one of three nodes returned
           expect(uris.size).to eq(1)
-          expect(uris).to include("http://localhost:9201")
+        end
+
+        it "should return the correct sniff URL" do
+          if ESHelper.es_version_satisfies?(">= 2")
+            # We do a more thorough check on these versions because we can more reliably guess the ip
+            uris = subject.check_sniff
+
+            expect(uris).to include(::LogStash::Util::SafeURI.new("http://localhost:9201"))
+          else
+            # ES 1.x returned the public hostname by default. This is hard to approximate
+            # so for ES1.x we don't check the *exact* hostname
+            skip
+          end
+        end
+      end
+    end
+  end
+
+  if ESHelper.es_version_satisfies?(">= 5")
+    describe("Complex sniff parsing ES 6x/5x") do
+      before(:each) do
+        response_double = double("_nodes/http", body: File.read("spec/fixtures/_nodes/5x_and_above.json"))
+        allow(subject).to receive(:perform_request).and_return([nil, { version: "5.0" }, response_double])
+        subject.start
+      end
+
+      context "with multiple nodes but single data-role node" do
+        it "should execute a sniff without error" do
+          expect { subject.check_sniff }.not_to raise_error
+        end
+
+        it "should return one sniff URL" do
+          uris = subject.check_sniff
+
+          expect(uris.size).to eq(1)
+        end
+
+        it "should return the correct sniff URL" do
+          uris = subject.check_sniff
+
+          expect(uris).to include(::LogStash::Util::SafeURI.new("http://localhost:9201"))
         end
       end
     end
