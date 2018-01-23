@@ -29,6 +29,9 @@ describe "pool sniffer", :integration => true do
     end
 
     context "with multiple URLs in the list no roles" do
+      before :each do
+        allow(adapter).to receive(:perform_request).with(anything, :get, subject.sniffing_path, {}, nil)
+      end
       let(:initial_urls) { [ ::LogStash::Util::SafeURI.new("http://localhost:9200"), ::LogStash::Util::SafeURI.new("http://localhost:9201"), ::LogStash::Util::SafeURI.new("http://localhost:9202") ] }
 
       it "should execute a sniff without error" do
@@ -63,7 +66,7 @@ describe "pool sniffer", :integration => true do
 
       context "with multiple URLs in the list but single data node" do
         before :each do
-          allow(adapter).to receive(:perform_request).with(anything, :get, subject.sniffing_path, {}, nil).to_return(nil, nil, {body: fixture('_nodes.json')})
+          allow(adapter).to receive(:perform_request).with(anything, :get, subject.sniffing_path, {}, nil).to_return(nil, nil, {body: File.read("spec/fixtures/_nodes.json")})
         end
 
         it "should execute a sniff without error" do
