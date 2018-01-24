@@ -563,6 +563,8 @@ Option to validate the server's certificate. Disabling this severely compromises
 For more information on disabling certificate verification please read
 https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
 
+Note: Not all use cases of skipping certificate verification are supported. There are known issues in some cases. For example, if the certificate of the server is a wildcard + self-signed certificate, skipping the CA verification might not work and the cacert option in the config is needed.
+
 [id="plugins-{type}s-{plugin}-template"]
 ===== `template` 
 
