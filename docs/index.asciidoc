@@ -519,8 +519,8 @@ if enabled, script is in charge of creating non-existent document (scripted upda
   * Default value is `false`
 
 This setting asks Elasticsearch for the list of all cluster nodes and adds them to the hosts list.
-For Elasticsearch 1.x and 2.x any nodes with `http.enabled` (on by default) will be added to the hosts list, including master nodes!
-For Elasticsearch 5.x and 6.x only nodes with the data role enabled will be added to the hosts list.
+For Elasticsearch 1.x and 2.x any nodes with `http.enabled` (on by default) will be added to the hosts list, including master-only nodes!
+For Elasticsearch 5.x and 6.x any nodes with `http.enabled` (on by default) will be added to the hosts list, excluding master-only nodes.
 
 [id="plugins-{type}s-{plugin}-sniffing_delay"]
 ===== `sniffing_delay` 
