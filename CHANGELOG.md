@@ -1,3 +1,6 @@
+## 9.0.3
+  - Ignore master-only nodes when using sniffing
+
 ## 9.0.2
   - Ignore event's type field for the purpose of setting document `_type` if cluster is es 6.x or above
 
