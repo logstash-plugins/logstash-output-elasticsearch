@@ -36,8 +36,8 @@ module LogStash; module Outputs; class ElasticSearch;
 
     # Convert the event into a 3-tuple of action, params, and event
     def event_action_tuple(event)
-      params = event_action_params(event)
       action = event.sprintf(@action)
+      params = event_action_params(event, action)
       [action, params, event]
     end
 
@@ -161,7 +161,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     # get the action parameters for the given event
-    def event_action_params(event)
+    def event_action_params(event, action)
       type = get_event_type(event)
 
       params = {
@@ -186,7 +186,7 @@ module LogStash; module Outputs; class ElasticSearch;
         end
       end
 
-      if @action == 'update'
+      if action == 'update'
         params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
         params[:_script] = event.sprintf(@script) if @script != ""
         params[:_retry_on_conflict] = @retry_on_conflict
