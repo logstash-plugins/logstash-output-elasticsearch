@@ -83,21 +83,16 @@ describe "pool sniffer", :integration => true do
         subject.start
       end
 
-      context "with three nodes with one master-only node" do
+      context "with mixed master-only, data-only, and data + master nodes" do
         it "should execute a sniff without error" do
           expect { subject.check_sniff }.not_to raise_error
         end
 
-        it "should return two sniff URLs" do
-          uris = subject.check_sniff
-
-          expect(uris.size).to eq(2)
-        end
-
         it "should return the correct sniff URLs" do
+          # ie. without the master-only node
           uris = subject.check_sniff
 
-          expect(uris).to include(::LogStash::Util::SafeURI.new("http://localhost:9201"), ::LogStash::Util::SafeURI.new("http://localhost:9202"))
+          expect(uris).to include(::LogStash::Util::SafeURI.new("http://localhost:9201"), ::LogStash::Util::SafeURI.new("http://localhost:9202"), ::LogStash::Util::SafeURI.new("http://localhost:9203"))
         end
       end
     end
