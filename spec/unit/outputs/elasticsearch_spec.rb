@@ -359,6 +359,53 @@ describe LogStash::Outputs::ElasticSearch do
     end
   end
 
+  describe "remove empty params from action params" do
+    let(:options) { {"parent" => "%{myparent}", "document_id" => "%{myid}"} }
+    subject(:eso) {LogStash::Outputs::ElasticSearch.new(options)}
+
+    let(:event_full) { LogStash::Event.new("message" => "blah", "myid" => "mytestid", "myparent" => "mytestparent") }
+    let(:event_partial_missing) { LogStash::Event.new("message" => "blah") }
+    let(:event_partial_empty) { LogStash::Event.new("message" => "blah", "myid" => "", "myparent" => "") }
+
+    context "when remove_empty_action_params enabled" do
+      let(:options) { super.merge("remove_empty_action_params" => true) }
+
+      it "should interpolate the requested id and parent values" do
+        params = eso.event_action_params(event_full)
+        expect(params).to include(:_id => "mytestid", :parent => "mytestparent")
+      end
+
+      it "should interpolate the requested id and parent values and leave them as is (sprintf behavior, not sure if correct one) when they missing" do
+        params = eso.event_action_params(event_partial_missing)
+        expect(params).to include(:_id => "%{myid}", :parent => "%{myparent}")
+      end
+
+      it "should not interpolate the requested id and parent values and remove them when they are empty" do
+        params = eso.event_action_params(event_partial_empty)
+        expect(params).not_to include(:_id, :parent)
+      end
+    end
+
+    context "when remove_empty_action_params disabled" do
+      let(:options) { super.merge("remove_empty_action_params" => false) }
+
+      it "should interpolate the requested id and parent values" do
+        params = eso.event_action_params(event_full)
+        expect(params).to include({:_id => "mytestid", :parent => "mytestparent"})
+      end
+
+      it "should interpolate the requested id and parent values and leave them as is (sprintf behavior, not sure if correct one) when they missing" do
+        params = eso.event_action_params(event_partial_missing)
+        expect(params).to include(:_id => "%{myid}", :parent => "%{myparent}")
+      end
+
+      it "should interpolate the requested id and parent values and leave them as is (sprintf behavior, not sure if correct one) when they empty" do
+        params = eso.event_action_params(event_partial_missing)
+        expect(params).to include(:_id => "%{myid}", :parent => "%{myparent}")
+      end
+    end
+  end
+
   describe "sleep interval calculation" do
     let(:retry_max_interval) { 64 }
     let(:options) { { "retry_max_interval" => retry_max_interval } }
