@@ -10,9 +10,9 @@ module LogStash; module Outputs; class ElasticSearch;
     DOC_CONFLICT_CODE = 409
 
     # When you use external versioning, you are communicating that you want
-    # to ignore conflicts. More obviously, since an external version is a 
+    # to ignore conflicts. More obviously, since an external version is a
     # constant part of the incoming document, we should not retry, as retrying
-    # will never succeed. 
+    # will never succeed.
     VERSION_TYPES_PERMITTING_CONFLICT = ["external", "external_gt", "external_gte"]
 
     def register
@@ -36,8 +36,45 @@ module LogStash; module Outputs; class ElasticSearch;
 
     # Convert the event into a 3-tuple of action, params, and event
     def event_action_tuple(event)
-      params = event_action_params(event)
+
       action = event.sprintf(@action)
+
+      params = {
+        :_id => @document_id ? event.sprintf(@document_id) : nil,
+        :_index => event.sprintf(@index),
+        :_type => get_event_type(event),
+        :_routing => @routing ? event.sprintf(@routing) : nil
+      }
+
+      if @pipeline
+        params[:pipeline] = event.sprintf(@pipeline)
+      end
+
+      if @parent
+        if @join_field
+          join_value = event.get(@join_field)
+          parent_value = event.sprintf(@parent)
+          event.set(@join_field, { "name" => join_value, "parent" => parent_value })
+          params[:_routing] = event.sprintf(@parent)
+        else
+          params[:parent] = event.sprintf(@parent)
+        end
+      end
+
+      if action == 'update'
+        params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
+        params[:_script] = event.sprintf(@script) if @script != ""
+        params[:_retry_on_conflict] = @retry_on_conflict
+      end
+
+      if @version
+        params[:version] = event.sprintf(@version)
+      end
+
+      if @version_type
+        params[:version_type] = event.sprintf(@version_type)
+      end
+
       [action, params, event]
     end
 
@@ -158,49 +195,6 @@ module LogStash; module Outputs; class ElasticSearch;
       end
 
       actions_to_retry
-    end
-
-    # get the action parameters for the given event
-    def event_action_params(event)
-      type = get_event_type(event)
-
-      params = {
-        :_id => @document_id ? event.sprintf(@document_id) : nil,
-        :_index => event.sprintf(@index),
-        :_type => type,
-        :_routing => @routing ? event.sprintf(@routing) : nil
-      }
-
-      if @pipeline
-        params[:pipeline] = event.sprintf(@pipeline)
-      end
-
-      if @parent
-        if @join_field
-          join_value = event.get(@join_field)
-          parent_value = event.sprintf(@parent)
-          event.set(@join_field, { "name" => join_value, "parent" => parent_value })
-          params[:_routing] = event.sprintf(@parent)
-        else
-          params[:parent] = event.sprintf(@parent)
-        end
-      end
-
-      if @action == 'update'
-        params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
-        params[:_script] = event.sprintf(@script) if @script != ""
-        params[:_retry_on_conflict] = @retry_on_conflict
-      end
-
-      if @version
-        params[:version] = event.sprintf(@version)
-      end
-
-      if @version_type
-        params[:version_type] = event.sprintf(@version_type)
-      end
-
-      params
     end
 
     # Determine the correct value for the 'type' field for the given event
