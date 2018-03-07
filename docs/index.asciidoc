@@ -494,7 +494,7 @@ When using indexed (stored) scripts on Elasticsearch 6 and higher, you must set 
 Define the type of script referenced by "script" variable
  inline : "script" contains inline script
  indexed : "script" contains the name of script directly indexed in elasticsearch
- file    : "script" contains the name of script stored in elasticseach's config directory
+ file    : "script" contains the name of script stored in elasticsearch's config directory
 
 [id="plugins-{type}s-{plugin}-script_var_name"]
 ===== `script_var_name` 
