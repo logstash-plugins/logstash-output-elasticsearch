@@ -41,10 +41,6 @@ describe LogStash::Outputs::ElasticSearch do
     let(:manticore_url) { manticore_urls.first }
 
     describe "getting a document type" do
-      it "should default to 'doc'" do
-        expect(subject.send(:get_event_type, LogStash::Event.new)).to eql("doc")
-      end
-
       context "if document_type isn't set" do
         let(:options) { super.merge("document_type" => nil)}
         context "for 7.x elasticsearch clusters" do
