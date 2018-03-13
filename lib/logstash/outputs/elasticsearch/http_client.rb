@@ -50,6 +50,9 @@ module LogStash; module Outputs; class ElasticSearch;
     #   through a special http path, such as using mod_rewrite.
     def initialize(options={})
       @logger = options[:logger]
+      @metric = options[:metric]
+      @bulk_request_metrics = @metric.namespace(:bulk_requests)
+      @bulk_response_metrics = @bulk_request_metrics.namespace(:responses)
       
       # Again, in case we use DEFAULT_OPTIONS in the future, uncomment this.
       # @options = DEFAULT_OPTIONS.merge(options)
@@ -141,6 +144,8 @@ module LogStash; module Outputs; class ElasticSearch;
         body_stream.truncate(0)
         body_stream.seek(0)
       end
+
+      @bulk_response_metrics.increment(response.code.to_s)
 
       if response.code != 200
         raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(
@@ -282,7 +287,8 @@ module LogStash; module Outputs; class ElasticSearch;
         :sniffing_path => options[:sniffing_path],
         :healthcheck_path => options[:healthcheck_path],
         :resurrect_delay => options[:resurrect_delay],
-        :url_normalizer => self.method(:host_to_url)
+        :url_normalizer => self.method(:host_to_url),
+        :metric => options[:metric]
       }
       pool_options[:scheme] = self.scheme if self.scheme
 

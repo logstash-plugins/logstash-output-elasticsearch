@@ -7,7 +7,13 @@ describe "pool sniffer", :integration => true do
   let(:logger) { Cabin::Channel.get }
   let(:adapter) { LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter.new(logger) }
   let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://#{get_host_port}")] }
-  let(:options) { {:resurrect_delay => 2, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
+  let(:options) do
+    {
+      :resurrect_delay => 2, # Shorten the delay a bit to speed up tests
+      :url_normalizer => proc {|u| u},
+      :metric => ::LogStash::Instrument::NullMetric.new(:dummy).namespace(:alsodummy)
+    }
+  end
 
   subject { LogStash::Outputs::ElasticSearch::HttpClient::Pool.new(logger, adapter, initial_urls, options) }
 
