@@ -212,16 +212,19 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     # Determine the correct value for the 'type' field for the given event
-    DEFAULT_EVENT_TYPE="doc".freeze
+    DEFAULT_EVENT_TYPE_ES6="doc".freeze
+    DEFAULT_EVENT_TYPE_ES7="_doc".freeze
     def get_event_type(event)
       # Set the 'type' value for the index.
       type = if @document_type
                event.sprintf(@document_type)
              else
                if client.maximum_seen_major_version < 6
-                 event.get("type") || DEFAULT_EVENT_TYPE
+                 event.get("type") || DEFAULT_EVENT_TYPE_ES6
+               elsif client.maximum_seen_major_version == 6
+                 DEFAULT_EVENT_TYPE_ES6
                else
-                 DEFAULT_EVENT_TYPE
+                 DEFAULT_EVENT_TYPE_ES7
                end
              end
 
