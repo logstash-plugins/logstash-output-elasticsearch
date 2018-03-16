@@ -1,3 +1,8 @@
+## 9.1.0
+  - Set number_of_shards to 1 and document_type to '_doc' for es 7.x clusters #741 #747
+  - Fix usage of upsert and script when update action is interpolated #239
+  - Add metrics to track bulk level and document level responses #585
+
 ## 9.0.3
   - Ignore master-only nodes when using sniffing
 
