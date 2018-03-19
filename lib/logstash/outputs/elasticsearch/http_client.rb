@@ -148,8 +148,9 @@ module LogStash; module Outputs; class ElasticSearch;
       @bulk_response_metrics.increment(response.code.to_s)
 
       if response.code != 200
+        url = ::LogStash::Util::SafeURI.new(response.final_url)
         raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(
-          response.code, @bulk_path, body_stream.to_s, response.body
+          response.code, url, body_stream.to_s, response.body
         )
       end
 
