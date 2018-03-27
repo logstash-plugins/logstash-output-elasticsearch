@@ -66,7 +66,11 @@ module LogStash; module Outputs; class ElasticSearch;
       if action == 'update'
         params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
         params[:_script] = event.sprintf(@script) if @script != ""
-        params[:_retry_on_conflict] = @retry_on_conflict
+        if maximum_seen_major_version < 6
+          params[:_retry_on_conflict] = @retry_on_conflict
+        else
+          params[:retry_on_conflict] = @retry_on_conflict
+        end
       end
 
       if @version
