@@ -476,6 +476,14 @@ This can be dynamic using the `%{foo}` syntax.
 
 Set script name for scripted update mode
 
+Example:
+[source,ruby]
+    output {
+      elasticsearch {
+        script => "ctx._source.message = params.event.get('message')"
+      }
+    }
+
 [id="plugins-{type}s-{plugin}-script_lang"]
 ===== `script_lang` 
 
