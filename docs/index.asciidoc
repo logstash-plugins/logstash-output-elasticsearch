@@ -480,7 +480,7 @@ Example:
 [source,ruby]
     output {
       elasticsearch {
-        script => "ctx._source.message = event.get('message')"
+        script => "ctx._source.message = params.event.get('message')"
       }
     }
 
