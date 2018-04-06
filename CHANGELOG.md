@@ -1,3 +1,6 @@
+## 9.1.1
+  - Docs: Set the default_codec doc attribute.
+
 ## 9.1.0
   - Set number_of_shards to 1 and document_type to '_doc' for es 7.x clusters #741 #747
   - Fix usage of upsert and script when update action is interpolated #239
