@@ -50,11 +50,11 @@ module LogStash; module Outputs; class ElasticSearch;
     #   through a special http path, such as using mod_rewrite.
     def initialize(options={})
       @logger = options[:logger]
-      
+
       # Again, in case we use DEFAULT_OPTIONS in the future, uncomment this.
       # @options = DEFAULT_OPTIONS.merge(options)
       @options = options
-      
+
       @url_template = build_url_template
 
       @pool = build_pool(@options)
@@ -62,7 +62,7 @@ module LogStash; module Outputs; class ElasticSearch;
       # connection pool at the same time
       @bulk_path = @options[:bulk_path]
     end
-    
+
     def build_url_template
       {
         :scheme => self.scheme,
@@ -106,7 +106,7 @@ module LogStash; module Outputs; class ElasticSearch;
       if http_compression
         body_stream.set_encoding "BINARY"
         stream_writer = Zlib::GzipWriter.new(body_stream, Zlib::DEFAULT_COMPRESSION, Zlib::DEFAULT_STRATEGY)
-      else 
+      else
         stream_writer = body_stream
       end
       bulk_responses = []
@@ -115,9 +115,9 @@ module LogStash; module Outputs; class ElasticSearch;
                     action.map {|line| LogStash::Json.dump(line)}.join("\n") :
                     LogStash::Json.dump(action)
         as_json << "\n"
-	if (body_stream.size + as_json.bytesize) > TARGET_BULK_BYTES
-          bulk_responses << bulk_send(body_stream) unless body_stream.size == 0
-	end
+        if body_stream.size > 0 && (body_stream.size + as_json.bytesize) > TARGET_BULK_BYTES
+          bulk_responses << bulk_send(body_stream)
+        end
         stream_writer.write(as_json)
       end
       stream_writer.close if http_compression
@@ -135,7 +135,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def bulk_send(body_stream)
       params = http_compression ? {:headers => {"Content-Encoding" => "gzip"}} : {}
-      # Discard the URL 
+      # Discard the URL
       response = @pool.post(@bulk_path, params, body_stream.string)
       if !body_stream.closed?
         body_stream.truncate(0)
@@ -208,7 +208,7 @@ module LogStash; module Outputs; class ElasticSearch;
                         else
                           nil
                         end
-      
+
       calculated_scheme = calculate_property(uris, :scheme, explicit_scheme, sniffing)
 
       if calculated_scheme && calculated_scheme !~ /https?/
@@ -228,7 +228,7 @@ module LogStash; module Outputs; class ElasticSearch;
       # Enter things like foo:123, bar and wind up with foo:123, bar:9200
       calculate_property(uris, :port, nil, sniffing) || 9200
     end
-    
+
     def uris
       @options[:hosts]
     end
@@ -247,7 +247,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def build_adapter(options)
       timeout = options[:timeout] || 0
-      
+
       adapter_options = {
         :socket_timeout => timeout,
         :request_timeout => timeout,
@@ -268,11 +268,11 @@ module LogStash; module Outputs; class ElasticSearch;
       end
 
       adapter_options[:ssl] = ssl_options if self.scheme == 'https'
-      
+
       adapter_class = ::LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter
       adapter = adapter_class.new(@logger, adapter_options)
     end
-    
+
     def build_pool(options)
       adapter = build_adapter(options)
 
@@ -321,7 +321,7 @@ module LogStash; module Outputs; class ElasticSearch;
                     h.query
                   end
       prefixed_raw_query = raw_query && !raw_query.empty? ? "?#{raw_query}" : nil
-      
+
       raw_url = "#{raw_scheme}://#{postfixed_userinfo}#{raw_host}:#{raw_port}#{prefixed_raw_path}#{prefixed_raw_query}"
 
       ::LogStash::Util::SafeURI.new(raw_url)
