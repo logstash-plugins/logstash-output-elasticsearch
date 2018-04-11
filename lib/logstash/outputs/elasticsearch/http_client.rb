@@ -242,7 +242,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def http_compression
-      client_settings.fetch(:http_compression, {})
+      client_settings.fetch(:http_compression, false)
     end
 
     def build_adapter(options)
