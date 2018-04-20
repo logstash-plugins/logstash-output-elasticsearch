@@ -42,7 +42,7 @@ if ESHelper.es_version_satisfies?(">= 5")
             subject.register
             subject.multi_receive([LogStash::Event.new("count" => 2)])
             r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "123", :refresh => true)
-            insist { r["_source"]["counter"] } == 3
+            expect(r["_source"]["counter"]).to eq(3)
           end
 
           it "should increment a counter with event/doc '[data][count]' nested variable" do
@@ -50,7 +50,7 @@ if ESHelper.es_version_satisfies?(">= 5")
             subject.register
             subject.multi_receive([LogStash::Event.new("data" => { "count" => 3 })])
             r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "123", :refresh => true)
-            insist { r["_source"]["counter"] } == 4
+            expect(r["_source"]["counter"]).to eq(4)
           end
         end
       end
@@ -64,7 +64,7 @@ if ESHelper.es_version_satisfies?(">= 5")
         subject.register
         subject.multi_receive([LogStash::Event.new("counter" => 3 )])
         r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "123", :refresh => true)
-        insist { r["_source"]["counter"] } == 4
+        expect(r["_source"]["counter"]).to eq(4)
       end
 
       it "should increment a counter with event/doc 'count' variable with event/doc as upsert and inline script" do
@@ -77,7 +77,7 @@ if ESHelper.es_version_satisfies?(">= 5")
         subject.register
         subject.multi_receive([LogStash::Event.new("counter" => 3 )])
         r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "123", :refresh => true)
-        insist { r["_source"]["counter"] } == 4
+        expect(r["_source"]["counter"]).to eq(4)
       end
 
       it "should, with new doc, set a counter with event/doc 'count' variable with event/doc as upsert and inline script" do
@@ -90,7 +90,7 @@ if ESHelper.es_version_satisfies?(">= 5")
         subject.register
         subject.multi_receive([LogStash::Event.new("counter" => 3 )])
         r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
-        insist { r["_source"]["counter"] } == 3
+        expect(r["_source"]["counter"]).to eq(3)
       end
 
       context 'with an indexed script' do
@@ -115,7 +115,7 @@ if ESHelper.es_version_satisfies?(">= 5")
           subject.register
           subject.multi_receive([LogStash::Event.new("count" => 4 )])
           r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "123", :refresh => true)
-          insist { r["_source"]["counter"] } == 5
+          expect(r["_source"]["counter"]).to eq(5)
         end
       end
      end
@@ -126,7 +126,7 @@ if ESHelper.es_version_satisfies?(">= 5")
         subject.register
         subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
         r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
-        insist { r["_source"]["message"] } == 'upsert message'
+        expect(r["_source"]["message"]).to eq('upsert message')
       end
 
       it "should create new documents with event/doc as upsert" do
@@ -134,7 +134,7 @@ if ESHelper.es_version_satisfies?(">= 5")
         subject.register
         subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
         r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
-        insist { r["_source"]["message"] } == 'sample message here'
+        expect(r["_source"]["message"]).to eq('sample message here')
       end
 
       it "should fail on documents with event/doc as upsert at external version" do
@@ -151,7 +151,7 @@ if ESHelper.es_version_satisfies?(">= 5")
             subject.register
             subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
             r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
-            insist { r["_source"]["message"] } == 'upsert message'
+            expect(r["_source"]["message"]).to eq('upsert message')
           end
 
           it "should create new documents with event/doc as script params" do
@@ -160,7 +160,7 @@ if ESHelper.es_version_satisfies?(">= 5")
             subject.multi_receive([LogStash::Event.new("counter" => 1)])
             @es.indices.refresh
             r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
-            insist { r["_source"]["counter"] } == 1
+            expect(r["_source"]["counter"]).to eq(1)
           end
         end
       end
@@ -171,7 +171,7 @@ if ESHelper.es_version_satisfies?(">= 5")
           subject.register
           subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
           r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
-          insist { r["_source"]["message"] } == 'upsert message'
+          expect(r["_source"]["message"]).to eq('upsert message')
         end
 
         it "should create new documents with event/doc as script params" do
@@ -180,7 +180,7 @@ if ESHelper.es_version_satisfies?(">= 5")
           subject.multi_receive([LogStash::Event.new("counter" => 1)])
           @es.indices.refresh
           r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
-          insist { r["_source"]["counter"] } == 1
+          expect(r["_source"]["counter"]).to eq(1)
         end
       end
     end

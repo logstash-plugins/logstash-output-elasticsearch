@@ -29,7 +29,7 @@ shared_examples "a routing indexer" do
         response = client.get("#{index_url}/_count?q=*&routing=#{routing}").call
         result = LogStash::Json.load(response.body)
         cur_count = result["count"]
-        insist { cur_count } == event_count
+        expect(cur_count).to eq(event_count)
       end
     end
 end

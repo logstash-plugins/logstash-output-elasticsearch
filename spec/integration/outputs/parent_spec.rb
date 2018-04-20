@@ -39,7 +39,7 @@ if ESHelper.es_version_satisfies?("<= 5.x")
           data = response.body
           result = LogStash::Json.load(data)
           cur_count = result["count"]
-          insist { cur_count } == event_count
+          expect(cur_count).to eq(event_count)
         end
       end
     end
@@ -131,7 +131,7 @@ if ESHelper.es_version_satisfies?(">= 5.6")
           data = response.body
           result = LogStash::Json.load(data)
           cur_count = result["count"]
-          insist { cur_count } == event_count
+          expect(cur_count).to eq(event_count)
         end
       end
     end

@@ -35,7 +35,7 @@ describe "client create actions", :integration => true do
       # Wait or fail until everything's indexed.
       Stud::try(3.times) do
         r = @es.search
-        insist { r["hits"]["total"] } == 1
+        expect(r["hits"]["total"]).to eq(1)
       end
     end
 

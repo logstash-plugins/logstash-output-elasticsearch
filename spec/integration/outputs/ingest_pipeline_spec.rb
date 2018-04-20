@@ -54,21 +54,21 @@ if ESHelper.es_version_satisfies?(">= 5")
       #Wait or fail until everything's indexed.
       Stud::try(20.times) do
         r = @es.search
-        insist { r["hits"]["total"] } == 1
+        expect(r["hits"]["total"]).to eq(1)
       end
     end
 
     it "indexes using the proper pipeline" do
       results = @es.search(:index => 'logstash-*', :q => "message:\"netcat\"")
-      insist { results["hits"]["total"] } == 1
-      insist { results["hits"]["hits"][0]["_source"]["response"] } == "200"
-      insist { results["hits"]["hits"][0]["_source"]["bytes"] } == "182"
-      insist { results["hits"]["hits"][0]["_source"]["verb"] } == "GET"
-      insist { results["hits"]["hits"][0]["_source"]["request"] } == "/scripts/netcat-webserver"
-      insist { results["hits"]["hits"][0]["_source"]["auth"] } == "-"
-      insist { results["hits"]["hits"][0]["_source"]["ident"] } == "-"
-      insist { results["hits"]["hits"][0]["_source"]["clientip"] } == "183.60.215.50"
-      insist { results["hits"]["hits"][0]["_source"]["junkfieldaaaa"] } == nil
+      expect(results["hits"]["total"]).to eq(1)
+      expect(results["hits"]["hits"][0]["_source"]["response"]).to eq("200")
+      expect(results["hits"]["hits"][0]["_source"]["bytes"]).to eq("182")
+      expect(results["hits"]["hits"][0]["_source"]["verb"]).to eq("GET")
+      expect(results["hits"]["hits"][0]["_source"]["request"]).to eq("/scripts/netcat-webserver")
+      expect(results["hits"]["hits"][0]["_source"]["auth"]).to eq("-")
+      expect(results["hits"]["hits"][0]["_source"]["ident"]).to eq("-")
+      expect(results["hits"]["hits"][0]["_source"]["clientip"]).to eq("183.60.215.50")
+      expect(results["hits"]["hits"][0]["_source"]["junkfieldaaaa"]).to eq(nil)
     end
   end
 end
