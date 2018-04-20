@@ -11,7 +11,7 @@ if ESHelper.es_version_satisfies?(">= 5")
       next LogStash::Outputs::ElasticSearch.new(settings)
     end
 
-    let(:ftw_client) { FTW::Agent.new }
+    let(:http_client) { Manticore::Client.new }
     let(:ingest_url) { "http://#{get_host_port()}/_ingest/pipeline/apache-logs" }
     let(:apache_logs_pipeline) { '
     {
@@ -39,13 +39,10 @@ if ESHelper.es_version_satisfies?(">= 5")
       @es.indices.delete(:index => "*") rescue nil
 
       # delete existing ingest pipeline
-      req = ftw_client.delete(ingest_url)
-      ftw_client.execute(req)
+      http_client.delete(ingest_url).call
 
       # register pipeline
-      req = ftw_client.put(ingest_url, :body => apache_logs_pipeline)
-      req.headers["Content-Type"] = "application/json"
-      ftw_client.execute(req)
+      http_client.put(ingest_url, :body => apache_logs_pipeline, :headers => {"Content-Type" => "application/json" }).call
 
       #TODO: Use esclient
       #@es.ingest.put_pipeline :id => 'apache_pipeline', :body => pipeline_defintion

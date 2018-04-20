@@ -19,16 +19,15 @@ shared_examples "a routing indexer" do
     it "ships events" do
       index_url = "http://#{get_host_port()}/#{index}"
 
-      ftw = FTW::Agent.new
-      ftw.post!("#{index_url}/_refresh")
+      client = Manticore::Client.new
+      client.post("#{index_url}/_refresh").call
 
       # Wait until all events are available.
       Stud::try(10.times) do
         data = ""
 
-        response = ftw.get!("#{index_url}/_count?q=*&routing=#{routing}")
-        response.read_body { |chunk| data << chunk }
-        result = LogStash::Json.load(data)
+        response = client.get("#{index_url}/_count?q=*&routing=#{routing}").call
+        result = LogStash::Json.load(response.body)
         cur_count = result["count"]
         insist { cur_count } == event_count
       end
