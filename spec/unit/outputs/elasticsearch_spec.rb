@@ -314,6 +314,7 @@ describe LogStash::Outputs::ElasticSearch do
   end
 
   describe "SSL end to end" do
+    let(:do_register) { false }
     let(:manticore_double) do
       double("manticoreX#{self.inspect}")
     end
@@ -457,7 +458,7 @@ describe LogStash::Outputs::ElasticSearch do
         end
       end
 
-      context "with explicity query parameters" do
+      context "with explicit query parameters" do
         let(:options) {
           {
             "hosts" => ["http://localhost:9202/path"],
@@ -470,7 +471,7 @@ describe LogStash::Outputs::ElasticSearch do
         end
       end
 
-      context "with explicity query parameters and existing url parameters" do
+      context "with explicit query parameters and existing url parameters" do
         let(:existing_query_string) { "existing=param" }
         let(:options) {
           {
