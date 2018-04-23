@@ -16,15 +16,16 @@ module LogStash; module Outputs; class ElasticSearch;
     VERSION_TYPES_PERMITTING_CONFLICT = ["external", "external_gt", "external_gte"]
 
     def register
+      @template_installed = Concurrent::AtomicBoolean.new(false)
       @stopping = Concurrent::AtomicBoolean.new(false)
       # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
       @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
 
       setup_hosts # properly sets @hosts
       build_client
-
-      install_template
+      after_successful_connection { install_template }
       check_action_validity
+      #after_successful_connection { install_template }
       @bulk_request_metrics = metric.namespace(:bulk_requests)
       @document_level_metrics = metric.namespace(:documents)
 
@@ -33,7 +34,31 @@ module LogStash; module Outputs; class ElasticSearch;
 
     # Receive an array of events and immediately attempt to index them (no buffering)
     def multi_receive(events)
+      until @template_installed.true?
+        sleep 1
+      end
       retrying_submit(events.map {|e| event_action_tuple(e)})
+    end
+
+    def after_successful_connection
+      @template_installer = Thread.new do
+          sleep_interval = @retry_initial_interval
+          until successful_connection? || @stopping.true?
+            @logger.debug("Waiting for connectivity to Elasticsearch cluster")
+            Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
+            sleep_interval = next_sleep_interval(sleep_interval)
+          end
+          yield if successful_connection?
+        end
+      end
+
+    def stop_template_installer
+      @template_installer.join if @template_installer
+    end
+
+    def successful_connection?
+      # !!maximum_seen_major_version
+      maximum_seen_major_version
     end
 
     # Convert the event into a 3-tuple of action, params, and event
@@ -94,6 +119,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def install_template
       TemplateManager.install_template(self)
+      @template_installed.make_true
     end
 
     def check_action_validity
