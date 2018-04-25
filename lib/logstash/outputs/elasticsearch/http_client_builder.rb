@@ -78,12 +78,12 @@ module LogStash; module Outputs; class ElasticSearch;
       raise(
         LogStash::ConfigurationError,
         "Specifying action => 'update' needs a document_id."
-      ) if params['action'] == 'update' and params.fetch('document_id', '') == ''
+      ) if (params['action'] == 'update' or params['action'] == 'upsert') and params.fetch('document_id', '') == ''
 
       raise(
         LogStash::ConfigurationError,
         "External versioning is not supported by the update action. See https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-update.html."
-      ) if params['action'] == 'update' and external_version_types.include?(params.fetch('version_type', ''))
+      ) if (params['action'] == 'update' or params['action'] == 'upsert') and external_version_types.include?(params.fetch('version_type', ''))
 
       # Update API setup
       update_options = {
@@ -93,7 +93,7 @@ module LogStash; module Outputs; class ElasticSearch;
         :script_lang => params["script_lang"],
         :scripted_upsert => params["scripted_upsert"]
       }
-      common_options.merge! update_options if params["action"] == 'update'
+      common_options.merge! update_options if params["action"] == 'update' or params["action"] == 'upsert'
 
       create_http_client(common_options.merge(:hosts => hosts, :logger => logger))
     end
