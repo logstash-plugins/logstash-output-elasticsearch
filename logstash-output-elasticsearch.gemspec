@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name            = 'logstash-output-elasticsearch'
-  s.version         = '9.1.1'
+  s.version         = '9.1.2'
   s.licenses        = ['apache-2.0']
   s.summary         = "Stores logs in Elasticsearch"
   s.description     = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using $LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program"
@@ -26,7 +26,6 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "logstash-core-plugin-api", ">= 1.60", "<= 2.99"
 
   s.add_development_dependency 'logstash-codec-plain'
-  s.add_development_dependency 'gzip' # used by spec/integration/outputs/index_spec.rb
   s.add_development_dependency 'logstash-devutils'
   s.add_development_dependency 'flores'
   # Still used in some specs, we should remove this ASAP

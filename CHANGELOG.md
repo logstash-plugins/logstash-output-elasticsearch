@@ -1,3 +1,6 @@
+## 9.1.2
+  - No user facing changes, removed unnecessary test dep.
+
 ## 9.1.1
   - Docs: Set the default_codec doc attribute.
 

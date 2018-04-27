@@ -1,7 +1,6 @@
 require_relative "../../../spec/es_spec_helper"
 require "logstash/outputs/elasticsearch"
 require "stringio"
-require "gzip"
 
 RSpec::Matchers.define :a_valid_gzip_encoded_string do
   match { |data|
