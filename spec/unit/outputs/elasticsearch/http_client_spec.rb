@@ -29,7 +29,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     let(:http_hostname_port) { ::LogStash::Util::SafeURI.new("http://#{hostname_port}") }
     let(:https_hostname_port) { ::LogStash::Util::SafeURI.new("https://#{hostname_port}") }
     let(:http_hostname_port_path) { ::LogStash::Util::SafeURI.new("http://#{hostname_port}/path") }
-    
+
     shared_examples("proper host handling") do
       it "should properly transform a host:port string to a URL" do
         expect(subject.host_to_url(hostname_port_uri).to_s).to eq(http_hostname_port.to_s + "/")
@@ -58,7 +58,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
         context "when SSL is false" do
           let(:ssl) { false }
           let(:base_options) { super.merge(:hosts => [https_hostname_port]) }
-          
+
           it "should refuse to handle an https url" do
             expect {
               subject.host_to_url(https_hostname_port)
@@ -72,32 +72,32 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
             subject
             expect(subject.host_to_url(https_hostname_port).to_s).to eq(https_hostname_port.to_s + "/")
           end
-        end       
+        end
       end
 
       describe "path" do
         let(:url) { http_hostname_port_path }
         let(:base_options) { super.merge(:hosts => [url]) }
-        
+
         it "should allow paths in a url" do
           expect(subject.host_to_url(url)).to eq(url)
         end
 
         context "with the path option set" do
           let(:base_options) { super.merge(:client_settings => {:path => "/otherpath"}) }
-          
+
           it "should not allow paths in two places" do
             expect {
               subject.host_to_url(url)
             }.to raise_error(LogStash::ConfigurationError)
           end
         end
-        
+
         context "with a path missing a leading /" do
           let(:url) { http_hostname_port }
           let(:base_options) { super.merge(:client_settings => {:path => "otherpath"}) }
-          
-          
+
+
           it "should automatically insert a / in front of path overlays" do
             expected = url.clone
             expected.path = url.path + "/otherpath"
@@ -176,6 +176,52 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
         s = subject.send(:join_bulk_responses, bulk_response)
         expect(s["errors"]).to be false
         expect(s["items"].size).to be 0
+      end
+    end
+  end
+
+  describe "#bulk" do
+    subject { described_class.new(base_options) }
+    let(:message) { "hey" }
+    let(:actions) { [
+      ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message}],
+    ]}
+
+    context "if a message is over TARGET_BULK_BYTES" do
+      let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
+      let(:message) { "a" * (target_bulk_bytes + 1) }
+
+      it "sends the message as its own bulk payload" do
+        allow(subject).to receive(:join_bulk_responses)
+        expect(subject).to receive(:bulk_send).once do |data|
+          expect(data.size).to be > target_bulk_bytes
+        end
+        s = subject.send(:bulk, actions)
+      end
+    end
+
+    context "with two messages" do
+      let(:message1) { "hey" }
+      let(:message2) { "you" }
+      let(:actions) { [
+        ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message1}],
+        ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message2}],
+      ]}
+
+      it "executes one bulk_send operation" do
+        allow(subject).to receive(:join_bulk_responses)
+        expect(subject).to receive(:bulk_send).once
+        s = subject.send(:bulk, actions)
+      end
+
+      context "if one exceeds TARGET_BULK_BYTES" do
+        let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
+        let(:message1) { "a" * (target_bulk_bytes + 1) }
+        it "executes two bulk_send operations" do
+          allow(subject).to receive(:join_bulk_responses)
+          expect(subject).to receive(:bulk_send).twice
+          s = subject.send(:bulk, actions)
+        end
       end
     end
   end
