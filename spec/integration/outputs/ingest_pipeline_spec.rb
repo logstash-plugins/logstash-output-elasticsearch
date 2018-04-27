@@ -11,7 +11,7 @@ if ESHelper.es_version_satisfies?(">= 5")
       next LogStash::Outputs::ElasticSearch.new(settings)
     end
 
-    let(:ftw_client) { FTW::Agent.new }
+    let(:http_client) { Manticore::Client.new }
     let(:ingest_url) { "http://#{get_host_port()}/_ingest/pipeline/apache-logs" }
     let(:apache_logs_pipeline) { '
     {
@@ -39,13 +39,10 @@ if ESHelper.es_version_satisfies?(">= 5")
       @es.indices.delete(:index => "*") rescue nil
 
       # delete existing ingest pipeline
-      req = ftw_client.delete(ingest_url)
-      ftw_client.execute(req)
+      http_client.delete(ingest_url).call
 
       # register pipeline
-      req = ftw_client.put(ingest_url, :body => apache_logs_pipeline)
-      req.headers["Content-Type"] = "application/json"
-      ftw_client.execute(req)
+      http_client.put(ingest_url, :body => apache_logs_pipeline, :headers => {"Content-Type" => "application/json" }).call
 
       #TODO: Use esclient
       #@es.ingest.put_pipeline :id => 'apache_pipeline', :body => pipeline_defintion
@@ -57,21 +54,21 @@ if ESHelper.es_version_satisfies?(">= 5")
       #Wait or fail until everything's indexed.
       Stud::try(20.times) do
         r = @es.search
-        insist { r["hits"]["total"] } == 1
+        expect(r["hits"]["total"]).to eq(1)
       end
     end
 
     it "indexes using the proper pipeline" do
       results = @es.search(:index => 'logstash-*', :q => "message:\"netcat\"")
-      insist { results["hits"]["total"] } == 1
-      insist { results["hits"]["hits"][0]["_source"]["response"] } == "200"
-      insist { results["hits"]["hits"][0]["_source"]["bytes"] } == "182"
-      insist { results["hits"]["hits"][0]["_source"]["verb"] } == "GET"
-      insist { results["hits"]["hits"][0]["_source"]["request"] } == "/scripts/netcat-webserver"
-      insist { results["hits"]["hits"][0]["_source"]["auth"] } == "-"
-      insist { results["hits"]["hits"][0]["_source"]["ident"] } == "-"
-      insist { results["hits"]["hits"][0]["_source"]["clientip"] } == "183.60.215.50"
-      insist { results["hits"]["hits"][0]["_source"]["junkfieldaaaa"] } == nil
+      expect(results["hits"]["total"]).to eq(1)
+      expect(results["hits"]["hits"][0]["_source"]["response"]).to eq("200")
+      expect(results["hits"]["hits"][0]["_source"]["bytes"]).to eq("182")
+      expect(results["hits"]["hits"][0]["_source"]["verb"]).to eq("GET")
+      expect(results["hits"]["hits"][0]["_source"]["request"]).to eq("/scripts/netcat-webserver")
+      expect(results["hits"]["hits"][0]["_source"]["auth"]).to eq("-")
+      expect(results["hits"]["hits"][0]["_source"]["ident"]).to eq("-")
+      expect(results["hits"]["hits"][0]["_source"]["clientip"]).to eq("183.60.215.50")
+      expect(results["hits"]["hits"][0]["_source"]["junkfieldaaaa"]).to eq(nil)
     end
   end
 end

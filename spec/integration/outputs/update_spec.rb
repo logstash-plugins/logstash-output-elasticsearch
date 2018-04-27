@@ -49,7 +49,7 @@ if ESHelper.es_version_satisfies?(">= 2")
         subject.register
         subject.multi_receive([LogStash::Event.new("message" => "updated message here")])
         r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "123", :refresh => true)
-        insist { r["_source"]["message"] } == 'updated message here'
+        expect(r["_source"]["message"]).to eq('updated message here')
       end
 
       # The es ruby client treats the data field differently. Make sure this doesn't
@@ -59,8 +59,8 @@ if ESHelper.es_version_satisfies?(">= 2")
         subject.register
         subject.multi_receive([LogStash::Event.new("data" => "updated message here", "message" => "foo")])
         r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "123", :refresh => true)
-        insist { r["_source"]["data"] } == 'updated message here'
-        insist { r["_source"]["message"] } == 'foo'
+        expect(r["_source"]["data"]).to eq('updated message here')
+        expect(r["_source"]["message"]).to eq('foo')
       end
 
       it "should allow default (internal) version" do
@@ -96,7 +96,7 @@ if ESHelper.es_version_satisfies?(">= 2")
         subject.register
         subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
         r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
-        insist { r["_source"]["message"] } == 'upsert message'
+        expect(r["_source"]["message"]).to eq('upsert message')
       end
 
       it "should create new documents with event/doc as upsert" do
@@ -104,7 +104,7 @@ if ESHelper.es_version_satisfies?(">= 2")
         subject.register
         subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
         r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
-        insist { r["_source"]["message"] } == 'sample message here'
+        expect(r["_source"]["message"]).to eq('sample message here')
       end
 
       it "should fail on documents with event/doc as upsert at external version" do

@@ -41,44 +41,44 @@ if ESHelper.es_version_satisfies?(">= 5")
       # Wait or fail until everything's indexed.
       Stud::try(20.times) do
         r = @es.search
-        insist { r["hits"]["total"] } == 8
+        expect(r["hits"]["total"]).to eq(8)
       end
     end
 
     it "permits phrase searching on string fields" do
       results = @es.search(:q => "message:\"sample message\"")
-      insist { results["hits"]["total"] } == 1
-      insist { results["hits"]["hits"][0]["_source"]["message"] } == "sample message here"
+      expect(results["hits"]["total"]).to eq(1)
+      expect(results["hits"]["hits"][0]["_source"]["message"]).to eq("sample message here")
     end
 
     it "numbers dynamically map to a numeric type and permit range queries" do
       results = @es.search(:q => "somevalue:[5 TO 105]")
-      insist { results["hits"]["total"] } == 2
+      expect(results["hits"]["total"]).to eq(2)
 
       values = results["hits"]["hits"].collect { |r| r["_source"]["somevalue"] }
-      insist { values }.include?(10)
-      insist { values }.include?(100)
-      reject { values }.include?(1)
+      expect(values).to include(10)
+      expect(values).to include(100)
+      expect(values).to_not include(1)
     end
 
     it "does not create .keyword field for top-level message field" do
       results = @es.search(:q => "message.keyword:\"sample message here\"")
-      insist { results["hits"]["total"] } == 0
+      expect(results["hits"]["total"]).to eq(0)
     end
 
     it "creates .keyword field for nested message fields" do
       results = @es.search(:q => "somemessage.message.keyword:\"sample nested message here\"")
-      insist { results["hits"]["total"] } == 1
+      expect(results["hits"]["total"]).to eq(1)
     end
 
     it "creates .keyword field from any string field which is not_analyzed" do
       results = @es.search(:q => "country.keyword:\"us\"")
-      insist { results["hits"]["total"] } == 1
-      insist { results["hits"]["hits"][0]["_source"]["country"] } == "us"
+      expect(results["hits"]["total"]).to eq(1)
+      expect(results["hits"]["hits"][0]["_source"]["country"]).to eq("us")
 
       # partial or terms should not work.
       results = @es.search(:q => "country.keyword:\"u\"")
-      insist { results["hits"]["total"] } == 0
+      expect(results["hits"]["total"]).to eq(0)
     end
 
     it "make [geoip][location] a geo_point" do
@@ -89,10 +89,10 @@ if ESHelper.es_version_satisfies?(">= 5")
       results = @es.search(:body => { "aggregations" => { "my_agg" => { "terms" => { "field" => "country.keyword" } } } })["aggregations"]["my_agg"]
       terms = results["buckets"].collect { |b| b["key"] }
 
-      insist { terms }.include?("us")
+      expect(terms).to include("us")
 
       # 'at' is a stopword, make sure stopwords are not ignored.
-      insist { terms }.include?("at")
+      expect(terms).to include("at")
     end
   end
 end
