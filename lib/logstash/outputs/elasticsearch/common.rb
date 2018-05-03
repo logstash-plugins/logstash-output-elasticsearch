@@ -23,9 +23,8 @@ module LogStash; module Outputs; class ElasticSearch;
 
       setup_hosts # properly sets @hosts
       build_client
-      after_successful_connection { install_template }
+      install_template_after_successful_connection
       check_action_validity
-      #after_successful_connection { install_template }
       @bulk_request_metrics = metric.namespace(:bulk_requests)
       @document_level_metrics = metric.namespace(:documents)
 
@@ -40,25 +39,24 @@ module LogStash; module Outputs; class ElasticSearch;
       retrying_submit(events.map {|e| event_action_tuple(e)})
     end
 
-    def after_successful_connection
-      @template_installer = Thread.new do
+    def install_template_after_successful_connection
+      @template_installer ||= Thread.new do
           sleep_interval = @retry_initial_interval
           until successful_connection? || @stopping.true?
             @logger.debug("Waiting for connectivity to Elasticsearch cluster")
             Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
             sleep_interval = next_sleep_interval(sleep_interval)
           end
-          yield if successful_connection?
+            install_template if successful_connection?
         end
       end
 
     def stop_template_installer
-      @template_installer.join if @template_installer
+      @template_installer.join unless @template_installer.nil?
     end
 
     def successful_connection?
-      # !!maximum_seen_major_version
-      maximum_seen_major_version
+      !!maximum_seen_major_version
     end
 
     # Convert the event into a 3-tuple of action, params, and event
