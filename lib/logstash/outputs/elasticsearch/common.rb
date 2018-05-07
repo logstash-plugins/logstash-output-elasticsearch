@@ -43,7 +43,7 @@ module LogStash; module Outputs; class ElasticSearch;
       @template_installer ||= Thread.new do
           sleep_interval = @retry_initial_interval
           until successful_connection? || @stopping.true?
-            @logger.debug("Waiting for connectivity to Elasticsearch cluster")
+            @logger.debug("Waiting for connectivity to Elasticsearch cluster. Retrying in #{sleep_interval}s")
             Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
             sleep_interval = next_sleep_interval(sleep_interval)
           end

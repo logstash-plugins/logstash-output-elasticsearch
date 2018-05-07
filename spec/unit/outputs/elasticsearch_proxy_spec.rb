@@ -13,13 +13,13 @@ describe "Proxy option" do
     allow(::Manticore::Client).to receive(:new).with(any_args).and_call_original
   end
 
-  after do
-    subject.close
-  end
-
   describe "valid configs" do
     before do
       subject.register
+    end
+
+    after do
+      subject.close
     end
 
     context "when specified as a URI" do

@@ -314,6 +314,7 @@ describe LogStash::Outputs::ElasticSearch do
   end
 
   describe "SSL end to end" do
+    let(:do_register) { false }
     let(:manticore_double) do
       double("manticoreX#{self.inspect}")
     end
