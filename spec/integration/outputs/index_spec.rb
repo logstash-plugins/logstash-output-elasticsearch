@@ -99,9 +99,10 @@ describe "indexing" do
             :eager => true
           }}
       end
-
+      # Allow template to be checked for existence/installed
+      allow(subject.client.pool.adapter.client).to receive(:send).with(anything, /_template/, anything).and_call_original
       expect(subject.client.pool.adapter.client).to receive(:send).
-        with(anything, anything, expected_manticore_opts).
+        with(anything, anything, expected_manticore_opts).at_least(:once).
         and_call_original
       subject.multi_receive(events)
     end

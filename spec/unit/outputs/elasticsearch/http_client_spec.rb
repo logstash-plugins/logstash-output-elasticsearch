@@ -86,7 +86,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
 
         context "with the path option set" do
           let(:base_options) { super.merge(:client_settings => {:path => "/otherpath"}) }
-          
+
           it "should not allow paths in two places" do
             expect {
               subject.host_to_url(url)

@@ -13,8 +13,8 @@ describe "SSL option" do
     allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
     
     allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
-  end
-  
+  end  
+
   context "when using ssl without cert verification" do
     subject do
       require "logstash/outputs/elasticsearch"
@@ -58,6 +58,7 @@ describe "SSL option" do
 
     after :each do
       File.delete(keystore_path)
+      subject.close
     end
 
     subject do
@@ -75,7 +76,7 @@ describe "SSL option" do
         expect(args[:ssl]).to include(:keystore => keystore_path, :keystore_password => "test")
       end.and_call_original
       subject.register
-    end
+   end
 
   end
 end
