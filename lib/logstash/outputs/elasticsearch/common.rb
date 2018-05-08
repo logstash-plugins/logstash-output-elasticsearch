@@ -23,11 +23,10 @@ module LogStash; module Outputs; class ElasticSearch;
 
       setup_hosts # properly sets @hosts
       build_client
-      install_template_after_successful_connection
       check_action_validity
       @bulk_request_metrics = metric.namespace(:bulk_requests)
       @document_level_metrics = metric.namespace(:documents)
-
+      install_template_after_successful_connection
       @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
     end
 
@@ -41,15 +40,15 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def install_template_after_successful_connection
       @template_installer ||= Thread.new do
-          sleep_interval = @retry_initial_interval
-          until successful_connection? || @stopping.true?
-            @logger.debug("Waiting for connectivity to Elasticsearch cluster. Retrying in #{sleep_interval}s")
-            Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
-            sleep_interval = next_sleep_interval(sleep_interval)
-          end
-            install_template if successful_connection?
+        sleep_interval = @retry_initial_interval
+        until successful_connection? || @stopping.true?
+          @logger.debug("Waiting for connectivity to Elasticsearch cluster. Retrying in #{sleep_interval}s")
+          Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
+          sleep_interval = next_sleep_interval(sleep_interval)
         end
+        install_template if successful_connection?
       end
+    end
 
     def stop_template_installer
       @template_installer.join unless @template_installer.nil?
