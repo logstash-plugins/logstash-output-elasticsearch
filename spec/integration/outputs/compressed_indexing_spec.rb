@@ -60,6 +60,7 @@ if ESHelper.es_version_satisfies?(">= 5")
     end
 
     it "sets the correct content-encoding header and body is compressed" do
+      allow(subject.client.pool.adapter.client).to receive(:send).with(anything, /_template/, anything).and_call_original
       expect(subject.client.pool.adapter.client).to receive(:send).
         with(anything, anything, {:headers=>{"Content-Encoding"=>"gzip", "Content-Type"=>"application/json"}, :body => a_valid_gzip_encoded_string}).
         and_call_original
