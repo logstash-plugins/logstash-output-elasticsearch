@@ -128,7 +128,7 @@ describe "indexing" do
     it_behaves_like("an indexer")
   end
 
-  describe "a secured indexer", :secure_integration => true do
+  describe "a secured indexer", :elasticsearch_secure => true do
     let(:user) { "simpleuser" }
     let(:password) { "abc123" }
     let(:cacert) { "spec/fixtures/test_certs/test.crt" }
