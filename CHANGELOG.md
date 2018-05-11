@@ -1,3 +1,7 @@
+## 7.4.3
+  - Avoid infinite loop by checking for zero body size #737
+  - Add support for join based parent indexing (backport of #632) #686
+
 ## 7.4.2
   - Use `#response_body` instead of `#body` when debugging response from the server #679
   - Docs: Add DLQ policy section
