@@ -58,6 +58,7 @@ describe "SSL option" do
 
     after :each do
       File.delete(keystore_path)
+      subject.close
     end
 
     subject do

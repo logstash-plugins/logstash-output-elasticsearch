@@ -314,6 +314,7 @@ describe LogStash::Outputs::ElasticSearch do
   end
 
   describe "SSL end to end" do
+    let(:do_register) { false } # skip the register in the global before block, as is called here.
     let(:manticore_double) do
       double("manticoreX#{self.inspect}")
     end
@@ -409,6 +410,10 @@ describe LogStash::Outputs::ElasticSearch do
       allow(::Manticore::Client).to receive(:new).with(any_args).and_call_original
     end
 
+    after :each do
+      subject.close
+    end
+
     it "should set the correct http client option for 'validate_after_inactivity'" do
       subject.register
       expect(::Manticore::Client).to have_received(:new) do |options|
@@ -457,7 +462,7 @@ describe LogStash::Outputs::ElasticSearch do
         end
       end
 
-      context "with explicity query parameters" do
+      context "with explicit query parameters" do
         let(:options) {
           {
             "hosts" => ["http://localhost:9202/path"],
@@ -470,7 +475,7 @@ describe LogStash::Outputs::ElasticSearch do
         end
       end
 
-      context "with explicity query parameters and existing url parameters" do
+      context "with explicit query parameters and existing url parameters" do
         let(:existing_query_string) { "existing=param" }
         let(:options) {
           {

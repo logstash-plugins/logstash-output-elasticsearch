@@ -18,6 +18,10 @@ describe "Proxy option" do
       subject.register
     end
 
+    after do
+      subject.close
+    end
+
     context "when specified as a URI" do
       shared_examples("hash conversion") do |hash|
         let(:settings) { super.merge("proxy" => proxy)}

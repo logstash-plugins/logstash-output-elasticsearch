@@ -1,3 +1,6 @@
+## 9.1.3
+  - Improve plugin behavior when Elasticsearch is down on startup #758
+
 ## 9.1.2
   - No user facing changes, removed unnecessary test dep.
 
