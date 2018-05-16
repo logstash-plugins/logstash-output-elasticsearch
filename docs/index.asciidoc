@@ -84,7 +84,7 @@ original events causing the mapping errors are stored in a file that can be
 processed at a later time. Often times, the offending field can be removed and
 re-indexed to Elasticsearch. If the DLQ is not enabled, and a mapping error
 happens, the problem is logged as a warning, and the event is dropped. See
-<<dead-letter-queues>> for more information about processing events in the DLQ.
+{logstash-ref}/dead-letter-queues.html[dead-letter-queues] for more information about processing events in the DLQ.
 
 ==== Batch Sizes
 
@@ -121,54 +121,54 @@ This plugin supports the following configuration options plus the <<plugins-{typ
 [cols="<,<,<",options="header",]
 |=======================================================================
 |Setting |Input type|Required
-| <<plugins-{type}s-{plugin}-action>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-bulk_path>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-action>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-bulk_path>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
 | <<plugins-{type}s-{plugin}-cacert>> |a valid filesystem path|No
-| <<plugins-{type}s-{plugin}-doc_as_upsert>> |<<boolean,boolean>>|No
-| <<plugins-{type}s-{plugin}-document_id>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-document_type>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-failure_type_logging_whitelist>> |<<array,array>>|No
-| <<plugins-{type}s-{plugin}-healthcheck_path>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-hosts>> |<<uri,uri>>|No
-| <<plugins-{type}s-{plugin}-http_compression>> |<<boolean,boolean>>|No
-| <<plugins-{type}s-{plugin}-index>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-doc_as_upsert>> |{logstash-ref}/configuration-file-structure.html#boolean[boolean]|No
+| <<plugins-{type}s-{plugin}-document_id>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-document_type>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-failure_type_logging_whitelist>> |{logstash-ref}/configuration-file-structure.html#array[array]|No
+| <<plugins-{type}s-{plugin}-healthcheck_path>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-hosts>> |{logstash-ref}/configuration-file-structure.html#uri[uri]|No
+| <<plugins-{type}s-{plugin}-http_compression>> |{logstash-ref}/configuration-file-structure.html#boolean[boolean]|No
+| <<plugins-{type}s-{plugin}-index>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
 | <<plugins-{type}s-{plugin}-keystore>> |a valid filesystem path|No
-| <<plugins-{type}s-{plugin}-keystore_password>> |<<password,password>>|No
-| <<plugins-{type}s-{plugin}-manage_template>> |<<boolean,boolean>>|No
-| <<plugins-{type}s-{plugin}-parameters>> |<<hash,hash>>|No
-| <<plugins-{type}s-{plugin}-parent>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-password>> |<<password,password>>|No
-| <<plugins-{type}s-{plugin}-path>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-pipeline>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-pool_max>> |<<number,number>>|No
-| <<plugins-{type}s-{plugin}-pool_max_per_route>> |<<number,number>>|No
-| <<plugins-{type}s-{plugin}-proxy>> |<<uri,uri>>|No
-| <<plugins-{type}s-{plugin}-resurrect_delay>> |<<number,number>>|No
-| <<plugins-{type}s-{plugin}-retry_initial_interval>> |<<number,number>>|No
-| <<plugins-{type}s-{plugin}-retry_max_interval>> |<<number,number>>|No
-| <<plugins-{type}s-{plugin}-retry_on_conflict>> |<<number,number>>|No
-| <<plugins-{type}s-{plugin}-routing>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-script>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-script_lang>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-script_type>> |<<string,string>>, one of `["inline", "indexed", "file"]`|No
-| <<plugins-{type}s-{plugin}-script_var_name>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-scripted_upsert>> |<<boolean,boolean>>|No
-| <<plugins-{type}s-{plugin}-sniffing>> |<<boolean,boolean>>|No
-| <<plugins-{type}s-{plugin}-sniffing_delay>> |<<number,number>>|No
-| <<plugins-{type}s-{plugin}-sniffing_path>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-ssl>> |<<boolean,boolean>>|No
-| <<plugins-{type}s-{plugin}-ssl_certificate_verification>> |<<boolean,boolean>>|No
+| <<plugins-{type}s-{plugin}-keystore_password>> |{logstash-ref}/configuration-file-structure.html#password[password]|No
+| <<plugins-{type}s-{plugin}-manage_template>> |{logstash-ref}/configuration-file-structure.html#boolean[boolean]|No
+| <<plugins-{type}s-{plugin}-parameters>> |{logstash-ref}/configuration-file-structure.html#hash[hash]|No
+| <<plugins-{type}s-{plugin}-parent>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-password>> |{logstash-ref}/configuration-file-structure.html#password[password]|No
+| <<plugins-{type}s-{plugin}-path>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-pipeline>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-pool_max>> |{logstash-ref}/configuration-file-structure.html#number[number]|No
+| <<plugins-{type}s-{plugin}-pool_max_per_route>> |{logstash-ref}/configuration-file-structure.html#number[number]|No
+| <<plugins-{type}s-{plugin}-proxy>> |{logstash-ref}/configuration-file-structure.html#uri[uri]|No
+| <<plugins-{type}s-{plugin}-resurrect_delay>> |{logstash-ref}/configuration-file-structure.html#number[number]|No
+| <<plugins-{type}s-{plugin}-retry_initial_interval>> |{logstash-ref}/configuration-file-structure.html#number[number]|No
+| <<plugins-{type}s-{plugin}-retry_max_interval>> |{logstash-ref}/configuration-file-structure.html#number[number]|No
+| <<plugins-{type}s-{plugin}-retry_on_conflict>> |{logstash-ref}/configuration-file-structure.html#number[number]|No
+| <<plugins-{type}s-{plugin}-routing>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-script>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-script_lang>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-script_type>> |{logstash-ref}/configuration-file-structure.html#string[string], one of `["inline", "indexed", "file"]`|No
+| <<plugins-{type}s-{plugin}-script_var_name>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-scripted_upsert>> |{logstash-ref}/configuration-file-structure.html#boolean[boolean]|No
+| <<plugins-{type}s-{plugin}-sniffing>> |{logstash-ref}/configuration-file-structure.html#boolean[boolean]|No
+| <<plugins-{type}s-{plugin}-sniffing_delay>> |{logstash-ref}/configuration-file-structure.html#number[number]|No
+| <<plugins-{type}s-{plugin}-sniffing_path>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-ssl>> |{logstash-ref}/configuration-file-structure.html#boolean[boolean]|No
+| <<plugins-{type}s-{plugin}-ssl_certificate_verification>> |{logstash-ref}/configuration-file-structure.html#boolean[boolean]|No
 | <<plugins-{type}s-{plugin}-template>> |a valid filesystem path|No
-| <<plugins-{type}s-{plugin}-template_name>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-template_overwrite>> |<<boolean,boolean>>|No
-| <<plugins-{type}s-{plugin}-timeout>> |<<number,number>>|No
+| <<plugins-{type}s-{plugin}-template_name>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-template_overwrite>> |{logstash-ref}/configuration-file-structure.html#boolean[boolean]|No
+| <<plugins-{type}s-{plugin}-timeout>> |{logstash-ref}/configuration-file-structure.html#number[number]|No
 | <<plugins-{type}s-{plugin}-truststore>> |a valid filesystem path|No
-| <<plugins-{type}s-{plugin}-truststore_password>> |<<password,password>>|No
-| <<plugins-{type}s-{plugin}-upsert>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-user>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-validate_after_inactivity>> |<<number,number>>|No
-| <<plugins-{type}s-{plugin}-version>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-version_type>> |<<string,string>>, one of `["internal", "external", "external_gt", "external_gte", "force"]`|No
+| <<plugins-{type}s-{plugin}-truststore_password>> |{logstash-ref}/configuration-file-structure.html#password[password]|No
+| <<plugins-{type}s-{plugin}-upsert>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-user>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-validate_after_inactivity>> |{logstash-ref}/configuration-file-structure.html#number[number]|No
+| <<plugins-{type}s-{plugin}-version>> |{logstash-ref}/configuration-file-structure.html#string[string]|No
+| <<plugins-{type}s-{plugin}-version_type>> |{logstash-ref}/configuration-file-structure.html#string[string], one of `["internal", "external", "external_gt", "external_gte", "force"]`|No
 |=======================================================================
 
 Also see <<plugins-{type}s-{plugin}-common-options>> for a list of options supported by all
@@ -179,7 +179,7 @@ output plugins.
 [id="plugins-{type}s-{plugin}-action"]
 ===== `action` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * Default value is `"index"`
 
 Protocol agnostic (i.e. non-http, non-java specific) configs go here
@@ -200,7 +200,7 @@ For more details on actions, check out the http://www.elastic.co/guide/en/elasti
 [id="plugins-{type}s-{plugin}-bulk_path"]
 ===== `bulk_path` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * There is no default value for this setting.
 
 HTTP Path to perform the _bulk requests to
@@ -209,7 +209,7 @@ this defaults to a concatenation of the path parameter and "_bulk"
 [id="plugins-{type}s-{plugin}-cacert"]
 ===== `cacert` 
 
-  * Value type is <<path,path>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#path[path]
   * There is no default value for this setting.
 
 The .cer or .pem file to validate the server's certificate
@@ -217,7 +217,7 @@ The .cer or .pem file to validate the server's certificate
 [id="plugins-{type}s-{plugin}-doc_as_upsert"]
 ===== `doc_as_upsert` 
 
-  * Value type is <<boolean,boolean>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#boolean[boolean]
   * Default value is `false`
 
 Enable `doc_as_upsert` for update mode.
@@ -226,7 +226,7 @@ Create a new document with source if `document_id` doesn't exist in Elasticsearc
 [id="plugins-{type}s-{plugin}-document_id"]
 ===== `document_id` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * There is no default value for this setting.
 
 The document ID for the index. Useful for overwriting existing entries in
@@ -235,7 +235,7 @@ Elasticsearch with the same ID.
 [id="plugins-{type}s-{plugin}-document_type"]
 ===== `document_type` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * There is no default value for this setting.
   * This option is deprecated
 
@@ -251,7 +251,7 @@ If you don't set a value for this option:
 [id="plugins-{type}s-{plugin}-failure_type_logging_whitelist"]
 ===== `failure_type_logging_whitelist` 
 
-  * Value type is <<array,array>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#array[array]
   * Default value is `[]`
 
 Set the Elasticsearch errors in the whitelist that you don't want to log.
@@ -261,7 +261,7 @@ which are `document_already_exists_exception`.
 [id="plugins-{type}s-{plugin}-healthcheck_path"]
 ===== `healthcheck_path` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * There is no default value for this setting.
 
 HTTP Path where a HEAD request is sent when a backend is marked down
@@ -272,7 +272,7 @@ If you have custom firewall rules you may need to change this
 [id="plugins-{type}s-{plugin}-hosts"]
 ===== `hosts` 
 
-  * Value type is <<uri,uri>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#uri[uri]
   * Default value is `[//127.0.0.1]`
 
 Sets the host(s) of the remote instance. If given an array it will load balance requests across the hosts specified in the `hosts` parameter.
@@ -290,7 +290,7 @@ Any special characters present in the URLs here MUST be URL escaped! This means 
 [id="plugins-{type}s-{plugin}-http_compression"]
 ===== `http_compression` 
 
-  * Value type is <<boolean,boolean>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#boolean[boolean]
   * Default value is `false`
 
 Enable gzip compression on requests. Note that response compression is on by default for Elasticsearch v5.0 and beyond
@@ -298,7 +298,7 @@ Enable gzip compression on requests. Note that response compression is on by def
 [id="plugins-{type}s-{plugin}-index"]
 ===== `index` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * Default value is `"logstash-%{+YYYY.MM.dd}"`
 
 The index to write events to. This can be dynamic using the `%{foo}` syntax.
@@ -312,7 +312,7 @@ Joda formats are defined http://www.joda.org/joda-time/apidocs/org/joda/time/for
 [id="plugins-{type}s-{plugin}-keystore"]
 ===== `keystore` 
 
-  * Value type is <<path,path>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#path[path]
   * There is no default value for this setting.
 
 The keystore used to present a certificate to the server.
@@ -321,7 +321,7 @@ It can be either .jks or .p12
 [id="plugins-{type}s-{plugin}-keystore_password"]
 ===== `keystore_password` 
 
-  * Value type is <<password,password>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#password[password]
   * There is no default value for this setting.
 
 Set the keystore password
@@ -329,7 +329,7 @@ Set the keystore password
 [id="plugins-{type}s-{plugin}-manage_template"]
 ===== `manage_template` 
 
-  * Value type is <<boolean,boolean>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#boolean[boolean]
   * Default value is `true`
 
 From Logstash 1.3 onwards, a template is applied to Elasticsearch during
@@ -348,7 +348,7 @@ API to apply your templates manually.
 [id="plugins-{type}s-{plugin}-parameters"]
 ===== `parameters` 
 
-  * Value type is <<hash,hash>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#hash[hash]
   * There is no default value for this setting.
 
 Pass a set of key value pairs as the URL query string. This query string is added
@@ -358,7 +358,7 @@ urls that already have query strings, the one specified here will be appended.
 [id="plugins-{type}s-{plugin}-parent"]
 ===== `parent` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * Default value is `nil`
 
 For child documents, ID of the associated parent.
@@ -367,7 +367,7 @@ This can be dynamic using the `%{foo}` syntax.
 [id="plugins-{type}s-{plugin}-password"]
 ===== `password` 
 
-  * Value type is <<password,password>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#password[password]
   * There is no default value for this setting.
 
 Password to authenticate to a secure Elasticsearch cluster
@@ -375,7 +375,7 @@ Password to authenticate to a secure Elasticsearch cluster
 [id="plugins-{type}s-{plugin}-path"]
 ===== `path` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * There is no default value for this setting.
 
 HTTP Path at which the Elasticsearch server lives. Use this if you must run Elasticsearch behind a proxy that remaps
@@ -386,7 +386,7 @@ not also set this field. That will raise an error at startup
 [id="plugins-{type}s-{plugin}-pipeline"]
 ===== `pipeline` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * Default value is `nil`
 
 Set which ingest pipeline you wish to execute for an event. You can also use event dependent configuration
@@ -395,7 +395,7 @@ here like `pipeline => "%{INGEST_PIPELINE}"`
 [id="plugins-{type}s-{plugin}-pool_max"]
 ===== `pool_max` 
 
-  * Value type is <<number,number>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#number[number]
   * Default value is `1000`
 
 While the output tries to reuse connections efficiently we have a maximum.
@@ -406,7 +406,7 @@ which is bad.
 [id="plugins-{type}s-{plugin}-pool_max_per_route"]
 ===== `pool_max_per_route` 
 
-  * Value type is <<number,number>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#number[number]
   * Default value is `100`
 
 While the output tries to reuse connections efficiently we have a maximum per endpoint.
@@ -417,7 +417,7 @@ which is bad.
 [id="plugins-{type}s-{plugin}-proxy"]
 ===== `proxy` 
 
-  * Value type is <<uri,uri>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#uri[uri]
   * There is no default value for this setting.
 
 Set the address of a forward HTTP proxy.
@@ -427,7 +427,7 @@ arguments of the URI type to prevent leaking credentials.
 [id="plugins-{type}s-{plugin}-resurrect_delay"]
 ===== `resurrect_delay` 
 
-  * Value type is <<number,number>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#number[number]
   * Default value is `5`
 
 How frequently, in seconds, to wait between resurrection attempts.
@@ -437,7 +437,7 @@ to see if they have come back to life
 [id="plugins-{type}s-{plugin}-retry_initial_interval"]
 ===== `retry_initial_interval` 
 
-  * Value type is <<number,number>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#number[number]
   * Default value is `2`
 
 Set initial interval in seconds between bulk retries. Doubled on each retry up to `retry_max_interval`
@@ -445,7 +445,7 @@ Set initial interval in seconds between bulk retries. Doubled on each retry up t
 [id="plugins-{type}s-{plugin}-retry_max_interval"]
 ===== `retry_max_interval` 
 
-  * Value type is <<number,number>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#number[number]
   * Default value is `64`
 
 Set max interval in seconds between bulk retries.
@@ -453,7 +453,7 @@ Set max interval in seconds between bulk retries.
 [id="plugins-{type}s-{plugin}-retry_on_conflict"]
 ===== `retry_on_conflict` 
 
-  * Value type is <<number,number>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#number[number]
   * Default value is `1`
 
 The number of times Elasticsearch should internally retry an update/upserted document
@@ -463,7 +463,7 @@ for more info
 [id="plugins-{type}s-{plugin}-routing"]
 ===== `routing` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * There is no default value for this setting.
 
 A routing override to be applied to all processed events.
@@ -472,7 +472,7 @@ This can be dynamic using the `%{foo}` syntax.
 [id="plugins-{type}s-{plugin}-script"]
 ===== `script` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * Default value is `""`
 
 Set script name for scripted update mode
@@ -488,7 +488,7 @@ Example:
 [id="plugins-{type}s-{plugin}-script_lang"]
 ===== `script_lang` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * Default value is `"painless"`
 
 Set the language of the used script. If not set, this defaults to painless in ES 5.0.
@@ -508,7 +508,7 @@ Define the type of script referenced by "script" variable
 [id="plugins-{type}s-{plugin}-script_var_name"]
 ===== `script_var_name` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * Default value is `"event"`
 
 Set variable name passed to script (scripted update)
@@ -516,7 +516,7 @@ Set variable name passed to script (scripted update)
 [id="plugins-{type}s-{plugin}-scripted_upsert"]
 ===== `scripted_upsert` 
 
-  * Value type is <<boolean,boolean>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#boolean[boolean]
   * Default value is `false`
 
 if enabled, script is in charge of creating non-existent document (scripted update)
@@ -524,7 +524,7 @@ if enabled, script is in charge of creating non-existent document (scripted upda
 [id="plugins-{type}s-{plugin}-sniffing"]
 ===== `sniffing` 
 
-  * Value type is <<boolean,boolean>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#boolean[boolean]
   * Default value is `false`
 
 This setting asks Elasticsearch for the list of all cluster nodes and adds them to the hosts list.
@@ -534,7 +534,7 @@ For Elasticsearch 5.x and 6.x any nodes with `http.enabled` (on by default) will
 [id="plugins-{type}s-{plugin}-sniffing_delay"]
 ===== `sniffing_delay` 
 
-  * Value type is <<number,number>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#number[number]
   * Default value is `5`
 
 How long to wait, in seconds, between sniffing attempts
@@ -542,7 +542,7 @@ How long to wait, in seconds, between sniffing attempts
 [id="plugins-{type}s-{plugin}-sniffing_path"]
 ===== `sniffing_path` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * There is no default value for this setting.
 
 HTTP Path to be used for the sniffing requests
@@ -553,7 +553,7 @@ do not use full URL here, only paths, e.g. "/sniff/_nodes/http"
 [id="plugins-{type}s-{plugin}-ssl"]
 ===== `ssl` 
 
-  * Value type is <<boolean,boolean>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#boolean[boolean]
   * There is no default value for this setting.
 
 Enable SSL/TLS secured communication to Elasticsearch cluster. Leaving this unspecified will use whatever scheme
@@ -563,7 +563,7 @@ If SSL is explicitly disabled here the plugin will refuse to start if an HTTPS U
 [id="plugins-{type}s-{plugin}-ssl_certificate_verification"]
 ===== `ssl_certificate_verification` 
 
-  * Value type is <<boolean,boolean>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#boolean[boolean]
   * Default value is `true`
 
 Option to validate the server's certificate. Disabling this severely compromises security.
@@ -573,7 +573,7 @@ https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
 [id="plugins-{type}s-{plugin}-template"]
 ===== `template` 
 
-  * Value type is <<path,path>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#path[path]
   * There is no default value for this setting.
 
 You can set the path to your own template here, if you so desire.
@@ -582,7 +582,7 @@ If not set, the included template will be used.
 [id="plugins-{type}s-{plugin}-template_name"]
 ===== `template_name` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * Default value is `"logstash"`
 
 This configuration option defines how the template is named inside Elasticsearch.
@@ -596,7 +596,7 @@ where `OldTemplateName` is whatever the former setting was.
 [id="plugins-{type}s-{plugin}-template_overwrite"]
 ===== `template_overwrite` 
 
-  * Value type is <<boolean,boolean>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#boolean[boolean]
   * Default value is `false`
 
 The template_overwrite option will always overwrite the indicated template
@@ -613,7 +613,7 @@ the "logstash" template (i.e. removing all customized settings)
 [id="plugins-{type}s-{plugin}-timeout"]
 ===== `timeout` 
 
-  * Value type is <<number,number>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#number[number]
   * Default value is `60`
 
 Set the timeout, in seconds, for network operations and requests sent Elasticsearch. If
@@ -622,7 +622,7 @@ a timeout occurs, the request will be retried.
 [id="plugins-{type}s-{plugin}-truststore"]
 ===== `truststore` 
 
-  * Value type is <<path,path>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#path[path]
   * There is no default value for this setting.
 
 The JKS truststore to validate the server's certificate.
@@ -631,7 +631,7 @@ Use either `:truststore` or `:cacert`
 [id="plugins-{type}s-{plugin}-truststore_password"]
 ===== `truststore_password` 
 
-  * Value type is <<password,password>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#password[password]
   * There is no default value for this setting.
 
 Set the truststore password
@@ -639,7 +639,7 @@ Set the truststore password
 [id="plugins-{type}s-{plugin}-upsert"]
 ===== `upsert` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * Default value is `""`
 
 Set upsert content for update mode.
@@ -648,7 +648,7 @@ Create a new document with this parameter as json string if `document_id` doesn'
 [id="plugins-{type}s-{plugin}-user"]
 ===== `user` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * There is no default value for this setting.
 
 Username to authenticate to a secure Elasticsearch cluster
@@ -656,7 +656,7 @@ Username to authenticate to a secure Elasticsearch cluster
 [id="plugins-{type}s-{plugin}-validate_after_inactivity"]
 ===== `validate_after_inactivity` 
 
-  * Value type is <<number,number>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#number[number]
   * Default value is `10000`
 
 How long to wait before checking if the connection is stale before executing a request on a connection using keepalive.
@@ -671,7 +671,7 @@ See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache
 [id="plugins-{type}s-{plugin}-version"]
 ===== `version` 
 
-  * Value type is <<string,string>>
+  * Value type is {logstash-ref}/configuration-file-structure.html#string[string]
   * There is no default value for this setting.
 
 The version to use for indexing. Use sprintf syntax like `%{my_version}` to use a field value here.
