@@ -128,12 +128,18 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
   describe "#password" do
     subject { described_class.new(base_options) }
     context "when using empty password" do
-      before :each do
-        hosts.first.user = "test"
-        hosts.first.password = ""
+      context "with password option" do
+        let(:base_options) { super.merge(:password => "", :user => "hello") }
+        it "returns empty string" do
+          expect(subject.password).to eq("")
+        end
       end
-      it "returns empty string" do
-        expect(subject.password).to eq("")
+      context "with password in hosts option" do
+        let(:uri) { LogStash::Util::SafeURI.new("http://hello:@localhost:9200") }
+        let(:base_options) { super.merge(:hosts => [uri]) }
+        it "returns empty string" do
+          expect(subject.password).to eq("")
+        end
       end
     end
   end
