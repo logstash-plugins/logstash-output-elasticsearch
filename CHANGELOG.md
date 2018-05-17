@@ -1,3 +1,6 @@
+## 9.1.4
+  - Log an error -- not a warning -- when ES raises an invalid\_index\_name\_exception.
+
 ## 9.1.3
   - Improve plugin behavior when Elasticsearch is down on startup #758
 
