@@ -17,7 +17,7 @@ describe LogStash::Outputs::ElasticSearch do
       allow(subject.client.pool).to receive(:start_resurrectionist)
       allow(subject.client.pool).to receive(:start_sniffer)
       allow(subject.client.pool).to receive(:healthcheck!)
-      allow(subject.client).to receive(:maximum_seen_major_version).and_return(maximum_seen_major_version)
+      allow(subject.client).to receive(:maximum_seen_major_version).at_least(:once).and_return(maximum_seen_major_version)
       subject.client.pool.adapter.manticore.respond_with(:body => "{}")
     end
   end
@@ -358,6 +358,7 @@ describe LogStash::Outputs::ElasticSearch do
       let(:options) { super.merge("action" => "index") }
 
       it "should not set the retry_on_conflict parameter when creating an event_action_tuple" do
+        allow(subject.client).to receive(:maximum_seen_major_version).and_return(maximum_seen_major_version)
         action, params, event_data = subject.event_action_tuple(event)
         expect(params).not_to include({:_retry_on_conflict => num_retries})
       end
@@ -495,6 +496,62 @@ describe LogStash::Outputs::ElasticSearch do
         it "appends the new query string to the existing one" do
           expect(manticore_url.query).to eql("#{existing_query_string}&#{custom_parameters_query}")
         end
+      end
+    end
+  end
+
+  context 'handling elasticsearch document-level status meant for the DLQ' do
+    let(:options) { { "manage_template" => false } }
+    let(:logger)  { subject.instance_variable_get(:@logger) }
+
+    context 'when @dlq_writer is nil' do
+      before { subject.instance_variable_set '@dlq_writer', nil }
+
+      context 'resorting to previous behaviour of logging the error' do
+        context 'getting an invalid_index_name_exception' do
+          it 'should log at ERROR level' do
+            expect(logger).to receive(:error).with(/Could not index/, hash_including(:status, :action, :response))
+            mock_response = { 'index' => { 'error' => { 'type' => 'invalid_index_name_exception' } } }
+            subject.handle_dlq_status("Could not index event to Elasticsearch.",
+              [:action, :params, :event], :some_status, mock_response)
+          end
+        end
+
+        context 'when getting any other exception' do
+          it 'should log at WARN level' do
+            expect(logger).to receive(:warn).with(/Could not index/, hash_including(:status, :action, :response))
+            mock_response = { 'index' => { 'error' => { 'type' => 'illegal_argument_exception' } } }
+            subject.handle_dlq_status("Could not index event to Elasticsearch.",
+              [:action, :params, :event], :some_status, mock_response)
+          end
+        end
+
+        context 'when the response does not include [error]' do
+          it 'should not fail, but just log a warning' do
+            expect(logger).to receive(:warn).with(/Could not index/, hash_including(:status, :action, :response))
+            mock_response = { 'index' => {} }
+            expect do
+              subject.handle_dlq_status("Could not index event to Elasticsearch.",
+                [:action, :params, :event], :some_status, mock_response)
+            end.to_not raise_error
+          end
+        end
+      end
+    end
+
+    # DLQ writer always nil, no matter what I try here. So mocking it all the way
+    context 'when DLQ is enabled' do
+      let(:dlq_writer) { double('DLQ writer') }
+      before { subject.instance_variable_set('@dlq_writer', dlq_writer) }
+
+      # Note: This is not quite the desired behaviour.
+      # We should still log when sending to the DLQ.
+      # This shall be solved by another issue, however: logstash-output-elasticsearch#772
+      it 'should send the event to the DLQ instead, and not log' do
+        expect(dlq_writer).to receive(:write).with(:event, /Could not index/)
+        mock_response = { 'index' => { 'error' => { 'type' => 'illegal_argument_exception' } } }
+        subject.handle_dlq_status("Could not index event to Elasticsearch.",
+          [:action, :params, :event], :some_status, mock_response)
       end
     end
   end
