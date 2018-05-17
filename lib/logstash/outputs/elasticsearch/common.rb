@@ -213,14 +213,7 @@ module LogStash; module Outputs; class ElasticSearch;
           @logger.warn "Failed action.", status: status, action: action, response: response if !failure_type_logging_whitelist.include?(failure["type"])
           next
         elsif DOC_DLQ_CODES.include?(status)
-          action_event = action[2]
-          # To support bwc, we check if DLQ exists. otherwise we log and drop event (previous behavior)
-          if @dlq_writer
-            # TODO: Change this to send a map with { :status => status, :action => action } in the future
-            @dlq_writer.write(action_event, "Could not index event to Elasticsearch. status: #{status}, action: #{action}, response: #{response}")
-          else
-            @logger.warn "Could not index event to Elasticsearch.", status: status, action: action, response: response
-          end
+          handle_dlq_status("Could not index event to Elasticsearch.", action, status, response)
           @document_level_metrics.increment(:non_retryable_failures)
           next
         else
@@ -232,6 +225,22 @@ module LogStash; module Outputs; class ElasticSearch;
       end
 
       actions_to_retry
+    end
+
+    def handle_dlq_status(message, action, status, response)
+      # To support bwc, we check if DLQ exists. otherwise we log and drop event (previous behavior)
+      if @dlq_writer
+        # TODO: Change this to send a map with { :status => status, :action => action } in the future
+        @dlq_writer.write(action[2], "#{message} status: #{status}, action: #{action}, response: #{response}")
+      else
+        error_type = response.fetch('index', {}).fetch('error', {})['type']
+        if 'invalid_index_name_exception' == error_type
+          level = :error
+        else
+          level = :warn
+        end
+        @logger.send level, message, status: status, action: action, response: response
+      end
     end
 
     # Determine the correct value for the 'type' field for the given event
