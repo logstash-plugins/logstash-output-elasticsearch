@@ -23,6 +23,8 @@ module ESHelper
 
   def self.es_version_satisfies?(*requirement)
     es_version = RSpec.configuration.filter[:es_version] || ENV['ES_VERSION']
+    puts "Info: ES_VERSION environment variable wasn't set. Skipping all tests related to specific ES versions"
+    return false
     es_release_version = Gem::Version.new(es_version).release
     Gem::Requirement.new(requirement).satisfied_by?(es_release_version)
   end
