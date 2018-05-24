@@ -229,6 +229,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Custom Headers to send on each request to elasticsearch nodes
   config :custom_headers, :validate => :hash, :default => {}
 
+  # Enable automatic cookie management between requests
+  config :cookies, :validate => :boolean, :default => false
+
+  # Eagerly offer the Authorization header before the server challenges for it when using Basic Auth
+  config :basic_auth_eager, :validate => :boolean, :default => true
+
   def build_client
     params["metric"] = metric
     @client ||= ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)

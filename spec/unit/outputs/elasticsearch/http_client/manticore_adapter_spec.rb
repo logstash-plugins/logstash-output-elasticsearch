@@ -3,7 +3,9 @@ require "logstash/outputs/elasticsearch/http_client"
 
 describe LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter do
   let(:logger) { Cabin::Channel.get }
-  let(:options) { {} }
+  let(:options) { {
+    "basic_auth_eager" => true
+  } }
 
   subject { described_class.new(logger, options) }
 
@@ -19,6 +21,10 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter do
   describe "auth" do
     let(:user) { "myuser" }
     let(:password) { "mypassword" }
+    let(:basic_auth_eager) { true }
+    let(:params) { {
+      "basic_auth_eager" => basic_auth_eager
+    } }
     let(:noauth_uri) { clone = uri.clone; clone.user=nil; clone.password=nil; clone }
     let(:uri) { ::LogStash::Util::SafeURI.new("http://#{user}:#{password}@localhost:9200") }
     
@@ -32,15 +38,16 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter do
       
       expect(subject.manticore).to receive(:get).
         with(expected_uri.to_s, {
+          "basic_auth_eager" => basic_auth_eager,
           :headers => {"Content-Type" => "application/json"},
           :auth => {
             :user => user,
             :password => password,
-            :eager => true
+            :eager => basic_auth_eager
           }
         }).and_return resp
       
-      subject.perform_request(uri, :get, "/")
+      subject.perform_request(uri, :get, "/", params)
     end
   end
 
