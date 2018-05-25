@@ -1,3 +1,10 @@
+## 9.2.0
+  - Fix a crash when the plugin tries to index an event missing a timestamp
+    to an index that needs time-based interpolation
+    (like the default `logstash-%{+YYYY.MM.dd}`).
+    When this happens, an error is logged instead.
+    ([PR #777](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/777))
+
 ## 9.1.4
   - Log an error -- not a warning -- when ES raises an invalid\_index\_name\_exception.
 
