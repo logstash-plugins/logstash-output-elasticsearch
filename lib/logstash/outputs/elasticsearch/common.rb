@@ -1,4 +1,5 @@
 require "logstash/outputs/elasticsearch/template_manager"
+require "logstash/outputs/elasticsearch/helpers"
 
 module LogStash; module Outputs; class ElasticSearch;
   module Common
@@ -35,7 +36,7 @@ module LogStash; module Outputs; class ElasticSearch;
       until @template_installed.true?
         sleep 1
       end
-      retrying_submit(events.map {|e| event_action_tuple(e)})
+      retrying_submit(events.map {|e| event_action_tuple(e)}.compact)
     end
 
     def install_template_after_successful_connection
@@ -58,11 +59,16 @@ module LogStash; module Outputs; class ElasticSearch;
       !!maximum_seen_major_version
     end
 
-    # Convert the event into a 3-tuple of action, params, and event
+    # Convert the event into a 3-tuple of [action, params, and event]
+    # Returns nil if the event cannot be indexed
     def event_action_tuple(event)
 
       action = event.sprintf(@action)
 
+      if Helpers.predict_timestamp_issue_for(@index, event)
+        @logger.error "Cannot index event missing @timestamp to a timestamped index", index: @index, event: event.to_json
+        return nil
+      end
       params = {
         :_id => @document_id ? event.sprintf(@document_id) : nil,
         :_index => event.sprintf(@index),
