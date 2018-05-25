@@ -555,4 +555,55 @@ describe LogStash::Outputs::ElasticSearch do
       end
     end
   end
+
+  context 'interpolating an index name' do
+    let(:event) { LogStash::Event.new }
+    let(:event_no_ts) { LogStash::Event.new.tap { |e| e.remove('@timestamp') } }
+
+    context 'when preparing a tuple' do
+
+      context 'when the index name is timestamped' do
+        it 'should prepare a tuple for the event if it has a timestamp' do
+          params = subject.event_action_tuple(event)[1]
+          expect(params[:_index]).to match(/logstash-\d+\.\d+\.\d+/)
+        end
+
+        it 'should not error if the event has no timestamp' do
+          expect do
+            expect(subject.event_action_tuple(event_no_ts)).to be_nil
+          end.not_to raise_error
+        end
+      end
+
+      context 'when the index name is not timestamped' do
+        let(:options) { super.merge('index' => 'logstash') }
+        it 'should prepare a tuple for the event if it has a timestamp' do
+          params = subject.event_action_tuple(event)[1]
+          expect(params[:_index]).to eq('logstash')
+        end
+
+        it 'should prepare a tuple for the event even if it has no timestamp' do
+          expect do
+            params = subject.event_action_tuple(event_no_ts)[1]
+            expect(params[:_index]).to eq('logstash')
+          end.not_to raise_error
+        end
+      end
+    end
+
+    context 'when submitting events with and without timestamps' do
+      let(:options) { { "manage_template" => false } }
+
+      context 'and index is timestamped' do
+        it 'should only submit events that have a timestamp' do
+          expect(subject.logger).to receive(:error).with(/Cannot/, hash_including(:index, :event))
+          expect(subject).to receive(:retrying_submit) { |args|
+            expect( args.map{ |(action, params, event)| event} ).to eq([event])
+          }
+          subject.multi_receive([event, event_no_ts])
+        end
+      end
+    end
+  end
+
 end
