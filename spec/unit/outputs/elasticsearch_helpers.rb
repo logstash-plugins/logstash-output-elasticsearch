@@ -4,8 +4,8 @@ require "logstash/outputs/elasticsearch/helpers"
 
 describe LogStash::Outputs::ElasticSearch::Helpers do
   context "detecting if an index name can be determined for an event" do
-    let(:event_with_ts) { LogStash::Event.new() }
-    let(:event_with_no_ts) { LogStash::Event.new().tap { |e| e.remove('@timestamp') } }
+    let(:event_with_ts) { LogStash::Event.new }
+    let(:event_with_no_ts) { LogStash::Event.new.tap { |e| e.remove('@timestamp') } }
 
     context "when the index pattern doesn't include a timestamp" do
       ['my-index', 'logstash-%{normal_field_interpolation}'].each do |index|

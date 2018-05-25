@@ -1,5 +1,7 @@
 # Small functions that don't require a full instance of the plugin should go here.
 # This will promote lightning fast tests.
+#
+# Methods are defined right on the module to ensure no context can be shared with the plugin instance :-)
 module LogStash; module Outputs; class ElasticSearch;
   module Helpers
     INDEX_REQUIRING_TIMESTAMP = /%{\+.+\}/
