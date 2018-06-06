@@ -124,6 +124,7 @@ This plugin supports the following configuration options plus the <<plugins-{typ
 | <<plugins-{type}s-{plugin}-action>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-bulk_path>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-cacert>> |a valid filesystem path|No
+| <<plugins-{type}s-{plugin}-custom_headers>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-doc_as_upsert>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-document_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-document_type>> |<<string,string>>|No
@@ -257,6 +258,17 @@ If you don't set a value for this option:
 Set the Elasticsearch errors in the whitelist that you don't want to log.
 A useful example is when you want to skip all 409 errors
 which are `document_already_exists_exception`.
+
+[id="plugins-{type}s-{plugin}-custom_headers"]
+===== `custom_headers`
+
+  * Value type is <<hash,hash>>
+  * There is no default value for this setting.
+
+Pass a set of key value pairs as the headers sent in each request to
+an elasticsearch node. The headers will be used for any kind of request
+(_bulk request, template installation, health checks and sniffing).
+These custom headers will be overidden by settings like `http_compression`.
 
 [id="plugins-{type}s-{plugin}-healthcheck_path"]
 ===== `healthcheck_path` 
