@@ -226,6 +226,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Enable gzip compression on requests. Note that response compression is on by default for Elasticsearch v5.0 and beyond
   config :http_compression, :validate => :boolean, :default => false
 
+  # Custom Headers to send on each request to elasticsearch nodes
+  config :custom_headers, :validate => :hash, :default => {}
+
   def build_client
     params["metric"] = metric
     @client ||= ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)

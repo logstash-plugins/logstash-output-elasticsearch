@@ -555,4 +555,22 @@ describe LogStash::Outputs::ElasticSearch do
       end
     end
   end
+
+  describe "custom headers" do
+    let(:manticore_options) { subject.client.pool.adapter.manticore.instance_variable_get(:@options) } 
+
+    context "when set" do
+      let(:headers) { { "X-Thing" => "Test" } }
+      let(:options) { { "custom_headers" => headers } }
+      it "should use the custom headers in the adapter options" do
+        expect(manticore_options[:headers]).to eq(headers)
+      end
+    end
+
+    context "when not set" do
+      it "should have no headers" do
+        expect(manticore_options[:headers]).to be_empty
+      end
+    end
+  end
 end

@@ -46,6 +46,7 @@ module LogStash; module Outputs; class ElasticSearch;
     # * `:ssl` - Boolean. Enable or disable SSL/TLS.
     # * `:proxy` - String. Choose a HTTP HTTProxy to use.
     # * `:path` - String. The leading path for prefixing Elasticsearch
+    # * `:headers` - Hash. Pairs of headers and their values
     #   requests. This is sometimes used if you are proxying Elasticsearch access
     #   through a special http path, such as using mod_rewrite.
     def initialize(options={})
@@ -53,11 +54,11 @@ module LogStash; module Outputs; class ElasticSearch;
       @metric = options[:metric]
       @bulk_request_metrics = @metric.namespace(:bulk_requests)
       @bulk_response_metrics = @bulk_request_metrics.namespace(:responses)
-      
+
       # Again, in case we use DEFAULT_OPTIONS in the future, uncomment this.
       # @options = DEFAULT_OPTIONS.merge(options)
       @options = options
-      
+
       @url_template = build_url_template
 
       @pool = build_pool(@options)
@@ -65,7 +66,7 @@ module LogStash; module Outputs; class ElasticSearch;
       # connection pool at the same time
       @bulk_path = @options[:bulk_path]
     end
-    
+
     def build_url_template
       {
         :scheme => self.scheme,
@@ -138,7 +139,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def bulk_send(body_stream)
       params = http_compression ? {:headers => {"Content-Encoding" => "gzip"}} : {}
-      # Discard the URL 
+      # Discard the URL
       response = @pool.post(@bulk_path, params, body_stream.string)
       if !body_stream.closed?
         body_stream.truncate(0)
@@ -274,7 +275,9 @@ module LogStash; module Outputs; class ElasticSearch;
       end
 
       adapter_options[:ssl] = ssl_options if self.scheme == 'https'
-      
+
+      adapter_options[:headers] = client_settings[:headers] if client_settings[:headers]
+
       adapter_class = ::LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter
       adapter = adapter_class.new(@logger, adapter_options)
     end
