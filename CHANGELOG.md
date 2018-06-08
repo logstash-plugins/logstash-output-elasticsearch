@@ -1,3 +1,6 @@
+## 9.2.0
+  - Added support for customizing HTTP headers [#782](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/782)
+
 ## 9.1.4
   - Log an error -- not a warning -- when ES raises an invalid\_index\_name\_exception.
 
