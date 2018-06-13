@@ -637,8 +637,9 @@ a timeout occurs, the request will be retried.
   * Value type is <<path,path>>
   * There is no default value for this setting.
 
-The JKS truststore to validate the server's certificate.
-Use either `:truststore` or `:cacert`
+The truststore to validate the server's certificate.
+It can be either .jks or .p12.
+Use either `:truststore` or `:cacert`.
 
 [id="plugins-{type}s-{plugin}-truststore_password"]
 ===== `truststore_password` 
