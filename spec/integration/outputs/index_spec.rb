@@ -21,11 +21,11 @@ describe "target_bulk_bytes", :integration => true do
   end
 
   describe "batches that are too large for one" do
-    let(:event) { LogStash::Event.new("message" => "a " * (((subject.target_bulk_bytes/2) / event_count)+1)) }
+    let(:event) { LogStash::Event.new("message" => "a " * (((subject.client.target_bulk_bytes/2) / event_count)+1)) }
 
     it "should send in two batches" do
       expect(subject.client).to have_received(:bulk_send).twice do |payload|
-        expect(payload.size).to be <= subject.target_bulk_bytes
+        expect(payload.size).to be <= subject.client.target_bulk_bytes
       end
     end
 
@@ -36,7 +36,7 @@ describe "target_bulk_bytes", :integration => true do
 
       it "should send in one batch" do
         expect(subject.client).to have_received(:bulk_send).once do |payload|
-          expect(payload.size).to be <= subject.target_bulk_bytes
+          expect(payload.size).to be <= subject.client.target_bulk_bytes
         end
       end
     end
