@@ -313,6 +313,11 @@ module LogStash; module Outputs; class ElasticSearch;
         # Even though we retry the user should be made aware of these
         if e.response_code == 429
           logger.debug(message, log_hash)
+        # 413 means that the request is to large. So trying to decrease the request size if there
+        # actually where multiple actions in a bulk request.
+        elsif e.response_code == 413 && e.num_actions_in_request > 1
+          @client.target_bulk_bytes /= 2;
+          logger.info(message + "and decreased request size " , log_hash)
         else
           logger.error(message, log_hash)
         end
