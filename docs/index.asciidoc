@@ -96,7 +96,7 @@ happens, the problem is logged as a warning, and the event is dropped. See
 ==== Batch Sizes
 
 This plugin attempts to send batches of events as a single request. However, if
-a request exceeds 20MB we will break it up until multiple batch requests. If a single document exceeds 20MB it will be sent as a single request.
+a request exceeds 20MB we will break it up into multiple batch requests. If a single document exceeds 20MB it will be sent as a single request.
 
 ==== DNS Caching
 
