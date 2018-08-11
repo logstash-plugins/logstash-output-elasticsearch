@@ -1,3 +1,6 @@
+## 9.2.1
+  - Added text offering hosted Elasticsearch service
+
 ## 9.2.0
   - Added support for customizing HTTP headers [#782](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/782)
 
