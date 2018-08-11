@@ -31,8 +31,15 @@ plugin to version 6.2.5 or higher.
 
 ================================================================================
 
-This plugin is the recommended method of storing logs in Elasticsearch.
-If you plan on using the Kibana web interface, you'll want to use this output.
+If you plan to use the Kibana web
+interface, use the Elasticsearch output plugin to get your log data into
+Elasticsearch. 
+
+TIP: You can run Elasticsearch on your own hardware, or use our
+https://www.elastic.co/cloud/elasticsearch-service[hosted {es} Service] on
+Elastic Cloud. The Elasticsearch Service is available on both AWS and GCP.
+https://www.elastic.co/cloud/elasticsearch-service/signup[Try the {es} Service
+for free].
 
 This output only speaks the HTTP protocol. HTTP is the preferred protocol for interacting with Elasticsearch as of Logstash 2.0.
 We strongly encourage the use of HTTP over the node protocol for a number of reasons. HTTP is only marginally slower,
