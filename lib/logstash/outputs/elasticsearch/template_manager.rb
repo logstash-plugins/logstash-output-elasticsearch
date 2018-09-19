@@ -5,9 +5,11 @@ module LogStash; module Outputs; class ElasticSearch
       return unless plugin.manage_template
       plugin.logger.info("Using mapping template from", :path => plugin.template)
       template = get_template(plugin.template, plugin.maximum_seen_major_version)
+      decorate_template(plugin, template)
       plugin.logger.info("Attempting to install template", :manage_template => template)
       install(plugin.client, plugin.template_name, template, plugin.template_overwrite)
     rescue => e
+      puts e.backtrace
       plugin.logger.error("Failed to install template.", :message => e.message, :class => e.class.name, :backtrace => e.backtrace)
     end
 
@@ -19,6 +21,10 @@ module LogStash; module Outputs; class ElasticSearch
 
     def self.install(client, template_name, template, template_overwrite)
       client.template_install(template_name, template, template_overwrite)
+    end
+
+    def self.decorate_template(plugin, template)
+      ILMManager.decorate_template(plugin, template) #if @ilm_enabled
     end
 
     def self.default_template_path(es_major_version)

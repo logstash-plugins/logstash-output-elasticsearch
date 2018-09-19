@@ -229,6 +229,25 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Custom Headers to send on each request to elasticsearch nodes
   config :custom_headers, :validate => :hash, :default => {}
 
+
+  # -----
+  # ILM configurations
+  # -----
+  # Flag for enabling Index Lifecycle Management integration.
+  # TODO: Set this to false before commit
+  config :ilm_enabled, :validate => :boolean, :default => false
+
+  # Write alias used for indexing data. If write alias doesn't exist, Logstash will create it and map it to the relevant index
+  # TODO: Remove write-alias
+  config :ilm_write_alias, :validate => :string, :default => 'logstash'
+
+  # appends “000001” by default for new index creation, subsequent rollover indices will increment based on this pattern i.e. “000002”
+  config :ilm_pattern, :validate => :string, :default => '000001'
+
+  # ILM policy to use, if undefined the default policy will be used.
+  config :ilm_policy, :validate => :string, :default => 'logstash-policy'
+
+
   def build_client
     params["metric"] = metric
     @client ||= ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)

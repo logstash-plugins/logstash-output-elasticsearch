@@ -1,8 +1,10 @@
 require "logstash/outputs/elasticsearch/template_manager"
+require "logstash/outputs/elasticsearch/ilm_manager"
+
 
 module LogStash; module Outputs; class ElasticSearch;
   module Common
-    attr_reader :client, :hosts
+    attr_reader :client, :hosts, :ilm_manager
 
     # These codes apply to documents, not at the request level
     DOC_DLQ_CODES = [400, 404]
@@ -28,6 +30,13 @@ module LogStash; module Outputs; class ElasticSearch;
       @document_level_metrics = metric.namespace(:documents)
       install_template_after_successful_connection
       @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
+    end
+
+    def setup_ilm
+      # ilm fields :ilm_enabled, :ilm_write_alias, :ilm_pattern, :ilm_policy
+      # As soon as the template is loaded, check for existence of write alias:
+      ILMManager.maybe_create_write_alias(self, @ilm_write_alias)
+      ILMManager.maybe_create_ilm_policy(self, @ilm_policy)
     end
 
     # Receive an array of events and immediately attempt to index them (no buffering)
@@ -260,13 +269,13 @@ module LogStash; module Outputs; class ElasticSearch;
       type = if @document_type
                event.sprintf(@document_type)
              else
-               if client.maximum_seen_major_version < 6
-                 event.get("type") || DEFAULT_EVENT_TYPE_ES6
-               elsif client.maximum_seen_major_version == 6
-                 DEFAULT_EVENT_TYPE_ES6
-               else
+               # if client.maximum_seen_major_version < 6
+               #   event.get("type") || DEFAULT_EVENT_TYPE_ES6
+               # elsif client.maximum_seen_major_version == 6
+               #   DEFAULT_EVENT_TYPE_ES6
+               # else
                  DEFAULT_EVENT_TYPE_ES7
-               end
+               # end
              end
 
       if !(type.is_a?(String) || type.is_a?(Numeric))
@@ -281,6 +290,7 @@ module LogStash; module Outputs; class ElasticSearch;
       sleep_interval = @retry_initial_interval
       begin
         es_actions = actions.map {|action_type, params, event| [action_type, params, event.to_hash]}
+        @logger.error("There are #{actions.count} actions to do")
         response = @client.bulk(es_actions)
         response
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError => e

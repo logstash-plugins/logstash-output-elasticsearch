@@ -348,6 +348,37 @@ module LogStash; module Outputs; class ElasticSearch;
       @pool.put(path, nil, LogStash::Json.dump(template))
     end
 
+    def write_alias_exists?(name)
+      response = @pool.head("#{name}")
+      response.code >= 200 && response.code <= 299
+    end
+
+    def write_alias_put(name, alias_definition)
+      path = "#{name}"
+      logger.info("Creating write alias #{path}")
+      @pool.put(path, nil, LogStash::Json.dump(alias_definition))
+    end
+
+    def ilm_policy_exists?(name)
+      response = @pool.head("#{name}")
+      response.code >= 200 && response.code <= 299
+    end
+
+
+    def ilm_policy_put(name, policy)
+      path = "_ilm/#{name}"
+      logger.info("Creating policy #{policy} at #{path}")
+      begin
+        response = @pool.put(path, nil, LogStash::Json.dump(policy))
+      rescue => e
+        puts e.inspect
+        puts e.response_body
+        puts "request body: #{e.request_body}"
+        puts "ur: #{e.url}"
+      end
+      puts response
+    end
+
     # Build a bulk item for an elasticsearch update action
     def update_action_builder(args, source)
       if args[:_script]
