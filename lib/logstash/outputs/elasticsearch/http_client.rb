@@ -343,6 +343,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def template_put(name, template)
+      puts "******THE TEMPLATE NAME IS #{name}"
       path = "_template/#{name}"
       logger.info("Installing elasticsearch template to #{path}")
       @pool.put(path, nil, LogStash::Json.dump(template))

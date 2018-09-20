@@ -19,6 +19,7 @@ module LogStash; module Outputs; class ElasticSearch
 
     def self.decorate_template(plugin, template)
       # Include ilm settings in template:
+      template['template'] = "#{plugin.ilm_write_alias}-*"
       template['settings'].update({ 'index.lifecycle.name' => plugin.ilm_policy, 'index.lifecycle.rollover_alias' => plugin.ilm_write_alias})
     end
 

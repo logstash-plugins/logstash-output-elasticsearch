@@ -83,14 +83,17 @@ module ESHelper
     client.cluster.get_settings
   end
 
+  def get_policy(client, policy_name)
+    client.get_ilm_policy(name: policy_name)
+  end
+
   def put_policy(client, policy_name, policy)
     client.put_ilm_policy({:name => policy_name, :body=> policy})
   end
 
   def clean_ilm(client)
-    client.get_ilm_policy.each_key {|key| client.delete_ilm_policy(name: key) }
+    client.get_ilm_policy.each_key {|key| client.delete_ilm_policy(name: key)}
   end
-
 
   def supports_ilm?(client)
     begin

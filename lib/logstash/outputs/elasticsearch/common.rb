@@ -25,16 +25,19 @@ module LogStash; module Outputs; class ElasticSearch;
 
       setup_hosts # properly sets @hosts
       build_client
+      install_template_after_successful_connection
       check_action_validity
       @bulk_request_metrics = metric.namespace(:bulk_requests)
       @document_level_metrics = metric.namespace(:documents)
-      install_template_after_successful_connection
+      # setup_ilm if @ilm_enabled
+      # install_template_after_successful_connection
       @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
     end
 
     def setup_ilm
       # ilm fields :ilm_enabled, :ilm_write_alias, :ilm_pattern, :ilm_policy
       # As soon as the template is loaded, check for existence of write alias:
+
       ILMManager.maybe_create_write_alias(self, @ilm_write_alias)
       ILMManager.maybe_create_ilm_policy(self, @ilm_policy)
     end
@@ -55,7 +58,10 @@ module LogStash; module Outputs; class ElasticSearch;
           Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
           sleep_interval = next_sleep_interval(sleep_interval)
         end
-        install_template if successful_connection?
+        if successful_connection?
+          install_template
+          setup_ilm if @ilm_enabled
+        end
       end
     end
 
