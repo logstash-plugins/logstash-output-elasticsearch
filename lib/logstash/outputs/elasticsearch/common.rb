@@ -1,5 +1,4 @@
 require "logstash/outputs/elasticsearch/template_manager"
-require "logstash/outputs/elasticsearch/ilm_manager"
 
 
 module LogStash; module Outputs; class ElasticSearch;
@@ -10,6 +9,8 @@ module LogStash; module Outputs; class ElasticSearch;
     DOC_DLQ_CODES = [400, 404]
     DOC_SUCCESS_CODES = [200, 201]
     DOC_CONFLICT_CODE = 409
+    DEFAULT_POLICY = "logstash-policy"
+    ILM_POLICY_PATH = "default-ilm-policy.json"
 
     # When you use external versioning, you are communicating that you want
     # to ignore conflicts. More obviously, since an external version is a
@@ -19,6 +20,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def register
       @template_installed = Concurrent::AtomicBoolean.new(false)
+      @ilm_verified = Concurrent::AtomicBoolean.new(false)
       @stopping = Concurrent::AtomicBoolean.new(false)
       # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
       @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
@@ -29,17 +31,7 @@ module LogStash; module Outputs; class ElasticSearch;
       check_action_validity
       @bulk_request_metrics = metric.namespace(:bulk_requests)
       @document_level_metrics = metric.namespace(:documents)
-      # setup_ilm if @ilm_enabled
-      # install_template_after_successful_connection
       @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
-    end
-
-    def setup_ilm
-      # ilm fields :ilm_enabled, :ilm_write_alias, :ilm_pattern, :ilm_policy
-      # As soon as the template is loaded, check for existence of write alias:
-
-      ILMManager.maybe_create_write_alias(self, @ilm_write_alias)
-      ILMManager.maybe_create_ilm_policy(self, @ilm_policy)
     end
 
     # Receive an array of events and immediately attempt to index them (no buffering)
@@ -59,8 +51,9 @@ module LogStash; module Outputs; class ElasticSearch;
           sleep_interval = next_sleep_interval(sleep_interval)
         end
         if successful_connection?
+          verify_ilm
           install_template
-          setup_ilm if @ilm_enabled
+          setup_ilm
         end
       end
     end
@@ -275,13 +268,13 @@ module LogStash; module Outputs; class ElasticSearch;
       type = if @document_type
                event.sprintf(@document_type)
              else
-               # if client.maximum_seen_major_version < 6
-               #   event.get("type") || DEFAULT_EVENT_TYPE_ES6
-               # elsif client.maximum_seen_major_version == 6
-               #   DEFAULT_EVENT_TYPE_ES6
-               # else
+               if client.maximum_seen_major_version < 6
+                 event.get("type") || DEFAULT_EVENT_TYPE_ES6
+               elsif client.maximum_seen_major_version == 6
+                 DEFAULT_EVENT_TYPE_ES6
+               else
                  DEFAULT_EVENT_TYPE_ES7
-               # end
+               end
              end
 
       if !(type.is_a?(String) || type.is_a?(Numeric))
@@ -296,7 +289,6 @@ module LogStash; module Outputs; class ElasticSearch;
       sleep_interval = @retry_initial_interval
       begin
         es_actions = actions.map {|action_type, params, event| [action_type, params, event.to_hash]}
-        @logger.error("There are #{actions.count} actions to do")
         response = @client.bulk(es_actions)
         response
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError => e
@@ -362,11 +354,74 @@ module LogStash; module Outputs; class ElasticSearch;
       end
     end
 
+    def ilm_enabled?
+      @ilm_enabled
+    end
+
     def dlq_enabled?
       # TODO there should be a better way to query if DLQ is enabled
       # See more in: https://github.com/elastic/logstash/issues/8064
       respond_to?(:execution_context) && execution_context.respond_to?(:dlq_writer) &&
         !execution_context.dlq_writer.inner_writer.is_a?(::LogStash::Util::DummyDeadLetterQueueWriter)
     end
+
+    def setup_ilm
+      return unless ilm_enabled?
+      # ilm fields :ilm_enabled, :ilm_write_alias, :ilm_pattern, :ilm_policy
+      # As soon as the template is loaded, check for existence of write alias:
+      maybe_create_write_alias
+      maybe_create_ilm_policy
+      # maybe verify policy somewhere?
+    end
+
+    def verify_ilm
+      return true unless ilm_enabled?
+      begin
+
+        # For elasticsearch versions without ilm enablement, the _ilm endpoint will return a 400 bad request - the
+        # endpoint is interpreted as an index, and will return a bad request error as that is an illegal format for
+        # an index.
+        client.get_ilm_endpoint
+      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        if e.response_code == 404
+          true
+        elsif e.response_code == 400
+          false
+          raise LogStash::ConfigurationError, "THROW: ilm is enabled, but elasticsearch instance does not have ilm capability, #{e}"
+        else
+          raise e
+        end
+      end
+
+    end
+
+    def maybe_create_ilm_policy
+      if ilm_policy == DEFAULT_POLICY && !client.ilm_policy_exists?(ilm_policy)
+        client.ilm_policy_put(ilm_policy, policy_payload)
+      end
+    end
+
+    def maybe_create_write_alias
+      client.write_alias_put(write_alias_target, write_alias_payload) unless client.write_alias_exists?(ilm_write_alias)
+    end
+
+    def write_alias_target
+      "#{ilm_write_alias}-#{ilm_pattern}"
+    end
+
+    def write_alias_payload
+      {
+          "aliases" => {
+              ilm_write_alias =>{
+                  "is_write_index" =>  true
+              }
+          }
+      }
+    end
+
+    def policy_payload
+      policy_path = ::File.expand_path(ILM_POLICY_PATH, ::File.dirname(__FILE__))
+      LogStash::Json.load(::IO.read(policy_path))
+    end
   end
-end; end; end
+end end end

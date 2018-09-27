@@ -5,9 +5,8 @@ module LogStash; module Outputs; class ElasticSearch
       return unless plugin.manage_template
       plugin.logger.info("Using mapping template from", :path => plugin.template)
       template = get_template(plugin.template, plugin.maximum_seen_major_version)
-      decorate_template(plugin, template) if plugin.ilm_enabled
+      add_ilm_settings_to_template(plugin, template) if plugin.ilm_enabled?
       plugin.logger.info("Attempting to install template", :manage_template => template)
-      # install(plugin.client, plugin.template_name, template, plugin.template_overwrite)
       install(plugin.client, template_name(plugin), template, plugin.template_overwrite)
     rescue => e
       puts e.backtrace
@@ -24,13 +23,15 @@ module LogStash; module Outputs; class ElasticSearch
       client.template_install(template_name, template, template_overwrite)
     end
 
-    def self.decorate_template(plugin, template)
-      ILMManager.decorate_template(plugin, template)
+    def self.add_ilm_settings_to_template(plugin, template)
+      # Include ilm settings in template:
+      template['template'] = "#{plugin.ilm_write_alias}-*"
+      template['settings'].update({ 'index.lifecycle.name' => plugin.ilm_policy, 'index.lifecycle.rollover_alias' => plugin.ilm_write_alias})
     end
 
-
+    # TODO: Verify this is ok
     def self.template_name(plugin)
-      plugin.ilm_enabled ? plugin.ilm_write_alias : plugin.template_name
+      plugin.ilm_enabled? ? plugin.ilm_write_alias : plugin.template_name
     end
 
     def self.default_template_path(es_major_version)

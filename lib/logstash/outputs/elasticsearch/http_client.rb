@@ -337,48 +337,48 @@ module LogStash; module Outputs; class ElasticSearch;
       ::LogStash::Util::SafeURI.new(raw_url)
     end
 
-    def template_exists?(name)
-      response = @pool.head("/_template/#{name}")
+    def exists?(path, use_get=false)
+      response = use_get ? @pool.get(path) : @pool.head(path)
       response.code >= 200 && response.code <= 299
     end
 
+    def template_exists?(name)
+      exists?("/_template/#{name}")
+    end
+
     def template_put(name, template)
-      puts "******THE TEMPLATE NAME IS #{name}"
       path = "_template/#{name}"
       logger.info("Installing elasticsearch template to #{path}")
       @pool.put(path, nil, LogStash::Json.dump(template))
     end
 
+    # ILM methods
+
+    # check whether write alias already exists
     def write_alias_exists?(name)
-      response = @pool.head("#{name}")
-      response.code >= 200 && response.code <= 299
+      exists?(name)
     end
 
-    def write_alias_put(name, alias_definition)
-      path = "#{name}"
-      logger.info("Creating write alias #{path}")
-      @pool.put(path, nil, LogStash::Json.dump(alias_definition))
+    # Create a new write alias
+    def write_alias_put(alias_name, alias_definition)
+      logger.info("Creating write alias #{alias_name}")
+      @pool.put(alias_name, nil, LogStash::Json.dump(alias_definition))
+    end
+
+    def get_ilm_endpoint
+      @pool.get(path)
     end
 
     def ilm_policy_exists?(name)
-      response = @pool.head("#{name}")
-      response.code >= 200 && response.code <= 299
+      exists?("/_ilm/#{name}", true)
     end
-
 
     def ilm_policy_put(name, policy)
       path = "_ilm/#{name}"
-      logger.info("Creating policy #{policy} at #{path}")
-      begin
-        response = @pool.put(path, nil, LogStash::Json.dump(policy))
-      rescue => e
-        puts e.inspect
-        puts e.response_body
-        puts "request body: #{e.request_body}"
-        puts "ur: #{e.url}"
-      end
-      puts response
+      logger.info("Installing ILM policy #{policy} to #{path}")
+      @pool.put(path, nil, LogStash::Json.dump(policy))
     end
+
 
     # Build a bulk item for an elasticsearch update action
     def update_action_builder(args, source)
