@@ -377,7 +377,7 @@ module LogStash; module Outputs; class ElasticSearch;
     def verify_ilm
       return true unless ilm_enabled?
       begin
-
+        verify_ilm_config
         # For elasticsearch versions without ilm enablement, the _ilm endpoint will return a 400 bad request - the
         # endpoint is interpreted as an index, and will return a bad request error as that is an illegal format for
         # an index.
@@ -387,16 +387,35 @@ module LogStash; module Outputs; class ElasticSearch;
           true
         elsif e.response_code == 400
           false
-          raise LogStash::ConfigurationError, "THROW: ilm is enabled, but elasticsearch instance does not have ilm capability, #{e}"
+          raise LogStash::ConfigurationError, "Index Lifecycle Management feature is enabled, but Elasticsearch instance does not have ilm capability, #{e}"
         else
           raise e
         end
       end
+    end
+
+    def verify_ilm_config
+      # Default index name is logstash-XXXX and the default write alias is logstash - should we just change overwrite the default index name here?
+      @index = @ilm_write_alias if @index == LogStash::Outputs::ElasticSearch::CommonConfigs::DEFAULT_INDEX_NAME
+      raise LogStash::ConfigurationError, "ILM configuration error: The index name #{@index} does not match the write alias #{@ilm_write_alias}" if @ilm_write_alias != @index
+      raise LogStash::ConfigurationError, "ILM configuration error: The template name #{@template_name} does not match the write alias #{@ilm_write_alias}" if @ilm_write_alias != @template_name
+      verify_ilm_policy unless ilm_policy_default?
+    end
+
+    def ilm_policy_ok?
 
     end
 
+    def ilm_policy_default?
+      ilm_policy == DEFAULT_POLICY
+    end
+
+    def verify_ilm_policy
+      raise LogStash::ConfigurationError, "The specified ILM policy does not exist" unless client.ilm_policy_exists?(ilm_policy)
+    end
+
     def maybe_create_ilm_policy
-      if ilm_policy == DEFAULT_POLICY && !client.ilm_policy_exists?(ilm_policy)
+      if ilm_policy_default? && !client.ilm_policy_exists?(ilm_policy)
         client.ilm_policy_put(ilm_policy, policy_payload)
       end
     end

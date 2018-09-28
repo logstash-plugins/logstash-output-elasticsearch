@@ -2,6 +2,8 @@ require 'forwardable' # Needed for logstash core SafeURI. We need to patch this 
 
 module LogStash; module Outputs; class ElasticSearch
   module CommonConfigs
+
+    DEFAULT_INDEX_NAME = "logstash-%{+YYYY.MM.dd}"
     def self.included(mod)
       # The index to write events to. This can be dynamic using the `%{foo}` syntax.
       # The default value will partition your indices by day so you can more easily
@@ -10,7 +12,7 @@ module LogStash; module Outputs; class ElasticSearch
       # For weekly indexes ISO 8601 format is recommended, eg. logstash-%{+xxxx.ww}.
       # LS uses Joda to format the index pattern from event timestamp.
       # Joda formats are defined http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html[here].
-      mod.config :index, :validate => :string, :default => "logstash-%{+YYYY.MM.dd}"
+      mod.config :index, :validate => :string, :default => DEFAULT_INDEX_NAME
 
       mod.config :document_type, 
         :validate => :string, 

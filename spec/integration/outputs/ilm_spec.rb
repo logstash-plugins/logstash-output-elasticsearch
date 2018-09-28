@@ -2,7 +2,6 @@ require_relative "../../../spec/es_spec_helper"
 
 describe "ES supports Index Lifecycle Management" do #, :integration => true do
   require "logstash/outputs/elasticsearch"
-  let (:ilm_policy_name) {"three_and_done"}
   let (:ilm_write_alias) { "the_write_alias" }
   let (:index) { ilm_write_alias }
   let (:ilm_enabled) { true }
@@ -11,14 +10,16 @@ describe "ES supports Index Lifecycle Management" do #, :integration => true do
     {
         "index" => index,
         "ilm_enabled" => ilm_enabled,
-        "ilm_policy" => ilm_policy_name,
         "ilm_write_alias" => ilm_write_alias,
         "manage_template" => true,
+        "template_name" => ilm_write_alias,
         "template_overwrite" => true,
         "hosts" => "#{get_host_port()}"
     }
   }
-  let (:policy) {
+  let (:policy) { small_max_doc_policy }
+
+  let (:small_max_doc_policy) {
     {"policy" => {
         "phases"=> {
             "hot" => {
@@ -31,6 +32,23 @@ describe "ES supports Index Lifecycle Management" do #, :integration => true do
         }
     }}
   }
+
+  let (:large_max_doc_policy) {
+    {"policy" => {
+        "phases"=> {
+            "hot" => {
+                "actions" => {
+                    "rollover" => {
+                        "max_docs" => "1000000"
+                    }
+                }
+            }
+        }
+    }}
+  }
+
+
+
   subject { LogStash::Outputs::ElasticSearch.new(settings) }
 
   before :each do
@@ -41,9 +59,9 @@ describe "ES supports Index Lifecycle Management" do #, :integration => true do
     @es = get_client
     clean(@es)
     @old_cluster_settings = get_cluster_settings(@es)
-    # set_cluster_settings(@es,  {"persistent" => {
-    #     "indices.lifecycle.poll_interval" => "1s"}
-    # })
+    set_cluster_settings(@es,  {"persistent" => {
+        "indices.lifecycle.poll_interval" => "1s"}
+    })
   end
 
   after :each do
@@ -51,25 +69,20 @@ describe "ES supports Index Lifecycle Management" do #, :integration => true do
     clean(@es)
   end
 
-  # it 'should have a good template' do
-  #   puts "the template is #{@es.indices.get_template(name: "logstash")}"
-  #   expect(@es.indices.get_template(name: "logstash")).to eq("a hat")
-  # end
 
-  context 'when using the default policy' do
-    let (:ilm_policy_name) { LogStash::Outputs::ElasticSearch::DEFAULT_POLICY }
-
+  context 'when using the default policy' do\
     it 'should install it if it is not present' do
       expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
       subject.register
       sleep(1)
-      expect{get_policy(@es, ilm_policy_name)}.not_to raise_error
+      expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.not_to raise_error
     end
   end
 
 
   context 'when not using the default policy' do
     let (:ilm_policy_name) {"new_one"}
+    let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
     let (:policy) {{
         "policy" => {
           "phases"=> {
@@ -89,9 +102,7 @@ describe "ES supports Index Lifecycle Management" do #, :integration => true do
     end
 
     it 'should not install the default policy if it is not used' do
-
       subject.register
-      puts subject.policy_payload.to_json
       sleep(1)
       expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
     end
@@ -99,6 +110,7 @@ describe "ES supports Index Lifecycle Management" do #, :integration => true do
 
   context 'with ilm enabled' do
     let (:ilm_enabled) { true }
+
     it 'should write the write alias' do
       expect(@es.indices.exists_alias(index: ilm_write_alias)).to be_falsey
       subject.register
@@ -106,82 +118,93 @@ describe "ES supports Index Lifecycle Management" do #, :integration => true do
       expect(@es.indices.exists_alias(index: ilm_write_alias)).to be_truthy
     end
 
-    it 'should rollover when the policy max docs is reached' do
-      put_policy(@es,ilm_policy_name, policy)
+    context 'with a policy with a maximum number of documents' do
+      let (:policy) { small_max_doc_policy }
+      let (:ilm_policy_name) { "few_docs"}
+      let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
 
-      subject.register
+      it 'should rollover when the policy max docs is reached' do
+        put_policy(@es,ilm_policy_name, policy)
+        subject.register
 
-      subject.multi_receive([
-                                LogStash::Event.new("message" => "sample message here"),
-                                LogStash::Event.new("somemessage" => { "message" => "sample nested message here" }),
-                                LogStash::Event.new("somevalue" => 100),
-                            ])
+        subject.multi_receive([
+                                  LogStash::Event.new("message" => "sample message here"),
+                                  LogStash::Event.new("somemessage" => { "message" => "sample nested message here" }),
+                                  LogStash::Event.new("somevalue" => 100),
+                              ])
 
-      sleep(6)
+        sleep(6)
 
-      subject.multi_receive([
-                                LogStash::Event.new("country" => "us"),
-                                LogStash::Event.new("country" => "at"),
-                                LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0 ] })
-                            ])
+        subject.multi_receive([
+                                  LogStash::Event.new("country" => "us"),
+                                  LogStash::Event.new("country" => "at"),
+                                  LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0 ] })
+                              ])
 
-      sleep(6)
+        sleep(6)
 
-      subject.multi_receive([
-                                LogStash::Event.new("country" => "uk"),
-                                LogStash::Event.new("country" => "fr"),
-                                LogStash::Event.new("geoip" => { "location" => [ 0.1, 1.0 ] })
-                            ])
+        subject.multi_receive([
+                                  LogStash::Event.new("country" => "uk"),
+                                  LogStash::Event.new("country" => "fr"),
+                                  LogStash::Event.new("geoip" => { "location" => [ 0.1, 1.0 ] })
+                              ])
 
-      @es.indices.refresh
+        @es.indices.refresh
 
-      # Wait or fail until everything's indexed.
-      Stud::try(20.times) do
-        r = @es.search
-        expect(r["hits"]["total"]).to eq(9)
+        # Wait or fail until everything's indexed.
+        Stud::try(20.times) do
+          r = @es.search
+          expect(r["hits"]["total"]).to eq(9)
+        end
+        indexes_written = @es.search['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
+          index_written = x['_index']
+          res[index_written] += 1
+        end
+        expect(indexes_written.count).to eq(3)
+        expect(indexes_written["#{ilm_write_alias}-000001"]).to eq(3)
+        expect(indexes_written["#{ilm_write_alias}-000002"]).to eq(3)
+        expect(indexes_written["#{ilm_write_alias}-000003"]).to eq(3)
       end
-      indexes_written = @es.search['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
-        index_written = x['_index']
-        res[index_written] += 1
-      end
-      expect(indexes_written.count).to eq(3)
-      expect(indexes_written["#{ilm_write_alias}-000001"]).to eq(3)
-      expect(indexes_written["#{ilm_write_alias}-000002"]).to eq(3)
-      expect(indexes_written["#{ilm_write_alias}-000003"]).to eq(3)
     end
 
-    it 'should ingest into a single index when max docs is not reached' do
-      subject.register
+    context 'with a policy where the maximum number of documents is not reached' do
+      let (:policy) { large_max_doc_policy }
+      let (:ilm_policy_name) { "many_docs"}
+      let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
 
-      subject.multi_receive([
-                                LogStash::Event.new("message" => "sample message here"),
-                                LogStash::Event.new("somemessage" => { "message" => "sample nested message here" }),
-                                LogStash::Event.new("somevalue" => 100),
-                            ])
+      it 'should ingest into a single index when max docs is not reached' do
+        put_policy(@es,ilm_policy_name, policy)
+        subject.register
 
-      sleep(6)
+        subject.multi_receive([
+                                  LogStash::Event.new("message" => "sample message here"),
+                                  LogStash::Event.new("somemessage" => { "message" => "sample nested message here" }),
+                                  LogStash::Event.new("somevalue" => 100),
+                              ])
 
-      subject.multi_receive([
-                                LogStash::Event.new("country" => "us"),
-                                LogStash::Event.new("country" => "at"),
-                                LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0 ] })
-                            ])
+        sleep(6)
 
-      @es.indices.refresh
+        subject.multi_receive([
+                                  LogStash::Event.new("country" => "us"),
+                                  LogStash::Event.new("country" => "at"),
+                                  LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0 ] })
+                              ])
 
-      # Wait or fail until everything's indexed.
-      Stud::try(20.times) do
-        r = @es.search
-        expect(r["hits"]["total"]).to eq(6)
+        @es.indices.refresh
+
+        # Wait or fail until everything's indexed.
+        Stud::try(20.times) do
+          r = @es.search
+          expect(r["hits"]["total"]).to eq(6)
+        end
+        indexes_written = @es.search['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
+          index_written = x['_index']
+          res[index_written] += 1
+        end
+        expect(indexes_written.count).to eq(1)
+        expect(indexes_written["#{ilm_write_alias}-000001"]).to eq(6)
       end
-      indexes_written = @es.search['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
-        index_written = x['_index']
-        res[index_written] += 1
-      end
-      expect(indexes_written.count).to eq(1)
-      expect(indexes_written["#{ilm_write_alias}-000001"]).to eq(6)
     end
-
   end
 
   context 'with ilm disabled' do
@@ -200,45 +223,49 @@ describe "ES supports Index Lifecycle Management" do #, :integration => true do
       expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
     end
 
-    it 'should index documents normally' do
-      put_policy(@es,ilm_policy_name, policy)
+    context 'with an existing policy that will roll over' do
+      let (:policy) { small_max_doc_policy }
+      let (:ilm_policy_name) { "3_docs"}
+      let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
 
-      subject.register
+      it 'should index documents normally' do
 
-      subject.multi_receive([
-                                LogStash::Event.new("message" => "sample message here"),
-                                LogStash::Event.new("somemessage" => { "message" => "sample nested message here" }),
-                                LogStash::Event.new("somevalue" => 100),
-                            ])
+        subject.register
+        subject.multi_receive([
+                                  LogStash::Event.new("message" => "sample message here"),
+                                  LogStash::Event.new("somemessage" => { "message" => "sample nested message here" }),
+                                  LogStash::Event.new("somevalue" => 100),
+                              ])
 
-      sleep(6)
+        sleep(6)
 
-      subject.multi_receive([
-                                LogStash::Event.new("country" => "us"),
-                                LogStash::Event.new("country" => "at"),
-                                LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0 ] })
-                            ])
+        subject.multi_receive([
+                                  LogStash::Event.new("country" => "us"),
+                                  LogStash::Event.new("country" => "at"),
+                                  LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0 ] })
+                              ])
 
-      @es.indices.refresh
+        @es.indices.refresh
 
-      # Wait or fail until everything's indexed.
-      Stud::try(20.times) do
-        r = @es.search
-        expect(r["hits"]["total"]).to eq(6)
+        # Wait or fail until everything's indexed.
+        Stud::try(20.times) do
+          r = @es.search
+          expect(r["hits"]["total"]).to eq(6)
+        end
+        indexes_written = @es.search['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
+          index_written = x['_index']
+          res[index_written] += 1
+        end
+        expect(indexes_written.count).to eq(1)
+        expect(indexes_written["#{index}"]).to eq(6)
       end
-      indexes_written = @es.search['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
-        index_written = x['_index']
-        res[index_written] += 1
-      end
-      expect(indexes_written.count).to eq(1)
-      expect(indexes_written["#{index}"]).to eq(6)
     end
   end
 end
 
 describe 'ES Does not support index lifecycle management' do
   require "logstash/outputs/elasticsearch"
-  let (:ilm_policy_name) {"three_and_done"}
+  # let (:ilm_policy_name) {"three_and_done"}
   let (:ilm_write_alias) { "the_write_alias" }
   let (:index) { "ilm_write_alias" }
   let (:ilm_enabled) { false }
@@ -247,7 +274,7 @@ describe 'ES Does not support index lifecycle management' do
     {
         "index" => index,
         "ilm_enabled" => ilm_enabled,
-        "ilm_policy" => ilm_policy_name,
+        # "ilm_policy" => ilm_policy_name,
         "ilm_write_alias" => ilm_write_alias,
         "manage_template" => true,
         "template_overwrite" => true,
