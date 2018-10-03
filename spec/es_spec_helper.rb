@@ -68,7 +68,6 @@ module ESHelper
   end
 
   def clean(client)
-
     client.indices.delete_template(:name => "*")
     # This can fail if there are no indexes, ignore failure.
     client.indices.delete(:index => "*") rescue nil

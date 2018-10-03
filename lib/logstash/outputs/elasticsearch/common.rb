@@ -1,4 +1,5 @@
 require "logstash/outputs/elasticsearch/template_manager"
+require 'logstash/environment'
 
 
 module LogStash; module Outputs; class ElasticSearch;
@@ -367,11 +368,9 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def setup_ilm
       return unless ilm_enabled?
-      # ilm fields :ilm_enabled, :ilm_write_alias, :ilm_pattern, :ilm_policy
       # As soon as the template is loaded, check for existence of write alias:
       maybe_create_write_alias
       maybe_create_ilm_policy
-      # maybe verify policy somewhere?
     end
 
     def verify_ilm
@@ -382,6 +381,7 @@ module LogStash; module Outputs; class ElasticSearch;
         # endpoint is interpreted as an index, and will return a bad request error as that is an illegal format for
         # an index.
         client.get_ilm_endpoint
+        true
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         if e.response_code == 404
           true

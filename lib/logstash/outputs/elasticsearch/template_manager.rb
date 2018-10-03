@@ -9,7 +9,6 @@ module LogStash; module Outputs; class ElasticSearch
       plugin.logger.info("Attempting to install template", :manage_template => template)
       install(plugin.client, template_name(plugin), template, plugin.template_overwrite)
     rescue => e
-      puts e.backtrace
       plugin.logger.error("Failed to install template.", :message => e.message, :class => e.class.name, :backtrace => e.backtrace)
     end
 

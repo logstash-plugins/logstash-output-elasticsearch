@@ -365,8 +365,8 @@ module LogStash; module Outputs; class ElasticSearch;
       @pool.put(alias_name, nil, LogStash::Json.dump(alias_definition))
     end
 
-    def get_ilm_endpoint
-      @pool.get(path)
+     def get_ilm_endpoint
+      @pool.get("/_ilm")
     end
 
     def ilm_policy_exists?(name)
