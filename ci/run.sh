@@ -30,14 +30,17 @@ setup_es() {
   cp $BUILD_DIR/spec/fixtures/scripts/painless/* elasticsearch/config/scripts
 
   # If we're running with xpack SSL/Users enabled...
-  if [[ "$SECURE_INTEGRATION" == "true" ]]; then
-    if [[ "$xpack_download_url" == "" ]]; then
-      yes y | elasticsearch/bin/elasticsearch-plugin install x-pack
-    else
-      curl -sL $xpack_download_url > elasticsearch/xpack.zip
-      yes y | elasticsearch/bin/elasticsearch-plugin install file://$BUILD_DIR/elasticsearch/xpack.zip
-    fi
+  # Note that 6.3.0 releases and above do not require an x-pack plugin install
 
+  if [[ "$SECURE_INTEGRATION" == "true" ]]; then
+    if [[ -z "$OSS" ]]; then
+        if [[ "$xpack_download_url" == "" ]]; then
+          yes y | elasticsearch/bin/elasticsearch-plugin install x-pack
+        else
+          curl -sL $xpack_download_url > elasticsearch/xpack.zip
+          yes y | elasticsearch/bin/elasticsearch-plugin install file://$BUILD_DIR/elasticsearch/xpack.zip
+        fi
+    fi
     es_yml=elasticsearch/config/elasticsearch.yml
     cp -rv $BUILD_DIR/spec/fixtures/test_certs elasticsearch/config/test_certs
     echo "xpack.security.http.ssl.enabled: true" >> $es_yml
@@ -123,12 +126,23 @@ else
   fi
 
   case "$ES_VERSION" in
-    6.*)
+    6.[0-2]*)
       setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz https://artifacts.elastic.co/downloads/packs/x-pack/x-pack-${ES_VERSION}.zip
       es_distribution_version=$(get_es_distribution_version)
       start_es
       bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
       ;;
+    6.*)
+      if [[ "$OSS" == "true" ]]; then
+        setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-${ES_VERSION}.tar.gz
+      else
+        setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
+      fi
+      es_distribution_version=$(get_es_distribution_version)
+      start_es
+      bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
+      ;;
+
     5.*)
       setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
       es_distribution_version=$(get_es_distribution_version)
