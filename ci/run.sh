@@ -62,8 +62,14 @@ start_es() {
     # Needed for travis. On travis the `users` script will fail because it will first try and write
     # to /etc/elasticsearch
     export CONF_DIR=$BUILD_DIR/elasticsearch/config
-    elasticsearch/bin/x-pack/users useradd simpleuser -p abc123 -r superuser
-    elasticsearch/bin/x-pack/users useradd 'f@ncyuser' -p 'ab%12#' -r superuser
+
+    if [[ "$OSS" == "false" ]]; then
+        elasticsearch/bin/elasticsearch-users useradd simpleuser -p abc123 -r superuser
+        elasticsearch/bin/elasticsearch-users useradd 'f@ncyuser' -p 'ab%12#' -r superuser
+    else
+        elasticsearch/bin/x-pack/users useradd simpleuser -p abc123 -r superuser
+        elasticsearch/bin/x-pack/users useradd 'f@ncyuser' -p 'ab%12#' -r superuser
+    fi
   fi
 
   while ! curl --silent $es_url && [[ $count -ne 0 ]]; do
