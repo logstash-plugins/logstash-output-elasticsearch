@@ -32,15 +32,16 @@ setup_es() {
   # If we're running with xpack SSL/Users enabled...
   # Note that 6.3.0 releases and above do not require an x-pack plugin install
 
-  if [[ "$SECURE_INTEGRATION" == "true" ]]; then
-    if [[ -z "$OSS" ]]; then
-        if [[ "$xpack_download_url" == "" ]]; then
-          yes y | elasticsearch/bin/elasticsearch-plugin install x-pack
-        else
-          curl -sL $xpack_download_url > elasticsearch/xpack.zip
-          yes y | elasticsearch/bin/elasticsearch-plugin install file://$BUILD_DIR/elasticsearch/xpack.zip
-        fi
+  if [[ "$DISTRIBUTION" == "legacyxpack" ]]; then
+    if [[ "$xpack_download_url" == "" ]]; then
+      yes y | elasticsearch/bin/elasticsearch-plugin install x-pack
+    else
+      curl -sL $xpack_download_url > elasticsearch/xpack.zip
+      yes y | elasticsearch/bin/elasticsearch-plugin install file://$BUILD_DIR/elasticsearch/xpack.zip
     fi
+  fi
+
+  if [[ "$SECURE_INTEGRATION" == "true" ]]; then
     es_yml=elasticsearch/config/elasticsearch.yml
     cp -rv $BUILD_DIR/spec/fixtures/test_certs elasticsearch/config/test_certs
     echo "xpack.security.http.ssl.enabled: true" >> $es_yml
@@ -58,18 +59,17 @@ start_es() {
   es_url="http://localhost:9200"
   if [[ "$SECURE_INTEGRATION" == "true" ]]; then
     es_url="https://localhost:9200 -k"
+  fi
+  # Needed for travis. On travis the `users` script will fail because it will first try and write
+  # to /etc/elasticsearch
+  export CONF_DIR=$BUILD_DIR/elasticsearch/config
 
-    # Needed for travis. On travis the `users` script will fail because it will first try and write
-    # to /etc/elasticsearch
-    export CONF_DIR=$BUILD_DIR/elasticsearch/config
-
-    if [[ "$OSS" == "false" ]]; then
-        elasticsearch/bin/elasticsearch-users useradd simpleuser -p abc123 -r superuser
-        elasticsearch/bin/elasticsearch-users useradd 'f@ncyuser' -p 'ab%12#' -r superuser
-    else
-        elasticsearch/bin/x-pack/users useradd simpleuser -p abc123 -r superuser
-        elasticsearch/bin/x-pack/users useradd 'f@ncyuser' -p 'ab%12#' -r superuser
-    fi
+  if [[ "$DISTRIBUTION" == "default" ]]; then
+      elasticsearch/bin/elasticsearch-users useradd simpleuser -p abc123 -r superuser
+      elasticsearch/bin/elasticsearch-users useradd 'f@ncyuser' -p 'ab%12#' -r superuser
+  elif [[ "$DISTRIBUTION" == "legacyxpack" ]]; then
+      elasticsearch/bin/x-pack/users useradd simpleuser -p abc123 -r superuser
+      elasticsearch/bin/x-pack/users useradd 'f@ncyuser' -p 'ab%12#' -r superuser
   fi
 
   while ! curl --silent $es_url && [[ $count -ne 0 ]]; do
@@ -139,9 +139,9 @@ else
       bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
       ;;
     6.*)
-      if [[ "$OSS" == "true" ]]; then
+      if [[ "$DISTRIBUTION" == "oss" ]]; then
         setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-${ES_VERSION}.tar.gz
-      else
+      elif [[ "$DISTRIBUTION" == "default" ]]; then
         setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
       fi
       es_distribution_version=$(get_es_distribution_version)
