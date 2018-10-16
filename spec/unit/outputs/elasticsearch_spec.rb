@@ -11,7 +11,7 @@ describe LogStash::Outputs::ElasticSearch do
 
   before(:each) do
     if do_register
-      # subject.register
+      # Build the client and set mocks before calling register to avoid races.
       subject.build_client
 
       # Rspec mocks can't handle background threads, so... we can't use any

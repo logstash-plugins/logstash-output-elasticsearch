@@ -29,7 +29,3 @@ matrix:
 install: true
 script: ci/build.sh
 jdk: oraclejdk8
-addons:
-  apt:
-    packages:
-    - oracle-java8-installer
