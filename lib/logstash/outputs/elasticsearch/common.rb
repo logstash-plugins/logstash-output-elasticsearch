@@ -51,7 +51,9 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def stop_template_installer
+      puts "Stopping template"
       @template_installer.join unless @template_installer.nil?
+      puts "stopped template"
     end
 
     def successful_connection?
