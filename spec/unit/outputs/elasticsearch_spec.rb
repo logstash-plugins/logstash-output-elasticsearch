@@ -11,13 +11,15 @@ describe LogStash::Outputs::ElasticSearch do
 
   before(:each) do
     if do_register
-      subject.register
+      # subject.register
+      subject.build_client
 
       # Rspec mocks can't handle background threads, so... we can't use any
       allow(subject.client.pool).to receive(:start_resurrectionist)
       allow(subject.client.pool).to receive(:start_sniffer)
       allow(subject.client.pool).to receive(:healthcheck!)
       allow(subject.client).to receive(:maximum_seen_major_version).at_least(:once).and_return(maximum_seen_major_version)
+      subject.register
       subject.client.pool.adapter.manticore.respond_with(:body => "{}")
     end
   end
