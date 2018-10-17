@@ -7,15 +7,9 @@
 ########################################################
 set -e
 
-echo "Starting build process in: `pwd`"
+export LOGSTASH_PATH=$PWD/logstash-${LOGSTASH_VERSION}
 source ./ci/setup.sh
+export PATH=$LOGSTASH_PATH/vendor/jruby/bin:$LOGSTASH_PATH/vendor/bundle/jruby/1.9.3/bin:$LOGSTASH_PATH/vendor/bundle/jruby/2.3.0/bin:$PATH
+export LOGSTASH_SOURCE=1
 
-if [[ -f "ci/run.sh" ]]; then
-    echo "Running custom build script in: `pwd`/ci/run.sh"
-    source ./ci/run.sh
-else
-    echo "Running default build scripts in: `pwd`/ci/build.sh"
-    bundle install
-    bundle exec rake vendor
-    bundle exec rspec spec
-fi
+jruby -S bundle exec rspec

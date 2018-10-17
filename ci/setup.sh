@@ -1,26 +1,26 @@
 #!/bin/bash
-# version: 1
-########################################################
-#
-# AUTOMATICALLY GENERATED! DO NOT EDIT
-#
-########################################################
 set -e
-if [ "$LOGSTASH_BRANCH" ]; then
-    echo "Building plugin using Logstash source"
-    BASE_DIR=`pwd`
-    echo "Checking out branch: $LOGSTASH_BRANCH"
-    git clone -b $LOGSTASH_BRANCH https://github.com/elastic/logstash.git ../../logstash --depth 1
-    printf "Checked out Logstash revision: %s\n" "$(git -C ../../logstash rev-parse HEAD)"
-    cd ../../logstash
-    echo "Building plugins with Logstash version:"
-    cat versions.yml
-    echo "---"
-    # We need to build the jars for that specific version
-    echo "Running gradle assemble in: `pwd`"
-    ./gradlew assemble
-    cd $BASE_DIR
-    export LOGSTASH_SOURCE=1
-else
-    echo "Building plugin using released gems on rubygems"
-fi
+
+download_logstash() {
+  logstash_version=$1
+  case "$logstash_version" in
+    *-SNAPSHOT)
+      wget https://snapshots.elastic.co/downloads/logstash/logstash-$logstash_version.tar.gz
+      ;;
+    *)
+      wget https://artifacts.elastic.co/downloads/logstash/logstash-$logstash_version.tar.gz
+      ;;
+  esac
+}
+
+
+echo "Downloading logstash version: $LOGSTASH_VERSION"
+download_logstash $LOGSTASH_VERSION
+tar -zxf logstash-$LOGSTASH_VERSION.tar.gz
+export LOGSTASH_PATH=$PWD/logstash-${LOGSTASH_VERSION}
+export PATH=$LOGSTASH_PATH/vendor/jruby/bin:$LOGSTASH_PATH/vendor/bundle/jruby/1.9.3/bin:$LOGSTASH_PATH/vendor/bundle/jruby/2.3.0/bin:$PATH
+export LOGSTASH_SOURCE=1
+cp $LOGSTASH_PATH/logstash-core/versions-gem-copy.yml $LOGSTASH_PATH/versions.yml
+gem install bundler
+jruby -S bundle install --jobs=3 --retry=3 --path=vendor/bundler
+jruby -S bundle exec rake vendor
