@@ -30,14 +30,18 @@ setup_es() {
   cp $BUILD_DIR/spec/fixtures/scripts/painless/* elasticsearch/config/scripts
 
   # If we're running with xpack SSL/Users enabled...
-  if [[ "$SECURE_INTEGRATION" == "true" ]]; then
+  # Note that 6.3.0 releases and above do not require an x-pack plugin install
+
+  if [[ "$DISTRIBUTION" == "legacyxpack" ]]; then
     if [[ "$xpack_download_url" == "" ]]; then
       yes y | elasticsearch/bin/elasticsearch-plugin install x-pack
     else
       curl -sL $xpack_download_url > elasticsearch/xpack.zip
       yes y | elasticsearch/bin/elasticsearch-plugin install file://$BUILD_DIR/elasticsearch/xpack.zip
     fi
+  fi
 
+  if [[ "$SECURE_INTEGRATION" == "true" ]]; then
     es_yml=elasticsearch/config/elasticsearch.yml
     cp -rv $BUILD_DIR/spec/fixtures/test_certs elasticsearch/config/test_certs
     echo "xpack.security.http.ssl.enabled: true" >> $es_yml
@@ -55,12 +59,17 @@ start_es() {
   es_url="http://localhost:9200"
   if [[ "$SECURE_INTEGRATION" == "true" ]]; then
     es_url="https://localhost:9200 -k"
+  fi
+  # Needed for travis. On travis the `users` script will fail because it will first try and write
+  # to /etc/elasticsearch
+  export CONF_DIR=$BUILD_DIR/elasticsearch/config
 
-    # Needed for travis. On travis the `users` script will fail because it will first try and write
-    # to /etc/elasticsearch
-    export CONF_DIR=$BUILD_DIR/elasticsearch/config
-    elasticsearch/bin/x-pack/users useradd simpleuser -p abc123 -r superuser
-    elasticsearch/bin/x-pack/users useradd 'f@ncyuser' -p 'ab%12#' -r superuser
+  if [[ "$DISTRIBUTION" == "default" ]]; then
+      elasticsearch/bin/elasticsearch-users useradd simpleuser -p abc123 -r superuser
+      elasticsearch/bin/elasticsearch-users useradd 'f@ncyuser' -p 'ab%12#' -r superuser
+  elif [[ "$DISTRIBUTION" == "legacyxpack" ]]; then
+      elasticsearch/bin/x-pack/users useradd simpleuser -p abc123 -r superuser
+      elasticsearch/bin/x-pack/users useradd 'f@ncyuser' -p 'ab%12#' -r superuser
   fi
 
   while ! curl --silent $es_url && [[ $count -ne 0 ]]; do
@@ -83,7 +92,7 @@ get_es_distribution_version() {
 # not here because this script runs in a different bash shell.
 download_gradle() {
   echo $PWD
-  local version="4.3"
+  local version="4.10"
   curl -sL https://services.gradle.org/distributions/gradle-$version-bin.zip > gradle.zip
   unzip -d . gradle.zip
   mv gradle-* gradle
@@ -123,12 +132,23 @@ else
   fi
 
   case "$ES_VERSION" in
-    6.*)
+    6.[0-2]*)
       setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz https://artifacts.elastic.co/downloads/packs/x-pack/x-pack-${ES_VERSION}.zip
       es_distribution_version=$(get_es_distribution_version)
       start_es
       bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
       ;;
+    6.*)
+      if [[ "$DISTRIBUTION" == "oss" ]]; then
+        setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-${ES_VERSION}.tar.gz
+      elif [[ "$DISTRIBUTION" == "default" ]]; then
+        setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
+      fi
+      es_distribution_version=$(get_es_distribution_version)
+      start_es
+      bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
+      ;;
+
     5.*)
       setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
       es_distribution_version=$(get_es_distribution_version)
