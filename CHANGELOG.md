@@ -1,3 +1,6 @@
+## 9.2.2
+  - Fixed numerous issues relating to builds on Travis [#799](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/799)
+
 ## 9.2.1
   - Added text offering hosted Elasticsearch service
 
