@@ -1,3 +1,6 @@
+## 9.2.3
+  - Tweaked logging statements to reduce verbosity
+
 ## 9.2.2
   - Fixed numerous issues relating to builds on Travis [#799](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/799)
 

@@ -240,7 +240,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # Try to keep locking granularity low such that we don't affect IO...
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         begin
-          logger.info("Running health check to see if an Elasticsearch connection is working",
+          logger.debug("Running health check to see if an Elasticsearch connection is working",
                         :healthcheck_url => url, :path => @healthcheck_path)
           response = perform_request_to_url(url, :head, @healthcheck_path)
           # If no exception was raised it must have succeeded!
@@ -378,9 +378,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     rescue BadResponseCodeError => e
       # These aren't discarded from the pool because these are often very transient
       # errors
-      raise e
-    rescue => e
-      logger.warn("UNEXPECTED POOL ERROR", :e => e)
       raise e
     ensure
       return_connection(url)
