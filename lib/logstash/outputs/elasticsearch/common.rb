@@ -85,10 +85,16 @@ module LogStash; module Outputs; class ElasticSearch;
         end
       end
 
-      if action == 'update'
+      if action == 'update' or action == 'upsert'
         params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
         params[:_script] = event.sprintf(@script) if @script != ""
         params[:_retry_on_conflict] = @retry_on_conflict
+        params[:_doc_as_upsert] = @doc_as_upsert
+      end
+
+      if action == 'upsert'
+        params[:_doc_as_upsert] = true
+        action = 'update'
       end
 
       if @version
@@ -130,7 +136,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     # To be overidden by the -java version
-    VALID_HTTP_ACTIONS=["index", "delete", "create", "update"]
+    VALID_HTTP_ACTIONS=["index", "delete", "create", "update", "upsert"]
     def valid_actions
       VALID_HTTP_ACTIONS
     end

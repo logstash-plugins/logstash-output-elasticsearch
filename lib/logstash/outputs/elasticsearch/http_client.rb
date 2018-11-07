@@ -97,7 +97,7 @@ module LogStash; module Outputs; class ElasticSearch;
       return if actions.empty?
 
       bulk_actions = actions.collect do |action, args, source|
-        args, source = update_action_builder(args, source) if action == 'update'
+        args, source = update_action_builder(args, source) if (action == 'update' or action == 'upsert')
 
         if source && action != 'delete'
           next [ { action => args }, source ]
@@ -350,6 +350,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     # Build a bulk item for an elasticsearch update action
     def update_action_builder(args, source)
+      doc_as_upsert = args.delete(:_doc_as_upsert)
       if args[:_script]
         # Use the event as a hash from your script with variable name defined
         # by script_var_name (default: "event")
@@ -359,7 +360,7 @@ module LogStash; module Outputs; class ElasticSearch;
         if @options[:scripted_upsert]
           source['scripted_upsert'] = true
           source['upsert'] = {}
-        elsif @options[:doc_as_upsert]
+        elsif doc_as_upsert
           source['upsert'] = source_orig
         else
           source['upsert'] = args.delete(:_upsert) if args[:_upsert]
@@ -375,7 +376,7 @@ module LogStash; module Outputs; class ElasticSearch;
         source['script']['lang'] = @options[:script_lang] if @options[:script_lang] != ''
       else
         source = { 'doc' => source }
-        if @options[:doc_as_upsert]
+        if doc_as_upsert
           source['doc_as_upsert'] = true
         else
           source['upsert'] = args.delete(:_upsert) if args[:_upsert]

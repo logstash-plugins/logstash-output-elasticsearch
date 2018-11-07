@@ -128,6 +128,21 @@ if ESHelper.es_version_satisfies?('>= 2', '< 6')
       end
     end
 
+    context "when upsert action" do
+      it "should create new documents with event/doc as upsert" do
+        subject = get_es_output({ 'document_id' => "456", 'action' => 'upsert', 'doc_as_upsert' => false })
+        subject.register
+        subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
+        r = @es.get(:index => 'logstash-update', :type => 'doc', :id => "456", :refresh => true)
+        insist { r["_source"]["message"] } == 'sample message here'
+      end
+
+      it "should fail on documents with event/doc as upsert at external version" do
+        subject = get_es_output({ 'document_id' => "456", 'doc_as_upsert' => false, 'action' => 'upsert', 'version' => 999, "version_type" => "external" })
+        expect { subject.register }.to raise_error(LogStash::ConfigurationError)
+      end
+    end
+
     context "updates with scripted upsert" do
       it "should create new documents with upsert content" do
         subject = get_es_output({ 'document_id' => "456", 'script' => 'scripted_update', 'upsert' => '{"message": "upsert message"}', 'script_type' => 'file' })
