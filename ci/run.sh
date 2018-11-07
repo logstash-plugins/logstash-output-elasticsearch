@@ -132,6 +132,17 @@ else
   fi
 
   case "$ES_VERSION" in
+    *-SNAPSHOT)
+      if [[ "$DISTRIBUTION" == "oss" ]]; then
+        setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-oss-${ES_VERSION}.tar.gz
+      elif [[ "$DISTRIBUTION" == "default" ]]; then
+        setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
+      fi
+      es_distribution_version=$(get_es_distribution_version)
+      start_es
+      bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
+      ;;
+
     6.[0-2]*)
       setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz https://artifacts.elastic.co/downloads/packs/x-pack/x-pack-${ES_VERSION}.zip
       es_distribution_version=$(get_es_distribution_version)
@@ -148,7 +159,6 @@ else
       start_es
       bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
       ;;
-
     5.*)
       setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
       es_distribution_version=$(get_es_distribution_version)
