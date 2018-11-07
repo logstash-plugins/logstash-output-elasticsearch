@@ -13,7 +13,7 @@ module Elasticsearch
         raise ArgumentError, "Required argument 'name' missing" unless arguments[:name]
         raise ArgumentError, "Required argument 'body' missing" unless arguments[:body]
         method = HTTP_PUT
-        path   = Utils.__pathify '_ilm', Utils.__escape(arguments[:name])
+        path   = Utils.__pathify '_ilm/policy/', Utils.__escape(arguments[:name])
 
         params = Utils.__validate_and_extract_params arguments
 

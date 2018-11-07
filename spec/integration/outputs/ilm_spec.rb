@@ -166,18 +166,18 @@ shared_examples_for 'an ILM enabled Logstash' do
 end
 
 
-if ESHelper.es_version_satisfies?("<= 6.4")
-  describe 'Pre-ILM versions of Elasticsearch' do
+if ESHelper.es_version_satisfies?("<= 6.5")
+  describe 'Pre-ILM versions of Elasticsearch', :integration => true do
     it_behaves_like 'an Elasticsearch instance that does not support index lifecycle management'
   end
 end
 
-if ESHelper.es_version_satisfies?(">= 6.5")
-  describe 'OSS Elasticsearch', :skip => true do
-    it_behaves_like 'an Elasticsearch instance that does not support index lifecycle management'
-  end
+if ESHelper.es_version_satisfies?(">= 6.6")
+  # describe 'OSS Elasticsearch', :integration => true do
+  #   it_behaves_like 'an Elasticsearch instance that does not support index lifecycle management'
+  # end
 
-  describe 'Elasticsearch has index lifecycle enabled' do #, :integration => true do
+  describe 'Elasticsearch has index lifecycle management enabled', :integration => true do
     DEFAULT_INTERVAL = '600s'
 
     require "logstash/outputs/elasticsearch"
@@ -314,7 +314,7 @@ if ESHelper.es_version_satisfies?(">= 6.5")
         let (:index) { ilm_write_alias }
         let (:template_name) { "custom" }
         if ESHelper.es_version_satisfies?(">= 7.0")
-          let (:template) { "spec/fixtures/template-with-policy-es6x.json" }
+          let (:template) { "spec/fixtures/template-with-policy-es7x.json" }
         else
           let (:template) { "spec/fixtures/template-with-policy-es6x.json" }
         end

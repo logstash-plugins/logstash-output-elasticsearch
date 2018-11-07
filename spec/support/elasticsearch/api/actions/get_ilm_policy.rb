@@ -9,7 +9,7 @@ module Elasticsearch
       # Retrieve the list of index lifecycle management policies
       def get_ilm_policy(arguments={})
         method = HTTP_GET
-        path   = Utils.__pathify '_ilm', Utils.__escape(arguments[:name])
+        path   = Utils.__pathify '_ilm/policy', Utils.__escape(arguments[:name])
         params = {}
         perform_request(method, path, params, nil).body
       end

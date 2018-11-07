@@ -2,7 +2,7 @@ require_relative "../../../spec/es_spec_helper"
 require "logstash/outputs/elasticsearch"
 
 if ESHelper.es_version_satisfies?("<= 5.x")
-  context "when using elasticsearch 5.x and before", :integration => true do
+  context "when using elasticsearch 5.x and before", :integration => "changethis" do
     shared_examples "a type based parent indexer" do
       let(:index) { 10.times.collect { rand(10).to_s }.join("") }
       let(:type) { 10.times.collect { rand(10).to_s }.join("") }

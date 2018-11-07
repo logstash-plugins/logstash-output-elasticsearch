@@ -366,15 +366,15 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
      def get_ilm_endpoint
-      @pool.get("/_ilm")
+      @pool.get("/_ilm/policy")
     end
 
     def ilm_policy_exists?(name)
-      exists?("/_ilm/#{name}", true)
+      exists?("/_ilm/policy/#{name}", true)
     end
 
     def ilm_policy_put(name, policy)
-      path = "_ilm/#{name}"
+      path = "_ilm/policy/#{name}"
       logger.info("Installing ILM policy #{policy} to #{path}")
       @pool.put(path, nil, LogStash::Json.dump(policy))
     end

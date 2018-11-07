@@ -34,28 +34,28 @@ shared_examples "a routing indexer" do
     end
 end
 
-describe "(http protocol) index events with static routing", :integration => true do
-  it_behaves_like 'a routing indexer' do
-    let(:routing) { "test" }
-    let(:config) {
-      {
-        "hosts" => get_host_port,
-        "index" => index,
-        "routing" => routing
-      }
-    }
-  end
-end
-
-describe "(http_protocol) index events with fieldref in routing value", :integration => true do
-  it_behaves_like 'a routing indexer' do
-    let(:routing) { "test" }
-    let(:config) {
-      {
-        "hosts" => get_host_port,
-        "index" => index,
-        "routing" => "%{message}"
-      }
-    }
-  end
-end
+# describe "(http protocol) index events with static routing", :integration => true do
+#   it_behaves_like 'a routing indexer' do
+#     let(:routing) { "test" }
+#     let(:config) {
+#       {
+#         "hosts" => get_host_port,
+#         "index" => index,
+#         "routing" => routing
+#       }
+#     }
+#   end
+# end
+# 
+# describe "(http_protocol) index events with fieldref in routing value", :integration => true do
+#   it_behaves_like 'a routing indexer' do
+#     let(:routing) { "test" }
+#     let(:config) {
+#       {
+#         "hosts" => get_host_port,
+#         "index" => index,
+#         "routing" => "%{message}"
+#       }
+#     }
+#   end
+# end

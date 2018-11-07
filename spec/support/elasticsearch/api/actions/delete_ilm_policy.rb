@@ -9,7 +9,7 @@ module Elasticsearch
       # Update the password of the specified user
       def delete_ilm_policy(arguments={})
         method = HTTP_DELETE
-        path   = Utils.__pathify '_ilm/',
+        path   = Utils.__pathify '_ilm/policy/',
                                  Utils.__escape(arguments[:name])
         params = {}
         perform_request(method, path, params, nil).body
