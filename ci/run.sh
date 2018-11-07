@@ -132,9 +132,8 @@ else
   fi
 
   case "$ES_VERSION" in
-    LATEST-SNAPSHOT*)
+    LATEST-SNAPSHOT-*)
       split_latest=${ES_VERSION##*-}
-
       LATEST_ES_VERSION=$(curl -sL https://artifacts-api.elastic.co/v1/versions/ | jq -r --arg LATEST $split_latest '[.versions[] | select(startswith($LATEST))][-1]')
       if [[ "$DISTRIBUTION" == "oss" ]]; then
         setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-oss-${LATEST_ES_VERSION}.tar.gz
