@@ -132,6 +132,20 @@ else
   fi
 
   case "$ES_VERSION" in
+    LATEST-SNAPSHOT*)
+      split_latest=${ES_VERSION##*-}
+
+      LATEST_ES_VERSION=$(curl -sL https://artifacts-api.elastic.co/v1/versions/ | jq -r --arg LATEST $split_latest '[.versions[] | select(startswith($LATEST))][-1]')
+      if [[ "$DISTRIBUTION" == "oss" ]]; then
+        setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-oss-${LATEST_ES_VERSION}.tar.gz
+      elif [[ "$DISTRIBUTION" == "default" ]]; then
+        setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-${LATEST_ES_VERSION}.tar.gz
+      fi
+      es_distribution_version=$(get_es_distribution_version)
+      start_es
+      bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
+      ;;
+
     *-SNAPSHOT)
       if [[ "$DISTRIBUTION" == "oss" ]]; then
         setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-oss-${ES_VERSION}.tar.gz
