@@ -11,6 +11,23 @@ module ESHelper
     Elasticsearch::Client.new(:hosts => [get_host_port])
   end
 
+  def get_doc_type
+    if ESHelper.es_version_satisfies?(">=7")
+      "_doc"
+    else
+      "doc"
+    end
+  end
+
+  def get_mapping_name
+    if ESHelper.es_version_satisfies?(">=7")
+      "_doc"
+    else
+      "_default_"
+    end
+
+  end
+
   def self.es_version
     RSpec.configuration.filter[:es_version] || ENV['ES_VERSION']
   end
