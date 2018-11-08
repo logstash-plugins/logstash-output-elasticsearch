@@ -362,7 +362,6 @@ module LogStash; module Outputs; class ElasticSearch;
         elsif @options[:doc_as_upsert]
           source['upsert'] = source_orig
         else
-          source['upsert'] = args.delete(:upsert) if args[:upsert]
           source['upsert'] = args.delete(:_upsert) if args[:_upsert]
         end
         case @options[:script_type]
@@ -380,7 +379,6 @@ module LogStash; module Outputs; class ElasticSearch;
           source['doc_as_upsert'] = true
         else
           source['upsert'] = args.delete(:_upsert) if args[:_upsert]
-          source['upsert'] = args.delete(:upsert) if args[:upsert]
         end
       end
       [args, source]

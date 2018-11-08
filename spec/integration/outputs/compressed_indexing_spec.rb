@@ -50,7 +50,7 @@ if ESHelper.es_version_satisfies?(">= 5")
         result = LogStash::Json.load(response.body)
         result["hits"]["hits"].each do |doc|
           if ESHelper.es_version_satisfies?(">= 6")
-            expect(doc["_type"]).to eq(get_doc_type)
+            expect(doc["_type"]).to eq(doc_type)
           else
             expect(doc["_type"]).to eq(type)
           end

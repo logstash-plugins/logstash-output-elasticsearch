@@ -301,7 +301,7 @@ describe LogStash::Outputs::ElasticSearch do
       let(:event) { LogStash::Event.new("myactionfield" => "update", "message" => "blah") }
 
       it "should obtain specific action's params from event_action_tuple" do
-        expect(subject.event_action_tuple(event)[1]).to include(subject.upsert_key)
+        expect(subject.event_action_tuple(event)[1]).to include(:_upsert)
       end
     end
 
@@ -362,7 +362,7 @@ describe LogStash::Outputs::ElasticSearch do
       it "should not set the retry_on_conflict parameter when creating an event_action_tuple" do
         allow(subject.client).to receive(:maximum_seen_major_version).and_return(maximum_seen_major_version)
         action, params, event_data = subject.event_action_tuple(event)
-        expect(params).not_to include({subject.retry_on_conflict_key => num_retries})
+        expect(params).not_to include({subject.retry_on_conflict_action_name => num_retries})
       end
     end
 
@@ -371,7 +371,7 @@ describe LogStash::Outputs::ElasticSearch do
 
       it "should set the retry_on_conflict parameter when creating an event_action_tuple" do
         action, params, event_data = subject.event_action_tuple(event)
-        expect(params).to include({subject.retry_on_conflict_key => num_retries})
+        expect(params).to include({subject.retry_on_conflict_action_name => num_retries})
       end
     end
 
@@ -380,7 +380,7 @@ describe LogStash::Outputs::ElasticSearch do
 
       it "should set the retry_on_conflict parameter when creating an event_action_tuple" do
         action, params, event_data = subject.event_action_tuple(event)
-        expect(params).to include({subject.retry_on_conflict_key => num_retries})
+        expect(params).to include({subject.retry_on_conflict_action_name => num_retries})
         expect(action).to eq("update")
       end
     end
