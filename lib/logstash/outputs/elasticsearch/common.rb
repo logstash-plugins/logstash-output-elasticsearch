@@ -67,7 +67,7 @@ module LogStash; module Outputs; class ElasticSearch;
         :_id => @document_id ? event.sprintf(@document_id) : nil,
         :_index => event.sprintf(@index),
         :_type => get_event_type(event),
-        :_routing => @routing ? event.sprintf(@routing) : nil
+        routing_key => @routing ? event.sprintf(@routing) : nil
       }
 
       if @pipeline
@@ -79,16 +79,16 @@ module LogStash; module Outputs; class ElasticSearch;
           join_value = event.get(@join_field)
           parent_value = event.sprintf(@parent)
           event.set(@join_field, { "name" => join_value, "parent" => parent_value })
-          params[:_routing] = event.sprintf(@parent)
+          params[routing_key] = event.sprintf(@parent)
         else
           params[:parent] = event.sprintf(@parent)
         end
       end
 
       if action == 'update'
-        params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
+        params[upsert_key] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
         params[:_script] = event.sprintf(@script) if @script != ""
-        params[:_retry_on_conflict] = @retry_on_conflict
+        params[retry_on_conflict_key] = @retry_on_conflict
       end
 
       if @version
@@ -112,6 +112,19 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def maximum_seen_major_version
       client.maximum_seen_major_version
+    end
+
+
+    def routing_key
+      @routing_key ||= maximum_seen_major_version >= 6 ? :routing : :_routing
+    end
+
+    def upsert_key
+      @upsert_key ||= maximum_seen_major_version >= 6 ? :upsert : :_upsert
+    end
+
+    def retry_on_conflict_key
+      @retry_on_conflict_key ||= maximum_seen_major_version >= 6 ? :retry_on_conflict : :_retry_on_conflict
     end
 
     def install_template
@@ -306,7 +319,7 @@ module LogStash; module Outputs; class ElasticSearch;
         log_hash = {:code => e.response_code, :url => e.url.sanitized.to_s}
         log_hash[:body] = e.response_body if @logger.debug? # Generally this is too verbose
         message = "Encountered a retryable error. Will Retry with exponential backoff "
-
+puts e.response_body
         # We treat 429s as a special case because these really aren't errors, but
         # rather just ES telling us to back off a bit, which we do.
         # The other retryable code is 503, which are true errors

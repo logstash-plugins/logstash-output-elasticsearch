@@ -4,9 +4,9 @@ require_relative "../../../spec/es_spec_helper"
 describe "failures in bulk class expected behavior", :integration => true do
   let(:template) { '{"template" : "not important, will be updated by :index"}' }
   let(:event1) { LogStash::Event.new("somevalue" => 100, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0}) }
-  let(:action1) { ["index", {:_id=>nil, :_routing=>nil, :_index=>"logstash-2014.11.17", :_type=>"doc"}, event1] }
+  let(:action1) { ["index", {:_id=>nil, :routing=>nil, :_index=>"logstash-2014.11.17", :_type=> get_doc_type }, event1] }
   let(:event2) { LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0] }, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0}) }
-  let(:action2) { ["index", {:_id=>nil, :_routing=>nil, :_index=>"logstash-2014.11.17", :_type=>"doc"}, event2] }
+  let(:action2) { ["index", {:_id=>nil, :routing=>nil, :_index=>"logstash-2014.11.17", :_type=> get_doc_type }, event2] }
   let(:invalid_event) { LogStash::Event.new("geoip" => { "location" => "notlatlon" }, "@timestamp" => "2014-11-17T20:37:17.223Z") }
 
   def mock_actions_with_response(*resp)
