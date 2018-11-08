@@ -40,12 +40,12 @@ if ESHelper.es_version_satisfies?(">= 2")
       it "should ignore non-monotonic external version updates" do
         id = "ev2"
         subject.multi_receive([LogStash::Event.new("my_id" => id, "my_action" => "index", "message" => "foo", "my_version" => 99)])
-        r = es.get(:index => 'logstash-delete', :type => get_doc_type, :id => id, :refresh => true)
+        r = es.get(:index => 'logstash-delete', :type => doc_type, :id => id, :refresh => true)
         expect(r['_version']).to eq(99)
         expect(r['_source']['message']).to eq('foo')
 
         subject.multi_receive([LogStash::Event.new("my_id" => id, "my_action" => "delete", "message" => "foo", "my_version" => 98)])
-        r2 = es.get(:index => 'logstash-delete', :type => get_doc_type, :id => id, :refresh => true)
+        r2 = es.get(:index => 'logstash-delete', :type => doc_type, :id => id, :refresh => true)
         expect(r2['_version']).to eq(99)
         expect(r2['_source']['message']).to eq('foo')
       end
@@ -53,12 +53,12 @@ if ESHelper.es_version_satisfies?(">= 2")
       it "should commit monotonic external version updates" do
         id = "ev3"
         subject.multi_receive([LogStash::Event.new("my_id" => id, "my_action" => "index", "message" => "foo", "my_version" => 99)])
-        r = es.get(:index => 'logstash-delete', :type => get_doc_type, :id => id, :refresh => true)
+        r = es.get(:index => 'logstash-delete', :type => doc_type, :id => id, :refresh => true)
         expect(r['_version']).to eq(99)
         expect(r['_source']['message']).to eq('foo')
 
         subject.multi_receive([LogStash::Event.new("my_id" => id, "my_action" => "delete", "message" => "foo", "my_version" => 100)])
-        expect { es.get(:index => 'logstash-delete', :type => get_doc_type, :id => id, :refresh => true) }.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+        expect { es.get(:index => 'logstash-delete', :type => doc_type, :id => id, :refresh => true) }.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
       end
     end
   end

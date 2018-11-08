@@ -11,7 +11,7 @@ module ESHelper
     Elasticsearch::Client.new(:hosts => [get_host_port])
   end
 
-  def get_doc_type
+  def doc_type
     if ESHelper.es_version_satisfies?(">=7")
       "_doc"
     else
@@ -19,13 +19,21 @@ module ESHelper
     end
   end
 
-  def get_mapping_name
+  def mapping_name
     if ESHelper.es_version_satisfies?(">=7")
       "_doc"
     else
       "_default_"
     end
 
+  end
+
+  def routing_field_name
+    if ESHelper.es_version_satisfies?(">=6")
+      :routing
+    else
+      :_routing
+    end
   end
 
   def self.es_version
