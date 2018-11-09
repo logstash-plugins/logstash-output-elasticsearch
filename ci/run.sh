@@ -131,6 +131,12 @@ else
     extra_tag_args="--tag secure_integration"
   fi
 
+  if [[ "$DISTRIBUTION" == "oss" ]]; then
+    extra_tag_args="$extra_tag_args --tag distribution:oss --tag ~distribution:xpack"
+  elif [[ "$DISTRIBUTION" == "default" ]]; then
+    extra_tag_args="$extra_tag_args --tag ~distribution:oss --tag distribution:xpack"
+  fi
+
   case "$ES_VERSION" in
     LATEST-SNAPSHOT-*)
       split_latest=${ES_VERSION##*-}

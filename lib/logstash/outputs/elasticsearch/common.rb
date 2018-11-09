@@ -377,17 +377,25 @@ module LogStash; module Outputs; class ElasticSearch;
       return true unless ilm_enabled?
       begin
         verify_ilm_config
+
         # For elasticsearch versions without ilm enablement, the _ilm endpoint will return a 400 bad request - the
         # endpoint is interpreted as an index, and will return a bad request error as that is an illegal format for
         # an index.
-        client.get_ilm_endpoint
+        xpack = client.get_xpack_info
+        features = xpack["features"]
+        ilm = features["ilm"] unless features.nil?
+        raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not installed on your Elasticsearch cluster" if features.nil? || ilm.nil?
+        raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not available in your Elasticsearch cluster" unless ilm['available']
+        raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not enabled in your Elasticsearch cluster" unless ilm['enabled']
         true
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        # Check xpack endpoint: If no xpack endpoint, then this version of Elasticsearch is not compatible
         if e.response_code == 404
-          true
+          false
+          raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not installed on your Elasticsearch cluster"
         elsif e.response_code == 400
           false
-          raise LogStash::ConfigurationError, "Index Lifecycle Management feature is enabled, but Elasticsearch instance does not have ilm capability, #{e}"
+          raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not installed on your Elasticsearch cluster"
         else
           raise e
         end

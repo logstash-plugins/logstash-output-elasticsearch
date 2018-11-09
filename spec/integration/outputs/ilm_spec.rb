@@ -25,7 +25,7 @@ shared_examples_for 'an Elasticsearch instance that does not support index lifec
 
   subject { LogStash::Outputs::ElasticSearch.new(settings) }
 
-  context 'when ilm is enabled' do
+  context 'when ilm is enabled in Logstash' do
     let (:ilm_enabled) { true }
 
     it 'should raise a configuration error' do
@@ -39,7 +39,7 @@ shared_examples_for 'an Elasticsearch instance that does not support index lifec
     end
   end
 
-  context 'when ilm is disabled' do
+  context 'when ilm is disabled in Logstash' do
     it 'should index documents normally' do
       subject.register
 
@@ -173,11 +173,11 @@ if ESHelper.es_version_satisfies?("<= 6.5")
 end
 
 if ESHelper.es_version_satisfies?(">= 6.6")
-  # describe 'OSS Elasticsearch', :integration => true do
-  #   it_behaves_like 'an Elasticsearch instance that does not support index lifecycle management'
-  # end
+  describe 'OSS Elasticsearch', :distribution => 'oss', :integration => true do
+    it_behaves_like 'an Elasticsearch instance that does not support index lifecycle management'
+  end
 
-  describe 'Elasticsearch has index lifecycle management enabled', :integration => true do
+  describe 'Elasticsearch has index lifecycle management enabled', :distribution => 'xpack', :integration => true do
     DEFAULT_INTERVAL = '600s'
 
     require "logstash/outputs/elasticsearch"

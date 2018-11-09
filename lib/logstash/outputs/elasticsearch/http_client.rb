@@ -365,7 +365,11 @@ module LogStash; module Outputs; class ElasticSearch;
       @pool.put(alias_name, nil, LogStash::Json.dump(alias_definition))
     end
 
-     def get_ilm_endpoint
+    def get_xpack_info
+      get("/_xpack")
+    end
+
+    def get_ilm_endpoint
       @pool.get("/_ilm/policy")
     end
 
