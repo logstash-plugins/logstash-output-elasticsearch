@@ -32,6 +32,7 @@ shared_examples_for 'an Elasticsearch instance that does not support index lifec
       expect do
         begin
           subject.register
+          sleep(1)
         ensure
           subject.stop_template_installer
         end
