@@ -120,7 +120,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def retry_on_conflict_action_name
-      maximum_seen_major_version >= 6 ? :retry_on_conflict : :_retry_on_conflict
+      maximum_seen_major_version >= 7 ? :retry_on_conflict : :_retry_on_conflict
     end
 
     def install_template
