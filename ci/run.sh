@@ -132,9 +132,6 @@ else
   fi
 
   case "$ES_VERSION" in
-  # ES_VERSION prefixed with LATEST-SNAPSHOT- will interrogate the artifacts API to find the latest version that matches
-  # the part after the prefix - eg LATEST-SNAPSHOT-7 will pull the latest snapshot release of 7.x of Elasticsearch,
-  # LATEST-SNAPSHOT-6.5 will pull the latest snapshot release of 6.5
     LATEST-SNAPSHOT-*)
       split_latest=${ES_VERSION##*-}
 
