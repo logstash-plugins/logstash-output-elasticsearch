@@ -1,3 +1,6 @@
+## 9.2.4
+  - Fixed support for Elasticsearch 7.x [#812](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/812)
+
 ## 9.2.3
   - Tweaked logging statements to reduce verbosity
 
