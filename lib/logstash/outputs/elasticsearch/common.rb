@@ -433,7 +433,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def write_alias_target
-      "#{ilm_write_alias}-#{ilm_pattern}"
+      "<#{ilm_write_alias}-#{ilm_pattern}>"
     end
 
     def write_alias_payload
@@ -445,6 +445,8 @@ module LogStash; module Outputs; class ElasticSearch;
           }
       }
     end
+
+
 
     def policy_payload
       policy_path = ::File.expand_path(ILM_POLICY_PATH, ::File.dirname(__FILE__))

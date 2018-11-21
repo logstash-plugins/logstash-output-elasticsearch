@@ -149,8 +149,8 @@ module LogStash; module Outputs; class ElasticSearch
       # Write alias used for indexing data. If write alias doesn't exist, Logstash will create it and map it to the relevant index
       mod.config :ilm_write_alias, :validate => :string, :default => 'logstash'
 
-      # appends “000001” by default for new index creation, subsequent rollover indices will increment based on this pattern i.e. “000002”
-      mod.config :ilm_pattern, :validate => :string, :default => '000001'
+      # appends “{now/d}-000001” by default for new index creation, subsequent rollover indices will increment based on this pattern i.e. “000002”
+      mod.config :ilm_pattern, :validate => :string, :default => '{now/d}-000001'
 
       # ILM policy to use, if undefined the default policy will be used.
       mod.config :ilm_policy, :validate => :string, :default => 'logstash-policy'

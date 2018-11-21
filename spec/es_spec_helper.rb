@@ -25,6 +25,10 @@ module ESHelper
     end
   end
 
+  def todays_date
+    Time.now.strftime("%Y.%m.%d")
+  end
+
   def mapping_name
     if ESHelper.es_version_satisfies?(">=7")
       "_doc"

@@ -362,7 +362,7 @@ module LogStash; module Outputs; class ElasticSearch;
     # Create a new write alias
     def write_alias_put(alias_name, alias_definition)
       logger.info("Creating write alias #{alias_name}")
-      @pool.put(alias_name, nil, LogStash::Json.dump(alias_definition))
+      @pool.put(CGI::escape(alias_name), nil, LogStash::Json.dump(alias_definition))
     end
 
     def get_xpack_info

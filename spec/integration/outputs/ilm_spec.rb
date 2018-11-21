@@ -120,9 +120,9 @@ shared_examples_for 'an ILM enabled Logstash' do
         res[index_written] += 1
       end
       expect(indexes_written.count).to eq(3)
-      expect(indexes_written["#{expected_index}-000001"]).to eq(3)
-      expect(indexes_written["#{expected_index}-000002"]).to eq(3)
-      expect(indexes_written["#{expected_index}-000003"]).to eq(3)
+      expect(indexes_written["#{expected_index}-#{todays_date}-000001"]).to eq(3)
+      expect(indexes_written["#{expected_index}-#{todays_date}-000002"]).to eq(3)
+      expect(indexes_written["#{expected_index}-#{todays_date}-000003"]).to eq(3)
     end
   end
 
@@ -161,7 +161,7 @@ shared_examples_for 'an ILM enabled Logstash' do
         res[index_written] += 1
       end
       expect(indexes_written.count).to eq(1)
-      expect(indexes_written["#{expected_index}-000001"]).to eq(6)
+      expect(indexes_written["#{expected_index}-#{todays_date}-000001"]).to eq(6)
     end
   end
 end
@@ -255,6 +255,18 @@ if ESHelper.es_version_satisfies?(">= 6.6")
 
 
       context 'when using the default policy' do
+        context 'with a custom pattern' do
+          let (:settings) { super.merge("ilm_pattern" => "000001")}
+          it 'should create a write alias' do
+            expect(@es.indices.exists_alias(index: "logstash")).to be_falsey
+            subject.register
+            sleep(1)
+            expect(@es.indices.exists_alias(index: "logstash")).to be_truthy
+            expect(@es.get_alias(name: "logstash")).to include("logstash-000001")
+          end
+        end
+
+
         it 'should install it if it is not present' do
           expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
           subject.register
@@ -263,13 +275,13 @@ if ESHelper.es_version_satisfies?(">= 6.6")
         end
 
         it 'should create the default write alias' do
-
           expect(@es.indices.exists_alias(index: "logstash")).to be_falsey
           subject.register
           sleep(1)
           expect(@es.indices.exists_alias(index: "logstash")).to be_truthy
-          expect(@es.get_alias(name: "logstash")).to include("logstash-000001")
+          expect(@es.get_alias(name: "logstash")).to include("logstash-#{todays_date}-000001")
         end
+
 
         it 'should ingest into a single index' do
           subject.register
@@ -301,7 +313,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
           end
 
           expect(indexes_written.count).to eq(1)
-          expect(indexes_written["logstash-000001"]).to eq(6)
+          expect(indexes_written["logstash-#{todays_date}-000001"]).to eq(6)
         end
       end
 
@@ -333,6 +345,33 @@ if ESHelper.es_version_satisfies?(">= 6.6")
         end
       end
 
+      context 'when using a time based policy' do
+        let (:ilm_policy_name) {"new_one"}
+        let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
+        let (:policy) {{
+            "policy" => {
+                "phases"=> {
+                    "hot" => {
+                        "actions" => {
+                            "rollover" => {
+                                "max_age" => "1d"
+                            }
+                        }
+                    }
+                }
+            }}}
+
+        before do
+          expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+          put_policy(@es,ilm_policy_name, policy)
+        end
+
+        it 'should not install the default policy if it is not used' do
+          subject.register
+          sleep(1)
+          expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+        end
+      end
       context 'with the default template' do
         let(:expected_index) { "logstash" }
 
@@ -341,7 +380,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
           subject.register
           sleep(1)
           expect(@es.indices.exists_alias(index: expected_index)).to be_truthy
-          expect(@es.get_alias(name: expected_index)).to include("#{expected_index}-000001")
+          expect(@es.get_alias(name: expected_index)).to include("#{expected_index}-#{todays_date}-000001")
         end
 
         it 'should write the ILM settings into the template' do
@@ -382,7 +421,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
           subject.register
           sleep(1)
           expect(@es.indices.exists_alias(index: ilm_write_alias)).to be_truthy
-          expect(@es.get_alias(name: ilm_write_alias)).to include("#{ilm_write_alias}-000001")
+          expect(@es.get_alias(name: ilm_write_alias)).to include("#{ilm_write_alias}-#{todays_date}-000001")
         end
 
         it 'should write the ILM settings into the template' do
