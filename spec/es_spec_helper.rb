@@ -3,6 +3,7 @@ require 'manticore'
 require 'elasticsearch'
 require_relative "support/elasticsearch/api/actions/delete_ilm_policy"
 require_relative "support/elasticsearch/api/actions/get_alias"
+require_relative "support/elasticsearch/api/actions/put_alias"
 require_relative "support/elasticsearch/api/actions/get_ilm_policy"
 require_relative "support/elasticsearch/api/actions/put_ilm_policy"
 
@@ -94,6 +95,17 @@ module ESHelper
 
   def put_policy(client, policy_name, policy)
     client.put_ilm_policy({:name => policy_name, :body=> policy})
+  end
+
+  def put_alias(client, the_alias, index)
+    body = {
+        "aliases" => {
+            index => {
+                "is_write_index"=>  true
+            }
+        }
+    }
+    client.put_alias({name: the_alias, body: body})
   end
 
   def clean_ilm(client)

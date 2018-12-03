@@ -362,7 +362,21 @@ module LogStash; module Outputs; class ElasticSearch;
     # Create a new write alias
     def write_alias_put(alias_name, alias_definition)
       logger.info("Creating write alias #{alias_name}")
-      @pool.put(CGI::escape(alias_name), nil, LogStash::Json.dump(alias_definition))
+      begin
+        @pool.put(CGI::escape(alias_name), nil, LogStash::Json.dump(alias_definition))
+      # If the rollover alias already exists, ignore the error that comes back from Elasticsearch
+      #
+      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        if e.response_code == 400 && e.response_body
+          error_body = LogStash::Json.load(e.response_bod)
+          if error_body['error'] && error_body['error']['root_cause'] &&
+            error_body['error']['root_cause'][0] && error_body['error']['root_cause'][0]['type'] == 'resource_already_exists_exception'
+            logger.info("Write Alias #{alias_name} already exists. Skipping")
+            return
+          end
+        end
+      raise e
+      end
     end
 
     def get_xpack_info

@@ -6,17 +6,16 @@ module Elasticsearch
   module API
     module Actions
 
-      # @option arguments [String] :name The name of the policy (*Required*)
-      # @option arguments [Hash] :body The policy definition (*Required*)
+      # @option arguments [String] :name The name of the alias (*Required*)
+      # @option arguments [Hash]   :The alias definition(*Required*)
 
-      def put_ilm_policy(arguments={})
+      def put_alias(arguments={})
         raise ArgumentError, "Required argument 'name' missing" unless arguments[:name]
         raise ArgumentError, "Required argument 'body' missing" unless arguments[:body]
         method = HTTP_PUT
-        path   = Utils.__pathify '_ilm/policy/', Utils.__escape(arguments[:name])
+        path   = Utils.__pathify Utils.__escape(arguments[:name])
 
         params = Utils.__validate_and_extract_params arguments
-
         body   = arguments[:body]
         perform_request(method, path, params, body.to_json).body
       end

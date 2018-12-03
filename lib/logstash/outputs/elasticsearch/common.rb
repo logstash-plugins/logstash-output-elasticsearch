@@ -403,10 +403,9 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def verify_ilm_config
-      # Default index name is logstash-XXXX and the default write alias is logstash - should we just change overwrite the default index name here?
-      @index = @ilm_write_alias if @index == LogStash::Outputs::ElasticSearch::CommonConfigs::DEFAULT_INDEX_NAME
-      raise LogStash::ConfigurationError, "ILM configuration error: The index name #{@index} does not match the write alias #{@ilm_write_alias}" if @ilm_write_alias != @index
-      raise LogStash::ConfigurationError, "ILM configuration error: The template name #{@template_name} does not match the write alias #{@ilm_write_alias}" if @ilm_write_alias != @template_name
+      # Overwrite the index with the write alias.
+      @logger.warn "Overwriting index name with rollover alias #{@ilm_write_alias}" if @index != LogStash::Outputs::ElasticSearch::CommonConfigs::DEFAULT_INDEX_NAME
+      @index = @ilm_write_alias
       verify_ilm_policy unless ilm_policy_default?
     end
 
@@ -445,8 +444,6 @@ module LogStash; module Outputs; class ElasticSearch;
           }
       }
     end
-
-
 
     def policy_payload
       policy_path = ::File.expand_path(ILM_POLICY_PATH, ::File.dirname(__FILE__))

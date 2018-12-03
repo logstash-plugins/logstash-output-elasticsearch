@@ -192,6 +192,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
     }
     let (:policy) { small_max_doc_policy }
 
+
     let (:small_max_doc_policy) {
       {"policy" => {
           "phases"=> {
@@ -416,12 +417,25 @@ if ESHelper.es_version_satisfies?(">= 6.6")
         before :each do
           put_policy(@es,ilm_policy_name, policy)
         end
+
         it 'should create the write alias' do
           expect(@es.indices.exists_alias(index: ilm_write_alias)).to be_falsey
           subject.register
           sleep(1)
           expect(@es.indices.exists_alias(index: ilm_write_alias)).to be_truthy
           expect(@es.get_alias(name: ilm_write_alias)).to include("#{ilm_write_alias}-#{todays_date}-000001")
+        end
+
+        context 'when the custom write alias already exists' do
+          it 'should ignore the already exists error' do
+            expect(@es.indices.exists_alias(index: ilm_write_alias)).to be_falsey
+            put_alias(@es, "#{ilm_write_alias}-#{todays_date}-000001", ilm_write_alias)
+            expect(@es.indices.exists_alias(index: ilm_write_alias)).to be_truthy
+            subject.register
+            sleep(1)
+            expect(@es.get_alias(name: ilm_write_alias)).to include("#{ilm_write_alias}-#{todays_date}-000001")
+          end
+
         end
 
         it 'should write the ILM settings into the template' do
