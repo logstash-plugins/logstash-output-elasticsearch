@@ -354,28 +354,24 @@ module LogStash; module Outputs; class ElasticSearch;
 
     # ILM methods
 
-    # check whether write alias already exists
-    def write_alias_exists?(name)
+    # check whether rollover alias already exists
+    def rollover_alias_exists?(name)
       exists?(name)
     end
 
-    # Create a new write alias
-    def write_alias_put(alias_name, alias_definition)
-      logger.info("Creating write alias #{alias_name}")
+    # Create a new rollover alias
+    def rollover_alias_put(alias_name, alias_definition)
+      logger.info("Creating rollover alias #{alias_name}")
       begin
         @pool.put(CGI::escape(alias_name), nil, LogStash::Json.dump(alias_definition))
       # If the rollover alias already exists, ignore the error that comes back from Elasticsearch
       #
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-        if e.response_code == 400 && e.response_body
-          error_body = LogStash::Json.load(e.response_bod)
-          if error_body['error'] && error_body['error']['root_cause'] &&
-            error_body['error']['root_cause'][0] && error_body['error']['root_cause'][0]['type'] == 'resource_already_exists_exception'
-            logger.info("Write Alias #{alias_name} already exists. Skipping")
+        if e.response_code == 400
+            logger.info("Rollover Alias #{alias_name} already exists. Skipping")
             return
-          end
         end
-      raise e
+        raise e
       end
     end
 
