@@ -1,11 +1,11 @@
 {
-  "template" : "custom-*",
+  "template" : "overwrite-*",
   "version" : 60001,
   "settings" : {
     "index.refresh_interval" : "1s",
     "number_of_shards": 1,
-    "index.lifecycle.name": "custom-policy",
-    "index.lifecycle.rollover_alias": "custom"
+    "index.lifecycle.name": "overwrite-policy",
+    "index.lifecycle.rollover_alias": "overwrite"
   },
   "mappings" : {
     "_default_" : {

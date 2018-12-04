@@ -396,14 +396,15 @@ if ESHelper.es_version_satisfies?(">= 6.6")
       end
 
       context 'with a custom template' do
-        let (:ilm_rollover_alias) { "custom" }
+        let (:ilm_rollover_alias) { "the_cat_in_the_hat" }
         let (:index) { ilm_rollover_alias }
         let(:expected_index) { index }
+        let (:template_name) { "custom" }
         let (:settings) { super.merge("ilm_policy" => ilm_policy_name,
                                       "template" => template,
                                       "template_name" => template_name,
                                       "ilm_rollover_alias" => ilm_rollover_alias)}
-        let (:template_name) { "custom" }
+
 
         if ESHelper.es_version_satisfies?(">= 7.0")
           let (:template) { "spec/fixtures/template-with-policy-es7x.json" }
@@ -441,6 +442,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
         it 'should write the ILM settings into the template' do
           subject.register
           sleep(1)
+          puts @es.indices.get_template(name: template_name)[template_name]
           expect(@es.indices.get_template(name: template_name)[template_name]["index_patterns"]).to eq(["#{ilm_rollover_alias}-*"])
           expect(@es.indices.get_template(name: template_name)[template_name]["settings"]['index']['lifecycle']['name']).to eq(ilm_policy_name)
           expect(@es.indices.get_template(name: template_name)[template_name]["settings"]['index']['lifecycle']['rollover_alias']).to eq(ilm_rollover_alias)

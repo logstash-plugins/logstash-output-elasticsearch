@@ -24,17 +24,19 @@ module LogStash; module Outputs; class ElasticSearch
 
     def self.add_ilm_settings_to_template(plugin, template)
       # Include ilm settings in template:
-			plugin.logger.info("Overwriting template name and pattern as ILM is enabled.")
-      template['template'] = "#{plugin.ilm_rollover_alias}-*"
+			plugin.logger.info("Overwriting index patterns, as ILM is enabled.")
+      # Overwrite any index patterns, and use the rollover alias. Use 'index_patterns' rather than 'template' for pattern
+      # definition - remove any existing definition of 'template'
+      template.delete('template') if template.include?('template')
+      template['index_patterns'] = "#{plugin.ilm_rollover_alias}-*"
       if template['settings'] && (template['settings']['index.lifecycle.name'] || template['settings']['index.lifecycle.rollover_alias'])
         plugin.logger.info("Overwriting index lifecycle name and rollover alias as ILM is enabled.")
       end
       template['settings'].update({ 'index.lifecycle.name' => plugin.ilm_policy, 'index.lifecycle.rollover_alias' => plugin.ilm_rollover_alias})
     end
 
-    # TODO: Verify this is ok
     def self.template_name(plugin)
-      plugin.ilm_enabled? ? plugin.ilm_rollover_alias : plugin.template_name
+      (plugin.ilm_enabled? && !plugin.template_name) ? plugin.ilm_rollover_alias : plugin.template_name
     end
 
     def self.default_template_path(es_major_version)
