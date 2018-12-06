@@ -4,6 +4,8 @@ module LogStash; module Outputs; class ElasticSearch
   module CommonConfigs
 
     DEFAULT_INDEX_NAME = "logstash-%{+YYYY.MM.dd}"
+    DEFAULT_POLICY = "logstash-policy"
+
     def self.included(mod)
       # The index to write events to. This can be dynamic using the `%{foo}` syntax.
       # The default value will partition your indices by day so you can more easily
@@ -154,7 +156,7 @@ module LogStash; module Outputs; class ElasticSearch
       mod.config :ilm_pattern, :validate => :string, :default => '{now/d}-000001'
 
       # ILM policy to use, if undefined the default policy will be used.
-      mod.config :ilm_policy, :validate => :string, :default => 'logstash-policy'
+      mod.config :ilm_policy, :validate => :string, :default => DEFAULT_POLICY
 
     end
   end

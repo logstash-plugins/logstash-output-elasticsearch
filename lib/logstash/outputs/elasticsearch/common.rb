@@ -1,16 +1,14 @@
 require "logstash/outputs/elasticsearch/template_manager"
-require 'logstash/environment'
-
 
 module LogStash; module Outputs; class ElasticSearch;
   module Common
-    attr_reader :client, :hosts, :ilm_manager
+    attr_reader :client, :hosts
 
     # These codes apply to documents, not at the request level
     DOC_DLQ_CODES = [400, 404]
     DOC_SUCCESS_CODES = [200, 201]
     DOC_CONFLICT_CODE = 409
-    DEFAULT_POLICY = "logstash-policy"
+
     ILM_POLICY_PATH = "default-ilm-policy.json"
 
     # When you use external versioning, you are communicating that you want
@@ -28,7 +26,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
       setup_hosts # properly sets @hosts
       build_client
-      install_template_after_successful_connection
+      setup_after_successful_connection
       check_action_validity
       @bulk_request_metrics = metric.namespace(:bulk_requests)
       @document_level_metrics = metric.namespace(:documents)
@@ -43,7 +41,7 @@ module LogStash; module Outputs; class ElasticSearch;
       retrying_submit(events.map {|e| event_action_tuple(e)})
     end
 
-    def install_template_after_successful_connection
+    def setup_after_successful_connection
       @template_installer ||= Thread.new do
         sleep_interval = @retry_initial_interval
         until successful_connection? || @stopping.true?
@@ -52,9 +50,9 @@ module LogStash; module Outputs; class ElasticSearch;
           sleep_interval = next_sleep_interval(sleep_interval)
         end
         if successful_connection?
-          verify_ilm
+          verify_ilm_readiness if ilm_enabled?
           install_template
-          setup_ilm
+          setup_ilm if ilm_enabled?
         end
       end
     end
@@ -122,7 +120,6 @@ module LogStash; module Outputs; class ElasticSearch;
     def maximum_seen_major_version
       client.maximum_seen_major_version
     end
-
 
     def routing_field_name
       maximum_seen_major_version >= 6 ? :routing : :_routing
@@ -374,28 +371,27 @@ module LogStash; module Outputs; class ElasticSearch;
       maybe_create_ilm_policy
     end
 
-    def verify_ilm
-      return true unless ilm_enabled?
-      begin
-        verify_ilm_config
+    def verify_ilm_readiness
+      return unless ilm_enabled?
 
-        # For elasticsearch versions without ilm enablement, the _ilm endpoint will return a 400 bad request - the
-        # endpoint is interpreted as an index, and will return a bad request error as that is an illegal format for
-        # an index.
+      unless ilm_policy_default? || client.ilm_policy_exists?(ilm_policy)
+        raise LogStash::ConfigurationError, "The specified ILM policy #{ilm_policy} does not exist on your Elasticsearch instance"
+      end
+
+      # Check the Elasticsearch instance for ILM readiness - this means that the version has to be a non-OSS release, with ILM feature
+      # available and enabled.
+      begin
         xpack = client.get_xpack_info
         features = xpack["features"]
         ilm = features["ilm"] unless features.nil?
         raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not installed on your Elasticsearch cluster" if features.nil? || ilm.nil?
         raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not available in your Elasticsearch cluster" unless ilm['available']
         raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not enabled in your Elasticsearch cluster" unless ilm['enabled']
-        true
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         # Check xpack endpoint: If no xpack endpoint, then this version of Elasticsearch is not compatible
         if e.response_code == 404
-          false
           raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not installed on your Elasticsearch cluster"
         elsif e.response_code == 400
-          false
           raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not installed on your Elasticsearch cluster"
         else
           raise e
@@ -403,23 +399,8 @@ module LogStash; module Outputs; class ElasticSearch;
       end
     end
 
-    def verify_ilm_config
-      # Overwrite the index with the rollover alias.
-      @logger.warn "Overwriting index name with rollover alias #{@ilm_rollover_alias}" if @index != LogStash::Outputs::ElasticSearch::CommonConfigs::DEFAULT_INDEX_NAME
-      @index = @ilm_rollover_alias
-      verify_ilm_policy unless ilm_policy_default?
-    end
-
-    def ilm_policy_ok?
-
-    end
-
     def ilm_policy_default?
-      ilm_policy == DEFAULT_POLICY
-    end
-
-    def verify_ilm_policy
-      raise LogStash::ConfigurationError, "The specified ILM policy does not exist" unless client.ilm_policy_exists?(ilm_policy)
+      ilm_policy == LogStash::Outputs::ElasticSearch::DEFAULT_POLICY
     end
 
     def maybe_create_ilm_policy
@@ -429,6 +410,9 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def maybe_create_rollover_alias
+      @logger.warn "Overwriting supplied index name with rollover alias #{@ilm_rollover_alias}" if @index != LogStash::Outputs::ElasticSearch::CommonConfigs::DEFAULT_INDEX_NAME
+      @index = @ilm_rollover_alias
+
       client.rollover_alias_put(rollover_alias_target, rollover_alias_payload) unless client.rollover_alias_exists?(ilm_rollover_alias)
     end
 
@@ -438,9 +422,9 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def rollover_alias_payload
       {
-          "aliases" => {
+          'aliases' => {
               ilm_rollover_alias =>{
-                  "is_write_index" =>  true
+                  'is_write_index' =>  true
               }
           }
       }

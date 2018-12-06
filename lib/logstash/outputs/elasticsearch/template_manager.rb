@@ -23,7 +23,6 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def self.add_ilm_settings_to_template(plugin, template)
-      # Include ilm settings in template:
 			plugin.logger.info("Overwriting index patterns, as ILM is enabled.")
       # Overwrite any index patterns, and use the rollover alias. Use 'index_patterns' rather than 'template' for pattern
       # definition - remove any existing definition of 'template'

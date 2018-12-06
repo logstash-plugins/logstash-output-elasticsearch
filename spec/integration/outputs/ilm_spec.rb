@@ -442,7 +442,6 @@ if ESHelper.es_version_satisfies?(">= 6.6")
         it 'should write the ILM settings into the template' do
           subject.register
           sleep(1)
-          puts @es.indices.get_template(name: template_name)[template_name]
           expect(@es.indices.get_template(name: template_name)[template_name]["index_patterns"]).to eq(["#{ilm_rollover_alias}-*"])
           expect(@es.indices.get_template(name: template_name)[template_name]["settings"]['index']['lifecycle']['name']).to eq(ilm_policy_name)
           expect(@es.indices.get_template(name: template_name)[template_name]["settings"]['index']['lifecycle']['rollover_alias']).to eq(ilm_rollover_alias)

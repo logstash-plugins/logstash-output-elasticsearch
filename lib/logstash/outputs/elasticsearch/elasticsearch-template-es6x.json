@@ -2,8 +2,7 @@
   "template" : "logstash-*",
   "version" : 60001,
   "settings" : {
-    "index.refresh_interval" : "5s",
-    "number_of_shards": 1
+    "index.refresh_interval" : "5s"
   },
   "mappings" : {
     "_default_" : {
