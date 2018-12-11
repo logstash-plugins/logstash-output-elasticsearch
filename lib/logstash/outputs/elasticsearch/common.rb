@@ -9,8 +9,6 @@ module LogStash; module Outputs; class ElasticSearch;
     DOC_SUCCESS_CODES = [200, 201]
     DOC_CONFLICT_CODE = 409
 
-    ILM_POLICY_PATH = "default-ilm-policy.json"
-
     # When you use external versioning, you are communicating that you want
     # to ignore conflicts. More obviously, since an external version is a
     # constant part of the incoming document, we should not retry, as retrying
@@ -19,7 +17,6 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def register
       @template_installed = Concurrent::AtomicBoolean.new(false)
-      @ilm_verified = Concurrent::AtomicBoolean.new(false)
       @stopping = Concurrent::AtomicBoolean.new(false)
       # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
       @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
@@ -352,87 +349,11 @@ module LogStash; module Outputs; class ElasticSearch;
       end
     end
 
-    def ilm_enabled?
-      @ilm_enabled
-    end
-
     def dlq_enabled?
       # TODO there should be a better way to query if DLQ is enabled
       # See more in: https://github.com/elastic/logstash/issues/8064
       respond_to?(:execution_context) && execution_context.respond_to?(:dlq_writer) &&
         !execution_context.dlq_writer.inner_writer.is_a?(::LogStash::Util::DummyDeadLetterQueueWriter)
-    end
-
-    def setup_ilm
-      return unless ilm_enabled?
-      logger.info("Using Index lifecycle management - this feature is currently in beta.")
-      # As soon as the template is loaded, check for existence of rollover alias:
-      maybe_create_rollover_alias
-      maybe_create_ilm_policy
-    end
-
-    def verify_ilm_readiness
-      return unless ilm_enabled?
-
-      unless ilm_policy_default? || client.ilm_policy_exists?(ilm_policy)
-        raise LogStash::ConfigurationError, "The specified ILM policy #{ilm_policy} does not exist on your Elasticsearch instance"
-      end
-
-      # Check the Elasticsearch instance for ILM readiness - this means that the version has to be a non-OSS release, with ILM feature
-      # available and enabled.
-      begin
-        xpack = client.get_xpack_info
-        features = xpack["features"]
-        ilm = features["ilm"] unless features.nil?
-        raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not installed on your Elasticsearch cluster" if features.nil? || ilm.nil?
-        raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not available in your Elasticsearch cluster" unless ilm['available']
-        raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not enabled in your Elasticsearch cluster" unless ilm['enabled']
-      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-        # Check xpack endpoint: If no xpack endpoint, then this version of Elasticsearch is not compatible
-        if e.response_code == 404
-          raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not installed on your Elasticsearch cluster"
-        elsif e.response_code == 400
-          raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not installed on your Elasticsearch cluster"
-        else
-          raise e
-        end
-      end
-    end
-
-    def ilm_policy_default?
-      ilm_policy == LogStash::Outputs::ElasticSearch::DEFAULT_POLICY
-    end
-
-    def maybe_create_ilm_policy
-      if ilm_policy_default? && !client.ilm_policy_exists?(ilm_policy)
-        client.ilm_policy_put(ilm_policy, policy_payload)
-      end
-    end
-
-    def maybe_create_rollover_alias
-      @logger.warn "Overwriting supplied index name with rollover alias #{@ilm_rollover_alias}" if @index != LogStash::Outputs::ElasticSearch::CommonConfigs::DEFAULT_INDEX_NAME
-      @index = @ilm_rollover_alias
-
-      client.rollover_alias_put(rollover_alias_target, rollover_alias_payload) unless client.rollover_alias_exists?(ilm_rollover_alias)
-    end
-
-    def rollover_alias_target
-      "<#{ilm_rollover_alias}-#{ilm_pattern}>"
-    end
-
-    def rollover_alias_payload
-      {
-          'aliases' => {
-              ilm_rollover_alias =>{
-                  'is_write_index' =>  true
-              }
-          }
-      }
-    end
-
-    def policy_payload
-      policy_path = ::File.expand_path(ILM_POLICY_PATH, ::File.dirname(__FILE__))
-      LogStash::Json.load(::IO.read(policy_path))
     end
   end
 end end end
