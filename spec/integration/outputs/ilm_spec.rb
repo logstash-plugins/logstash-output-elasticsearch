@@ -63,7 +63,7 @@ shared_examples_for 'an Elasticsearch instance that does not support index lifec
       # Wait or fail until everything's indexed.
       Stud::try(20.times) do
         r = @es.search
-        expect(r["hits"]["total"]).to eq(6)
+        expect(r).to have_hits(6)
       end
       indexes_written = @es.search['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
         index_written = x['_index']
@@ -113,7 +113,7 @@ shared_examples_for 'an ILM enabled Logstash' do
       # Wait or fail until everything's indexed.
       Stud::try(20.times) do
         r = @es.search
-        expect(r["hits"]["total"]).to eq(9)
+        expect(r).to have_hits(9)
       end
       indexes_written = @es.search['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
         index_written = x['_index']
@@ -154,7 +154,7 @@ shared_examples_for 'an ILM enabled Logstash' do
       # Wait or fail until everything's indexed.
       Stud::try(20.times) do
         r = @es.search
-        expect(r["hits"]["total"]).to eq(6)
+        expect(r).to have_hits(6)
       end
       indexes_written = @es.search['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
         index_written = x['_index']
@@ -306,7 +306,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
           # Wait or fail until everything's indexed.
           Stud::try(20.times) do
             r = @es.search
-            expect(r["hits"]["total"]).to eq(6)
+            expect(r).to have_hits(6)
           end
           indexes_written = @es.search['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
             index_written = x['_index']
@@ -514,7 +514,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
           # Wait or fail until everything's indexed.
           Stud::try(20.times) do
             r = @es.search
-            expect(r["hits"]["total"]).to eq(6)
+            expect(r).to have_hits(6)
           end
           indexes_written = @es.search['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
             index_written = x['_index']
