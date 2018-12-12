@@ -39,7 +39,7 @@ describe "elasticsearch is down on startup", :integration => true do
     subject.multi_receive([event1, event2])
     @es.indices.refresh
     r = @es.search
-    expect(r["hits"]["total"]).to eql(2)
+    expect(r).to have_hits(2)
   end
 
   it 'should ingest events when Elasticsearch recovers after documents are sent' do
@@ -52,7 +52,7 @@ describe "elasticsearch is down on startup", :integration => true do
     subject.multi_receive([event1, event2])
     @es.indices.refresh
     r = @es.search
-    expect(r["hits"]["total"]).to eql(2)
+    expect(r).to have_hits(2)
   end
 
 end

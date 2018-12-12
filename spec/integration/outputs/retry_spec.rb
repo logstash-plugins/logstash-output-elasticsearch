@@ -143,7 +143,7 @@ describe "failures in bulk class expected behavior", :integration => true do
 
     @es.indices.refresh
     r = @es.search
-    expect(r["hits"]["total"]).to eql(0)
+    expect(r).to have_hits(0)
   end
 
   it "successful requests should not be appended to retry queue" do
@@ -154,7 +154,7 @@ describe "failures in bulk class expected behavior", :integration => true do
     subject.close
     @es.indices.refresh
     r = @es.search
-    expect(r["hits"]["total"]).to eql(1)
+    expect(r).to have_hits(1)
   end
 
   it "should only index proper events" do
@@ -164,6 +164,6 @@ describe "failures in bulk class expected behavior", :integration => true do
 
     @es.indices.refresh
     r = @es.search
-    expect(r["hits"]["total"]).to eql(1)
+    expect(r).to have_hits(1)
   end
 end
