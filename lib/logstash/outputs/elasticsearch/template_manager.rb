@@ -34,8 +34,11 @@ module LogStash; module Outputs; class ElasticSearch
       template['settings'].update({ 'index.lifecycle.name' => plugin.ilm_policy, 'index.lifecycle.rollover_alias' => plugin.ilm_rollover_alias})
     end
 
+    # Template name - if template_name set, use it
+    #                 if not and ILM is enabled, use the rollover alias
+    #                 else use the default value of template_name
     def self.template_name(plugin)
-      (plugin.ilm_enabled? && !plugin.template_name) ? plugin.ilm_rollover_alias : plugin.template_name
+      plugin.ilm_enabled? && !plugin.original_params.key?('template_name') ? plugin.ilm_rollover_alias : plugin.template_name
     end
 
     def self.default_template_path(es_major_version)
