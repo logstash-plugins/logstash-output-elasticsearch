@@ -41,19 +41,19 @@ if ESHelper.es_version_satisfies?("< 5")
       # Wait or fail until everything's indexed.
       Stud::try(20.times) do
         r = @es.search
-        expect(r["hits"]["total"]).to eq(8)
+        expect(r).to have_hits(8)
       end
     end
 
     it "permits phrase searching on string fields" do
       results = @es.search(:q => "message:\"sample message\"")
-      expect(results["hits"]["total"]).to eq(1)
+      expect(results).to have_hits(1)
       expect(results["hits"]["hits"][0]["_source"]["message"]).to eq("sample message here")
     end
 
     it "numbers dynamically map to a numeric type and permit range queries" do
       results = @es.search(:q => "somevalue:[5 TO 105]")
-      expect(results["hits"]["total"]).to eq(2)
+      expect(results).to have_hits(2)
 
       values = results["hits"]["hits"].collect { |r| r["_source"]["somevalue"] }
       expect(values).to include(10)
@@ -63,22 +63,22 @@ if ESHelper.es_version_satisfies?("< 5")
 
     it "does not create .raw field for the message field" do
       results = @es.search(:q => "message.raw:\"sample message here\"")
-      expect(results["hits"]["total"]).to eq(0)
+      expect(results).to have_hits(0)
     end
 
     it "creates .raw field for nested message fields" do
       results = @es.search(:q => "somemessage.message.raw:\"sample nested message here\"")
-      expect(results["hits"]["total"]).to eq(1)
+      expect(results).to have_hits(1)
     end
 
     it "creates .raw field from any string field which is not_analyzed" do
       results = @es.search(:q => "country.raw:\"us\"")
-      expect(results["hits"]["total"]).to eq(1)
+      expect(results).to have_hits(1)
       expect(results["hits"]["hits"][0]["_source"]["country"]).to eq("us")
 
       # partial or terms should not work.
       results = @es.search(:q => "country.raw:\"u\"")
-      expect(results["hits"]["total"]).to eq(0)
+      expect(results).to have_hits(0)
     end
 
     it "make [geoip][location] a geo_point" do

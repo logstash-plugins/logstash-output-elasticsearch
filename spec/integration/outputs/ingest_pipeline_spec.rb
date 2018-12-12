@@ -54,13 +54,13 @@ if ESHelper.es_version_satisfies?(">= 5")
       #Wait or fail until everything's indexed.
       Stud::try(20.times) do
         r = @es.search
-        expect(r["hits"]["total"]).to eq(1)
+        expect(r).to have_hits(1)
       end
     end
 
     it "indexes using the proper pipeline" do
       results = @es.search(:index => 'logstash-*', :q => "message:\"netcat\"")
-      expect(results["hits"]["total"]).to eq(1)
+      expect(results).to have_hits(1)
       expect(results["hits"]["hits"][0]["_source"]["response"]).to eq("200")
       expect(results["hits"]["hits"][0]["_source"]["bytes"]).to eq("182")
       expect(results["hits"]["hits"][0]["_source"]["verb"]).to eq("GET")
