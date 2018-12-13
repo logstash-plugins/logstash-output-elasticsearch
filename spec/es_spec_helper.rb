@@ -52,7 +52,6 @@ module ESHelper
   end
 
   RSpec::Matchers.define :have_hits do |expected|
-    es_version = RSpec.configuration.filter[:es_version] || ENV['ES_VERSION']
     match do |actual|
       if ESHelper.es_version_satisfies?(">=7")
         expected == actual['hits']['total']['value']
