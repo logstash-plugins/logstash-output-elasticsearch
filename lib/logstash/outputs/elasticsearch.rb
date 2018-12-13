@@ -90,12 +90,16 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   require "logstash/outputs/elasticsearch/http_client_builder"
   require "logstash/outputs/elasticsearch/common_configs"
   require "logstash/outputs/elasticsearch/common"
+  require "logstash/outputs/elasticsearch/ilm"
 
   # Protocol agnostic (i.e. non-http, non-java specific) configs go here
   include(LogStash::Outputs::ElasticSearch::CommonConfigs)
 
   # Protocol agnostic methods
   include(LogStash::Outputs::ElasticSearch::Common)
+
+  # Methods for ILM support
+  include(LogStash::Outputs::ElasticSearch::Ilm)
 
   config_name "elasticsearch"
 

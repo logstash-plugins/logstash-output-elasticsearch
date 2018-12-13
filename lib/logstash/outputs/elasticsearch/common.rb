@@ -23,10 +23,10 @@ module LogStash; module Outputs; class ElasticSearch;
 
       setup_hosts # properly sets @hosts
       build_client
+      setup_after_successful_connection
       check_action_validity
       @bulk_request_metrics = metric.namespace(:bulk_requests)
       @document_level_metrics = metric.namespace(:documents)
-      install_template_after_successful_connection
       @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
     end
 
@@ -38,7 +38,7 @@ module LogStash; module Outputs; class ElasticSearch;
       retrying_submit(events.map {|e| event_action_tuple(e)})
     end
 
-    def install_template_after_successful_connection
+    def setup_after_successful_connection
       @template_installer ||= Thread.new do
         sleep_interval = @retry_initial_interval
         until successful_connection? || @stopping.true?
@@ -46,7 +46,11 @@ module LogStash; module Outputs; class ElasticSearch;
           Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
           sleep_interval = next_sleep_interval(sleep_interval)
         end
-        install_template if successful_connection?
+        if successful_connection?
+          verify_ilm_readiness if ilm_enabled?
+          install_template
+          setup_ilm if ilm_enabled?
+        end
       end
     end
 
@@ -113,7 +117,6 @@ module LogStash; module Outputs; class ElasticSearch;
     def maximum_seen_major_version
       client.maximum_seen_major_version
     end
-
 
     def routing_field_name
       maximum_seen_major_version >= 6 ? :routing : :_routing
@@ -353,4 +356,4 @@ module LogStash; module Outputs; class ElasticSearch;
         !execution_context.dlq_writer.inner_writer.is_a?(::LogStash::Util::DummyDeadLetterQueueWriter)
     end
   end
-end; end; end
+end end end

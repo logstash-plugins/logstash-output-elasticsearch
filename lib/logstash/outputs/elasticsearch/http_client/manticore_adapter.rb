@@ -103,9 +103,9 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
       
       request_uri.query = new_query_parts.join("&") unless new_query_parts.empty?
-      
-      request_uri.path = "#{request_uri.path}/#{parsed_path_and_query.path}".gsub(/\/{2,}/, "/")
-        
+
+      request_uri.path = "#{request_uri.path}/#{parsed_path_and_query.raw_path}".gsub(/\/{2,}/, "/")
+
       request_uri
     end
 

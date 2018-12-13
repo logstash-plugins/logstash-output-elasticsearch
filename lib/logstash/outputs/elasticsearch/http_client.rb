@@ -337,9 +337,13 @@ module LogStash; module Outputs; class ElasticSearch;
       ::LogStash::Util::SafeURI.new(raw_url)
     end
 
-    def template_exists?(name)
-      response = @pool.head("/_template/#{name}")
+    def exists?(path, use_get=false)
+      response = use_get ? @pool.get(path) : @pool.head(path)
       response.code >= 200 && response.code <= 299
+    end
+
+    def template_exists?(name)
+      exists?("/_template/#{name}")
     end
 
     def template_put(name, template)
@@ -347,6 +351,47 @@ module LogStash; module Outputs; class ElasticSearch;
       logger.info("Installing elasticsearch template to #{path}")
       @pool.put(path, nil, LogStash::Json.dump(template))
     end
+
+    # ILM methods
+
+    # check whether rollover alias already exists
+    def rollover_alias_exists?(name)
+      exists?(name)
+    end
+
+    # Create a new rollover alias
+    def rollover_alias_put(alias_name, alias_definition)
+      logger.info("Creating rollover alias #{alias_name}")
+      begin
+        @pool.put(CGI::escape(alias_name), nil, LogStash::Json.dump(alias_definition))
+        # If the rollover alias already exists, ignore the error that comes back from Elasticsearch
+      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        if e.response_code == 400
+            logger.info("Rollover Alias #{alias_name} already exists. Skipping")
+            return
+        end
+        raise e
+      end
+    end
+
+    def get_xpack_info
+      get("/_xpack")
+    end
+
+    def get_ilm_endpoint
+      @pool.get("/_ilm/policy")
+    end
+
+    def ilm_policy_exists?(name)
+      exists?("/_ilm/policy/#{name}", true)
+    end
+
+    def ilm_policy_put(name, policy)
+      path = "_ilm/policy/#{name}"
+      logger.info("Installing ILM policy #{policy} to #{path}")
+      @pool.put(path, nil, LogStash::Json.dump(policy))
+    end
+
 
     # Build a bulk item for an elasticsearch update action
     def update_action_builder(args, source)
