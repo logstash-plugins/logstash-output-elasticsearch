@@ -93,6 +93,56 @@ re-indexed to Elasticsearch. If the DLQ is not enabled, and a mapping error
 happens, the problem is logged as a warning, and the event is dropped. See
 <<dead-letter-queues>> for more information about processing events in the DLQ.
 
+[[index-lifecycle-management]]
+==== Index Lifecycle Management (Beta)
+
+beta[]
+
+[NOTE]
+This feature requires an Elasticsearch instance of 6.6.0 or higher with at least a Basic license
+
+Logstash can use the {ref}/index-lifecycle-management.html[Index Lifecycle Management] to automate the management of indices over time.
+
+To configure the Elasticsearch output to use Index Lifecycle Management, set the `ilm_enabled` flag to true in the output definition:
+
+[source,ruby]
+    output {
+      elasticsearch {
+        ilm_enabled => true
+      }
+    }
+
+This will overwrite the index settings and adjust the Logstash template to write the necessary settings for the template
+to support index lifecycle management, including the index policy and rollover alias to be used.
+
+Logstash will create a rollover alias for the indices to be written to, including a pattern for how the actual indices will be named, and unless an ILM policy that already exists has been specified,
+a default policy will also be created. The default policy is configured to rollover an index when it reaches either 50 gigabytes in size, or is 30 days old, whichever happens first.
+
+The default rollover alias is called `logstash`, with a default pattern for the rollover index of `{now/d}-00001`,
+which will name indices on the date that the index is rolled over, followed by an incrementing number. Note that the pattern must end with a dash and a number that will be incremented.
+
+See the {ref}/indices-rollover-index.html#_using_date_math_with_the_rollover_api[Rollover API documentation] for more details on naming.
+
+The rollover alias, ilm pattern and policy can be modified.
+
+See config below for an example:
+[source,ruby]
+    output {
+      elasticsearch {
+        ilm_enabled => true
+        ilm_rollover_alias: "custom"
+        ilm_pattern: "000001"
+        ilm_policy: "custom_policy"
+      }
+    }
+
+NOTE: Custom ILM policies must already exist on the Elasticsearch cluster before they can be used.
+
+NOTE: If the rollover alias or pattern is modified, the index template will need to be overwritten as the settings `index.lifecycle.name` and `index.lifecycle.rollover_alias` are automatically written to the template
+
+NOTE: If the index property is supplied in the output definition, it will be overwritten by the rollover alias.
+
+
 ==== Batch Sizes
 
 This plugin attempts to send batches of events as a single request. However, if
@@ -139,6 +189,10 @@ This plugin supports the following configuration options plus the <<plugins-{typ
 | <<plugins-{type}s-{plugin}-healthcheck_path>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-hosts>> |<<uri,uri>>|No
 | <<plugins-{type}s-{plugin}-http_compression>> |<<boolean,boolean>>|No
+| <<plugins-{type}s-{plugin}-ilm_enabled>> |<<boolean,boolean>>|No
+| <<plugins-{type}s-{plugin}-ilm_pattern>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-ilm_policy>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-ilm_rollover_alias>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-index>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-keystore>> |a valid filesystem path|No
 | <<plugins-{type}s-{plugin}-keystore_password>> |<<password,password>>|No
@@ -313,6 +367,54 @@ Any special characters present in the URLs here MUST be URL escaped! This means 
   * Default value is `false`
 
 Enable gzip compression on requests. Note that response compression is on by default for Elasticsearch v5.0 and beyond
+
+[id="plugins-{type}s-{plugin}-ilm_enabled"]
+===== `ilm_enabled`
+
+  * Value type is <<boolean,boolean>>
+  * Default value is `false`
+
+Setting this flag to `true` will enable indices to be managed by the Index Lifecycle Management feature in Elasticsearch.
+
+NOTE: This feature requires a Basic License or above to be installed on an Elasticsearch cluster version 6.6.0 or later
+
+[id="plugins-{type}s-{plugin}-ilm_pattern"]
+===== `ilm_pattern`
+
+  * Value type is <<string,string>>
+  * Default value is `{now/d}-000001`
+
+Pattern used for generating indices managed by Index Lifecycle Management. The value specified in the pattern will be appended to
+the write alias, and incremented automatically when a new index is created by ILM.
+
+Date Math can be used when specifying an ilm pattern, see {ref}/indices-rollover-index.html#_using_date_math_with_the_rollover_api[Rollover API docs] for details
+
+NOTE: Updating the pattern will require the index template to be rewritten
+
+NOTE: The pattern must finish with a dash and a number that will be automatically incremented when indices rollover.
+
+[id="plugins-{type}s-{plugin}-ilm_policy"]
+===== `ilm_policy`
+
+  * Value type is <<string,string>>
+  * Default value is `logstash`
+
+Modify this setting to use a custom Index Lifecycle Management policy, rather than the default. If this value is not set, the default policy will
+be automatically installed into Elasticsearch
+
+NOTE: If this setting is specified, the policy must already exist in Elasticsearch cluster.
+
+[id="plugins-{type}s-{plugin}-ilm_rollover_alias"]
+===== `ilm_rollover_alias`
+
+  * Value type is <<string,string>>
+  * Default value is `logstash`
+
+The rollover alias is the alias where indices managed using Index Lifecycle Management will be written to.
+
+NOTE: If both `index` and `ilm_rollover_alias` are specified, `ilm_rollover_alias` takes precedence.
+
+NOTE: Updating the rollover alias will require the index template to be rewritten
 
 [id="plugins-{type}s-{plugin}-index"]
 ===== `index` 
