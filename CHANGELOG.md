@@ -1,3 +1,6 @@
+## 9.3.0
+  - Adds support for Index Lifecycle Management for Elasticsearch 6.6.0 and above, running with at least a Basic License(Beta) [#805](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/805)
+
 ## 9.2.4
   - Fixed support for Elasticsearch 7.x [#812](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/812)
 
