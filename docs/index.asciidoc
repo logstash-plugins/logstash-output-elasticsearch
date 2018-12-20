@@ -1,6 +1,6 @@
 :plugin: elasticsearch
 :type: output
-:default_codec: plain
+:no_codec:
 
 ///////////////////////////////////////////
 START - GENERATED VARIABLES, DO NOT EDIT!
@@ -817,4 +817,4 @@ See also https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-in
 [id="plugins-{type}s-{plugin}-common-options"]
 include::{include_path}/{type}.asciidoc[]
 
-:default_codec!:
+:no_codec!:
