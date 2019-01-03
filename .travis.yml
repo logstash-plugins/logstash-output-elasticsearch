@@ -12,9 +12,9 @@ env:
 - DISTRIBUTION=default INTEGRATION=true ES_VERSION=6.4.3 TEST_DEBUG=true
 - DISTRIBUTION=default INTEGRATION=true ES_VERSION=LATEST-SNAPSHOT-6 TEST_DEBUG=true
 - DISTRIBUTION=default INTEGRATION=true ES_VERSION=LATEST-SNAPSHOT-7 TEST_DEBUG=true
-- DISTRIBUTION=legacyxpack SECURE_INTEGRATION=true INTEGRATION=true ES_VERSION=5.6.13 TEST_DEBUG=true
+- DISTRIBUTION=legacyxpack SECURE_INTEGRATION=true INTEGRATION=true ES_VERSION=5.6.13
+  TEST_DEBUG=true
 - DISTRIBUTION=default SECURE_INTEGRATION=true INTEGRATION=true ES_VERSION=6.4.3 TEST_DEBUG=true
-
 rvm:
 - jruby-1.7.25
 matrix:
@@ -33,4 +33,4 @@ matrix:
 install: true
 script: ci/build.sh
 jdk: oraclejdk8
-
+before_install: gem install bundler -v '< 2'
