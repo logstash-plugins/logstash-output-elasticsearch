@@ -1,3 +1,8 @@
+## 10.0.0
+  - Changed deprecated `document_type` option to obsolete
+  - Remove support for parent child (still support join data type) since we don't support multiple document types any more
+  - Removed obsolete `flush_size` and `idle_flush_time`
+
 ## 9.3.2
   - Fixed sniffing support for 7.x [#827](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/827)
 
