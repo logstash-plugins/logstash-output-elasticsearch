@@ -78,15 +78,11 @@ module LogStash; module Outputs; class ElasticSearch;
         params[:pipeline] = event.sprintf(@pipeline)
       end
 
-      if @parent
-        if @join_field
-          join_value = event.get(@join_field)
-          parent_value = event.sprintf(@parent)
-          event.set(@join_field, { "name" => join_value, "parent" => parent_value })
-          params[routing_field_name] = event.sprintf(@parent)
-        else
-          params[:parent] = event.sprintf(@parent)
-        end
+      if @parent && @join_field
+        join_value = event.get(@join_field)
+        parent_value = event.sprintf(@parent)
+        event.set(@join_field, { "name" => join_value, "parent" => parent_value })
+        params[routing_field_name] = event.sprintf(@parent)
       end
 
       if action == 'update'
@@ -260,16 +256,10 @@ module LogStash; module Outputs; class ElasticSearch;
     DEFAULT_EVENT_TYPE_ES7="_doc".freeze
     def get_event_type(event)
       # Set the 'type' value for the index.
-      type = if @document_type
-               event.sprintf(@document_type)
+      type = if client.maximum_seen_major_version < 7
+               DEFAULT_EVENT_TYPE_ES6
              else
-               if client.maximum_seen_major_version < 6
-                 event.get("type") || DEFAULT_EVENT_TYPE_ES6
-               elsif client.maximum_seen_major_version == 6
-                 DEFAULT_EVENT_TYPE_ES6
-               else
-                 DEFAULT_EVENT_TYPE_ES7
-               end
+               DEFAULT_EVENT_TYPE_ES7
              end
 
       if !(type.is_a?(String) || type.is_a?(Numeric))
