@@ -76,7 +76,7 @@ module LogStash; module Outputs; class ElasticSearch
       mod.config :routing, :validate => :string
 
       # For child documents, ID of the associated parent.
-      # This can be dynamic using the `%{foo}` syntax.:w
+      # This can be dynamic using the `%{foo}` syntax.
       mod.config :parent, :validate => :string, :default => nil
 
       # For child documents, name of the join field
