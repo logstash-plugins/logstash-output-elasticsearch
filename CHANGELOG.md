@@ -1,3 +1,8 @@
+## 10.0.0
+  - Changed deprecated `document_type` option to obsolete
+  - Remove support for parent child (still support join data type) since we don't support multiple document types any more
+  - Removed obsolete `flush_size` and `idle_flush_time`
+
 ## 9.3.0
   - Adds support for Index Lifecycle Management for Elasticsearch 6.6.0 and above, running with at least a Basic License(Beta) [#805](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/805)
 
