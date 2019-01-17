@@ -82,7 +82,7 @@ if ESHelper.es_version_satisfies?(">= 5")
     end
 
     it "make [geoip][location] a geo_point" do
-      expect(@es.indices.get_template(name: "logstash")["logstash"]["mappings"][mapping_name]["properties"]["geoip"]["properties"]["location"]["type"]).to eq("geo_point")
+      expect(field_properties_from_template("logstash", "geoip")["location"]["type"]).to eq("geo_point")
     end
 
     it "aggregate .keyword results correctly " do

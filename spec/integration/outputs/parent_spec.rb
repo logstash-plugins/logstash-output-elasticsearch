@@ -76,7 +76,15 @@ if ESHelper.es_version_satisfies?(">= 5.6")
 
     shared_examples "a join field based parent indexer" do
       let(:index) { 10.times.collect { rand(10).to_s }.join("") }
-      let(:type) { 10.times.collect { rand(10).to_s }.join("") }
+
+      let(:type) do
+        if ESHelper.es_version_satisfies?('<7')
+          10.times.collect { rand(10).to_s }.join("")
+        else
+          "_doc"
+        end
+      end
+
       let(:event_count) { 10000 + rand(500) }
       let(:parent) { "not_implemented" }
       let(:config) { "not_implemented" }

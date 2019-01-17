@@ -32,11 +32,15 @@ module ESHelper
 
   def mapping_name
     if ESHelper.es_version_satisfies?(">=7")
-      "_doc"
+      nil
     else
       "_default_"
     end
+  end
 
+  def field_properties_from_template(template_name, field)
+    mappings = @es.indices.get_template(name: template_name)[template_name]["mappings"]
+    (mapping_name.nil?) ? mappings["properties"][field]["properties"] : mappings[mapping_name]["properties"][field]["properties"]
   end
 
   def routing_field_name
