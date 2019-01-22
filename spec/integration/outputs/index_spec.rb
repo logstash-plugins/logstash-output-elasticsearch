@@ -12,7 +12,8 @@ describe "TARGET_BULK_BYTES", :integration => true do
       }
   }
   let(:index) { 10.times.collect { rand(10).to_s }.join("") }
-  let(:type) { 10.times.collect { rand(10).to_s }.join("") }
+  let(:type) { ESHelper.es_version_satisfies?("<= 6.3") ? "doc" : "_doc" }
+
   subject { LogStash::Outputs::ElasticSearch.new(config) }
 
   before do

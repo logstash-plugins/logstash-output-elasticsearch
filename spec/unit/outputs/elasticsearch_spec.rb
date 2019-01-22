@@ -63,25 +63,6 @@ describe LogStash::Outputs::ElasticSearch do
           expect(subject.send(:get_event_type, LogStash::Event.new("type" => "foo"))).to eql("doc")
         end
       end
-
-      context "with a bad type event field in a < 6.0 es cluster" do
-        let(:maximum_seen_major_version) { 5 }
-        let(:type_arg) { ["foo"] }
-        let(:result) { subject.send(:get_event_type, LogStash::Event.new("type" => type_arg)) }
-
-        before do
-          allow(subject.instance_variable_get(:@logger)).to receive(:warn)
-          result
-        end
-
-        it "should call @logger.warn and return nil" do
-          expect(subject.instance_variable_get(:@logger)).to have_received(:warn).with(/Bad event type!/, anything).once
-        end
-
-        it "should set the type to the stringified value" do
-          expect(result).to eql(type_arg.to_s)
-        end
-      end
     end
 
     describe "with auth" do
