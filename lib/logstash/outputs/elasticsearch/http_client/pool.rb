@@ -158,7 +158,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     ES1_SNIFF_RE_URL  = /\[([^\/]*)?\/?([^:]*):([0-9]+)\]/
-    ES2_SNIFF_RE_URL  = /([^\/]*)?\/?([^:]*):([0-9]+)/
+    ES2_AND_ABOVE_SNIFF_RE_URL  = /([^\/]*)?\/?([^:]*):([0-9]+)/
     # Sniffs and returns the results. Does not update internal URLs!
     def check_sniff
       _, url_meta, resp = perform_request(:get, @sniffing_path)
@@ -189,13 +189,19 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       nodes.map do |id,info|
         # Skip master-only nodes
         next if info["roles"] && info["roles"] == ["master"]
-
-        if info["http"]
-          uri = LogStash::Util::SafeURI.new(info["http"]["publish_address"])
-        end
+        address_str_to_uri(info["http"]["publish_address"]) if info["http"]
       end.compact
     end
-    
+
+    def address_str_to_uri(addr_str)
+      matches = addr_str.match(ES1_SNIFF_RE_URL) || addr_str.match(ES2_AND_ABOVE_SNIFF_RE_URL)
+      if matches
+        host = matches[1].empty? ? matches[2] : matches[1]
+        ::LogStash::Util::SafeURI.new("#{host}:#{matches[3]}")
+      end
+    end
+
+
     def sniff_2x_1x(nodes)
       nodes.map do |id,info|
         # TODO Make sure this works with shield. Does that listed
@@ -210,13 +216,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         # with master + data + client enabled, so we allow that
         attributes = info['attributes']
         next if attributes && attributes['data'] == 'false'
-
-        matches = addr_str.match(ES1_SNIFF_RE_URL) || addr_str.match(ES2_SNIFF_RE_URL)
-        if matches
-          host = matches[1].empty? ? matches[2] : matches[1]
-          port = matches[3]
-          ::LogStash::Util::SafeURI.new("#{host}:#{port}")
-        end
+        address_str_to_uri(addr_str)
       end.compact
     end
 
