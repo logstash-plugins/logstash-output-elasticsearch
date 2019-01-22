@@ -12,7 +12,7 @@ if ESHelper.es_version_satisfies?(">= 5")
   describe "indexing with http_compression turned on", :integration => true do
     let(:event) { LogStash::Event.new("message" => "Hello World!", "type" => type) }
     let(:index) { 10.times.collect { rand(10).to_s }.join("") }
-    let(:type) { 10.times.collect { rand(10).to_s }.join("") }
+    let(:type) { ESHelper.es_version_satisfies?("< 7") ? "doc" : "_doc" }
     let(:event_count) { 10000 + rand(500) }
     let(:events) { event_count.times.map { event }.to_a }
     let(:config) {
@@ -50,8 +50,6 @@ if ESHelper.es_version_satisfies?(">= 5")
         result = LogStash::Json.load(response.body)
         result["hits"]["hits"].each do |doc|
           if ESHelper.es_version_satisfies?(">= 6")
-            expect(doc["_type"]).to eq(doc_type)
-          else
             expect(doc["_type"]).to eq(type)
           end
           expect(doc["_index"]).to eq(index)
