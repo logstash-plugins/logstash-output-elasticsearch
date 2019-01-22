@@ -20,7 +20,7 @@
         "bound_address" : [
           "[::]:9200"
         ],
-        "publish_address" : "http://localhost:9200",
+        "publish_address" : "127.0.0.1:9200",
         "max_content_length_in_bytes" : 104857600
       }
     },
@@ -38,7 +38,7 @@
         "bound_address" : [
           "[::]:9200"
         ],
-        "publish_address" : "http://localhost:9201",
+        "publish_address" : "127.0.0.1:9201",
         "max_content_length_in_bytes" : 104857600
       }
     },
@@ -57,7 +57,7 @@
         "bound_address" : [
           "[::]:9200"
         ],
-        "publish_address" : "http://localhost:9202",
+        "publish_address" : "127.0.0.1:9202",
         "max_content_length_in_bytes" : 104857600
       }
     },
@@ -73,7 +73,7 @@
         "bound_address" : [
           "[::]:9200"
         ],
-        "publish_address" : "http://localhost:9203",
+        "publish_address" : "127.0.0.1:9203",
         "max_content_length_in_bytes" : 104857600
       }
     }

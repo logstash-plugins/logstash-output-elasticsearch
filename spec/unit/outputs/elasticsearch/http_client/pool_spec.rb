@@ -76,6 +76,48 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     end
   end
 
+  describe 'resolving the address from Elasticsearch node info' do
+    let(:host) { "node.elastic.co"}
+    let(:ip_address) { "192.168.1.0"}
+    let(:port) { 9200 }
+
+    context 'in Elasticsearch 1.x format' do
+      context 'with host and ip address' do
+        let(:publish_address) { "inet[#{host}/#{ip_address}:#{port}]"}
+        it 'should correctly extract the host' do
+          expect(subject.address_str_to_uri(publish_address)).to eq (LogStash::Util::SafeURI.new("#{host}:#{port}"))
+        end
+      end
+      context 'with ip address' do
+        let(:publish_address) { "inet[/#{ip_address}:#{port}]"}
+        it 'should correctly extract the ip address' do
+          expect(subject.address_str_to_uri(publish_address)).to eq (LogStash::Util::SafeURI.new("#{ip_address}:#{port}"))
+        end
+      end
+    end
+
+    context 'in Elasticsearch 2.x-6.x format' do
+      let(:publish_address) { "#{ip_address}:#{port}"}
+      it 'should correctly extract the ip address' do
+        expect(subject.address_str_to_uri(publish_address)).to eq (LogStash::Util::SafeURI.new("//#{ip_address}:#{port}"))
+      end
+    end
+
+    context 'in Elasticsearch 7.x'
+    context 'with host and ip address' do
+      let(:publish_address) { "#{host}/#{ip_address}:#{port}"}
+      it 'should correctly extract the host' do
+        expect(subject.address_str_to_uri(publish_address)).to eq (LogStash::Util::SafeURI.new("#{host}:#{port}"))
+      end
+    end
+    context 'with ip address' do
+      let(:publish_address) { "#{ip_address}:#{port}"}
+      it 'should correctly extract the ip address' do
+        expect(subject.address_str_to_uri(publish_address)).to eq (LogStash::Util::SafeURI.new("#{ip_address}:#{port}"))
+      end
+    end
+  end
+
   describe "the sniffer" do
     before(:each) { subject.start }
     it "should not start the sniffer by default" do
