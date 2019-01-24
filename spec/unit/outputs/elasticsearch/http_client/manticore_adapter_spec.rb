@@ -102,6 +102,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter do
       
       it "should add the path correctly" do
         expect(formatted.path).to eq("#{url.path}special_bulk")
+        expect(subject.remove_double_escaping(formatted.path)).to eq("#{url.path}special_bulk")
       end 
       
       it "should add the query parameters correctly" do
@@ -115,6 +116,26 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter do
 
       it "should remove credentials after format" do
         expect(formatted.userinfo).to be_nil
+      end
+    end
+
+    context 'when uri contains date math' do
+      let(:url) { ::LogStash::Util::SafeURI.new("http://localhost:9200") }
+      let(:path) { CGI.escape("<logstash-{now/d}-0001>") }
+      let(:formatted) { subject.format_url(url, path) }
+
+      it 'should escape the uri correctly' do
+        expect(subject.remove_double_escaping(formatted.path)).to eq("/%3Clogstash-%7Bnow%2Fd%7D-0001%3E")
+      end
+    end
+
+    context 'when uri does not contain date math' do
+      let(:url) { ::LogStash::Util::SafeURI.new("http://localhost:9200") }
+      let(:path) { CGI.escape("logstash-0001") }
+      let(:formatted) { subject.format_url(url, path) }
+
+      it 'should escape the uri correctly' do
+        expect(subject.remove_double_escaping(formatted.path)).to eq("/logstash-0001")
       end
     end
   end
