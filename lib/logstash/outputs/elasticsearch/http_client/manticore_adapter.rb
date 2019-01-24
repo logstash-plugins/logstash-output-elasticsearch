@@ -65,8 +65,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
 
       request_uri = format_url(url, path)
-
-      resp = @manticore.send(method.downcase, request_uri.to_s, params)
+      request_uri_as_string = remove_double_escaping(request_uri.to_s)
+      resp = @manticore.send(method.downcase, request_uri_as_string, params)
 
       # Manticore returns lazy responses by default
       # We want to block for our usage, this will wait for the repsonse
@@ -83,6 +83,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       resp
     end
 
+    # Returned urls from this method should be checked for double escaping.
     def format_url(url, path_and_query=nil)
       request_uri = url.clone
       
@@ -92,21 +93,31 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       request_uri.password = nil
 
       return request_uri.to_s if path_and_query.nil?
-      
+
       parsed_path_and_query = java.net.URI.new(path_and_query)
-      
+
       query = request_uri.query
       parsed_query = parsed_path_and_query.query
-      
+
       new_query_parts = [request_uri.query, parsed_path_and_query.query].select do |part|
         part && !part.empty? # Skip empty nil and ""
       end
       
       request_uri.query = new_query_parts.join("&") unless new_query_parts.empty?
 
+      # use `raw_path`` as `path` will unescape any escaped '/' in the path
       request_uri.path = "#{request_uri.path}/#{parsed_path_and_query.raw_path}".gsub(/\/{2,}/, "/")
-
       request_uri
+    end
+
+    # Later versions of SafeURI will also escape the '%' sign in an already escaped URI.
+    # (If the path variable is used, it constructs a new java.net.URI object using the multi-arg constructor,
+    # which will escape any '%' characters in the path, as opposed to the single-arg constructor which requires illegal
+    # characters to be already escaped, and will throw otherwise)
+    # The URI needs to have been previously escaped, as it does not play nice with an escaped '/' in the
+    # middle of a URI, as required by date math, treating it as a path separator
+    def remove_double_escaping(url)
+      url.gsub(/%25([0-9A-F]{2})/i, '%\1')
     end
 
     def close
