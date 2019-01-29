@@ -86,7 +86,8 @@
             "ip": { "type": "ip", "doc_values" : true },
             "location" : { "type" : "geo_point", "doc_values" : true },
             "latitude" : { "type" : "float", "doc_values" : true },
-            "longitude" : { "type" : "float", "doc_values" : true }
+            "longitude" : { "type" : "float", "doc_values" : true },
+            "postal_code" : { "type" : "string", "index" : "not_analyzed" }
           }
         }
       }

@@ -37,7 +37,8 @@
             "ip": { "type": "ip" },
             "location" : { "type" : "geo_point" },
             "latitude" : { "type" : "half_float" },
-            "longitude" : { "type" : "half_float" }
+            "longitude" : { "type" : "half_float" },
+            "postal_code" : { "type" : "keyword" }
           }
         }
       }
