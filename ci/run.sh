@@ -137,15 +137,29 @@ else
     extra_tag_args="$extra_tag_args --tag ~distribution:oss --tag distribution:xpack"
   fi
 
+  arch=""
+
+  case "$ARCH" in
+     LINUX)
+        arch="-linux-86_84"
+         ;;
+     MAC_OS)
+        arch="-darwin-x86_64"
+        ;;
+     NONE)
+        arch=""
+        ;;
+  esac
+
   case "$ES_VERSION" in
     LATEST-SNAPSHOT-*)
       split_latest=${ES_VERSION##*-}
 
       LATEST_ES_VERSION=$(curl -sL https://artifacts-api.elastic.co/v1/versions/ | jq -r --arg LATEST $split_latest '[.versions[] | select(startswith($LATEST))][-1]')
       if [[ "$DISTRIBUTION" == "oss" ]]; then
-        setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-oss-${LATEST_ES_VERSION}.tar.gz
+        setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-oss-${LATEST_ES_VERSION}${arch}.tar.gz
       elif [[ "$DISTRIBUTION" == "default" ]]; then
-        setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-${LATEST_ES_VERSION}.tar.gz
+        setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-${LATEST_ES_VERSION}${arch}.tar.gz
       fi
       es_distribution_version=$(get_es_distribution_version)
       start_es
@@ -154,15 +168,24 @@ else
 
     *-SNAPSHOT)
       if [[ "$DISTRIBUTION" == "oss" ]]; then
-        setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-oss-${ES_VERSION}.tar.gz
+        setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-oss-${ES_VERSION}${arch}.tar.gz
       elif [[ "$DISTRIBUTION" == "default" ]]; then
-        setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
+        setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}${arch}.tar.gz
       fi
       es_distribution_version=$(get_es_distribution_version)
       start_es
       bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
       ;;
-
+    7.*)
+      if [[ "$DISTRIBUTION" == "oss" ]]; then
+        setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-${ES_VERSION}${arch}.tar.gz
+      elif [[ "$DISTRIBUTION" == "default" ]]; then
+        setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}${arch}.tar.gz
+      fi
+      es_distribution_version=$(get_es_distribution_version)
+      start_es
+      bundle exec rspec -fd $extra_tag_args --tag update_tests:painless --tag update_tests:groovy --tag es_version:$es_distribution_version $spec_path
+      ;;
     6.[0-2]*)
       setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz https://artifacts.elastic.co/downloads/packs/x-pack/x-pack-${ES_VERSION}.zip
       es_distribution_version=$(get_es_distribution_version)
