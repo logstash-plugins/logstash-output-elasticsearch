@@ -1,3 +1,6 @@
+## 9.3.2
+  - Fixed sniffing support for 7.x [#827](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/827)
+
 ## 9.3.1
   - Fixed issue with escaping index names which was causing writing aliases for ILM to fail [#831](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/831)
 
