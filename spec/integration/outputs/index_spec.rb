@@ -100,7 +100,13 @@ describe "indexing" do
           }}
       end
       # Allow template to be checked for existence/installed
-      allow(subject.client.pool.adapter.client).to receive(:send).with(anything, /_template/, anything).and_call_original
+      allow(subject.client.pool.adapter.client).to receive(:send).at_least(:once).with(anything, /_template/, anything).and_call_original
+      # Allow xpack endpoint to be checked\
+      allow(subject.client.pool.adapter.client).to receive(:send).with(anything, /_xpack/, anything).and_call_original
+      # Allow ilm policy to be checked for existence/installed
+      allow(subject.client.pool.adapter.client).to receive(:send).with(anything, /_ilm/, anything).and_call_original
+      # Allow write alias to be checked for existence/installed
+      allow(subject.client.pool.adapter.client).to receive(:send).with(anything, /logstash/, anything).and_call_original
       expect(subject.client.pool.adapter.client).to receive(:send).
         with(anything, anything, expected_manticore_opts).at_least(:once).
         and_call_original
