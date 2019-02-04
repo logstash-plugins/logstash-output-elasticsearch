@@ -67,6 +67,13 @@ module ESHelper
     end
   end
 
+  RSpec::Matchers.define :have_index_pattern do |expected|
+    match do |actual|
+      test_against = Array(actual['index_patterns'].nil? ? actual['template'] : actual['index_patterns'])
+      test_against.include?(expected)
+    end
+  end
+
 
   def self.es_version_satisfies?(*requirement)
     es_version = RSpec.configuration.filter[:es_version] || ENV['ES_VERSION']
@@ -124,6 +131,38 @@ module ESHelper
     rescue
       false
     end
+  end
+
+  def max_docs_policy(max_docs)
+  {
+    "policy" => {
+      "phases"=> {
+        "hot" => {
+          "actions" => {
+            "rollover" => {
+              "max_docs" => max_docs
+            }
+          }
+        }
+      }
+    }
+  }
+  end
+
+  def max_age_policy(max_age)
+  {
+    "policy" => {
+      "phases"=> {
+        "hot" => {
+          "actions" => {
+            "rollover" => {
+              "max_age" => max_age
+            }
+          }
+        }
+      }
+    }
+  }
   end
 end
 
