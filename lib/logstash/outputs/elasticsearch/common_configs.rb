@@ -147,7 +147,7 @@ module LogStash; module Outputs; class ElasticSearch
       # ILM configurations (beta)
       # -----
       # Flag for enabling Index Lifecycle Management integration.
-      mod.config :ilm_enabled, :validate => [true, false, 'true', 'false', 'auto'], :default => 'auto'
+      mod.config :ilm_enabled, :validate => [true, false, 'true', 'false', 'auto'], :default => false
 
       # Rollover alias used for indexing data. If rollover alias doesn't exist, Logstash will create it and map it to the relevant index
       mod.config :ilm_rollover_alias, :validate => :string, :default => DEFAULT_ROLLOVER_ALIAS

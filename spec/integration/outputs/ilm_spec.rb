@@ -486,7 +486,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
 
       if ESHelper.es_version_satisfies?(">=7.0")
         context 'when Elasticsearch is version 7 or above' do
-          it_behaves_like 'an ILM enabled Logstash'
+          it_behaves_like 'an ILM disabled Logstash'
         end
       end
 

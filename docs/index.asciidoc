@@ -105,11 +105,20 @@ This feature requires an Elasticsearch instance of 6.6.0 or higher with at least
 
 Logstash can use {ref}/index-lifecycle-management.html[Index Lifecycle Management] to automate the management of indices over time.
 
-The use of Index Lifecycle Management is controlled by the `ilm_enabled` setting. By default, this is will
-automatically detect whether the Elasticsearch instance supports ILM, and will use it if it is available. `ilm_enabled`
-can also be set to `true` or `false` to override the automatic detection, or disable ILM.
+The use of Index Lifecycle Management is controlled by the `ilm_enabled` setting.
+The `ilm_enabled` flag can be set to `true`, `false` (default) or `auto`.
 
-This will overwrite the index settings and adjust the Logstash template to write the necessary settings for the template
+The use of Index Lifecycle Management is controlled by the `ilm_enabled` setting.
+The `ilm_enabled` flag can be set to `true`, `false` (default) or `auto`.
+
+Setting `ilm_enabled` to `auto` will automatically detect whether the
+Elasticsearch instance is version `7.0.0` and above and has Index Lifecycle Management enabled, and will enable its usage if so.
+
+Setting `ilm_enabled` to `true` will enable the Index Lifecycle Management feature if it is available on the
+Elasticsearch cluster - the plugin will not start if `ilm_enabled` is set to `true` and the Elasticsearch cluster does
+not support ILM.
+
+Enabling ILM support will overwrite the index settings and adjust the Logstash template to write the necessary settings for the template
 to support index lifecycle management, including the index policy and rollover alias to be used.
 
 Logstash will create a rollover alias for the indices to be written to, including a pattern for how the actual indices will be named, and unless an ILM policy that already exists has been specified,
@@ -126,9 +135,10 @@ See config below for an example:
 [source,ruby]
     output {
       elasticsearch {
-        ilm_rollover_alias: "custom"
-        ilm_pattern: "000001"
-        ilm_policy: "custom_policy"
+        ilm_enabled => true
+        ilm_rollover_alias => "custom"
+        ilm_pattern => "000001"
+        ilm_policy => "custom_policy"
       }
     }
 
@@ -368,14 +378,15 @@ Enable gzip compression on requests. Note that response compression is on by def
 ===== `ilm_enabled`
 
   * Value can be any of: `true`, `false`, `auto`
-  * Default value is `auto`
+  * Default value is `false`
 
-The default setting of `auto` will automatically enable the Index Lifecycle Management feature, if the Elasticsearch
- cluster is running Elasticsearch version `7.0.0` or higher with the ILM feature enabled, and disable it otherwise.
+The default setting of `false` will disable the Index Lifecycle Management feature.
 
-Setting this flag to `false` will disable the Index Lifecycle Management feature, even if the Elasticsearch cluster supports ILM.
 Setting this flag to `true` will enable Index Lifecycle Management feature, if the Elasticsearch cluster supports it. This is required
 to enable Index Lifecycle Management on a version of Elasticsearch earlier than version `7.0.0`.
+
+Setting this flag to `auto` will automatically enable the Index Lifecycle Management feature, if the Elasticsearch
+ cluster is running Elasticsearch version `7.0.0` or higher with the ILM feature enabled, and disable it otherwise.
 
 NOTE: This feature requires a Basic License or above to be installed on an Elasticsearch cluster version 6.6.0 or later
 
