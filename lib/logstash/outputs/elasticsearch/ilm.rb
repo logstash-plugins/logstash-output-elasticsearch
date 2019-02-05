@@ -25,7 +25,6 @@ module LogStash; module Outputs; class ElasticSearch
             if ilm_on_by_default?
               ilm_ready, error = ilm_ready?
               if !ilm_ready
-                puts "Index Lifecycle Management is set to 'auto', but will be disabled - #{error}"
                 @logger.info("Index Lifecycle Management is set to 'auto', but will be disabled - #{error}")
                 false
               else

@@ -47,8 +47,8 @@ module LogStash; module Outputs; class ElasticSearch;
           sleep_interval = next_sleep_interval(sleep_interval)
         end
         if successful_connection?
-            install_template
-            setup_ilm if ilm_enabled?
+          install_template
+          setup_ilm if ilm_enabled?
         end
       end
     end
