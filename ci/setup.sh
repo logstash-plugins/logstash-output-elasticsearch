@@ -35,6 +35,6 @@ export LOGSTASH_PATH=$PWD/logstash-${LOGSTASH_VERSION}
 export PATH=$LOGSTASH_PATH/vendor/jruby/bin:$LOGSTASH_PATH/vendor/bundle/jruby/1.9.3/bin:$LOGSTASH_PATH/vendor/bundle/jruby/2.3.0/bin:$PATH
 export LOGSTASH_SOURCE=1
 cp $LOGSTASH_PATH/logstash-core/versions-gem-copy.yml $LOGSTASH_PATH/versions.yml
-gem install bundler
+gem install bundler -v "~> 1"
 jruby -S bundle install --jobs=3 --retry=3 --path=vendor/bundler
 jruby -S bundle exec rake vendor
