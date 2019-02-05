@@ -22,6 +22,10 @@ translate_version() {
   fi
 }
 
+if [ -z "$LOGSTASH_VERSION" ]
+then
+  export LOGSTASH_VERSION="6.x"
+fi
 
 translate_version $LOGSTASH_VERSION
 echo "Downloading logstash version: $LOGSTASH_VERSION"
