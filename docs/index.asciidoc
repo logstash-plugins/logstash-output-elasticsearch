@@ -103,7 +103,7 @@ The Index Lifecycle Management feature requires plugin version `9.3.1` or higher
 [NOTE]
 This feature requires an Elasticsearch instance of 6.6.0 or higher with at least a Basic license
 
-Logstash can use the {ref}/index-lifecycle-management.html[Index Lifecycle Management] to automate the management of indices over time.
+Logstash can use {ref}/index-lifecycle-management.html[Index Lifecycle Management] to automate the management of indices over time.
 
 The use of Index Lifecycle Management is controlled by the `ilm_enabled` setting. By default, this is will
 automatically detect whether the Elasticsearch instance supports ILM, and will use it if it is available. `ilm_enabled`
