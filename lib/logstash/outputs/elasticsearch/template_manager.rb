@@ -3,7 +3,13 @@ module LogStash; module Outputs; class ElasticSearch
     # To be mixed into the elasticsearch plugin base
     def self.install_template(plugin)
       return unless plugin.manage_template
-      plugin.logger.info("Using mapping template from", :path => plugin.template)
+      if plugin.template.nil?
+        plugin.logger.info("Using default mapping template")
+      else
+        plugin.logger.info("Using mapping template from", :path => plugin.template)
+      end
+
+
       template = get_template(plugin.template, plugin.maximum_seen_major_version)
       add_ilm_settings_to_template(plugin, template) if plugin.ilm_enabled?
       plugin.logger.info("Attempting to install template", :manage_template => template)
@@ -23,7 +29,6 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def self.add_ilm_settings_to_template(plugin, template)
-			plugin.logger.info("Overwriting index patterns, as ILM is enabled.")
       # Overwrite any index patterns, and use the rollover alias. Use 'index_patterns' rather than 'template' for pattern
       # definition - remove any existing definition of 'template'
       template.delete('template') if template.include?('template')
@@ -48,7 +53,7 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def self.read_template_file(template_path)
-      raise ArgumentError, "Template file '#{@template_path}' could not be found!" unless ::File.exists?(template_path)
+      raise ArgumentError, "Template file '#{template_path}' could not be found!" unless ::File.exists?(template_path)
       template_data = ::IO.read(template_path)
       LogStash::Json.load(template_data)
     end

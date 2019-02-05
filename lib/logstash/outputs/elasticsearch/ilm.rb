@@ -5,41 +5,66 @@ module LogStash; module Outputs; class ElasticSearch
 
     def setup_ilm
       return unless ilm_enabled?
-      @logger.info("Using Index lifecycle management - this feature is currently in beta.")
-      @logger.warn "Overwriting supplied index name with rollover alias #{@ilm_rollover_alias}" if @index != LogStash::Outputs::ElasticSearch::CommonConfigs::DEFAULT_INDEX_NAME
-      @index = ilm_rollover_alias
+      if default_index?(@index) || !default_rollover_alias?(@ilm_rollover_alias)
+        logger.warn("Overwriting supplied index #{@index} with rollover alias #{@ilm_rollover_alias}") unless default_index?(@index)
+        @index = @ilm_rollover_alias
+        maybe_create_rollover_alias
+        maybe_create_ilm_policy
+      end
+    end
 
-      maybe_create_rollover_alias
-      maybe_create_ilm_policy
+    def default_rollover_alias?(rollover_alias)
+      rollover_alias == LogStash::Outputs::ElasticSearch::DEFAULT_ROLLOVER_ALIAS
     end
 
     def ilm_enabled?
-      @ilm_enabled
+      return @ilm_actually_enabled if defined?(@ilm_actually_enabled)
+      @ilm_actually_enabled =
+        begin
+          if @ilm_enabled == 'auto'
+            if ilm_on_by_default?
+              ilm_ready, error = ilm_ready?
+              if !ilm_ready
+                @logger.info("Index Lifecycle Management is set to 'auto', but will be disabled - #{error}")
+                false
+              else
+                true
+              end
+            else
+              @logger.info("Index Lifecycle Management is set to 'auto', but will be disabled - Your Elasticsearch cluster is before 7.0.0, which is the minimum version required to automatically run Index Lifecycle Management")
+              false
+            end
+          elsif @ilm_enabled.to_s == 'true'
+            ilm_ready, error = ilm_ready?
+            raise LogStash::ConfigurationError,"Index Lifecycle Management is set to enabled in Logstash, but cannot be used - #{error}"  unless ilm_ready
+            true
+          else
+            false
+          end
+        end
     end
 
-    def verify_ilm_readiness
-      return unless ilm_enabled?
+    def ilm_on_by_default?
+      maximum_seen_major_version >= 7
+    end
 
+    def ilm_ready?
       # Check the Elasticsearch instance for ILM readiness - this means that the version has to be a non-OSS release, with ILM feature
       # available and enabled.
       begin
         xpack = client.get_xpack_info
-        features = xpack["features"]
+        features = xpack.nil? || xpack.empty? ? nil : xpack["features"]
         ilm = features.nil? ? nil : features["ilm"]
-        raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not installed on your Elasticsearch cluster" if features.nil? || ilm.nil?
-        raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not available in your Elasticsearch cluster" unless ilm['available']
-        raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not enabled in your Elasticsearch cluster" unless ilm['enabled']
-
-        unless ilm_policy_default? || client.ilm_policy_exists?(ilm_policy)
-          raise LogStash::ConfigurationError, "The specified ILM policy #{ilm_policy} does not exist on your Elasticsearch instance"
-        end
-
+        return false, "Index Lifecycle management is not installed on your Elasticsearch cluster" if features.nil? || ilm.nil?
+        return false, "Index Lifecycle management is not available in your Elasticsearch cluster" unless ilm['available']
+        return false, "Index Lifecycle management is not enabled in your Elasticsearch cluster" unless ilm['enabled']
+        return true, nil
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         # Check xpack endpoint: If no xpack endpoint, then this version of Elasticsearch is not compatible
         if e.response_code == 404
-          raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not installed on your Elasticsearch cluster"
+          return false, "Index Lifecycle management is not installed on your Elasticsearch cluster"
         elsif e.response_code == 400
-          raise LogStash::ConfigurationError, "Index Lifecycle management is enabled in logstash, but not installed on your Elasticsearch cluster"
+          return false, "Index Lifecycle management is not installed on your Elasticsearch cluster"
         else
           raise e
         end
@@ -53,8 +78,10 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def maybe_create_ilm_policy
-      if ilm_policy_default? && !client.ilm_policy_exists?(ilm_policy)
-        client.ilm_policy_put(ilm_policy, policy_payload)
+      if ilm_policy_default?
+          client.ilm_policy_put(ilm_policy, policy_payload) unless client.ilm_policy_exists?(ilm_policy)
+      else
+        raise LogStash::ConfigurationError, "The specified ILM policy #{ilm_policy} does not exist on your Elasticsearch instance" unless client.ilm_policy_exists?(ilm_policy)
       end
     end
 

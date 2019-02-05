@@ -94,9 +94,8 @@ happens, the problem is logged as a warning, and the event is dropped. See
 <<dead-letter-queues>> for more information about processing events in the DLQ.
 
 [id="plugins-{type}s-{plugin}-ilm"]
-==== Index Lifecycle Management (Beta)
+==== Index Lifecycle Management
 
-beta[]
 
 [NOTE]
 The Index Lifecycle Management feature requires plugin version `9.3.1` or higher.
@@ -104,16 +103,11 @@ The Index Lifecycle Management feature requires plugin version `9.3.1` or higher
 [NOTE]
 This feature requires an Elasticsearch instance of 6.6.0 or higher with at least a Basic license
 
-Logstash can use the {ref}/index-lifecycle-management.html[Index Lifecycle Management] to automate the management of indices over time.
+Logstash can use {ref}/index-lifecycle-management.html[Index Lifecycle Management] to automate the management of indices over time.
 
-To configure the Elasticsearch output to use Index Lifecycle Management, set the `ilm_enabled` flag to true in the output definition:
-
-[source,ruby]
-    output {
-      elasticsearch {
-        ilm_enabled => true
-      }
-    }
+The use of Index Lifecycle Management is controlled by the `ilm_enabled` setting. By default, this is will
+automatically detect whether the Elasticsearch instance supports ILM, and will use it if it is available. `ilm_enabled`
+can also be set to `true` or `false` to override the automatic detection, or disable ILM.
 
 This will overwrite the index settings and adjust the Logstash template to write the necessary settings for the template
 to support index lifecycle management, including the index policy and rollover alias to be used.
@@ -132,7 +126,6 @@ See config below for an example:
 [source,ruby]
     output {
       elasticsearch {
-        ilm_enabled => true
         ilm_rollover_alias: "custom"
         ilm_pattern: "000001"
         ilm_policy: "custom_policy"
@@ -192,7 +185,7 @@ This plugin supports the following configuration options plus the <<plugins-{typ
 | <<plugins-{type}s-{plugin}-healthcheck_path>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-hosts>> |<<uri,uri>>|No
 | <<plugins-{type}s-{plugin}-http_compression>> |<<boolean,boolean>>|No
-| <<plugins-{type}s-{plugin}-ilm_enabled>> |<<boolean,boolean>>|No
+| <<plugins-{type}s-{plugin}-ilm_enabled>> |<<string,string>>, one of `["true", "false", "auto"]`|No
 | <<plugins-{type}s-{plugin}-ilm_pattern>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-ilm_policy>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-ilm_rollover_alias>> |<<string,string>>|No
@@ -374,10 +367,15 @@ Enable gzip compression on requests. Note that response compression is on by def
 [id="plugins-{type}s-{plugin}-ilm_enabled"]
 ===== `ilm_enabled`
 
-  * Value type is <<boolean,boolean>>
-  * Default value is `false`
+  * Value can be any of: `true`, `false`, `auto`
+  * Default value is `auto`
 
-Setting this flag to `true` will enable indices to be managed by the Index Lifecycle Management feature in Elasticsearch.
+The default setting of `auto` will automatically enable the Index Lifecycle Management feature, if the Elasticsearch
+ cluster is running Elasticsearch version `7.0.0` or higher with the ILM feature enabled, and disable it otherwise.
+
+Setting this flag to `false` will disable the Index Lifecycle Management feature, even if the Elasticsearch cluster supports ILM.
+Setting this flag to `true` will enable Index Lifecycle Management feature, if the Elasticsearch cluster supports it. This is required
+to enable Index Lifecycle Management on a version of Elasticsearch earlier than version `7.0.0`.
 
 NOTE: This feature requires a Basic License or above to be installed on an Elasticsearch cluster version 6.6.0 or later
 
