@@ -141,7 +141,7 @@ else
 
   case "$ARCH" in
      LINUX)
-        arch="-linux-86_84"
+        arch="-linux-x86_64"
          ;;
      MAC_OS)
         arch="-darwin-x86_64"
