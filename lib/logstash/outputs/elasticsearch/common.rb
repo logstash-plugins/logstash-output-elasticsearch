@@ -47,7 +47,6 @@ module LogStash; module Outputs; class ElasticSearch;
           sleep_interval = next_sleep_interval(sleep_interval)
         end
         if successful_connection?
-          verify_ilm_readiness if ilm_enabled?
           install_template
           setup_ilm if ilm_enabled?
         end
@@ -347,6 +346,10 @@ module LogStash; module Outputs; class ElasticSearch;
         @bulk_request_metrics.increment(:failures)
         retry unless @stopping.true?
       end
+    end
+
+    def default_index?(index)
+      @index == LogStash::Outputs::ElasticSearch::CommonConfigs::DEFAULT_INDEX_NAME
     end
 
     def dlq_enabled?
