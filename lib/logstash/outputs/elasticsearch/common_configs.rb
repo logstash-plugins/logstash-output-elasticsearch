@@ -18,7 +18,8 @@ module LogStash; module Outputs; class ElasticSearch
       mod.config :index, :validate => :string, :default => DEFAULT_INDEX_NAME
 
       mod.config :document_type, 
-        :obsolete => "Multiple document types per index were deprecated in Elasticsearch 6.0 and removed entirely in 7.0. We'll now default to 'doc' on ES 6 and '_doc' in 7"
+        :validate => :string, 
+        :deprecated => "Document types are being deprecated in Elasticsearch 6.0, and removed entirely in 7.0. You should avoid this feature"
 
       # From Logstash 1.3 onwards, a template is applied to Elasticsearch during
       # Logstash's startup if one with the name `template_name` does not already exist.

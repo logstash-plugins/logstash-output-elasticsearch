@@ -44,24 +44,34 @@ describe LogStash::Outputs::ElasticSearch do
     let(:manticore_url) { manticore_urls.first }
 
     describe "getting a document type" do
-      context "for 7.x elasticsearch clusters" do
-        let(:maximum_seen_major_version) { 7 }
-        it "should return '_doc'" do
-          expect(subject.send(:get_event_type, LogStash::Event.new("type" => "foo"))).to eql("_doc")
+      context "if document_type isn't set" do
+        let(:options) { super.merge("document_type" => nil)}
+        context "for 7.x elasticsearch clusters" do
+          let(:maximum_seen_major_version) { 7 }
+          it "should return '_doc'" do
+            expect(subject.send(:get_event_type, LogStash::Event.new("type" => "foo"))).to eql("_doc")
+          end
+        end
+
+        context "for 6.x elasticsearch clusters" do
+          let(:maximum_seen_major_version) { 6 }
+          it "should return 'doc'" do
+            expect(subject.send(:get_event_type, LogStash::Event.new("type" => "foo"))).to eql("doc")
+          end
+        end
+
+        context "for < 6.0 elasticsearch clusters" do
+          let(:maximum_seen_major_version) { 5 }
+          it "should get the type from the event" do
+            expect(subject.send(:get_event_type, LogStash::Event.new("type" => "foo"))).to eql("foo")
+          end
         end
       end
 
-      context "for 6.x elasticsearch clusters" do
-        let(:maximum_seen_major_version) { 6 }
-        it "should return 'doc'" do
-          expect(subject.send(:get_event_type, LogStash::Event.new("type" => "foo"))).to eql("doc")
-        end
-      end
-
-      context "for < 6.0 elasticsearch clusters" do
-        let(:maximum_seen_major_version) { 5 }
-        it "should return 'doc'" do
-          expect(subject.send(:get_event_type, LogStash::Event.new("type" => "foo"))).to eql("doc")
+      context "with 'document type set'" do
+        let(:options) { super.merge("document_type" => "bar")}
+        it "should get the event type from the 'document_type' setting" do
+          expect(subject.send(:get_event_type, LogStash::Event.new())).to eql("bar")
         end
       end
     end

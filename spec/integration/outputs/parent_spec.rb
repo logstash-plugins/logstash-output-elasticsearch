@@ -75,6 +75,7 @@ if ESHelper.es_version_satisfies?(">= 5.6")
             "hosts" => get_host_port,
             "index" => index,
             "parent" => parent_id,
+            "document_type" => type,
             "join_field" => join_field,
             "manage_template" => false
           }
@@ -89,6 +90,7 @@ if ESHelper.es_version_satisfies?(">= 5.6")
             "hosts" => get_host_port,
             "index" => index,
             "parent" => "%{link_to}",
+            "document_type" => type,
             "join_field" => join_field,
             "manage_template" => false
           }
