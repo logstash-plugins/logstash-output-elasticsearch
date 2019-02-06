@@ -97,10 +97,6 @@ module LogStash; module Outputs; class ElasticSearch
       # Any special characters present in the URLs here MUST be URL escaped! This means `#` should be put in as `%23` for instance.
       mod.config :hosts, :validate => :uri, :default => [::LogStash::Util::SafeURI.new("//127.0.0.1")], :list => true
 
-      mod.config :flush_size, :validate => :number, :obsolete => "This setting is no longer available as we now try to restrict bulk requests to sane sizes. See the 'Batch Sizes' section of the docs. If you think you still need to restrict payloads based on the number, not size, of events, please open a ticket."
-
-      mod.config :idle_flush_time, :validate => :number, :obsolete => "This settings is no longer valid. This was a no-op now as every pipeline batch is flushed synchronously obviating the need for this option."
-
       # Set upsert content for update mode.s
       # Create a new document with this parameter as json string if `document_id` doesn't exists
       mod.config :upsert, :validate => :string, :default => ""
