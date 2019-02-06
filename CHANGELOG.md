@@ -1,3 +1,6 @@
+## 9.4.0
+  - Added 'auto' setting for ILM [#841](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/841)
+
 ## 9.3.2
   - Fixed sniffing support for 7.x [#827](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/827)
 
