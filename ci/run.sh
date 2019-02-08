@@ -155,7 +155,7 @@ else
     LATEST-SNAPSHOT-*)
       split_latest=${ES_VERSION##*-}
 
-      LATEST_ES_VERSION=$(curl -sL https://artifacts-api.elastic.co/v1/versions/ | jq -r --arg LATEST $split_latest '[.versions[] | select(startswith($LATEST))][-1]')
+      LATEST_ES_VERSION=$(curl -sL https://artifacts-api.elastic.co/v1/versions/ | jq -r --arg LATEST $split_latest '[.versions[] | select(startswith($LATEST)) | select(endswith("SNAPSHOT"))][-1]')
       if [[ "$DISTRIBUTION" == "oss" ]]; then
         setup_es https://snapshots.elastic.co/downloads/elasticsearch/elasticsearch-oss-${LATEST_ES_VERSION}${arch}.tar.gz
       elif [[ "$DISTRIBUTION" == "default" ]]; then
