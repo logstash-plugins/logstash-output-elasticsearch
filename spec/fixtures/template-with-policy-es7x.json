@@ -6,7 +6,6 @@
     "number_of_shards": 1
   },
   "mappings" : {
-    "_doc" : {
       "dynamic_templates" : [ {
         "message_field" : {
           "path_match" : "message",
@@ -42,5 +41,5 @@
         }
       }
     }
-  }
+
 }

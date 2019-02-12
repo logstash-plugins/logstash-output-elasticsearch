@@ -24,18 +24,19 @@ if ESHelper.es_version_satisfies?(">= 5.6")
       before do
         # Add mapping and a parent document
         index_url = "http://#{get_host_port()}/#{index}"
-        mapping = {
-          "mappings" => {
-            type => {
-              "properties" => {
-                join_field => {
-                  "type" => "join",
-                  "relations" => { parent_relation => child_relation }
-                }
-              }
+
+        properties = {
+          "properties" => {
+            join_field => {
+              "type" => "join",
+              "relations" => { parent_relation => child_relation }
             }
           }
         }
+
+        mapping = ESHelper.es_version_satisfies?('<7') ? { "mappings" => { type => properties } }
+                                                       : { "mappings" => properties}
+
         if ESHelper.es_version_satisfies?('<6')
           mapping.merge!({
                  "settings" => {
