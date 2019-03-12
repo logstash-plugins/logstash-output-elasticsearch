@@ -224,7 +224,7 @@ module LogStash; module Outputs; class ElasticSearch;
           @logger.warn "Failed action.", status: status, action: action, response: response if !failure_type_logging_whitelist.include?(failure["type"])
           next
         elsif DOC_DLQ_CODES.include?(status)
-          handle_dlq_status("Could not index event to Elasticsearch.", action, status, response)
+          handle_dlq_status("Could not index event to Elasticsearch.", action, status, response, failure)
           @document_level_metrics.increment(:non_retryable_failures)
           next
         else
@@ -238,7 +238,7 @@ module LogStash; module Outputs; class ElasticSearch;
       actions_to_retry
     end
 
-    def handle_dlq_status(message, action, status, response)
+    def handle_dlq_status(message, action, status, response, failure)
       # To support bwc, we check if DLQ exists. otherwise we log and drop event (previous behavior)
       if @dlq_writer
         # TODO: Change this to send a map with { :status => status, :action => action } in the future
@@ -250,7 +250,7 @@ module LogStash; module Outputs; class ElasticSearch;
         else
           level = :warn
         end
-        @logger.send level, message, status: status, action: action, response: response
+        @logger.send level, message, status: status, action: action, response: response if !failure_type_logging_whitelist.include?(failure["type"])
       end
     end
 
