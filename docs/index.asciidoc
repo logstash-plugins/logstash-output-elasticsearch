@@ -126,9 +126,9 @@ See config below for an example:
 [source,ruby]
     output {
       elasticsearch {
-        ilm_rollover_alias: "custom"
-        ilm_pattern: "000001"
-        ilm_policy: "custom_policy"
+        ilm_rollover_alias => "custom"
+        ilm_pattern => "000001"
+        ilm_policy => "custom_policy"
       }
     }
 
