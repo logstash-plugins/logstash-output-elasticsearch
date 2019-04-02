@@ -47,6 +47,7 @@ module LogStash; module Outputs; class ElasticSearch;
           sleep_interval = next_sleep_interval(sleep_interval)
         end
         if successful_connection?
+          discover_cluster_uuid
           install_template
           setup_ilm if ilm_in_use?
         end
@@ -128,6 +129,13 @@ module LogStash; module Outputs; class ElasticSearch;
     def install_template
       TemplateManager.install_template(self)
       @template_installed.make_true
+    end
+
+    def discover_cluster_uuid
+      cluster_info = @client.get('/')
+      unless LogStash::SETTINGS.registered?(@id + ".cluster_uuid")
+        LogStash::SETTINGS.register(LogStash::Setting::String.new(@id + ".cluster_uuid", cluster_info["cluster_uuid"]))
+      end
     end
 
     def check_action_validity
