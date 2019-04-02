@@ -47,6 +47,7 @@ module LogStash; module Outputs; class ElasticSearch;
           sleep_interval = next_sleep_interval(sleep_interval)
         end
         if successful_connection?
+          discover_cluster_uuid
           install_template
           setup_ilm if ilm_in_use?
         end
@@ -128,6 +129,15 @@ module LogStash; module Outputs; class ElasticSearch;
     def install_template
       TemplateManager.install_template(self)
       @template_installed.make_true
+    end
+
+    def discover_cluster_uuid
+      return unless defined?(plugin_metadata)
+      cluster_info = client.get('/')
+      plugin_metadata.set(:cluster_uuid, cluster_info['cluster_uuid'])
+    rescue => e
+      # TODO introducing this logging message breaks many tests that need refactoring
+      # @logger.error("Unable to retrieve elasticsearch cluster uuid", error => e.message)
     end
 
     def check_action_validity
