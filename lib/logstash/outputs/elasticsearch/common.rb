@@ -48,7 +48,7 @@ module LogStash; module Outputs; class ElasticSearch;
         end
         if successful_connection?
           install_template
-          setup_ilm if ilm_enabled?
+          setup_ilm if ilm_in_use?
         end
       end
     end

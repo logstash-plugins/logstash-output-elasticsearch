@@ -395,6 +395,24 @@ if ESHelper.es_version_satisfies?(">= 6.6")
         it_behaves_like 'an ILM enabled Logstash'
       end
 
+      context 'with a set index and a custom index pattern' do
+        if ESHelper.es_version_satisfies?(">= 7.0")
+          let (:template) { "spec/fixtures/template-with-policy-es7x.json" }
+        else
+          let (:template) { "spec/fixtures/template-with-policy-es6x.json" }
+        end
+
+        let (:settings) { super.merge("template" => template,
+                                      "index" => "overwrite-4")}
+
+        it 'should not overwrite the index patterns' do
+          subject.register
+          sleep(1)
+          expect(@es.indices.get_template(name: "logstash")["logstash"]).to have_index_pattern("overwrite-*")
+        end
+      end
+
+
       context 'with a custom template' do
         let (:ilm_rollover_alias) { "the_cat_in_the_hat" }
         let (:index) { ilm_rollover_alias }
