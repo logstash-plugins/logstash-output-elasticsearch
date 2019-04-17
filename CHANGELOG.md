@@ -1,3 +1,6 @@
+## 10.0.2
+  - Fixed bug where index patterns in custom templates could be erroneously overwritten [#861](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/861)
+
 ## 10.0.1
   - Reverted `document_type` obsoletion [#844](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/844)
 
