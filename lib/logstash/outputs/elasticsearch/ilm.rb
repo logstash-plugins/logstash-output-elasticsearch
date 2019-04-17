@@ -4,20 +4,22 @@ module LogStash; module Outputs; class ElasticSearch
     ILM_POLICY_PATH = "default-ilm-policy.json"
 
     def setup_ilm
-      return unless ilm_enabled?
-      if default_index?(@index) || !default_rollover_alias?(@ilm_rollover_alias)
+      return unless ilm_in_use?
         logger.warn("Overwriting supplied index #{@index} with rollover alias #{@ilm_rollover_alias}") unless default_index?(@index)
         @index = @ilm_rollover_alias
         maybe_create_rollover_alias
         maybe_create_ilm_policy
-      end
     end
 
     def default_rollover_alias?(rollover_alias)
       rollover_alias == LogStash::Outputs::ElasticSearch::DEFAULT_ROLLOVER_ALIAS
     end
 
-    def ilm_enabled?
+    def ilm_alias_set?
+      default_index?(@index) || !default_rollover_alias?(@ilm_rollover_alias)
+    end
+
+    def ilm_in_use?
       return @ilm_actually_enabled if defined?(@ilm_actually_enabled)
       @ilm_actually_enabled =
         begin
@@ -28,7 +30,7 @@ module LogStash; module Outputs; class ElasticSearch
                 @logger.info("Index Lifecycle Management is set to 'auto', but will be disabled - #{error}")
                 false
               else
-                true
+                ilm_alias_set?
               end
             else
               @logger.info("Index Lifecycle Management is set to 'auto', but will be disabled - Your Elasticsearch cluster is before 7.0.0, which is the minimum version required to automatically run Index Lifecycle Management")
@@ -37,7 +39,7 @@ module LogStash; module Outputs; class ElasticSearch
           elsif @ilm_enabled.to_s == 'true'
             ilm_ready, error = ilm_ready?
             raise LogStash::ConfigurationError,"Index Lifecycle Management is set to enabled in Logstash, but cannot be used - #{error}"  unless ilm_ready
-            true
+            ilm_alias_set?
           else
             false
           end
