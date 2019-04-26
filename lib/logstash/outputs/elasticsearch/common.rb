@@ -132,9 +132,9 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def discover_cluster_uuid
-      cluster_info = @client.get('/')
-      unless LogStash::SETTINGS.registered?(@id + ".cluster_uuid")
-        LogStash::SETTINGS.register(LogStash::Setting::String.new(@id + ".cluster_uuid", cluster_info["cluster_uuid"]))
+      if defined?(plugin_metadata)
+        cluster_info = @client.get('/')
+        plugin_metadata.set(:cluster_uuid, cluster_info['cluster_uuid'])
       end
     end
 
