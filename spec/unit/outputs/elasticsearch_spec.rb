@@ -19,7 +19,7 @@ describe LogStash::Outputs::ElasticSearch do
       allow(subject.client.pool).to receive(:start_sniffer)
       allow(subject.client.pool).to receive(:healthcheck!)
       allow(subject.client).to receive(:maximum_seen_major_version).at_least(:once).and_return(maximum_seen_major_version)
-      allow(subject.client).to receive(:get_root).and_return({:cluster_uuid => "OhUqvbkSRiyaSSGXzBkEIg"})
+      allow(subject.client).to receive(:get_xpack_info)
       subject.register
       subject.client.pool.adapter.manticore.respond_with(:body => "{}")
     end

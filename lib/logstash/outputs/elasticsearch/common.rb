@@ -133,7 +133,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def discover_cluster_uuid
       if defined?(plugin_metadata)
-        cluster_info = @client.get_root
+        cluster_info = @client.get('/')
         plugin_metadata.set(:cluster_uuid, cluster_info['cluster_uuid'])
       end
     end
