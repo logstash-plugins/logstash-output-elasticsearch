@@ -485,6 +485,9 @@ describe LogStash::Outputs::ElasticSearch do
   end
 
   context 'handling elasticsearch document-level status meant for the DLQ' do
+    # Sleep to ensure you are passing the right event because the way that
+    # this has the possibility of a race condition.
+    sleep 5
     let(:options) { { "manage_template" => false } }
     let(:logger)  { subject.instance_variable_get(:@logger) }
 
