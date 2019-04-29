@@ -378,6 +378,10 @@ module LogStash; module Outputs; class ElasticSearch;
       get("/_xpack")
     end
 
+    def get_root
+      get("/")
+    end
+
     def get_ilm_endpoint
       @pool.get("/_ilm/policy")
     end
