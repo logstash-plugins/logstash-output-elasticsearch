@@ -344,7 +344,7 @@ If you have custom firewall rules you may need to change this
   * Value type is <<uri,uri>>
   * Default value is `[//127.0.0.1]`
 
-Sets the host(s) of the remote instance. If given an array it will load balance requests across the hosts specified in the `hosts` parameter.
+Sets the host(s) of the remote instance. If given an array it will load balance requests across the hosts specified in the `hosts` parameter (Round-robin per bulk request sent to Elasticsearch).
 Remember the `http` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http[http] address (eg. 9200, not 9300).
     `"127.0.0.1"`
     `["127.0.0.1:9200","127.0.0.2:9200"]`
