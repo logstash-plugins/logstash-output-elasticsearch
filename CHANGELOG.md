@@ -1,3 +1,6 @@
+## 10.1.0
+  - Added cluster id tracking through the plugin metadata registry [#857](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/857)
+
 ## 10.0.2
   - Fixed bug where index patterns in custom templates could be erroneously overwritten [#861](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/861)
 
