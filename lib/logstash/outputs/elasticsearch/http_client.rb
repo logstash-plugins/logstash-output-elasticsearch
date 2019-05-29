@@ -365,6 +365,7 @@ module LogStash; module Outputs; class ElasticSearch;
       begin
         if add_rollover_settings
           real_alias_name, _ = alias_definition["aliases"].first
+          logger.info("Adding lifecycle rollover_alias setting for #{real_alias_name}")
           alias_definition.merge!({
             'settings' => {
               'index.lifecycle.rollover_alias' => real_alias_name
