@@ -88,7 +88,7 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def maybe_create_rollover_alias
-      client.rollover_alias_put(rollover_alias_target, rollover_alias_payload) unless client.rollover_alias_exists?(ilm_rollover_alias)
+      client.rollover_alias_put(rollover_alias_target, rollover_alias_payload, ilm_set_rollover_alias) unless client.rollover_alias_exists?(ilm_rollover_alias)
     end
 
     def rollover_alias_target
