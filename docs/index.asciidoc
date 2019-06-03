@@ -701,6 +701,9 @@ https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
 You can set the path to your own template here, if you so desire.
 If not set, the included template will be used.
 
+Note that Logstash will not monitor the template file for changes.
+The template file will be read when its installation is triggered.
+
 [id="plugins-{type}s-{plugin}-template_name"]
 ===== `template_name` 
 
@@ -730,7 +733,11 @@ you wanted to be able to update it regularly, this option could help there as we
 
 Please note that if you are using your own customized version of the Logstash
 template (logstash), setting this to true will make Logstash to overwrite
-the "logstash" template (i.e. removing all customized settings)
+the "logstash" template (i.e. removing all customized settings).
+
+The template installation check is triggered at pipeline startup (or reload) but
+will be actually installed if template_overwrite is set to true or if the
+template doesn't exist on the Elasticsearch cluster.
 
 [id="plugins-{type}s-{plugin}-timeout"]
 ===== `timeout` 
