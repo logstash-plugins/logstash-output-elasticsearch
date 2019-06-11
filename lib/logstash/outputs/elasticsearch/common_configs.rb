@@ -158,6 +158,9 @@ module LogStash; module Outputs; class ElasticSearch
       # Add index.lifecycle.rollover_alias setting to alias upon creation
       mod.config :ilm_set_rollover_alias, :validate => [true, false, 'true', 'false'], :default => false
 
+      # Use this for event substitution aliases
+      mod.config :ilm_event_alias, :validate => :string
+
     end
   end
 end end end

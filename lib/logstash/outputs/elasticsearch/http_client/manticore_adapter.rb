@@ -64,6 +64,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         }
       end
 
+      @logger.debug("Manticore, url: #{url}, path: #{path}, params: #{params.to_s}, body: #{body}")
       request_uri = format_url(url, path)
       request_uri_as_string = remove_double_escaping(request_uri.to_s)
       resp = @manticore.send(method.downcase, request_uri_as_string, params)

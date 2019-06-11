@@ -87,7 +87,27 @@ module LogStash; module Outputs; class ElasticSearch
       end
     end
 
+    def maybe_create_rollover_alias_for_event(event, created_aliases)
+      alias_name = event.sprintf(ilm_event_alias)
+      if client.rollover_alias_exists?(alias_name) or created_aliases.include?(alias_name)
+        return alias_name
+      end
+      alias_target = "<#{alias_name}-#{ilm_pattern}>"
+      alias_payload = {
+        'aliases' => {
+          alias_name => {
+            'is_write_index' => true
+          }
+        }
+      }
+      logger.debug("Maybe create rollover alias for an event?: alias_name: #{alias_name}, alias_target: #{alias_target}, alias_payload: #{alias_payload.to_s}")
+      client.rollover_alias_put(alias_target, alias_payload, ilm_set_rollover_alias) unless client.rollover_alias_exists?(alias_name)
+
+      alias_name
+    end
+
     def maybe_create_rollover_alias
+      logger.debug("Maybe create ro alias?: #{rollover_alias_target}, exists? #{client.rollover_alias_exists?(ilm_rollover_alias)}")
       client.rollover_alias_put(rollover_alias_target, rollover_alias_payload, ilm_set_rollover_alias) unless client.rollover_alias_exists?(ilm_rollover_alias)
     end
 

@@ -1,4 +1,5 @@
 require "logstash/outputs/elasticsearch/template_manager"
+require 'set'
 
 module LogStash; module Outputs; class ElasticSearch;
   module Common
@@ -28,6 +29,8 @@ module LogStash; module Outputs; class ElasticSearch;
       @bulk_request_metrics = metric.namespace(:bulk_requests)
       @document_level_metrics = metric.namespace(:documents)
       @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
+      @logger.trace("Methods for ES Output on register: #{self.methods.to_s}")
+      @logger.trace("Instance variables for ES Output on register: #{self.instance_variables.to_s}")
     end
 
     # Receive an array of events and immediately attempt to index them (no buffering)
@@ -166,6 +169,20 @@ module LogStash; module Outputs; class ElasticSearch;
 
         # We retry with whatever is didn't succeed
         begin
+
+          # try making alias here? overwrite :_index with alias name?
+          unless @ilm_event_alias.nil?
+            created_aliases = Set[]
+            submit_actions.each do |action, params, event|
+              logger.trace("Created aliases so far: #{created_aliases.to_s}")
+              if ['index', 'create'].include?(action)
+                new_index = maybe_create_rollover_alias_for_event(event, created_aliases)
+                created_aliases << new_index
+                params[:_index] = new_index
+              end
+            end
+          end
+
           submit_actions = submit(submit_actions)
           if submit_actions && submit_actions.size > 0
             @logger.info("Retrying individual bulk actions that failed or were rejected by the previous bulk request.", :count => submit_actions.size)
