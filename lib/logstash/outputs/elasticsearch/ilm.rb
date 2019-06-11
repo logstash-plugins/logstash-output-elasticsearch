@@ -89,9 +89,7 @@ module LogStash; module Outputs; class ElasticSearch
 
     def maybe_create_rollover_alias_for_event(event, created_aliases)
       alias_name = event.sprintf(ilm_event_alias)
-      if client.rollover_alias_exists?(alias_name) or created_aliases.include?(alias_name)
-        return alias_name
-      end
+      return alias_name unless !created_aliases.include?(alias_name)
       alias_target = "<#{alias_name}-#{ilm_pattern}>"
       alias_payload = {
         'aliases' => {
