@@ -64,7 +64,6 @@ module LogStash; module Outputs; class ElasticSearch;
       # mutex to prevent requests and sniffing to access the
       # connection pool at the same time
       @bulk_path = @options[:bulk_path]
-      logger.trace("All methods for ES output: #{self.methods.to_s}")
     end
 
     def build_url_template
@@ -356,18 +355,15 @@ module LogStash; module Outputs; class ElasticSearch;
 
     # check whether rollover alias already exists
     def rollover_alias_exists?(name)
-      logger.debug("Rollover alias exists?: #{exists?(name)}")
       exists?(name)
-      # TODO: maybe try adding a sprintf here for @event?
     end
 
     # Create a new rollover alias
     def rollover_alias_put(alias_name, alias_definition, add_rollover_settings)
-      logger.info("Creating rollover alias #{alias_name}, escaped: #{CGI::escape(alias_name)}")
       begin
         if add_rollover_settings
           real_alias_name, _ = alias_definition["aliases"].first
-          logger.info("Adding lifecycle rollover_alias setting for #{real_alias_name}")
+          logger.debug("Adding lifecycle rollover_alias setting for #{real_alias_name}")
           alias_definition.merge!({
             'settings' => {
               'index.lifecycle.rollover_alias' => real_alias_name

@@ -29,8 +29,6 @@ module LogStash; module Outputs; class ElasticSearch;
       @bulk_request_metrics = metric.namespace(:bulk_requests)
       @document_level_metrics = metric.namespace(:documents)
       @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
-      @logger.trace("Methods for ES Output on register: #{self.methods.to_s}")
-      @logger.trace("Instance variables for ES Output on register: #{self.instance_variables.to_s}")
     end
 
     # Receive an array of events and immediately attempt to index them (no buffering)
@@ -171,10 +169,12 @@ module LogStash; module Outputs; class ElasticSearch;
         begin
 
           # try making alias here? overwrite :_index with alias name?
+          # TODO: what if it doesn't match anything from the event? what then?
+          #       need to have it use the default pattern or something if it doesn't
           unless @ilm_event_alias.nil?
             created_aliases = Set[]
             submit_actions.each do |action, params, event|
-              logger.trace("Created aliases so far: #{created_aliases.to_s}")
+              logger.trace("Created/cached aliases so far: #{created_aliases.to_s}")
               if ['index', 'create'].include?(action)
                 new_index = maybe_create_rollover_alias_for_event(event, created_aliases)
                 created_aliases << new_index
