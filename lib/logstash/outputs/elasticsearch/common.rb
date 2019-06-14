@@ -168,19 +168,25 @@ module LogStash; module Outputs; class ElasticSearch;
         # We retry with whatever is didn't succeed
         begin
 
-          # try making alias here? overwrite :_index with alias name?
-          # TODO: what if it doesn't match anything from the event? what then?
-          #       need to have it use the default pattern or something if it doesn't
-          unless @ilm_event_alias.nil?
+          # Create alias(es) before bulking, ensuring rollover aliases exist
+          if @ilm_enabled && !@ilm_event_alias.nil?
             created_aliases = Set[]
             submit_actions.each do |action, params, event|
-              logger.trace("Created/cached aliases so far: #{created_aliases.to_s}")
               if ['index', 'create'].include?(action)
-                new_index = maybe_create_rollover_alias_for_event(event, created_aliases)
-                created_aliases << new_index
-                params[:_index] = new_index
+                begin
+                  new_index = maybe_create_rollover_alias_for_event(event, created_aliases)
+                  created_aliases << new_index
+                  params[:_index] = new_index
+                rescue ::LogStash::Outputs::ElasticSearch::Ilm::ImproperAliasName => e
+                  @logger.error("Event alias name is not proper, using #{@ilm_rollover_alias} instead")
+                  params[:_index] = @ilm_rollover_alias
+                rescue => e
+                  @logger.error("Unknown error on creating event alias, #{e}, using #{@ilm_rollover_alias} instead")
+                  params[:_index] = @ilm_rollover_alias
+                end
               end
             end
+            @logger.trace("Created/cached aliases: #{created_aliases.to_s}")
           end
 
           submit_actions = submit(submit_actions)

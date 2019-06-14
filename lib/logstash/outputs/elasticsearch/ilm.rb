@@ -87,9 +87,18 @@ module LogStash; module Outputs; class ElasticSearch
       end
     end
 
+    class ImproperAliasName < StandardError
+      attr_reader :name
+      def initialize(msg="Index not proper", name)
+        @name = name
+        super(msg)
+      end
+    end
+
     def maybe_create_rollover_alias_for_event(event, created_aliases)
       alias_name = event.sprintf(ilm_event_alias)
-      return alias_name unless !created_aliases.include?(alias_name)
+      return alias_name if created_aliases.include?(alias_name)
+      raise ImproperAliasName.new(name=alias_name) if alias_name == ilm_event_alias
       alias_target = "<#{alias_name}-#{ilm_pattern}>"
       alias_payload = {
         'aliases' => {
@@ -98,8 +107,10 @@ module LogStash; module Outputs; class ElasticSearch
           }
         }
       }
-      # settings put must be done, otherwise you end up with a properly made rollover index
-      # with a lifecycle rollover alias setting for a completely different alias (if using a template)
+      # Settings put must be done, otherwise you end up with a properly made rollover index
+      # with a lifecycle rollover alias setting for a completely different alias which will
+      # not work past the first index, stalling forever. You will still need something to
+      # maintain the proper alias after they are rolled over though, so, yeah.
       client.rollover_alias_put(alias_target, alias_payload, true) unless client.rollover_alias_exists?(alias_name)
 
       alias_name
