@@ -155,10 +155,11 @@ module LogStash; module Outputs; class ElasticSearch
       # ILM policy to use, if undefined the default policy will be used.
       mod.config :ilm_policy, :validate => :string, :default => DEFAULT_POLICY
 
-      # Add index.lifecycle.rollover_alias setting to alias upon creation
+      # Add index.lifecycle.rollover_alias setting to alias upon creation, always done in the case of aliases created via the ilm_event_alias setting.
       mod.config :ilm_set_rollover_alias, :validate => [true, false, 'true', 'false'], :default => false
 
-      # Use this for event substitution aliases
+      # Use this for event substitution aliases, ilm_rollover_alias is used as a default in the event the field is missing or other unknown errors.
+      # Substituion syntax will work here, e.g. "%{my_fantastic_field_here}-alias".
       mod.config :ilm_event_alias, :validate => :string
 
     end
