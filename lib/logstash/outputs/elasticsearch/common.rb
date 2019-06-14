@@ -178,10 +178,10 @@ module LogStash; module Outputs; class ElasticSearch;
                   created_aliases << new_index
                   params[:_index] = new_index
                 rescue ::LogStash::Outputs::ElasticSearch::Ilm::ImproperAliasName => e
-                  @logger.error("Event alias name is not proper, using #{@ilm_rollover_alias} instead")
+                  @logger.warn("Event alias name is not proper, using #{@ilm_rollover_alias} instead")
                   params[:_index] = @ilm_rollover_alias
                 rescue => e
-                  @logger.error("Unknown error on creating event alias, #{e}, using #{@ilm_rollover_alias} instead")
+                  @logger.warn("Unknown error on creating event alias, #{e}, using #{@ilm_rollover_alias} instead")
                   params[:_index] = @ilm_rollover_alias
                 end
               end
