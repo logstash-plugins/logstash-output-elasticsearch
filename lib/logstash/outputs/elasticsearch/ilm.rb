@@ -97,7 +97,7 @@ module LogStash; module Outputs; class ElasticSearch
 
     def maybe_create_rollover_alias_for_event(event, created_aliases)
       alias_name = event.sprintf(ilm_event_alias)
-      return alias_name if created_aliases.include?(alias_name)
+      return alias_name, created_aliases[alias_name] if created_aliases.has_key?(alias_name)
       raise ImproperAliasName.new(name=alias_name) if alias_name == ilm_event_alias
       alias_target = "<#{alias_name}-#{ilm_pattern}>"
       alias_payload = {
@@ -107,13 +107,11 @@ module LogStash; module Outputs; class ElasticSearch
           }
         }
       }
-      # Settings put must be done, otherwise you end up with a properly made rollover index
-      # with a lifecycle rollover alias setting for a completely different alias which will
-      # not work past the first index, stalling forever. You will still need something to
-      # maintain the proper alias after they are rolled over though, so, yeah.
-      client.rollover_alias_put(alias_target, alias_payload, true) unless client.rollover_alias_exists?(alias_name)
+      # Without placing the settings on the index you'll need something to run by and add this
+      # afterwards (or by a template) or the first index will never rollover.
+      client.rollover_alias_put(alias_target, alias_payload, ilm_set_rollover_alias) unless client.rollover_alias_exists?(alias_name)
 
-      alias_name
+      return alias_name, alias_name
     end
 
     def maybe_create_rollover_alias

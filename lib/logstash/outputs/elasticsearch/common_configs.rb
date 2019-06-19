@@ -162,6 +162,9 @@ module LogStash; module Outputs; class ElasticSearch
       # Substituion syntax will work here, e.g. "%{my_fantastic_field_here}-alias".
       mod.config :ilm_event_alias, :validate => :string
 
+      # Cache seen/created aliases and their destinations once, not during each bulk batch.
+      mod.config :ilm_cache_once, :validate => [true, false, 'true', 'false'], :default => false
+
     end
   end
 end end end

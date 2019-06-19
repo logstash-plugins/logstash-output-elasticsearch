@@ -1,5 +1,4 @@
 require "logstash/outputs/elasticsearch/template_manager"
-require 'set'
 
 module LogStash; module Outputs; class ElasticSearch;
   module Common
@@ -21,6 +20,8 @@ module LogStash; module Outputs; class ElasticSearch;
       @stopping = Concurrent::AtomicBoolean.new(false)
       # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
       @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
+      @logger.debug("Caching created/seen aliases #{@ilm_cache_once ? 'once' : 'every bulk'}")
+      @ilm_seen_aliases = {}
 
       setup_hosts # properly sets @hosts
       build_client
@@ -168,17 +169,22 @@ module LogStash; module Outputs; class ElasticSearch;
         # We retry with whatever is didn't succeed
         begin
 
-          # Create alias(es) before bulking, ensuring rollover aliases exist
+          # Create alias(es) before bulking, ensuring rollover aliases exist.
+          #
+          # Using the hash let's us set improper aliases such as unsubstituted fields like
+          # %{abc} to the default alias instead, then return immediately when found to avoid
+          # raising the exception multiple times, as the exceptions are typically more expensive.
           if @ilm_enabled && !@ilm_event_alias.nil?
-            created_aliases = Set[]
+            created_aliases = @ilm_cache_once ? @ilm_seen_aliases : {}
             submit_actions.each do |action, params, event|
               if ['index', 'create'].include?(action)
                 begin
-                  new_index = maybe_create_rollover_alias_for_event(event, created_aliases)
-                  created_aliases << new_index
+                  alias_name, new_index = maybe_create_rollover_alias_for_event(event, created_aliases)
+                  created_aliases[alias_name] = new_index
                   params[:_index] = new_index
                 rescue ::LogStash::Outputs::ElasticSearch::Ilm::ImproperAliasName => e
                   @logger.warn("Event alias name is not proper, using #{@ilm_rollover_alias} instead")
+                  created_aliases[e.name] = @ilm_rollover_alias
                   params[:_index] = @ilm_rollover_alias
                 rescue => e
                   @logger.warn("Unknown error on creating event alias, #{e}, using #{@ilm_rollover_alias} instead")
