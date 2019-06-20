@@ -20,8 +20,18 @@ module LogStash; module Outputs; class ElasticSearch;
       @stopping = Concurrent::AtomicBoolean.new(false)
       # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
       @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
-      @logger.debug("Caching created/seen aliases #{@ilm_cache_once ? 'once' : 'every bulk'}")
       @ilm_seen_aliases = {}
+
+      # Can only be used if ILM not in use
+      if ro_only_enabled
+        if ilm_in_use?
+          raise LogStash::ConfigurationError, "ILM and preemptive RO creation cannot both be enabled."
+        else
+          @logger.debug("Preemptively creating rollover aliases")
+        end
+      end
+
+      @logger.debug("Caching seen/created aliases #{@ilm_cache_once : 'once' : 'every bulk'}") unless !(@ro_only_enabled || !ilm_in_use?)
 
       setup_hosts # properly sets @hosts
       build_client
@@ -174,12 +184,12 @@ module LogStash; module Outputs; class ElasticSearch;
           # Using the hash let's us set improper aliases such as unsubstituted fields like
           # %{abc} to the default alias instead, then return immediately when found to avoid
           # raising the exception multiple times, as the exceptions are typically more expensive.
-          if @ilm_enabled && !@ilm_event_alias.nil?
+          if (@ilm_enabled || @ro_only_enabled) && !@ilm_event_alias.nil?
             created_aliases = @ilm_cache_once ? @ilm_seen_aliases : {}
             submit_actions.each do |action, params, event|
               if ['index', 'create'].include?(action)
                 begin
-                  alias_name, new_index = maybe_create_rollover_alias_for_event(event, created_aliases)
+                  alias_name, new_index = maybe_create_rollover_alias_for_event(event, created_aliases, @ilm_enabled)
                   created_aliases[alias_name] = new_index
                   params[:_index] = new_index
                 rescue ::LogStash::Outputs::ElasticSearch::Ilm::ImproperAliasName => e

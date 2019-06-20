@@ -165,6 +165,21 @@ module LogStash; module Outputs; class ElasticSearch
       # Cache seen/created aliases and their destinations once, not during each bulk batch.
       mod.config :ilm_cache_once, :validate => [true, false, 'true', 'false'], :default => false
 
+
+      # -----
+      # Rollover Alias Creation
+      # -----
+
+      # Reuses ilm_event_alias, ilm_pattern, ilm_cache_once as only ILM or RO can be used at one time. Preemptive RO creation
+      # follows all the same processes that the ILM tweaks does, however, it does not insert the lifecycle alias setting or policy.
+      # It is understood that this to bootstrap the rollover alias and index before indexing so that external tools can manage
+      # the actual rollover process, while ILM can manage the other lifecycle phases.
+      #
+      # Just like the ILM event substitution process, if anything does not match, it is thrown into the default alias set via
+      # ilm_rollover_alias.
+
+      # Flag for enabling Rollover alias creation, conflicts with ILM.
+      mod.config :ro_only_enabled, :validate => [true, false, 'true', 'false'], :default 'false'
     end
   end
 end end end
