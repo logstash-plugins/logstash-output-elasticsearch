@@ -98,7 +98,8 @@ module LogStash; module Outputs; class ElasticSearch
     def maybe_create_rollover_alias_for_event(event, created_aliases, is_ilm_request)
       alias_name = event.sprintf(ilm_event_alias)
       return alias_name, created_aliases[alias_name] if created_aliases.has_key?(alias_name)
-      raise ImproperAliasName.new(name=alias_name) if alias_name == ilm_event_alias
+      improper = alias_name == ilm_event_alias
+      alias_name = improper ? ilm_rollover_alias : alias_name
       alias_target = "<#{alias_name}-#{ilm_pattern}>"
       alias_payload = {
         'aliases' => {
@@ -109,8 +110,12 @@ module LogStash; module Outputs; class ElasticSearch
       }
       # Without placing the settings on the index you'll need something to run by and add this
       # afterwards (or by a template) or the first index will never rollover.
-      logger.trace("Putting rollover alias #{alias_target} for #{alias_name}, is this an ILM request?: #{is_ilm_request}, will we set rollover alias setting? #{ilm_set_rollover_alias}")
-      client.rollover_alias_put(alias_target, alias_payload, is_ilm_request ? ilm_set_rollover_alias : false) unless client.rollover_alias_exists?(alias_name)
+      do_ilm_request = is_ilm_request ? ilm_set_rollover_alias : false
+      logger.trace("Putting rollover alias #{alias_target} for #{alias_name}, is this an ILM request?: #{is_ilm_request}, will we set the rollover alias setting? #{do_ilm_request}")
+      client.rollover_alias_put(alias_target, alias_payload, do_ilm_request) unless client.rollover_alias_exists?(alias_name)
+
+      # Raise this afterwards, so we can store this properly as a broken alias
+      raise ImproperAliasName.new(name=event.sprintf(ilm_event_alias)) if improper
 
       return alias_name, alias_name
     end

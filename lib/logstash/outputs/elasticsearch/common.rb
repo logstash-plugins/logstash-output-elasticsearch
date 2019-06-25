@@ -35,6 +35,8 @@ module LogStash; module Outputs; class ElasticSearch;
         @logger.debug("Caching seen/created aliases #{@ilm_cache_once ? 'once' : 'every bulk'}")
       end
 
+      @logger.trace("ilm_enabled: #{@ilm_enabled}, ro_only_enabled: #{@ro_only_enabled}")
+
       setup_hosts # properly sets @hosts
       build_client
       setup_after_successful_connection
@@ -195,7 +197,7 @@ module LogStash; module Outputs; class ElasticSearch;
                   created_aliases[alias_name] = new_index
                   params[:_index] = new_index
                 rescue ::LogStash::Outputs::ElasticSearch::Ilm::ImproperAliasName => e
-                  @logger.warn("Event alias name is not proper, using #{@ilm_rollover_alias} instead")
+                  @logger.warn("Event alias name #{e.name} is not proper, using #{@ilm_rollover_alias} instead")
                   created_aliases[e.name] = @ilm_rollover_alias
                   params[:_index] = @ilm_rollover_alias
                 rescue => e
