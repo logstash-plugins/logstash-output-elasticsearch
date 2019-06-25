@@ -109,6 +109,7 @@ module LogStash; module Outputs; class ElasticSearch
       }
       # Without placing the settings on the index you'll need something to run by and add this
       # afterwards (or by a template) or the first index will never rollover.
+      logger.trace("Putting rollover alias #{alias_target} for #{alias_name}, is this an ILM request?: #{is_ilm_request}, will we set rollover alias setting? #{ilm_set_rollover_alias}")
       client.rollover_alias_put(alias_target, alias_payload, is_ilm_request ? ilm_set_rollover_alias : false) unless client.rollover_alias_exists?(alias_name)
 
       return alias_name, alias_name

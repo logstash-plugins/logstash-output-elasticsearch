@@ -31,7 +31,9 @@ module LogStash; module Outputs; class ElasticSearch;
         end
       end
 
-      @logger.debug("Caching seen/created aliases #{@ilm_cache_once ? 'once' : 'every bulk'}") unless !(@ro_only_enabled || !ilm_in_use?)
+      if @ro_only_enabled || ilm_in_use?
+        @logger.debug("Caching seen/created aliases #{@ilm_cache_once ? 'once' : 'every bulk'}")
+      end
 
       setup_hosts # properly sets @hosts
       build_client
