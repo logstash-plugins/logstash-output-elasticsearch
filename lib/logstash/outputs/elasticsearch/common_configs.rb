@@ -179,7 +179,7 @@ module LogStash; module Outputs; class ElasticSearch
       # ilm_rollover_alias.
 
       # Flag for enabling Rollover alias creation, conflicts with ILM.
-      mod.config :ro_only_enabled, :validate => [true, false, 'true', 'false'], :default 'false'
+      mod.config :ro_only_enabled, :validate => [true, false, 'true', 'false'], :default => false
     end
   end
 end end end
