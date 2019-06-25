@@ -23,15 +23,15 @@ module LogStash; module Outputs; class ElasticSearch;
       @ilm_seen_aliases = {}
 
       # Can only be used if ILM not in use
-      if ro_only_enabled
-        if ilm_in_use?
+      if @ro_only_enabled
+        if @ilm_enabled
           raise LogStash::ConfigurationError, "ILM and preemptive RO creation cannot both be enabled."
         else
           @logger.debug("Preemptively creating rollover aliases")
         end
       end
 
-      if @ro_only_enabled || ilm_in_use?
+      if @ro_only_enabled || @ilm_enabled
         @logger.debug("Caching seen/created aliases #{@ilm_cache_once ? 'once' : 'every bulk'}")
       end
 
