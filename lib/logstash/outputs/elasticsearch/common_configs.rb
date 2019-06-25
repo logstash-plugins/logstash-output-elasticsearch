@@ -178,7 +178,7 @@ module LogStash; module Outputs; class ElasticSearch
       # Just like the ILM event substitution process, if anything does not match, it is thrown into the default alias set via
       # ilm_rollover_alias.
 
-      # Flag for enabling Rollover alias creation, conflicts with ILM.
+      # Flag for enabling Rollover alias creation, overrides ILM behavior.
       mod.config :ro_only_enabled, :validate => [true, false, 'true', 'false'], :default => false
     end
   end

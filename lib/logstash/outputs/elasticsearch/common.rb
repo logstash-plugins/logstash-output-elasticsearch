@@ -22,27 +22,22 @@ module LogStash; module Outputs; class ElasticSearch;
       @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
       @ilm_seen_aliases = {}
 
-      # Can only be used if ILM not in use
-      if @ro_only_enabled
-        if @ilm_enabled
-          raise LogStash::ConfigurationError, "ILM and preemptive RO creation cannot both be enabled."
-        else
-          @logger.debug("Preemptively creating rollover aliases")
-        end
-      end
-
-      if @ro_only_enabled || @ilm_enabled
-        @logger.debug("Caching seen/created aliases #{@ilm_cache_once ? 'once' : 'every bulk'}")
-      end
-
-      @logger.trace("ilm_enabled: #{@ilm_enabled}, ro_only_enabled: #{@ro_only_enabled}")
-
       setup_hosts # properly sets @hosts
       build_client
       setup_after_successful_connection
       check_action_validity
       @bulk_request_metrics = metric.namespace(:bulk_requests)
       @document_level_metrics = metric.namespace(:documents)
+
+      # Can only be used if ILM not in use
+      if @ro_only_enabled && ilm_in_use?
+        @logger.debug("Preemptively creating rollover aliases, not adding ILM aliases/policies/settings in the process")
+      end
+
+      if @ro_only_enabled || ilm_in_use?
+        @logger.info("Caching seen/created aliases #{@ilm_cache_once ? 'once' : 'every bulk'}")
+      end
+
       @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
     end
 
@@ -188,12 +183,12 @@ module LogStash; module Outputs; class ElasticSearch;
           # Using the hash let's us set improper aliases such as unsubstituted fields like
           # %{abc} to the default alias instead, then return immediately when found to avoid
           # raising the exception multiple times, as the exceptions are typically more expensive.
-          if (@ilm_enabled || @ro_only_enabled) && !@ilm_event_alias.nil?
+          if ilm_in_use? && !@ilm_event_alias.nil?
             created_aliases = @ilm_cache_once ? @ilm_seen_aliases : {}
             submit_actions.each do |action, params, event|
               if ['index', 'create'].include?(action)
                 begin
-                  alias_name, new_index = maybe_create_rollover_alias_for_event(event, created_aliases, @ilm_enabled)
+                  alias_name, new_index = maybe_create_rollover_alias_for_event(event, created_aliases, !@ro_only_enabled)
                   created_aliases[alias_name] = new_index
                   params[:_index] = new_index
                 rescue ::LogStash::Outputs::ElasticSearch::Ilm::ImproperAliasName => e
