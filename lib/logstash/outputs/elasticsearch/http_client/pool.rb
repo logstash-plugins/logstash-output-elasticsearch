@@ -170,7 +170,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         return nil
       else
         case major_version(url_meta[:version])
-        when 5, 6, 7
+        when 5, 6, 7, 8
           sniff_5x_and_above(nodes)
         when 2, 1
           sniff_2x_1x(nodes)
