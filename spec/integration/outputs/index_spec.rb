@@ -63,6 +63,7 @@ describe "indexing" do
 
   before do
     subject.register
+    subject.multi_receive([])
   end
   
   shared_examples "an indexer" do |secure|
@@ -98,14 +99,6 @@ describe "indexing" do
             :eager => true
           }}
       end
-      # Allow template to be checked for existence/installed
-      allow(subject.client.pool.adapter.client).to receive(:send).at_least(:once).with(anything, /_template/, anything).and_call_original
-      # Allow xpack endpoint to be checked\
-      allow(subject.client.pool.adapter.client).to receive(:send).with(anything, /_xpack/, anything).and_call_original
-      # Allow ilm policy to be checked for existence/installed
-      allow(subject.client.pool.adapter.client).to receive(:send).with(anything, /_ilm/, anything).and_call_original
-      # Allow write alias to be checked for existence/installed
-      allow(subject.client.pool.adapter.client).to receive(:send).with(anything, /logstash/, anything).and_call_original
       expect(subject.client.pool.adapter.client).to receive(:send).
         with(anything, anything, expected_manticore_opts).at_least(:once).
         and_call_original
@@ -138,10 +131,10 @@ describe "indexing" do
     let(:user) { "simpleuser" }
     let(:password) { "abc123" }
     let(:cacert) { "spec/fixtures/test_certs/test.crt" }
-    let(:es_url) {"https://localhost:9200"}
+    let(:es_url) {"https://elasticsearch:9200"}
     let(:config) do
       {
-        "hosts" => ["localhost:9200"],
+        "hosts" => ["elasticsearch:9200"],
         "user" => user,
         "password" => password,
         "ssl" => true,
@@ -173,7 +166,7 @@ describe "indexing" do
     describe "with a user/password requiring escaping in the URL" do
       let(:config) do
         {
-          "hosts" => ["https://#{CGI.escape(user)}:#{CGI.escape(password)}@localhost:9200"],
+          "hosts" => ["https://#{CGI.escape(user)}:#{CGI.escape(password)}@elasticsearch:9200"],
           "ssl" => true,
           "cacert" => "spec/fixtures/test_certs/test.crt",
           "index" => index

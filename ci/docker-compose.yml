@@ -1,0 +1,42 @@
+version: '3'
+
+# run tests:  cd ci; docker-compose up --build --force-recreate
+# manual:  cd ci; docker-compose run logstash bash
+services:
+
+  logstash:
+    build:
+      context: ../
+      dockerfile: ci/Dockerfile.logstash
+      args:
+        - elastic_stack_version=$ELASTIC_STACK_VERSION
+        - distribution=${DISTRIBUTION:-default}
+        - distribution_suffix=${DISTRIBUTION_SUFFIX}
+        - integration=${INTEGRATION:-false}
+        - secure_integration=${SECURE_INTEGRATION:-false}
+    command: /usr/share/plugins/this/ci/logstash-run.sh
+    environment:
+        - SPEC_OPTS
+    tty: true
+    #volumes:
+    #  - ./:/usr/share/plugins/this
+
+  elasticsearch:
+    build:
+      context: ../
+      dockerfile: ci/Dockerfile.elasticsearch
+      args:
+        - elastic_stack_version=$ELASTIC_STACK_VERSION
+        - distribution=${DISTRIBUTION:-default}
+        - distribution_suffix=${DISTRIBUTION_SUFFIX}
+        - integration=${INTEGRATION:-false}
+        - secure_integration=${SECURE_INTEGRATION:-false}
+    command: /usr/share/elasticsearch/elasticsearch-run.sh
+    tty: true
+    ports:
+      - "9200:9200"
+    user: elasticsearch
+
+    #volumes:
+    #  - ./:/usr/share/plugins/this
+
