@@ -9,6 +9,10 @@ require_relative "support/elasticsearch/api/actions/put_ilm_policy"
 
 require 'json'
 
+unless defined?(LogStash::OSS)
+  LogStash::OSS = ENV['DISTRIBUTION'] != "default"
+end
+
 module ESHelper
   def get_host_port
     if ENV["INTEGRATION"] == "true"

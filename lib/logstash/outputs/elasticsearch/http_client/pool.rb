@@ -31,6 +31,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :healthcheck_path, :sniffing_path, :bulk_path
 
     ROOT_URI_PATH = '/'.freeze
+    LICENSE_PATH = '/_license'.freeze
 
     DEFAULT_OPTIONS = {
       :healthcheck_path => ROOT_URI_PATH,
@@ -66,11 +67,19 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @url_info = {}
       @stopping = false
     end
+
+    def oss?
+     LogStash::Outputs::ElasticSearch.oss?
+    end
     
     def start
-      update_urls(@initial_urls)
+      update_initial_urls
       start_resurrectionist
       start_sniffer if @sniffing
+    end
+
+    def update_initial_urls
+      update_urls(@initial_urls)
     end
 
     def close
@@ -101,7 +110,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def alive_urls_count
-      @state_mutex.synchronize { @url_info.values.select {|v| !v[:state] == :alive }.count }
+      @state_mutex.synchronize { @url_info.values.select {|v| v[:state] == :alive }.count }
     end
 
     def url_info
@@ -236,13 +245,29 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
     end
 
+    def get_license(url)
+      response = perform_request_to_url(url, :get, LICENSE_PATH)
+      LogStash::Json.load(response.body)
+    end
+
+    def valid_es_license?(url)
+      license = get_license(url)
+      license.fetch("license", {}).fetch("status", nil) == "active"
+    rescue => e
+      false
+    end
+
+    def health_check_request(url)
+      perform_request_to_url(url, :head, @healthcheck_path)
+    end
+
     def healthcheck!
       # Try to keep locking granularity low such that we don't affect IO...
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         begin
           logger.debug("Running health check to see if an Elasticsearch connection is working",
                         :healthcheck_url => url, :path => @healthcheck_path)
-          response = perform_request_to_url(url, :head, @healthcheck_path)
+          health_check_request(url)
           # If no exception was raised it must have succeeded!
           logger.warn("Restored connection to ES instance", :url => url.sanitized.to_s)
           # We reconnected to this node, check its ES version
@@ -254,10 +279,22 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
               @logger.info("ES Output version determined", :es_version => major)
               set_new_major_version(major)
             elsif major > @maximum_seen_major_version
-              @logger.warn("Detected a node with a higher major version than previously observed. This could be the result of an elasticsearch cluster upgrade.", :previous_major => @maximum_seen_major_version, :new_major => major, :node_url => url)
+              @logger.warn("Detected a node with a higher major version than previously observed. This could be the result of an elasticsearch cluster upgrade.", :previous_major => @maximum_seen_major_version, :new_major => major, :node_url => url.sanitized.to_s)
               set_new_major_version(major)
             end
-            meta[:state] = :alive
+            if oss? || valid_es_license?(url)
+              meta[:state] = :alive
+            else
+              # As this version is to be shipped with Logstash 7.x we won't mark the connection as unlicensed
+              #
+              #  logger.error("Cannot connect to the Elasticsearch cluster configured in the Elasticsearch output. Logstash requires the default distribution of Elasticsearch. Please update to the default distribution of Elasticsearch for full access to all free features, or switch to the OSS distribution of Logstash.", :url => url.sanitized.to_s)
+              #  meta[:state] = :unlicensed
+              #
+              # Instead we'll log a deprecation warning and mark it as alive:
+              #
+              log_license_deprecation_warn(url)
+              meta[:state] = :alive
+            end
           end
         rescue HostUnreachableError, BadResponseCodeError => e
           logger.warn("Attempted to resurrect connection to dead ES instance, but got an error.", url: url.sanitized.to_s, error_type: e.class, error: e.message)
@@ -267,6 +304,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
     def stop_resurrectionist
       @resurrectionist.join if @resurrectionist
+    end
+
+    def log_license_deprecation_warn(url)
+      logger.warn("DEPRECATION WARNING: Connecting to an OSS distribution of Elasticsearch using the default distribution of Logstash will stop working in Logstash 8.0.0. Please upgrade to the default distribution of Elasticsearch, or use the OSS distribution of Logstash", :url => url.sanitized.to_s)
     end
 
     def resurrectionist_alive?
