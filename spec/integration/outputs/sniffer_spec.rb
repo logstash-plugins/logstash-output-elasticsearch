@@ -2,10 +2,14 @@ require "logstash/devutils/rspec/spec_helper"
 require_relative "../../../spec/es_spec_helper"
 require "logstash/outputs/elasticsearch/http_client"
 require "json"
+require "socket"
 
 describe "pool sniffer", :integration => true do
   let(:logger) { Cabin::Channel.get }
   let(:adapter) { LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter.new(logger) }
+  let(:es_host) { get_host_port.split(":").first }
+  let(:es_port) { get_host_port.split(":").last }
+  let(:es_ip) { IPSocket.getaddress(es_host) }
   let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://#{get_host_port}")] }
   let(:options) do
     {
@@ -36,7 +40,7 @@ describe "pool sniffer", :integration => true do
           # We do a more thorough check on these versions because we can more reliably guess the ip
           uris = subject.check_sniff
 
-          expect(uris).to include(::LogStash::Util::SafeURI.new("//#{get_host_port}"))
+          expect(uris).to include(::LogStash::Util::SafeURI.new("//#{es_ip}:#{es_port}"))
         else
           # ES 1.x (and ES 7.x) returned the public hostname by default. This is hard to approximate
           # so for ES1.x and 7.x we don't check the *exact* hostname

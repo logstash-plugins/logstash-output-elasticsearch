@@ -1,0 +1,25 @@
+ARG elastic_stack_version
+ARG distribution_suffix
+FROM docker.elastic.co/logstash/logstash$distribution_suffix:$elastic_stack_version
+USER root
+RUN yum install -y openssl
+USER logstash
+ENV JARS_SKIP="true"
+ENV LOGSTASH_SOURCE=1
+ENV LS_JAVA_OPTS="-Xmx256m -Xms256m"
+ENV PATH="${PATH}:/usr/share/logstash/vendor/jruby/bin"
+COPY --chown=logstash:logstash Gemfile /usr/share/plugins/this/Gemfile
+COPY --chown=logstash:logstash *.gemspec /usr/share/plugins/this/
+RUN cp /usr/share/logstash/logstash-core/versions-gem-copy.yml /usr/share/logstash/versions.yml
+RUN gem install bundler -v '< 2'
+WORKDIR /usr/share/plugins/this
+RUN bundle install --path=vendor/bundler
+COPY --chown=logstash:logstash . /usr/share/plugins/this
+ARG elastic_stack_version
+ARG distribution
+ARG integration
+ARG secure_integration
+ENV INTEGRATION $integration
+ENV SECURE_INTEGRATION $secure_integration
+ENV DISTRIBUTION $distribution
+ENV ELASTIC_STACK_VERSION $elastic_stack_version
