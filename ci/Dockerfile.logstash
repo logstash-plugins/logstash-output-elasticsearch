@@ -1,6 +1,9 @@
 ARG elastic_stack_version
 ARG distribution_suffix
 FROM docker.elastic.co/logstash/logstash$distribution_suffix:$elastic_stack_version
+USER root
+RUN yum install -y openssl
+USER logstash
 ENV JARS_SKIP="true"
 ENV LOGSTASH_SOURCE=1
 ENV LS_JAVA_OPTS="-Xmx256m -Xms256m"
