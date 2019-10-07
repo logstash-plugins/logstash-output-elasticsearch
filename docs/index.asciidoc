@@ -24,6 +24,21 @@ include::{include_path}/plugin_header.asciidoc[]
 .Compatibility Note
 [NOTE]
 ================================================================================
+The `_type` setting changed from `doc` to `_doc` in Elasticsearch 7.0.
+
+If you are using an earlier version of Logstash, upgrade to
+version 6.8 to pick up changes to the Elasticsearch index template before you
+upgrade to version 7.0 (or later). 
+
+After upgrading to 6.8, use the {ref}/indices-templates.html#getting[Index
+Template API] to verify that the 6.8 index template has been created in
+Elasticsearch.
+
+================================================================================
+
+.Compatibility Note
+[NOTE]
+================================================================================
 Starting with Elasticsearch 5.3, there's an {ref}/modules-http.html[HTTP setting]
 called `http.content_type.required`. If this option is set to `true`, and you
 are using Logstash 2.4 through 5.2, you need to update the Elasticsearch output
