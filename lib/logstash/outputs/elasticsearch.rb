@@ -244,6 +244,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @client.close if @client
   end
 
+  def self.oss?
+    LogStash::OSS
+  end
+
   @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }
 
   @@plugins.each do |plugin|

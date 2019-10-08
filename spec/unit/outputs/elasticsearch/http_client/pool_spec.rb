@@ -8,12 +8,15 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
   let(:options) { {:resurrect_delay => 2, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
   let(:es_node_versions) { [ "0.0.0" ] }
+  let(:oss) { true }
+  let(:valid_license) { true }
 
   subject { described_class.new(logger, adapter, initial_urls, options) }
 
   let(:manticore_double) { double("manticore a") }
   before(:each) do
 
+    allow(::LogStash::Outputs::ElasticSearch).to receive(:oss?).and_return(oss)
     response_double = double("manticore response").as_null_object
     # Allow healtchecks
     allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
@@ -23,6 +26,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
 
     allow(subject).to receive(:get_es_version).with(any_args).and_return(*es_node_versions)
+    allow(subject).to receive(:oss?).and_return(oss)
+    allow(subject).to receive(:valid_es_license?).and_return(valid_license)
   end
 
   after do
@@ -232,6 +237,37 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       let(:es_node_versions) { [ "0.0.0", "6.0.0" ] }
       it "picks the largest major version" do
         expect(subject.maximum_seen_major_version).to eq(6)
+      end
+    end
+  end
+
+  describe "license checking" do
+    before(:each) do
+      allow(subject).to receive(:health_check_request)
+    end
+    context "when using default logstash distribution" do
+      let(:oss) { false }
+      context "if ES doesn't return a valid license" do
+        let(:valid_license) { false }
+        it "marks the url as active" do
+          subject.update_initial_urls
+          expect(subject.alive_urls_count).to eq(1)
+        end
+        it "logs a warning" do
+          expect(subject).to receive(:log_license_deprecation_warn).once
+          subject.update_initial_urls
+        end
+      end
+      context "if ES returns a valid license" do
+        let(:valid_license) { true }
+        it "marks the url as active" do
+          subject.update_initial_urls
+          expect(subject.alive_urls_count).to eq(1)
+        end
+        it "does not log a warning" do
+          expect(subject).to_not receive(:log_license_deprecation_warn)
+          subject.update_initial_urls
+        end
       end
     end
   end
