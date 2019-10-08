@@ -264,6 +264,10 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
           subject.update_initial_urls
           expect(subject.alive_urls_count).to eq(1)
         end
+        it "does not log a warning" do
+          expect(subject).to_not receive(:log_license_deprecation_warn)
+          subject.update_initial_urls
+        end
       end
     end
   end
