@@ -105,9 +105,10 @@ This feature requires an Elasticsearch instance of 6.6.0 or higher with at least
 
 Logstash can use {ref}/index-lifecycle-management.html[Index Lifecycle Management] to automate the management of indices over time.
 
-The use of Index Lifecycle Management is controlled by the `ilm_enabled` setting. By default, this is will
-automatically detect whether the Elasticsearch instance supports ILM, and will use it if it is available. `ilm_enabled`
-can also be set to `true` or `false` to override the automatic detection, or disable ILM.
+The use of Index Lifecycle Management is controlled by the `ilm_enabled`
+setting. By default, this setting detects whether the Elasticsearch instance
+supports ILM, and uses it if it is available. `ilm_enabled` can also be set to
+`true` or `false` to override the automatic detection, or disable ILM.
 
 This will overwrite the index settings and adjust the Logstash template to write the necessary settings for the template
 to support index lifecycle management, including the index policy and rollover alias to be used.
