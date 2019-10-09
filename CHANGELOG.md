@@ -1,3 +1,6 @@
+## 10.2.1
+  - Fixed wording and corrected option in documentation [#881](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/881) [#883](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/883)
+
 ## 10.2.0
   - Deprecation: Added warning about connecting a default Distribution of Logstash with an OSS version of ES [#875](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/875)
   - Added template for connecting to ES 8.x [#871](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/871)
