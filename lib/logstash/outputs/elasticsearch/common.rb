@@ -70,9 +70,12 @@ module LogStash; module Outputs; class ElasticSearch;
       params = {
         :_id => @document_id ? event.sprintf(@document_id) : nil,
         :_index => event.sprintf(@index),
-        :_type => get_event_type(event),
         routing_field_name => @routing ? event.sprintf(@routing) : nil
       }
+
+      if client.maximum_seen_major_version < 8
+        params[:_type] = get_event_type(event)
+      end
 
       if @pipeline
         params[:pipeline] = event.sprintf(@pipeline)
