@@ -36,7 +36,7 @@ module ESHelper
     end
   end
 
-  def action_for_version(action)
+  def self.action_for_version(action)
     action_params = action[1]
     if ESHelper.es_version_satisfies?(">=8")
       action_params.delete(:_type)
