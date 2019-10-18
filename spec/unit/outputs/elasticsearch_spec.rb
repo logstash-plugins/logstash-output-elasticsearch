@@ -82,7 +82,7 @@ describe LogStash::Outputs::ElasticSearch do
         it "should include '_type'" do
           action_tuple = subject.send(:event_action_tuple, LogStash::Event.new("type" => "foo"))
           action_params = action_tuple[1]
-          expect(action_params).to have_key(:type)
+          expect(action_params).to include(:_type => "_doc")
         end
       end
 
@@ -91,7 +91,7 @@ describe LogStash::Outputs::ElasticSearch do
         it "should not include '_type'" do
           action_tuple = subject.send(:event_action_tuple, LogStash::Event.new("type" => "foo"))
           action_params = action_tuple[1]
-          expect(action_params).not_to have_key(:type)
+          expect(action_params).not_to include(:_type)
         end
       end
     end
