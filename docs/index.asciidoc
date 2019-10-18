@@ -304,7 +304,9 @@ This sets the document type to write events to. Generally you should try to writ
 similar events to the same 'type'. String expansion `%{foo}` works here.
 If you don't set a value for this option:
 
-- for elasticsearch clusters 6.x and above: the value of 'doc' will be used;
+- for elasticsearch clusters 8.x: no value will be used;
+- for elasticsearch clusters 7.x: the value of '_doc' will be used;
+- for elasticsearch clusters 6.x: the value of 'doc' will be used;
 - for elasticsearch clusters 5.x and below: the event's 'type' field will be used, if the field is not present the value of 'doc' will be used.
 
 [id="plugins-{type}s-{plugin}-failure_type_logging_whitelist"]
