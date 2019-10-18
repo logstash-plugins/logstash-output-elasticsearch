@@ -27,11 +27,22 @@ module ESHelper
   end
 
   def doc_type
-    if ESHelper.es_version_satisfies?(">=7")
+    if ESHelper.es_version_satisfies?(">=8")
+      nil
+    elsif ESHelper.es_version_satisfies?(">=7")
       "_doc"
     else
       "doc"
     end
+  end
+
+  def action_for_version(action)
+    action_params = action[1]
+    if ESHelper.es_version_satisfies?(">=8")
+      action_params.delete(:_type)
+    end
+    action[1] = action_params
+    action
   end
 
   def todays_date
