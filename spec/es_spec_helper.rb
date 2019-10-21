@@ -93,7 +93,6 @@ module ESHelper
     end
   end
 
-
   def self.es_version_satisfies?(*requirement)
     es_version = RSpec.configuration.filter[:es_version] || ENV['ES_VERSION'] || ENV['ELASTIC_STACK_VERSION']
     if es_version.nil?

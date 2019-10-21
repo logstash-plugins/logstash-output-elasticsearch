@@ -84,6 +84,15 @@ describe LogStash::Outputs::ElasticSearch do
           action_params = action_tuple[1]
           expect(action_params).to include(:_type => "_doc")
         end
+
+        context "with 'document type set'" do
+          let(:options) { super.merge("document_type" => "bar")}
+          it "should get the event type from the 'document_type' setting" do
+            action_tuple = subject.send(:event_action_tuple, LogStash::Event.new("type" => "foo"))
+            action_params = action_tuple[1]
+            expect(action_params).to include(:_type => "bar")
+          end
+        end
       end
 
       context "for 8.x elasticsearch clusters" do
@@ -92,6 +101,15 @@ describe LogStash::Outputs::ElasticSearch do
           action_tuple = subject.send(:event_action_tuple, LogStash::Event.new("type" => "foo"))
           action_params = action_tuple[1]
           expect(action_params).not_to include(:_type)
+        end
+
+        context "with 'document type set'" do
+          let(:options) { super.merge("document_type" => "bar")}
+          it "should not include '_type'" do
+            action_tuple = subject.send(:event_action_tuple, LogStash::Event.new("type" => "foo"))
+            action_params = action_tuple[1]
+            expect(action_params).not_to include(:_type)
+          end
         end
       end
     end

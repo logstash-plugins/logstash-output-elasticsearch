@@ -50,9 +50,8 @@ if ESHelper.es_version_satisfies?(">= 5")
         response = http_client.get("#{index_url}/_search?q=*&size=1000")
         result = LogStash::Json.load(response.body)
         result["hits"]["hits"].each do |doc|
-          if ESHelper.es_version_satisfies?(">= 6")
-            expect(doc["_type"]).to eq(type)
-          end
+          expect(doc["_type"]).to eq(type) if ESHelper.es_version_satisfies?(">= 6", "< 8")
+          expect(doc).not_to include("_type") if ESHelper.es_version_satisfies?(">= 8")
           expect(doc["_index"]).to eq(index)
         end
       end
