@@ -12,7 +12,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
 
       def message
-        "Got response code '#{response_code}' contacting Elasticsearch at URL '#{@url}'"
+        "Got response code '#{response_code}' contacting Elasticsearch at URL '#{@url}'. Full response: '#{response_body}'"
       end
     end
     class HostUnreachableError < Error;
