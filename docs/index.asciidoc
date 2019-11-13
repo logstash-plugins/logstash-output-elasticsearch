@@ -64,6 +64,58 @@ LS will not force upgrade the template, if `logstash` template already exists. T
 `.raw` for sub-fields coming from 2.x. If you choose to use the new template, you will have to reindex your data after
 the new template is installed.
 
+==== Writing to different indices: best practices
+
+[NOTE]
+================================================================================
+You cannot use dynamic variable substitution when `ilm_enabled` is `true` and 
+when using `ilm_rollover_pattern`.
+
+================================================================================
+
+If you're sending events to the same Elasticsearch cluster but you're targeting different indices you can:
+
+ * use different Elasticsearch outputs, each one with a different value for the `index` parameter
+ * use one Elasticsearch output and use the dynamic variable substitution for the `index` parameter
+
+Each Elasticsearch output is a new client connected to the cluster:
+
+ * it has to initialize the client and connect to Elasticsearch (restart time is longer if you have more clients)
+ * it has an associated connection pool
+
+In order to minimize the number of open connections to Elasticsearch, maximize the bulk size and reduce the number of "small" bulk requests (which could easily fill up the queue), it is usually more efficient to have a single Elasticsearch output.
+
+Example:
+[source,ruby]
+    output {
+      elasticsearch {
+        index => "%{[some_field][sub_field]}-%{+YYYY.MM.dd}"
+      }
+    }
+
+**What to do in case there is no field in the event containing the destination index prefix?**
+
+You can use the `mutate` filter and conditionals to add a `[@metadata]` field (see https://www.elastic.co/guide/en/logstash/current/event-dependent-configuration.html#metadata) to set
+the destination index for each event. The `[@metadata]` fields will not be sent to Elasticsearch.
+
+Example:
+[source,ruby]
+    filter {
+      if [log_type] in [ "test", "staging" ] {
+        mutate { add_field => { "[@metadata][target_index]" => "test-%{+YYYY.MM}" } }
+      } else if [log_type] == "production" {
+        mutate { add_field => { "[@metadata][target_index]" => "prod-%{+YYYY.MM.dd}" } }
+      } else {
+        mutate { add_field => { "[@metadata][target_index]" => "unknown-%{+YYYY}" } }
+      }
+    }
+    output {
+      elasticsearch {
+        index => "%{[@metadata][target_index]}"
+      }
+    }
+
+
 ==== Retry Policy
 
 The retry policy has changed significantly in the 8.1.1 release.
@@ -417,6 +469,8 @@ The rollover alias is the alias where indices managed using Index Lifecycle Mana
 NOTE: If both `index` and `ilm_rollover_alias` are specified, `ilm_rollover_alias` takes precedence.
 
 NOTE: Updating the rollover alias will require the index template to be rewritten
+
+NOTE: `ilm_rollover_alias` does NOT support dynamic variable substitution as `index` does.
 
 [id="plugins-{type}s-{plugin}-index"]
 ===== `index` 
