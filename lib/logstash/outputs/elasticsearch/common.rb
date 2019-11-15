@@ -75,7 +75,6 @@ module LogStash; module Outputs; class ElasticSearch;
 
       params[:_type] = get_event_type(event) if client.maximum_seen_major_version < 8
 
-
       if @pipeline
         params[:pipeline] = event.sprintf(@pipeline)
       end
