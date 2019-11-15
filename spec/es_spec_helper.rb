@@ -27,11 +27,22 @@ module ESHelper
   end
 
   def doc_type
-    if ESHelper.es_version_satisfies?(">=7")
+    if ESHelper.es_version_satisfies?(">=8")
+      nil
+    elsif ESHelper.es_version_satisfies?(">=7")
       "_doc"
     else
       "doc"
     end
+  end
+
+  def self.action_for_version(action)
+    action_params = action[1]
+    if ESHelper.es_version_satisfies?(">=8")
+      action_params.delete(:_type)
+    end
+    action[1] = action_params
+    action
   end
 
   def todays_date
@@ -81,7 +92,6 @@ module ESHelper
       test_against.include?(expected)
     end
   end
-
 
   def self.es_version_satisfies?(*requirement)
     es_version = RSpec.configuration.filter[:es_version] || ENV['ES_VERSION'] || ENV['ELASTIC_STACK_VERSION']

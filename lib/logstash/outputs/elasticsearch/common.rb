@@ -70,9 +70,10 @@ module LogStash; module Outputs; class ElasticSearch;
       params = {
         :_id => @document_id ? event.sprintf(@document_id) : nil,
         :_index => event.sprintf(@index),
-        :_type => get_event_type(event),
         routing_field_name => @routing ? event.sprintf(@routing) : nil
       }
+
+      params[:_type] = get_event_type(event) if client.maximum_seen_major_version < 8
 
       if @pipeline
         params[:pipeline] = event.sprintf(@pipeline)
@@ -276,8 +277,10 @@ module LogStash; module Outputs; class ElasticSearch;
                  event.get("type") || DEFAULT_EVENT_TYPE_ES6
                elsif client.maximum_seen_major_version == 6
                  DEFAULT_EVENT_TYPE_ES6
-               else
+               elsif client.maximum_seen_major_version == 7
                  DEFAULT_EVENT_TYPE_ES7
+               else
+                 nil
                end
              end
 

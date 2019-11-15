@@ -76,6 +76,44 @@ describe LogStash::Outputs::ElasticSearch do
       end
     end
 
+    describe "building an event action tuple" do
+      context "for 7.x elasticsearch clusters" do
+        let(:maximum_seen_major_version) { 7 }
+        it "should include '_type'" do
+          action_tuple = subject.send(:event_action_tuple, LogStash::Event.new("type" => "foo"))
+          action_params = action_tuple[1]
+          expect(action_params).to include(:_type => "_doc")
+        end
+
+        context "with 'document type set'" do
+          let(:options) { super.merge("document_type" => "bar")}
+          it "should get the event type from the 'document_type' setting" do
+            action_tuple = subject.send(:event_action_tuple, LogStash::Event.new("type" => "foo"))
+            action_params = action_tuple[1]
+            expect(action_params).to include(:_type => "bar")
+          end
+        end
+      end
+
+      context "for 8.x elasticsearch clusters" do
+        let(:maximum_seen_major_version) { 8 }
+        it "should not include '_type'" do
+          action_tuple = subject.send(:event_action_tuple, LogStash::Event.new("type" => "foo"))
+          action_params = action_tuple[1]
+          expect(action_params).not_to include(:_type)
+        end
+
+        context "with 'document type set'" do
+          let(:options) { super.merge("document_type" => "bar")}
+          it "should not include '_type'" do
+            action_tuple = subject.send(:event_action_tuple, LogStash::Event.new("type" => "foo"))
+            action_params = action_tuple[1]
+            expect(action_params).not_to include(:_type)
+          end
+        end
+      end
+    end
+
     describe "with auth" do
       let(:user) { "myuser" }
       let(:password) { ::LogStash::Util::Password.new("mypassword") }
