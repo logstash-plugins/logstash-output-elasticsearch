@@ -1,3 +1,6 @@
+## 10.2.3
+  - [DOC]: Added clarification to docs for template installation [#867](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/867)
+
 ## 10.2.2
   - Fixed 8.x type removal compatibility issue [#892](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/892) 
 
