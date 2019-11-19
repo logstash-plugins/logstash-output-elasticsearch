@@ -1,5 +1,8 @@
+## 10.2.3
+  - Fixed 8.x type removal compatibility issue to continue for monitoring endpoint from LogStash's X-Pack[#899](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/899)
+
 ## 10.2.2
-  - Fixed 8.x type removal compatibility issue [#892](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/892) 
+  - Fixed 8.x type removal compatibility issue [#892](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/892)
 
 ## 10.2.1
   - Fixed wording and corrected option in documentation [#881](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/881) [#883](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/883)
@@ -168,14 +171,14 @@
 
 ## 6.2.3
 - Fixed a bug introduced in 6.2.2 where passwords needing escapes were not actually sent to ES properly
-  encoded. 
+  encoded.
 
 ## 6.2.2
 - Fixed a bug that forced users to URL encode the `password` option.
   If you are currently manually escaping your passwords upgrading to this version
   will break authentication. You should unescape your password if you have implemented
   this workaround as it will otherwise be doubly encoded.
-  URL escaping is STILL required for passwords inline with URLs in the `hosts` option. 
+  URL escaping is STILL required for passwords inline with URLs in the `hosts` option.
 
 ## 6.2.1
 - When an HTTP error is encountered, log the response body instead of the request.
@@ -189,7 +192,7 @@
 
 ## 6.0.0
 - Proxies requiring auth now always work when a URL is specified
-- It is no longer possible to specify a proxy as a hash due to security reasons 
+- It is no longer possible to specify a proxy as a hash due to security reasons
 - Fix URL normalization logic to correctly apply all settings to sniffed hosts
 - Proxies requiring auth now always work when a URL is specified
 - Switch internals to new LogStash::Util::SafeURI type for more defensive approach to logging credentials
