@@ -1,5 +1,5 @@
 ## 10.2.3
-  - Fixed 8.x type removal compatibility issue to continue for monitoring endpoint from LogStash's X-Pack[#899](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/899)
+  - After remove of type with [#892](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/892) LogStash X-Pack monitoring started to fail with NPE, (see LogStash #11312) the cause is the ES endpoint used to push monitoring data (\_monitoring/) that needed the type field. Extracted the logic to decide if the type must be removed or not in a separate method and extend the plugin in X-Pack redefining the same method.
 
 ## 10.2.2
   - Fixed 8.x type removal compatibility issue [#892](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/892)
