@@ -13,9 +13,10 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
       allow(secured).to receive(:value).and_return(password)
       secured
     end
+    let(:basic_auth_eager) { true }
     let(:options) { {"user" => user, "password" => password} }
     let(:logger) { mock("logger") }
-    let(:auth_setup) { klass.setup_basic_auth(double("logger"), {"user" => user, "password" => password_secured}) }
+    let(:auth_setup) { klass.setup_basic_auth(double("logger"), {"user" => user, "password" => password_secured, "basic_auth_eager" => basic_auth_eager}) }
 
     it "should return the user escaped" do
       expect(auth_setup[:user]).to eql(CGI.escape(user))
@@ -24,6 +25,48 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
     it "should return the password escaped" do
       expect(auth_setup[:password]).to eql(CGI.escape(password))
     end
+  end
+
+  describe "auth without eager basic auth" do
+    let(:hosts) { [ ::LogStash::Util::SafeURI.new("http://localhost:9200") ] }
+    let(:options) { {
+      "basic_auth_eager" => false,
+      "hosts" => hosts,
+    } }
+    let(:logger) { double("logger") }
+    before :each do
+      [:debug, :debug?, :info?, :info, :warn].each do |level|
+        allow(logger).to receive(level)
+      end
+    end
+
+    it "Attempt to connect without auth, fake the response requesting credentials, check that your code then retries with the auth" do
+    end
+
+    context "with cookies" do
+      let(:options) { super.merge("cookies" => true) }
+
+      it "should use cookies when configured" do
+        expect(described_class).to receive(:create_http_client) do |options|
+          expect(options[:client_settings][:cookies]).to eq(true)
+        end
+        described_class.build(logger, hosts, options)
+      end
+
+      it "Attempt to connect with basic auth, fake the response setting a cookie, check that your code saves the cookie" do
+      end
+
+      context "already saved" do
+        it "Attempt to connect when the cookie is saved in memory, check that the request will actually send the cookie with the request" do
+        end
+      end
+
+      context "expired" do
+        it "Attempt to connect when an expired cookie is saved in memory, fake the response requesting credentials, check that your code retries with the auth" do
+        end
+      end
+    end
+
   end
 
   describe "customizing action paths" do

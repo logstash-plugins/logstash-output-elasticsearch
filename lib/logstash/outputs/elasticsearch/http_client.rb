@@ -261,6 +261,7 @@ module LogStash; module Outputs; class ElasticSearch;
       }
 
       adapter_options[:proxy] = client_settings[:proxy] if client_settings[:proxy]
+      adapter_options[:cookies] = client_settings[:cookies] if client_settings[:cookies]
 
       adapter_options[:check_connection_timeout] = client_settings[:check_connection_timeout] if client_settings[:check_connection_timeout]
 

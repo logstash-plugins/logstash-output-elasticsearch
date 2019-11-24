@@ -4,6 +4,7 @@ module LogStash; module Outputs; class ElasticSearch;
   module HttpClientBuilder
     def self.build(logger, hosts, params)
       client_settings = {
+        :cookies => params["cookies"],
         :pool_max => params["pool_max"],
         :pool_max_per_route => params["pool_max_per_route"],
         :check_connection_timeout => params["validate_after_inactivity"],
@@ -146,6 +147,7 @@ module LogStash; module Outputs; class ElasticSearch;
       return {} unless user && password && password.value
 
       {
+        :basic_auth_eager => params["basic_auth_eager"],
         :user => CGI.escape(user),
         :password => CGI.escape(password.value)
       }

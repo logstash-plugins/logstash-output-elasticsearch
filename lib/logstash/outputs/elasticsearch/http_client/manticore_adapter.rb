@@ -14,8 +14,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
       # We manage our own retries directly, so let's disable them here
       options[:automatic_retries] = 0
-      # We definitely don't need cookies
-      options[:cookies] = false
 
       @client_params = {:headers => DEFAULT_HEADERS.merge(options[:headers] || {})}
       
@@ -60,7 +58,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           # We have to unescape the password here since manticore won't do it
           # for us unless its part of the URL
           :password => CGI.unescape(url.password), 
-          :eager => true 
+          :eager => params["basic_auth_eager"]
         }
       end
 
