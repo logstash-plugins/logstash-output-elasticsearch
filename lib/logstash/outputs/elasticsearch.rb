@@ -17,7 +17,7 @@ require "forwardable"
 # called `http.content_type.required`. If this option is set to `true`, and you
 # are using Logstash 2.4 through 5.2, you need to update the Elasticsearch output
 # plugin to version 6.2.5 or higher.
-# 
+#
 # ================================================================================
 #
 # This plugin is the recommended method of storing logs in Elasticsearch.
@@ -26,8 +26,8 @@ require "forwardable"
 # This output only speaks the HTTP protocol. HTTP is the preferred protocol for interacting with Elasticsearch as of Logstash 2.0.
 # We strongly encourage the use of HTTP over the node protocol for a number of reasons. HTTP is only marginally slower,
 # yet far easier to administer and work with. When using the HTTP protocol one may upgrade Elasticsearch versions without having
-# to upgrade Logstash in lock-step. 
-# 
+# to upgrade Logstash in lock-step.
+#
 # You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
 #
 # ==== Template management for Elasticsearch 5.x
@@ -121,6 +121,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :user, :validate => :string
   # Password to authenticate to a secure Elasticsearch cluster
   config :password, :validate => :password
+
+  # Cloud authentication string ("<username>:<password>" format) is an alternative for the `user`/`password` configuration.
+  #
+  # For mode details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_auth[cloud documentation]
+  config :cloud_auth, :validate => :string
 
   # HTTP Path at which the Elasticsearch server lives. Use this if you must run Elasticsearch behind a proxy that remaps
   # the root path for the Elasticsearch HTTP API lives.
