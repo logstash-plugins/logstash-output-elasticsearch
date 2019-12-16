@@ -108,10 +108,33 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def setup_hosts
+      if setup_hosts_from_cloud_id
+        @logger.info("Using default cloud.id/cloud.auth from command line.")
+        return
+      end
+
       @hosts = Array(@hosts)
       if @hosts.empty?
         @logger.info("No 'host' set in elasticsearch output. Defaulting to localhost")
         @hosts.replace(["localhost"])
+      end
+    end
+
+    def setup_hosts_from_cloud_id
+      # NOTE: would be nice if pipeline allowed us a clean way to detect a config default :
+      if @hosts.is_a?(Array) && @hosts.size == 1 && @hosts.first.equal?(CommonConfigs::DEFAULT_HOST)
+        if cloud_id = LogStash::SETTINGS.get_value('cloud.id')
+          # LogStash::Util::CloudSettingId already does append ':{port}' to host :
+          cloud_uri = "#{cloud_id.elasticsearch_scheme}://#{cloud_id.elasticsearch_host}"
+          cloud_uri = LogStash::Util::SafeURI.new(cloud_uri)
+
+          if cloud_auth = LogStash::SETTINGS.get_value('cloud.auth')
+            cloud_uri.user = cloud_auth.username
+            cloud_uri.password = cloud_auth.password.value
+          end
+
+          return @hosts = [ cloud_uri ]
+        end
       end
     end
 

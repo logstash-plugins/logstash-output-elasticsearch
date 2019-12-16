@@ -7,6 +7,11 @@ module LogStash; module Outputs; class ElasticSearch
     DEFAULT_POLICY = "logstash-policy"
     DEFAULT_ROLLOVER_ALIAS = 'logstash'
 
+    # TODO LS will replace the provided config :default
+    # BONUS points for .freeze then it just dies with IllegalStateException
+    # DEFAULT_HOSTS = [ ::LogStash::Util::SafeURI.new("//127.0.0.1") ]
+    DEFAULT_HOST = ::LogStash::Util::SafeURI.new("//127.0.0.1")
+
     def self.included(mod)
       # The index to write events to. This can be dynamic using the `%{foo}` syntax.
       # The default value will partition your indices by day so you can more easily
@@ -95,7 +100,7 @@ module LogStash; module Outputs; class ElasticSearch
       # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes in Elasticsearch.
       # 
       # Any special characters present in the URLs here MUST be URL escaped! This means `#` should be put in as `%23` for instance.
-      mod.config :hosts, :validate => :uri, :default => [::LogStash::Util::SafeURI.new("//127.0.0.1")], :list => true
+      mod.config :hosts, :validate => :uri, :default => [ DEFAULT_HOST ], :list => true
 
       # Set upsert content for update mode.s
       # Create a new document with this parameter as json string if `document_id` doesn't exists
