@@ -64,9 +64,12 @@ module LogStash; module Outputs; class ElasticSearch;
       !!maximum_seen_major_version
     end
 
+    def use_event_type?(client)
+      client.maximum_seen_major_version < 8
+    end
+
     # Convert the event into a 3-tuple of action, params, and event
     def event_action_tuple(event)
-
       action = event.sprintf(@action)
 
       params = {
@@ -75,7 +78,7 @@ module LogStash; module Outputs; class ElasticSearch;
         routing_field_name => @routing ? event.sprintf(@routing) : nil
       }
 
-      params[:_type] = get_event_type(event) if client.maximum_seen_major_version < 8
+      params[:_type] = get_event_type(event) if use_event_type?(client)
 
       if @pipeline
         params[:pipeline] = event.sprintf(@pipeline)
