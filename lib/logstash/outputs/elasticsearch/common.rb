@@ -168,6 +168,7 @@ module LogStash; module Outputs; class ElasticSearch;
             'please upgrade your installation (or set user/password instead).'
       end
 
+      cloud_auth = cloud_auth.value if cloud_auth.is_a?(LogStash::Util::Password)
       begin
         cloud_auth = LogStash::Util::CloudSettingAuth.new(cloud_auth)
       rescue ArgumentError => e

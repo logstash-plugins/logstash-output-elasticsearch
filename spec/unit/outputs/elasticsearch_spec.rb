@@ -552,7 +552,7 @@ describe LogStash::Outputs::ElasticSearch do
   describe "cloud.auth" do
     let(:do_register) { false }
 
-    let(:options) { { 'cloud_auth' => 'elastic:my-passwd-00' } }
+    let(:options) { { 'cloud_auth' => LogStash::Util::Password.new('elastic:my-passwd-00') } }
 
     before(:each) do
       stub_manticore_client!
