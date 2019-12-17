@@ -146,7 +146,8 @@ module LogStash; module Outputs; class ElasticSearch;
       begin # might not be available on older LS
         require 'logstash/util/cloud_setting_id'
       rescue LoadError
-        raise LogStash::ConfigurationError, 'The cloud.id setting is not supported by LogStash, please set hosts instead.'
+        raise LogStash::ConfigurationError, 'The cloud_id setting is not supported by your version of Logstash, ' +
+            'please upgrade your installation (or set hosts instead).'
       end
 
       begin
@@ -163,7 +164,8 @@ module LogStash; module Outputs; class ElasticSearch;
       begin # might not be available on older LS
         require 'logstash/util/cloud_setting_auth'
       rescue LoadError
-        raise LogStash::ConfigurationError, 'The cloud.auth setting is not supported by LogStash, please set user/password instead.'
+        raise LogStash::ConfigurationError, 'The cloud_auth setting is not supported by your version of Logstash, ' +
+            'please upgrade your installation (or set user/password instead).'
       end
 
       begin

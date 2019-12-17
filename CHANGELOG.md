@@ -1,3 +1,6 @@
+## 10.3.0
+  - Feat: Added support for cloud_id and cloud_auth [#906](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/906)
+
 ## 10.2.2
   - Fixed 8.x type removal compatibility issue [#892](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/892) 
 
