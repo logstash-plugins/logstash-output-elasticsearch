@@ -230,6 +230,8 @@ This plugin supports the following configuration options plus the <<plugins-{typ
 | <<plugins-{type}s-{plugin}-action>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-bulk_path>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-cacert>> |a valid filesystem path|No
+| <<plugins-{type}s-{plugin}-cloud_auth>> |<<password,password>>|No
+| <<plugins-{type}s-{plugin}-cloud_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-custom_headers>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-doc_as_upsert>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-document_id>> |<<string,string>>|No
@@ -325,6 +327,26 @@ this defaults to a concatenation of the path parameter and "_bulk"
 
 The .cer or .pem file to validate the server's certificate
 
+[id="plugins-{type}s-{plugin}-cloud_auth"]
+===== `cloud_auth`
+
+  * Value type is <<password,password>>
+  * There is no default value for this setting.
+
+Cloud authentication string ("<username>:<password>" format) is an alternative for the `user`/`password` pair.
+
+For mode details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_auth[cloud documentation]
+
+[id="plugins-{type}s-{plugin}-cloud_id"]
+===== `cloud_id`
+
+  * Value type is <<string,string>>
+  * There is no default value for this setting.
+
+Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
+
+For mode details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_id[cloud documentation]
+
 [id="plugins-{type}s-{plugin}-doc_as_upsert"]
 ===== `doc_as_upsert` 
 
@@ -340,8 +362,7 @@ Create a new document with source if `document_id` doesn't exist in Elasticsearc
   * Value type is <<string,string>>
   * There is no default value for this setting.
 
-The document ID for the index. Useful for overwriting existing entries in
-Elasticsearch with the same ID.
+The document ID for the index. Useful for overwriting existing entries in Elasticsearch with the same ID.
 
 [id="plugins-{type}s-{plugin}-document_type"]
 ===== `document_type` 
