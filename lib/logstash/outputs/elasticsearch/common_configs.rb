@@ -7,6 +7,8 @@ module LogStash; module Outputs; class ElasticSearch
     DEFAULT_POLICY = "logstash-policy"
     DEFAULT_ROLLOVER_ALIAS = 'logstash'
 
+    DEFAULT_HOST = ::LogStash::Util::SafeURI.new("//127.0.0.1")
+
     def self.included(mod)
       # The index to write events to. This can be dynamic using the `%{foo}` syntax.
       # The default value will partition your indices by day so you can more easily
@@ -93,9 +95,14 @@ module LogStash; module Outputs; class ElasticSearch
       #     `["https://127.0.0.1:9200/mypath"]` (If using a proxy on a subpath)
       # It is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `hosts` list
       # to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes in Elasticsearch.
-      # 
+      #
       # Any special characters present in the URLs here MUST be URL escaped! This means `#` should be put in as `%23` for instance.
-      mod.config :hosts, :validate => :uri, :default => [::LogStash::Util::SafeURI.new("//127.0.0.1")], :list => true
+      mod.config :hosts, :validate => :uri, :default => [ DEFAULT_HOST ], :list => true
+
+      # Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
+      #
+      # For mode details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_id[cloud documentation]
+      mod.config :cloud_id, :validate => :string
 
       # Set upsert content for update mode.s
       # Create a new document with this parameter as json string if `document_id` doesn't exists

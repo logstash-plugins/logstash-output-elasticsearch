@@ -1,3 +1,6 @@
+## 10.3.0
+  - Feat: Added support for cloud_id and cloud_auth [#906](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/906)
+
 ## 10.2.3
   - Opened type removal logic for extension. This allows X-Pack Elasticsearch output to continue using types for special case `/_monitoring` bulk endpoint, enabling a fix for LogStash #11312. [#900](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/900)
 

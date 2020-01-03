@@ -337,18 +337,9 @@ describe LogStash::Outputs::ElasticSearch do
 
   describe "SSL end to end" do
     let(:do_register) { false } # skip the register in the global before block, as is called here.
-    let(:manticore_double) do
-      double("manticoreX#{self.inspect}")
-    end
 
     before(:each) do
-      response_double = double("manticore response").as_null_object
-      # Allow healtchecks
-      allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
-      allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
-      allow(manticore_double).to receive(:close)
-
-      allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
+      stub_manticore_client!
       subject.register
     end
 
@@ -522,6 +513,75 @@ describe LogStash::Outputs::ElasticSearch do
     end
   end
 
+  describe "cloud.id" do
+    let(:do_register) { false }
+
+    let(:valid_cloud_id) do
+      'sample:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlvJGFjMzFlYmI5MDI0MTc3MzE1NzA0M2MzNGZkMjZmZDQ2OjkyNDMkYTRjMDYyMzBlNDhjOGZjZTdiZTg4YTA3NGEzYmIzZTA6OTI0NA=='
+    end
+
+    let(:options) { { 'cloud_id' => valid_cloud_id } }
+
+    before(:each) do
+      stub_manticore_client!
+    end
+
+    it "should set host(s)" do
+      subject.register
+      es_url = subject.client.pool.urls.first
+      expect( es_url.to_s ).to eql('https://ac31ebb90241773157043c34fd26fd46.us-central1.gcp.cloud.es.io:9243/')
+    end
+
+    context 'invalid' do
+      let(:options) { { 'cloud_id' => 'invalid:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlv' } }
+
+      it "should fail" do
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /cloud_id.*? is invalid/
+      end
+    end
+
+    context 'hosts also set' do
+      let(:options) { { 'cloud_id' => valid_cloud_id, 'hosts' => [ 'localhost' ] } }
+
+      it "should fail" do
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /cloud_id and hosts/
+      end
+    end
+  end
+
+  describe "cloud.auth" do
+    let(:do_register) { false }
+
+    let(:options) { { 'cloud_auth' => LogStash::Util::Password.new('elastic:my-passwd-00') } }
+
+    before(:each) do
+      stub_manticore_client!
+    end
+
+    it "should set host(s)" do
+      subject.register
+      es_url = subject.client.pool.urls.first
+      expect( es_url.user ).to eql('elastic')
+      expect( es_url.password ).to eql('my-passwd-00')
+    end
+
+    context 'invalid' do
+      let(:options) { { 'cloud_auth' => 'invalid-format' } }
+
+      it "should fail" do
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /cloud_auth.*? format/
+      end
+    end
+
+    context 'user also set' do
+      let(:options) { { 'cloud_auth' => 'elastic:my-passwd-00', 'user' => 'another' } }
+
+      it "should fail" do
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /cloud_auth and user/
+      end
+    end
+  end
+
   context 'handling elasticsearch document-level status meant for the DLQ' do
     let(:options) { { "manage_template" => false } }
 
@@ -598,4 +658,18 @@ describe LogStash::Outputs::ElasticSearch do
       end
     end
   end
+
+  @private
+
+  def stub_manticore_client!(manticore_double = nil)
+    manticore_double ||= double("manticore #{self.inspect}")
+    response_double = double("manticore response").as_null_object
+    # Allow healtchecks
+    allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
+    allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
+    allow(manticore_double).to receive(:close)
+
+    allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
+  end
+
 end

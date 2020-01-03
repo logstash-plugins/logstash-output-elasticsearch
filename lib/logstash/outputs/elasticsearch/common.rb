@@ -21,6 +21,8 @@ module LogStash; module Outputs; class ElasticSearch;
       # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
       @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
 
+      fill_hosts_from_cloud_id
+      fill_user_password_from_cloud_auth
       setup_hosts # properly sets @hosts
       build_client
       setup_after_successful_connection
@@ -117,6 +119,67 @@ module LogStash; module Outputs; class ElasticSearch;
         @hosts.replace(["localhost"])
       end
     end
+
+    def hosts_default?(hosts)
+      # NOTE: would be nice if pipeline allowed us a clean way to detect a config default :
+      hosts.is_a?(Array) && hosts.size == 1 && hosts.first.equal?(CommonConfigs::DEFAULT_HOST)
+    end
+    private :hosts_default?
+
+    def fill_hosts_from_cloud_id
+      return unless @cloud_id
+
+      if @hosts && !hosts_default?(@hosts)
+        raise LogStash::ConfigurationError, 'Both cloud_id and hosts specified, please only use one of those.'
+      end
+      @hosts = parse_host_uri_from_cloud_id(@cloud_id)
+    end
+
+    def fill_user_password_from_cloud_auth
+      return unless @cloud_auth
+
+      if @user || @password
+        raise LogStash::ConfigurationError, 'Both cloud_auth and user/password specified, please only use one.'
+      end
+      @user, @password = parse_user_password_from_cloud_auth(@cloud_auth)
+      params['user'], params['password'] = @user, @password
+    end
+
+    def parse_host_uri_from_cloud_id(cloud_id)
+      begin # might not be available on older LS
+        require 'logstash/util/cloud_setting_id'
+      rescue LoadError
+        raise LogStash::ConfigurationError, 'The cloud_id setting is not supported by your version of Logstash, ' +
+            'please upgrade your installation (or set hosts instead).'
+      end
+
+      begin
+        cloud_id = LogStash::Util::CloudSettingId.new(cloud_id) # already does append ':{port}' to host
+      rescue ArgumentError => e
+        raise LogStash::ConfigurationError, e.message.to_s.sub(/Cloud Id/i, 'cloud_id')
+      end
+      cloud_uri = "#{cloud_id.elasticsearch_scheme}://#{cloud_id.elasticsearch_host}"
+      LogStash::Util::SafeURI.new(cloud_uri)
+    end
+    private :parse_host_uri_from_cloud_id
+
+    def parse_user_password_from_cloud_auth(cloud_auth)
+      begin # might not be available on older LS
+        require 'logstash/util/cloud_setting_auth'
+      rescue LoadError
+        raise LogStash::ConfigurationError, 'The cloud_auth setting is not supported by your version of Logstash, ' +
+            'please upgrade your installation (or set user/password instead).'
+      end
+
+      cloud_auth = cloud_auth.value if cloud_auth.is_a?(LogStash::Util::Password)
+      begin
+        cloud_auth = LogStash::Util::CloudSettingAuth.new(cloud_auth)
+      rescue ArgumentError => e
+        raise LogStash::ConfigurationError, e.message.to_s.sub(/Cloud Auth/i, 'cloud_auth')
+      end
+      [ cloud_auth.username, cloud_auth.password ]
+    end
+    private :parse_user_password_from_cloud_auth
 
     def maximum_seen_major_version
       client.maximum_seen_major_version
