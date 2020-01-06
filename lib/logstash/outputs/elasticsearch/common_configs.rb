@@ -136,6 +136,9 @@ module LogStash; module Outputs; class ElasticSearch
       # Set max interval in seconds between bulk retries.
       mod.config :retry_max_interval, :validate => :number, :default => 64
 
+      # The number of times we should retry on failed individual bulk actions (0 = infinity)
+      mod.config :retry_max_failures, :validate => :number, :default => 0
+
       # The number of times Elasticsearch should internally retry an update/upserted document
       # See the https://www.elastic.co/guide/en/elasticsearch/guide/current/partial-updates.html[partial updates]
       # for more info
