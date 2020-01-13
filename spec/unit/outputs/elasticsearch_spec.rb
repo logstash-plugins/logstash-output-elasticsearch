@@ -547,7 +547,7 @@ describe LogStash::Outputs::ElasticSearch do
         expect { subject.register }.to raise_error LogStash::ConfigurationError, /cloud_id and hosts/
       end
     end
-  end
+  end if LOGSTASH_VERSION > '6.0'
 
   describe "cloud.auth" do
     let(:do_register) { false }
@@ -580,7 +580,7 @@ describe LogStash::Outputs::ElasticSearch do
         expect { subject.register }.to raise_error LogStash::ConfigurationError, /cloud_auth and user/
       end
     end
-  end
+  end if LOGSTASH_VERSION > '6.0'
 
   context 'handling elasticsearch document-level status meant for the DLQ' do
     let(:options) { { "manage_template" => false } }
