@@ -188,7 +188,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Set the address of a forward HTTP proxy.
   # This used to accept hashes as arguments but now only accepts
   # arguments of the URI type to prevent leaking credentials.
-  config :proxy, :validate => :uri
+  config :proxy, :validate => :uri # but empty string is allowed
 
   # Set the timeout, in seconds, for network operations and requests sent Elasticsearch. If
   # a timeout occurs, the request will be retried.
@@ -238,8 +238,27 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Custom Headers to send on each request to elasticsearch nodes
   config :custom_headers, :validate => :hash, :default => {}
 
+  # @override to handle proxy => '' as if none was set
+  def config_init(params)
+    proxy = params['proxy']
+    if proxy.is_a?(String)
+      # environment variables references aren't yet resolved
+      proxy = deep_replace(proxy)
+      if proxy.eql?('')
+        params.delete('proxy')
+        @proxy = ''
+      else
+        params['proxy'] = proxy # do not do resolving again
+      end
+    end
+    super(params)
+  end
+
   def build_client
     params["metric"] = metric
+    if @proxy.eql?('')
+      @logger.warn "Supplied proxy setting (proxy => '') has no effect"
+    end
     @client ||= ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
   end
 

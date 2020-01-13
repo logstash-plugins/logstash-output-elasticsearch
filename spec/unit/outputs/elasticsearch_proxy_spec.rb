@@ -69,4 +69,36 @@ describe "Proxy option" do
       end
     end
   end
+
+  context "when specified as ''" do
+    let(:settings) { super.merge("proxy" => "${A_MISSING_ENV_VARIABLE:}")}
+
+    it "should not send the proxy option to manticore" do
+      expect { subject.register }.not_to raise_error
+
+      expect(::Manticore::Client).to have_received(:new) do |options|
+        expect(options).not_to include(:proxy)
+      end
+
+      subject.close
+    end
+  end
+
+  context "when specified as invalid uri" do
+    let(:settings) { super.merge("proxy" => ":")}
+
+    it "should fail" do
+      # SafeURI isn't doing the proper exception wrapping for us, we can not simply :
+      # expect { subject.register }.to raise_error(ArgumentError, /URI is not valid/i)
+      begin
+        subject.register
+      rescue ArgumentError => e
+        expect(e.message).to match /URI is not valid/i
+      rescue java.net.URISyntaxException => e
+        expect(e.message).to match /scheme name/i
+      else
+        fail 'exception not raised'
+      end
+    end
+  end
 end
