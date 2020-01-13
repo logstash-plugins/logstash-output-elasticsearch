@@ -101,7 +101,7 @@ module LogStash; module Outputs; class ElasticSearch
 
       # Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
       #
-      # For mode details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_id[cloud documentation]
+      # For more details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_id[cloud documentation]
       mod.config :cloud_id, :validate => :string
 
       # Set upsert content for update mode.s
