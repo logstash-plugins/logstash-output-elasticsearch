@@ -244,7 +244,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     if proxy.is_a?(String)
       # environment variables references aren't yet resolved
       proxy = deep_replace(proxy)
-      if proxy.eql?('')
+      if proxy.empty?
         params.delete('proxy')
         @proxy = ''
       else
