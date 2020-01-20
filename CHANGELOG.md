@@ -1,3 +1,6 @@
+## 10.3.1
+ - Fix: handle proxy => '' as if none was set [#912](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/912)
+
 ## 10.3.0
   - Feat: Added support for cloud_id and cloud_auth [#906](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/906)
 
