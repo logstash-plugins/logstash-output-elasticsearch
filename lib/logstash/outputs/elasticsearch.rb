@@ -263,7 +263,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   def close
-    @stopping.make_true
+    @stopping.make_true if @stopping
     stop_template_installer
     @client.close if @client
   end
