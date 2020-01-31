@@ -124,7 +124,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Cloud authentication string ("<username>:<password>" format) is an alternative for the `user`/`password` configuration.
   #
-  # For mode details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_auth[cloud documentation]
+  # For more details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_auth[cloud documentation]
   config :cloud_auth, :validate => :password
 
   # HTTP Path at which the Elasticsearch server lives. Use this if you must run Elasticsearch behind a proxy that remaps
