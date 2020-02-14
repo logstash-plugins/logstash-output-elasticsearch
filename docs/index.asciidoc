@@ -261,7 +261,7 @@ This plugin supports the following configuration options plus the <<plugins-{typ
 | <<plugins-{type}s-{plugin}-routing>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-script>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-script_lang>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-script_type>> |<<string,string>>, one of `["inline", "indexed", "file"]`|No
+| <<plugins-{type}s-{plugin}-script_type>> |<<string,string>>, one of `["inline", "indexed", "file", "source"]`|No
 | <<plugins-{type}s-{plugin}-script_var_name>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-scripted_upsert>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-sniffing>> |<<boolean,boolean>>|No
@@ -679,11 +679,12 @@ When using indexed (stored) scripts on Elasticsearch 6 and higher, you must set 
 [id="plugins-{type}s-{plugin}-script_type"]
 ===== `script_type` 
 
-  * Value can be any of: `inline`, `indexed`, `file`
+  * Value can be any of: `inline`, `source`, `indexed`, `file`
   * Default value is `["inline"]`
 
 Define the type of script referenced by "script" variable
- inline : "script" contains inline script
+ inline : "script" contains inline script (ES 5.x)
+ source : "script" contains inline script (ES +6.0)
  indexed : "script" contains the name of script directly indexed in elasticsearch
  file    : "script" contains the name of script stored in elasticsearch's config directory
 

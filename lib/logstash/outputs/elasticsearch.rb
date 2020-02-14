@@ -9,6 +9,7 @@ require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
 require "uri" # for escaping user input
 require "forwardable"
+require 'logstash/plugin_mixins/deprecation_logger_support'
 
 # .Compatibility Note
 # [NOTE]
