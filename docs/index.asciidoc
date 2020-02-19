@@ -69,7 +69,7 @@ the new template is installed.
 [NOTE]
 ================================================================================
 You cannot use dynamic variable substitution when `ilm_enabled` is `true` and 
-when using `ilm_rollover_pattern`.
+when using `ilm_rollover_alias`.
 
 ================================================================================
 
@@ -92,7 +92,7 @@ Example:
         index => "%{[some_field][sub_field]}-%{+YYYY.MM.dd}"
       }
     }
-
+ 
 **What to do in case there is no field in the event containing the destination index prefix?**
 
 You can use the `mutate` filter and conditionals to add a `[@metadata]` field (see https://www.elastic.co/guide/en/logstash/current/event-dependent-configuration.html#metadata) to set
