@@ -142,7 +142,7 @@ describe "failures in bulk class expected behavior", :integration => true do
     subject.close
 
     @es.indices.refresh
-    r = @es.search
+    r = @es.search(index: 'logstash-*')
     expect(r).to have_hits(0)
   end
 
@@ -153,7 +153,7 @@ describe "failures in bulk class expected behavior", :integration => true do
     subject.multi_receive([event1])
     subject.close
     @es.indices.refresh
-    r = @es.search
+    r = @es.search(index: 'logstash-*')
     expect(r).to have_hits(1)
   end
 
@@ -163,7 +163,7 @@ describe "failures in bulk class expected behavior", :integration => true do
     subject.close
 
     @es.indices.refresh
-    r = @es.search
+    r = @es.search(index: 'logstash-*')
     expect(r).to have_hits(1)
   end
 end

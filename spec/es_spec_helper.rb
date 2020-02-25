@@ -139,7 +139,7 @@ module ESHelper
   end
 
   def clean_ilm(client)
-    client.get_ilm_policy.each_key {|key| client.delete_ilm_policy(name: key)}
+    client.get_ilm_policy.each_key { |key| client.delete_ilm_policy(name: key)  unless key =~ /history-ilm-policy/ }
   end
 
   def supports_ilm?(client)
