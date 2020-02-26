@@ -37,10 +37,10 @@ shared_examples_for 'an ILM enabled Logstash' do
 
       # Wait or fail until everything's indexed.
       Stud::try(20.times) do
-        r = @es.search
+        r = @es.search(index: "#{expected_index}-*")
         expect(r).to have_hits(9)
       end
-      indexes_written = @es.search['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
+      indexes_written = @es.search(index: "#{expected_index}-*")['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
         index_written = x['_index']
         res[index_written] += 1
       end
@@ -78,10 +78,10 @@ shared_examples_for 'an ILM enabled Logstash' do
 
       # Wait or fail until everything's indexed.
       Stud::try(20.times) do
-        r = @es.search
+        r = @es.search(index: "#{expected_index}-*")
         expect(r).to have_hits(6)
       end
-      indexes_written = @es.search['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
+      indexes_written = @es.search(index: "#{expected_index}-*")['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
         index_written = x['_index']
         res[index_written] += 1
       end
@@ -93,10 +93,10 @@ end
 
 shared_examples_for 'an ILM disabled Logstash' do
   it 'should not create a rollover alias' do
-    expect(@es.get_alias).to be_empty
+    expect(@es.indices.exists_alias(index: "logstash")).to be_falsey
     subject.register
     sleep(1)
-    expect(@es.get_alias).to be_empty
+    expect(@es.indices.exists_alias(index: "logstash")).to be_falsey
   end
 
   it 'should not install the default policy' do
@@ -139,10 +139,10 @@ shared_examples_for 'an ILM disabled Logstash' do
 
       # Wait or fail until everything's indexed.
       Stud::try(20.times) do
-        r = @es.search
+        r = @es.search(index: 'logstash-*')
         expect(r).to have_hits(6)
       end
-      indexes_written = @es.search['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
+      indexes_written = @es.search(index: 'logstash-*')['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
         index_written = x['_index']
         res[index_written] += 1
       end
@@ -328,10 +328,10 @@ if ESHelper.es_version_satisfies?(">= 6.6")
 
           # Wait or fail until everything's indexed.
           Stud::try(20.times) do
-            r = @es.search
+            r = @es.search(index: "logstash-*")
             expect(r).to have_hits(6)
           end
-          indexes_written = @es.search['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
+          indexes_written = @es.search(index: "logstash-*")['hits']['hits'].each_with_object(Hash.new(0)) do |x, res|
             index_written = x['_index']
             res[index_written] += 1
           end

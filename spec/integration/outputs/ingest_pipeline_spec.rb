@@ -53,7 +53,7 @@ if ESHelper.es_version_satisfies?(">= 5")
 
       #Wait or fail until everything's indexed.
       Stud::try(20.times) do
-        r = @es.search
+        r = @es.search(index: 'logstash-*')
         expect(r).to have_hits(1)
       end
     end

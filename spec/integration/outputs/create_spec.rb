@@ -34,7 +34,7 @@ describe "client create actions", :integration => true do
       @es.indices.refresh
       # Wait or fail until everything's indexed.
       Stud::try(3.times) do
-        r = @es.search
+        r = @es.search(index: 'logstash-*')
         expect(r).to have_hits(1)
       end
     end

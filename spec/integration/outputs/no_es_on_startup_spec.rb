@@ -38,7 +38,7 @@ describe "elasticsearch is down on startup", :integration => true do
     allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_return(ESHelper.es_version)
     subject.multi_receive([event1, event2])
     @es.indices.refresh
-    r = @es.search
+    r = @es.search(index: 'logstash-*')
     expect(r).to have_hits(2)
   end
 
@@ -51,7 +51,7 @@ describe "elasticsearch is down on startup", :integration => true do
     end
     subject.multi_receive([event1, event2])
     @es.indices.refresh
-    r = @es.search
+    r = @es.search(index: 'logstash-*')
     expect(r).to have_hits(2)
   end
 
