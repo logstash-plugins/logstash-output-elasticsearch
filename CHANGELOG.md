@@ -1,6 +1,7 @@
 ## 10.3.2
  - [DOC] Replaced setting name with correct value [#919](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/919)
  - Fix integration tests for Elasticsearch 7.6+ [#922](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/922)
+ - Fix integration tests for Elasticsearch API `7.5.0` [#923](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/923)
 
 ## 10.3.1
  - Fix: handle proxy => '' as if none was set [#912](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/912)
