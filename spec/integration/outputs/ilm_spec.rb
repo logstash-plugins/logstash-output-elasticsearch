@@ -4,7 +4,7 @@ shared_examples_for 'an ILM enabled Logstash' do
 
   context 'with a policy with a maximum number of documents' do
     let (:policy) { small_max_doc_policy }
-    let (:ilm_policy_name) { "custom-policy"}
+    let (:ilm_policy_name) { "logstash-policy-custom"}
     let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
 
     it 'should rollover when the policy max docs is reached' do
@@ -53,7 +53,7 @@ shared_examples_for 'an ILM enabled Logstash' do
 
   context 'with a policy where the maximum number of documents is not reached' do
     let (:policy) { large_max_doc_policy }
-    let (:ilm_policy_name) { "custom-policy"}
+    let (:ilm_policy_name) { "logstash-policy-custom-policy"}
     let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
 
     it 'should ingest into a single index when max docs is not reached' do
@@ -93,10 +93,10 @@ end
 
 shared_examples_for 'an ILM disabled Logstash' do
   it 'should not create a rollover alias' do
-    expect(@es.indices.exists_alias(index: "logstash")).to be_falsey
+    expect(@es.indices.exists_alias(name: "logstash")).to be_falsey
     subject.register
     sleep(1)
-    expect(@es.indices.exists_alias(index: "logstash")).to be_falsey
+    expect(@es.indices.exists_alias(name: "logstash")).to be_falsey
   end
 
   it 'should not install the default policy' do
@@ -116,7 +116,7 @@ shared_examples_for 'an ILM disabled Logstash' do
 
   context 'with an existing policy that will roll over' do
     let (:policy) { small_max_doc_policy }
-    let (:ilm_policy_name) { "3_docs"}
+    let (:ilm_policy_name) { "logstash-policy-3_docs"}
     let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
 
     it 'should not roll over indices' do
@@ -285,10 +285,10 @@ if ESHelper.es_version_satisfies?(">= 6.6")
         context 'with a custom pattern' do
           let (:settings) { super.merge("ilm_pattern" => "000001")}
           it 'should create a rollover alias' do
-            expect(@es.indices.exists_alias(index: "logstash")).to be_falsey
+            expect(@es.indices.exists_alias(name: "logstash")).to be_falsey
             subject.register
             sleep(1)
-            expect(@es.indices.exists_alias(index: "logstash")).to be_truthy
+            expect(@es.indices.exists_alias(name: "logstash")).to be_truthy
             expect(@es.get_alias(name: "logstash")).to include("logstash-000001")
           end
         end
@@ -301,10 +301,10 @@ if ESHelper.es_version_satisfies?(">= 6.6")
         end
 
         it 'should create the default rollover alias' do
-          expect(@es.indices.exists_alias(index: "logstash")).to be_falsey
+          expect(@es.indices.exists_alias(name: "logstash")).to be_falsey
           subject.register
           sleep(1)
-          expect(@es.indices.exists_alias(index: "logstash")).to be_truthy
+          expect(@es.indices.exists_alias(name: "logstash")).to be_truthy
           expect(@es.get_alias(name: "logstash")).to include("logstash-#{todays_date}-000001")
         end
 
@@ -342,7 +342,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
       end
 
       context 'when not using the default policy' do
-        let (:ilm_policy_name) {"new_one"}
+        let (:ilm_policy_name) {"logstash-policy-small"}
         let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
         let (:policy) { small_max_doc_policy }
 
@@ -359,7 +359,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
       end
 
       context 'when using a time based policy' do
-        let (:ilm_policy_name) {"new_one"}
+        let (:ilm_policy_name) {"logstash-policy-time"}
         let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
         let (:policy) { max_age_policy("1d") }
 
@@ -377,10 +377,10 @@ if ESHelper.es_version_satisfies?(">= 6.6")
 
       context 'with the default template' do
         it 'should create the rollover alias' do
-          expect(@es.indices.exists_alias(index: expected_index)).to be_falsey
+          expect(@es.indices.exists_alias(name: expected_index)).to be_falsey
           subject.register
           sleep(1)
-          expect(@es.indices.exists_alias(index: expected_index)).to be_truthy
+          expect(@es.indices.exists_alias(name: expected_index)).to be_truthy
           expect(@es.get_alias(name: expected_index)).to include("#{expected_index}-#{todays_date}-000001")
         end
 
@@ -428,7 +428,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
           let (:template) { "spec/fixtures/template-with-policy-es6x.json" }
         end
         let (:ilm_enabled) { true }
-        let (:ilm_policy_name) { "custom-policy" }
+        let (:ilm_policy_name) { "logstash-policy-custom-policy" }
         let (:policy) { small_max_doc_policy }
 
         before :each do
@@ -438,18 +438,18 @@ if ESHelper.es_version_satisfies?(">= 6.6")
         it_behaves_like 'an ILM enabled Logstash'
 
         it 'should create the rollover alias' do
-          expect(@es.indices.exists_alias(index: ilm_rollover_alias)).to be_falsey
+          expect(@es.indices.exists_alias(name: ilm_rollover_alias)).to be_falsey
           subject.register
           sleep(1)
-          expect(@es.indices.exists_alias(index: ilm_rollover_alias)).to be_truthy
+          expect(@es.indices.exists_alias(name: ilm_rollover_alias)).to be_truthy
           expect(@es.get_alias(name: ilm_rollover_alias)).to include("#{ilm_rollover_alias}-#{todays_date}-000001")
         end
 
         context 'when the custom rollover alias already exists' do
           it 'should ignore the already exists error' do
-            expect(@es.indices.exists_alias(index: ilm_rollover_alias)).to be_falsey
+            expect(@es.indices.exists_alias(name: ilm_rollover_alias)).to be_falsey
             put_alias(@es, "#{ilm_rollover_alias}-#{todays_date}-000001", ilm_rollover_alias)
-            expect(@es.indices.exists_alias(index: ilm_rollover_alias)).to be_truthy
+            expect(@es.indices.exists_alias(name: ilm_rollover_alias)).to be_truthy
             subject.register
             sleep(1)
             expect(@es.get_alias(name: ilm_rollover_alias)).to include("#{ilm_rollover_alias}-#{todays_date}-000001")
