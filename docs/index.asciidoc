@@ -38,8 +38,7 @@ Elasticsearch.
 TIP: You can run Elasticsearch on your own hardware, or use our
 https://www.elastic.co/cloud/elasticsearch-service[hosted {es} Service] on
 Elastic Cloud. The Elasticsearch Service is available on both AWS and GCP.
-https://www.elastic.co/cloud/elasticsearch-service/signup[Try the {es} Service
-for free].
+{ess-trial}[Try the {es} Service for free].
 
 This output only speaks the HTTP protocol. HTTP is the preferred protocol for interacting with Elasticsearch as of Logstash 2.0.
 We strongly encourage the use of HTTP over the node protocol for a number of reasons. HTTP is only marginally slower,
@@ -624,9 +623,8 @@ which is bad.
   * There is no default value for this setting.
 
 Set the address of a forward HTTP proxy.
-This used to accept hashes as arguments but now only accepts
-arguments of the URI type to prevent leaking credentials.
-An empty string is treated as if proxy was not set, this is useful when using
+This setting accepts only URI arguments to prevent leaking credentials.
+An empty string is treated as if proxy was not set. This is useful when using
 environment variables e.g. `proxy => '${LS_PROXY:}'`.
 
 [id="plugins-{type}s-{plugin}-resurrect_delay"]
