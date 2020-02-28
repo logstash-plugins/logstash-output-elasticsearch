@@ -623,8 +623,7 @@ which is bad.
   * There is no default value for this setting.
 
 Set the address of a forward HTTP proxy.
-This used to accept hashes as arguments but now only accepts
-arguments of the URI type to prevent leaking credentials.
+This setting accepts only URI arguments to prevent leaking credentials.
 An empty string is treated as if proxy was not set. This is useful when using
 environment variables e.g. `proxy => '${LS_PROXY:}'`.
 
