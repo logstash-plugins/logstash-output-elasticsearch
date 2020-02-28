@@ -1,5 +1,5 @@
 ## 10.3.3
- - [DOC] Replaced link to Elastic Cloud trial with attribute, and fixed a comma splice [#tbd](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/tbd)
+ - [DOC] Replaced link to Elastic Cloud trial with attribute, and fixed a comma splice [#926](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/926)
 
 ## 10.3.2
  - [DOC] Replaced setting name with correct value [#919](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/919)
