@@ -501,7 +501,7 @@ NOTE: `ilm_rollover_alias` does NOT support dynamic variable substitution as `in
 ===== `index` 
 
   * Value type is <<string,string>>
-  * Default value is `"logstash-%{+YYYY.MM.dd}"`
+  * Default value is `"logstash-%{+yyyy.MM.dd}"`
 
 The index to write events to. This can be dynamic using the `%{foo}` syntax.
 The default value will partition your indices by day so you can more easily
