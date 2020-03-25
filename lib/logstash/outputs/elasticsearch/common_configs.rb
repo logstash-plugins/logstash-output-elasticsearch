@@ -3,7 +3,7 @@ require 'forwardable' # Needed for logstash core SafeURI. We need to patch this 
 module LogStash; module Outputs; class ElasticSearch
   module CommonConfigs
 
-    DEFAULT_INDEX_NAME = "logstash-%{+YYYY.MM.dd}"
+    DEFAULT_INDEX_NAME = "logstash-%{+yyyy.MM.dd}"
     DEFAULT_POLICY = "logstash-policy"
     DEFAULT_ROLLOVER_ALIAS = 'logstash'
 
