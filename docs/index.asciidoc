@@ -24,16 +24,16 @@ include::{include_path}/plugin_header.asciidoc[]
 .Compatibility Note
 [NOTE]
 ================================================================================
-The `_type` setting changed from `doc` to `_doc` in Elasticsearch 7.0.
+When connected to Elasticsearch 7.x, modern versions of this plugin
+use the required `_doc` document-type when inserting documents.
 
-If you are using an earlier version of Logstash, upgrade to
-version 6.8 to pick up changes to the Elasticsearch index template before you
-upgrade to version 7.0 (or later). 
+If you are using an earlier version of Logstash and wish to connect to
+Elasticsearch 7.x, first upgrade Logstash to version 6.8 to ensure it
+picks up changes to the Elasticsearch index template.
 
-After upgrading to 6.8, use the {ref}/indices-templates.html#getting[Index
-Template API] to verify that the 6.8 index template has been created in
-Elasticsearch.
-
+If you are using a custom <<plugins-{type}s-{plugin}-template>>,
+ensure your template uses the `_doc` document-type before
+connecting to Elasticsearch 7.x.
 ================================================================================
 
 .Compatibility Note
