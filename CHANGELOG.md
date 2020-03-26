@@ -1,3 +1,6 @@
+## 10.4.0
+ - Fixed default index value [#927](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/927)
+
 ## 10.3.3
  - [DOC] Replaced link to Elastic Cloud trial with attribute, and fixed a comma splice [#926](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/926)
 
