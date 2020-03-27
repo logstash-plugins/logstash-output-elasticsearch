@@ -1,3 +1,6 @@
+## 10.4.1
+ - [DOC] Added note about `_type` setting change from `doc` to `_doc` [#884](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/884)
+
 ## 10.4.0
  - Fixed default index value [#927](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/927)
 

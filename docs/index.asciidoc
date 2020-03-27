@@ -24,6 +24,21 @@ include::{include_path}/plugin_header.asciidoc[]
 .Compatibility Note
 [NOTE]
 ================================================================================
+When connected to Elasticsearch 7.x, modern versions of this plugin
+use the required `_doc` document-type when inserting documents.
+
+If you are using an earlier version of Logstash and wish to connect to
+Elasticsearch 7.x, first upgrade Logstash to version 6.8 to ensure it
+picks up changes to the Elasticsearch index template.
+
+If you are using a custom <<plugins-{type}s-{plugin}-template>>,
+ensure your template uses the `_doc` document-type before
+connecting to Elasticsearch 7.x.
+================================================================================
+
+.Compatibility Note
+[NOTE]
+================================================================================
 Starting with Elasticsearch 5.3, there's an {ref}/modules-http.html[HTTP setting]
 called `http.content_type.required`. If this option is set to `true`, and you
 are using Logstash 2.4 through 5.2, you need to update the Elasticsearch output
