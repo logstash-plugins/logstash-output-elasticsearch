@@ -16,7 +16,7 @@ wait_for_es() {
     [[ $count -eq 0 ]] && exit 1
     sleep 1
   done
-  echo $(curl -s $ES_URL | python2 -c "import sys, json; print json.load(sys.stdin)['version']['number']")
+  echo $(curl -s $ES_URL | python -c "import sys, json; print(json.load(sys.stdin)['version']['number'])")
 }
 
 if [[ "$INTEGRATION" != "true" ]]; then
