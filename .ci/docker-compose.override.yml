@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+
+  logstash:
+    command: /usr/share/plugins/plugin/.ci/logstash-run.sh
+    build:
+      args:
+        - ELASTIC_STACK_VERSION=$ELASTIC_STACK_VERSION
+        - DISTRIBUTION=${DISTRIBUTION:-default}
+        - DISTRIBUTION_SUFFIX=${DISTRIBUTION_SUFFIX}
+    environment:
+        - DISTRIBUTION=${DISTRIBUTION:-default}
+        - DISTRIBUTION_SUFFIX=${DISTRIBUTION_SUFFIX}
+        - INTEGRATION=${INTEGRATION:-false}
+        - SECURE_INTEGRATION=${SECURE_INTEGRATION:-false}
+
+  elasticsearch:
+    build:
+      context: ../
+      dockerfile: .ci/Dockerfile.elasticsearch
+      args:
+        - ELASTIC_STACK_VERSION=$ELASTIC_STACK_VERSION
+        - INTEGRATION=${INTEGRATION:-false}
+        - SECURE_INTEGRATION=${SECURE_INTEGRATION:-false}
+        - DISTRIBUTION_SUFFIX=${DISTRIBUTION_SUFFIX}
+    command: /usr/share/elasticsearch/elasticsearch-run.sh
+    tty: true
+    ports:
+      - "9200:9200"
+    user: elasticsearch
+

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This is intended to be run the plugin's root directory. `ci/docker-test.sh`
+# This is intended to be run the plugin's root directory. `.ci/docker-setup.sh`
 # Ensure you have Docker installed locally and set the ELASTIC_STACK_VERSION environment variable.
 set -e
 
@@ -67,12 +67,14 @@ if [ "$ELASTIC_STACK_VERSION" ]; then
         rm Gemfile.lock
     fi
 
+    cd .ci
+
     if [ "$INTEGRATION" == "true" ]; then
-        docker-compose -f ci/docker-compose.yml down
-        docker-compose -f ci/docker-compose.yml build
+        docker-compose down
+        docker-compose build
     else
-        docker-compose -f ci/docker-compose.yml down
-        docker-compose -f ci/docker-compose.yml build logstash 
+        docker-compose down
+        docker-compose build logstash
     fi
 else
     echo "Please set the ELASTIC_STACK_VERSION environment variable"
