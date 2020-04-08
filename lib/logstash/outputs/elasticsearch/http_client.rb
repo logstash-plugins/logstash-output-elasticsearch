@@ -30,7 +30,6 @@ module LogStash; module Outputs; class ElasticSearch;
     #   :setting => value
     # }
 
-#
     # The `options` is a hash where the following symbol keys have meaning:
     #
     # * `:hosts` - array of String. Set a list of hosts to use for communication.
@@ -110,7 +109,7 @@ module LogStash; module Outputs; class ElasticSearch;
       if http_compression
         body_stream.set_encoding "BINARY"
         stream_writer = Zlib::GzipWriter.new(body_stream, Zlib::DEFAULT_COMPRESSION, Zlib::DEFAULT_STRATEGY)
-      else 
+      else
         stream_writer = body_stream
       end
       bulk_responses = []
@@ -215,7 +214,7 @@ module LogStash; module Outputs; class ElasticSearch;
                         else
                           nil
                         end
-      
+
       calculated_scheme = calculate_property(uris, :scheme, explicit_scheme, sniffing)
 
       if calculated_scheme && calculated_scheme !~ /https?/
@@ -235,7 +234,7 @@ module LogStash; module Outputs; class ElasticSearch;
       # Enter things like foo:123, bar and wind up with foo:123, bar:9200
       calculate_property(uris, :port, nil, sniffing) || 9200
     end
-    
+
     def uris
       @options[:hosts]
     end
@@ -254,7 +253,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def build_adapter(options)
       timeout = options[:timeout] || 0
-      
+
       adapter_options = {
         :socket_timeout => timeout,
         :request_timeout => timeout,
@@ -281,7 +280,7 @@ module LogStash; module Outputs; class ElasticSearch;
       adapter_class = ::LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter
       adapter = adapter_class.new(@logger, adapter_options)
     end
-    
+
     def build_pool(options)
       adapter = build_adapter(options)
 
@@ -331,7 +330,7 @@ module LogStash; module Outputs; class ElasticSearch;
                     h.query
                   end
       prefixed_raw_query = raw_query && !raw_query.empty? ? "?#{raw_query}" : nil
-      
+
       raw_url = "#{raw_scheme}://#{postfixed_userinfo}#{raw_host}:#{raw_port}#{prefixed_raw_path}#{prefixed_raw_query}"
 
       ::LogStash::Util::SafeURI.new(raw_url)
@@ -360,9 +359,17 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     # Create a new rollover alias
-    def rollover_alias_put(alias_name, alias_definition)
-      logger.info("Creating rollover alias #{alias_name}")
+    def rollover_alias_put(alias_name, alias_definition, add_rollover_settings)
       begin
+        if add_rollover_settings == true
+          real_alias_name, _ = alias_definition["aliases"].first
+          logger.debug("Adding lifecycle rollover_alias setting for #{alias_name} => #{real_alias_name}, add rollover was #{add_rollover_settings}")
+          alias_definition.merge!({
+            'settings' => {
+              'index.lifecycle.rollover_alias' => real_alias_name
+            }
+          })
+        end
         @pool.put(CGI::escape(alias_name), nil, LogStash::Json.dump(alias_definition))
         # If the rollover alias already exists, ignore the error that comes back from Elasticsearch
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e

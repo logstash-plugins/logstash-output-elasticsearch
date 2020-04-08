@@ -19,8 +19,8 @@ module LogStash; module Outputs; class ElasticSearch
       # Joda formats are defined http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html[here].
       mod.config :index, :validate => :string, :default => DEFAULT_INDEX_NAME
 
-      mod.config :document_type, 
-        :validate => :string, 
+      mod.config :document_type,
+        :validate => :string,
         :deprecated => "Document types are being deprecated in Elasticsearch 6.0, and removed entirely in 7.0. You should avoid this feature"
 
       # From Logstash 1.3 onwards, a template is applied to Elasticsearch during
@@ -69,7 +69,7 @@ module LogStash; module Outputs; class ElasticSearch
       # The version to use for indexing. Use sprintf syntax like `%{my_version}` to use a field value here.
       # See https://www.elastic.co/blog/elasticsearch-versioning-support.
       mod.config :version, :validate => :string
-      
+
       # The version_type to use for indexing.
       # See https://www.elastic.co/blog/elasticsearch-versioning-support.
       # See also https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types
@@ -162,6 +162,31 @@ module LogStash; module Outputs; class ElasticSearch
       # ILM policy to use, if undefined the default policy will be used.
       mod.config :ilm_policy, :validate => :string, :default => DEFAULT_POLICY
 
+      # Add index.lifecycle.rollover_alias setting to alias upon creation, always done in the case of aliases created via the ilm_event_alias setting.
+      mod.config :ilm_set_rollover_alias, :validate => [true, false, 'true', 'false'], :default => false
+
+      # Use this for event substitution aliases, ilm_rollover_alias is used as a default in the event the field is missing or other unknown errors.
+      # Substituion syntax will work here, e.g. "%{my_fantastic_field_here}-alias".
+      mod.config :ilm_event_alias, :validate => :string
+
+      # Cache seen/created aliases and their destinations once, not during each bulk batch.
+      mod.config :ilm_cache_once, :validate => [true, false, 'true', 'false'], :default => false
+
+
+      # -----
+      # Rollover Alias Creation
+      # -----
+
+      # Reuses ilm_event_alias, ilm_pattern, ilm_cache_once as only ILM or RO can be used at one time. Preemptive RO creation
+      # follows all the same processes that the ILM tweaks does, however, it does not insert the lifecycle alias setting or policy.
+      # It is understood that this to bootstrap the rollover alias and index before indexing so that external tools can manage
+      # the actual rollover process, while ILM can manage the other lifecycle phases.
+      #
+      # Just like the ILM event substitution process, if anything does not match, it is thrown into the default alias set via
+      # ilm_rollover_alias.
+
+      # Flag for enabling Rollover alias creation, overrides ILM behavior.
+      mod.config :ro_only_enabled, :validate => [true, false, 'true', 'false'], :default => false
     end
   end
 end end end

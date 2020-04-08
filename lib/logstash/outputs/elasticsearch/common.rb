@@ -20,6 +20,7 @@ module LogStash; module Outputs; class ElasticSearch;
       @stopping = Concurrent::AtomicBoolean.new(false)
       # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
       @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
+      @ilm_seen_aliases = {}
 
       fill_hosts_from_cloud_id
       fill_user_password_from_cloud_auth
@@ -29,6 +30,16 @@ module LogStash; module Outputs; class ElasticSearch;
       check_action_validity
       @bulk_request_metrics = metric.namespace(:bulk_requests)
       @document_level_metrics = metric.namespace(:documents)
+
+      # Can only be used if ILM not in use
+      if @ro_only_enabled && ilm_in_use?
+        @logger.debug("Preemptively creating rollover aliases, not adding ILM aliases/policies/settings in the process")
+      end
+
+      if @ro_only_enabled || ilm_in_use?
+        @logger.info("Caching seen/created aliases #{@ilm_cache_once ? 'once' : 'every bulk'}")
+      end
+
       @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
     end
 
@@ -233,6 +244,33 @@ module LogStash; module Outputs; class ElasticSearch;
 
         # We retry with whatever is didn't succeed
         begin
+
+          # Create alias(es) before bulking, ensuring rollover aliases exist.
+          #
+          # Using the hash let's us set improper aliases such as unsubstituted fields like
+          # %{abc} to the default alias instead, then return immediately when found to avoid
+          # raising the exception multiple times, as the exceptions are typically more expensive.
+          if ilm_in_use? && !@ilm_event_alias.nil?
+            created_aliases = @ilm_cache_once ? @ilm_seen_aliases : {}
+            submit_actions.each do |action, params, event|
+              if ['index', 'create'].include?(action)
+                begin
+                  alias_name, new_index = maybe_create_rollover_alias_for_event(event, created_aliases, !@ro_only_enabled)
+                  created_aliases[alias_name] = new_index
+                  params[:_index] = new_index
+                rescue ::LogStash::Outputs::ElasticSearch::Ilm::ImproperAliasName => e
+                  @logger.warn("Event alias name #{e.name} is not proper, using #{@ilm_rollover_alias} instead")
+                  created_aliases[e.name] = @ilm_rollover_alias
+                  params[:_index] = @ilm_rollover_alias
+                rescue => e
+                  @logger.warn("Unknown error on creating event alias, #{e}, using #{@ilm_rollover_alias} instead")
+                  params[:_index] = @ilm_rollover_alias
+                end
+              end
+            end
+            @logger.trace("Created/cached aliases: #{created_aliases.to_s}")
+          end
+
           submit_actions = submit(submit_actions)
           if submit_actions && submit_actions.size > 0
             @logger.info("Retrying individual bulk actions that failed or were rejected by the previous bulk request.", :count => submit_actions.size)

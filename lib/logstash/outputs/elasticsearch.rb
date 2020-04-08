@@ -75,12 +75,12 @@ require "forwardable"
 #
 # ==== HTTP Compression
 #
-# This plugin supports request and response compression. Response compression is enabled by default and 
-# for Elasticsearch versions 5.0 and later, the user doesn't have to set any configs in Elasticsearch for 
-# it to send back compressed response. For versions before 5.0, `http.compression` must be set to `true` in 
+# This plugin supports request and response compression. Response compression is enabled by default and
+# for Elasticsearch versions 5.0 and later, the user doesn't have to set any configs in Elasticsearch for
+# it to send back compressed response. For versions before 5.0, `http.compression` must be set to `true` in
 # Elasticsearch[https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http] to take advantage of response compression when using this plugin
 #
-# For requests compression, regardless of the Elasticsearch version, users have to enable `http_compression` 
+# For requests compression, regardless of the Elasticsearch version, users have to enable `http_compression`
 # setting in their Logstash config file.
 #
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base

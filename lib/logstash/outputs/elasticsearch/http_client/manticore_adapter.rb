@@ -3,7 +3,7 @@ require 'cgi'
 
 module LogStash; module Outputs; class ElasticSearch; class HttpClient;
   DEFAULT_HEADERS = { "Content-Type" => "application/json" }
-  
+
   class ManticoreAdapter
     attr_reader :manticore, :logger
 
@@ -18,14 +18,14 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       options[:cookies] = false
 
       @client_params = {:headers => DEFAULT_HEADERS.merge(options[:headers] || {})}
-      
+
       if options[:proxy]
         options[:proxy] = manticore_proxy_hash(options[:proxy])
       end
-      
+
       @manticore = ::Manticore::Client.new(options)
     end
-    
+
     # Transform the proxy option to a hash. Manticore's support for non-hash
     # proxy options is broken. This was fixed in https://github.com/cheald/manticore/commit/34a00cee57a56148629ed0a47c329181e7319af5
     # but this is not yet released
@@ -55,12 +55,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       params[:body] = body if body
 
       if url.user
-        params[:auth] = { 
+        params[:auth] = {
           :user => CGI.unescape(url.user),
           # We have to unescape the password here since manticore won't do it
           # for us unless its part of the URL
-          :password => CGI.unescape(url.password), 
-          :eager => true 
+          :password => CGI.unescape(url.password),
+          :eager => true
         }
       end
 
@@ -86,7 +86,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     # Returned urls from this method should be checked for double escaping.
     def format_url(url, path_and_query=nil)
       request_uri = url.clone
-      
+
       # We excise auth info from the URL in case manticore itself tries to stick
       # sensitive data in a thrown exception or log data
       request_uri.user = nil
@@ -102,7 +102,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       new_query_parts = [request_uri.query, parsed_path_and_query.query].select do |part|
         part && !part.empty? # Skip empty nil and ""
       end
-      
+
       request_uri.query = new_query_parts.join("&") unless new_query_parts.empty?
 
       # use `raw_path`` as `path` will unescape any escaped '/' in the path
