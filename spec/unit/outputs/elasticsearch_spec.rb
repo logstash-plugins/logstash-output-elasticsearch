@@ -1,4 +1,5 @@
 require_relative "../../../spec/es_spec_helper"
+require "base64"
 require "flores/random"
 require "logstash/outputs/elasticsearch"
 
@@ -142,6 +143,25 @@ describe LogStash::Outputs::ElasticSearch do
 
         include_examples("an authenticated config")
       end
+
+      context 'claud_auth also set' do
+        let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
+        let(:options) { { "user" => user, "password" => password, "cloud_auth" => "elastic:my-passwd-00" } }
+
+        it "should fail" do
+          expect { subject.register }.to raise_error LogStash::ConfigurationError, /Multiple authentication options are specified/
+        end
+      end
+
+      context 'api_key also set' do
+        let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
+        let(:options) { { "user" => user, "password" => password, "api_key" => "some_key" } }
+
+        it "should fail" do
+          expect { subject.register }.to raise_error LogStash::ConfigurationError, /Multiple authentication options are specified/
+        end
+      end
+
     end
 
     describe "with path" do
@@ -577,7 +597,15 @@ describe LogStash::Outputs::ElasticSearch do
       let(:options) { { 'cloud_auth' => 'elastic:my-passwd-00', 'user' => 'another' } }
 
       it "should fail" do
-        expect { subject.register }.to raise_error LogStash::ConfigurationError, /cloud_auth and user/
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /Multiple authentication options are specified/
+      end
+    end
+
+    context 'api_key also set' do
+      let(:options) { { 'cloud_auth' => 'elastic:my-passwd-00', 'api_key' => 'some_key' } }
+
+      it "should fail" do
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /Multiple authentication options are specified/
       end
     end
   end if LOGSTASH_VERSION > '6.0'
@@ -655,6 +683,62 @@ describe LogStash::Outputs::ElasticSearch do
     context "when not set" do
       it "should have no headers" do
         expect(manticore_options[:headers]).to be_empty
+      end
+    end
+  end
+
+  describe "API key" do
+    let(:manticore_options) { subject.client.pool.adapter.manticore.instance_variable_get(:@options) }
+    let(:api_key) { "some_id:some_api_key" }
+    let(:base64_api_key) { "ApiKey c29tZV9pZDpzb21lX2FwaV9rZXk=" }
+
+    context "when set without ssl" do
+      let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
+      let(:options) { { "api_key" => api_key } }
+
+      it "should raise a configuration error" do
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /requires SSL\/TLS/
+      end
+    end
+
+    context "when set without ssl but with a https host" do
+      let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
+      let(:options) { { "hosts" => ["https://some.host.com"], "api_key" => api_key } }
+
+      it "should raise a configuration error" do
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /requires SSL\/TLS/
+      end
+    end
+
+    context "when set" do
+      let(:options) { { "ssl" => true, "api_key" =>  ::LogStash::Util::Password.new(api_key) } }
+
+      it "should use the custom headers in the adapter options" do
+        expect(manticore_options[:headers]).to eq({ "Authorization" => base64_api_key })
+      end
+    end
+
+    context "when not set" do
+      it "should have no headers" do
+        expect(manticore_options[:headers]).to be_empty
+      end
+    end
+
+    context 'user also set' do
+      let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
+      let(:options) { { "ssl" => true, "api_key" => api_key, 'user' => 'another' } }
+
+      it "should fail" do
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /Multiple authentication options are specified/
+      end
+    end
+
+    context 'cloud_auth also set' do
+      let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
+      let(:options) { { "ssl" => true, "api_key" => api_key, 'cloud_auth' => 'foobar' } }
+
+      it "should fail" do
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /Multiple authentication options are specified/
       end
     end
   end

@@ -122,6 +122,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Password to authenticate to a secure Elasticsearch cluster
   config :password, :validate => :password
 
+  # Authenticate using Elasticsearch API key.
+  # format is id:api_key (as returned by https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html[Create API key])
+  config :api_key, :validate => :password
+
   # Cloud authentication string ("<username>:<password>" format) is an alternative for the `user`/`password` configuration.
   #
   # For more details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_auth[cloud documentation]
@@ -255,6 +259,14 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   def build_client
+    # the following 3 options validation & setup methods are called inside build_client
+    # because they must be executed prior to building the client and logstash
+    # monitoring and management rely on directly calling build_client
+    # see https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/934#pullrequestreview-396203307
+    validate_authentication
+    fill_hosts_from_cloud_id
+    setup_hosts
+
     params["metric"] = metric
     if @proxy.eql?('')
       @logger.warn "Supplied proxy setting (proxy => '') has no effect"

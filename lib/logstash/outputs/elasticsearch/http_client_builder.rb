@@ -1,4 +1,5 @@
 require 'cgi'
+require "base64"
 
 module LogStash; module Outputs; class ElasticSearch;
   module HttpClientBuilder
@@ -8,7 +9,7 @@ module LogStash; module Outputs; class ElasticSearch;
         :pool_max_per_route => params["pool_max_per_route"],
         :check_connection_timeout => params["validate_after_inactivity"],
         :http_compression => params["http_compression"],
-        :headers => params["custom_headers"]
+        :headers => params["custom_headers"] || {}
       }
       
       client_settings[:proxy] = params["proxy"] if params["proxy"]
@@ -56,6 +57,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
       client_settings.merge! setup_ssl(logger, params)
       common_options.merge! setup_basic_auth(logger, params)
+      client_settings[:headers].merge! setup_api_key(logger, params)
 
       external_version_types = ["external", "external_gt", "external_gte"]
       # External Version validation
@@ -149,6 +151,14 @@ module LogStash; module Outputs; class ElasticSearch;
         :user => CGI.escape(user),
         :password => CGI.escape(password.value)
       }
+    end
+
+    def self.setup_api_key(logger, params)
+      api_key = params["api_key"]
+
+      return {} unless (api_key && api_key.value)
+
+      { "Authorization" => "ApiKey " + Base64.strict_encode64(api_key.value) }
     end
 
     private
