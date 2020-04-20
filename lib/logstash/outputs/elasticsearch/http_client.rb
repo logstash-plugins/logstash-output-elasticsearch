@@ -8,21 +8,6 @@ require 'zlib'
 require 'stringio'
 
 module LogStash; module Outputs; class ElasticSearch;
-  # This is a constant instead of a config option because
-  # there really isn't a good reason to configure it.
-  #
-  # The criteria used are:
-  # 1. We need a number that's less than 100MiB because ES
-  #    won't accept bulks larger than that.
-  # 2. It must be large enough to amortize the connection constant
-  #    across multiple requests.
-  # 3. It must be small enough that even if multiple threads hit this size
-  #    we won't use a lot of heap.
-  #
-  # We wound up agreeing that a number greater than 10 MiB and less than 100MiB
-  # made sense. We picked one on the lowish side to not use too much heap.
-  TARGET_BULK_BYTES = 20 * 1024 * 1024 # 20MiB
-
   class HttpClient
     attr_reader :client, :options, :logger, :pool, :action_count, :recv_count
     # This is here in case we use DEFAULT_OPTIONS in the future
@@ -107,26 +92,19 @@ module LogStash; module Outputs; class ElasticSearch;
       end
 
       body_stream = StringIO.new
-      if http_compression
-        body_stream.set_encoding "BINARY"
-        stream_writer = Zlib::GzipWriter.new(body_stream, Zlib::DEFAULT_COMPRESSION, Zlib::DEFAULT_STRATEGY)
-      else 
-        stream_writer = body_stream
-      end
       bulk_responses = []
       bulk_actions.each do |action|
         as_json = action.is_a?(Array) ?
                     action.map {|line| LogStash::Json.dump(line)}.join("\n") :
                     LogStash::Json.dump(action)
         as_json << "\n"
-        if (body_stream.size + as_json.bytesize) > TARGET_BULK_BYTES
+        if (body_stream.size + as_json.bytesize) > http_max_content_length
           bulk_responses << bulk_send(body_stream) unless body_stream.size == 0
         end
-        stream_writer.write(as_json)
+        body_stream.write(as_json)
       end
-      stream_writer.close if http_compression
       bulk_responses << bulk_send(body_stream) if body_stream.size > 0
-      body_stream.close if !http_compression
+      body_stream.close
       join_bulk_responses(bulk_responses)
     end
 
@@ -139,8 +117,9 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def bulk_send(body_stream)
       params = http_compression ? {:headers => {"Content-Encoding" => "gzip"}} : {}
+      body = http_compression ? Zlib::gzip(body_stream.string) : body_stream.string
       # Discard the URL
-      response = @pool.post(@bulk_path, params, body_stream.string)
+      response = @pool.post(@bulk_path, params, body)
       if !body_stream.closed?
         body_stream.truncate(0)
         body_stream.seek(0)
@@ -215,7 +194,7 @@ module LogStash; module Outputs; class ElasticSearch;
                         else
                           nil
                         end
-      
+
       calculated_scheme = calculate_property(uris, :scheme, explicit_scheme, sniffing)
 
       if calculated_scheme && calculated_scheme !~ /https?/
@@ -235,7 +214,7 @@ module LogStash; module Outputs; class ElasticSearch;
       # Enter things like foo:123, bar and wind up with foo:123, bar:9200
       calculate_property(uris, :port, nil, sniffing) || 9200
     end
-    
+
     def uris
       @options[:hosts]
     end
@@ -252,9 +231,15 @@ module LogStash; module Outputs; class ElasticSearch;
       client_settings.fetch(:http_compression, false)
     end
 
+    def http_max_content_length
+      # Follow elasticsearch default http.max_content_length
+      # https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html
+      client_settings.fetch(:max_content_length, 104857600) # 100 * 1024 * 1024 == 100MiB
+    end
+
     def build_adapter(options)
       timeout = options[:timeout] || 0
-      
+
       adapter_options = {
         :socket_timeout => timeout,
         :request_timeout => timeout,
@@ -281,7 +266,7 @@ module LogStash; module Outputs; class ElasticSearch;
       adapter_class = ::LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter
       adapter = adapter_class.new(@logger, adapter_options)
     end
-    
+
     def build_pool(options)
       adapter = build_adapter(options)
 
@@ -331,7 +316,7 @@ module LogStash; module Outputs; class ElasticSearch;
                     h.query
                   end
       prefixed_raw_query = raw_query && !raw_query.empty? ? "?#{raw_query}" : nil
-      
+
       raw_url = "#{raw_scheme}://#{postfixed_userinfo}#{raw_host}:#{raw_port}#{prefixed_raw_path}#{prefixed_raw_query}"
 
       ::LogStash::Util::SafeURI.new(raw_url)
