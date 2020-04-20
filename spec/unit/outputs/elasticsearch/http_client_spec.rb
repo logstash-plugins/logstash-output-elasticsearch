@@ -30,7 +30,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     let(:http_hostname_port) { ::LogStash::Util::SafeURI.new("http://#{hostname_port}") }
     let(:https_hostname_port) { ::LogStash::Util::SafeURI.new("https://#{hostname_port}") }
     let(:http_hostname_port_path) { ::LogStash::Util::SafeURI.new("http://#{hostname_port}/path") }
-    
+
     shared_examples("proper host handling") do
       it "should properly transform a host:port string to a URL" do
         expect(subject.host_to_url(hostname_port_uri).to_s).to eq(http_hostname_port.to_s + "/")
@@ -59,7 +59,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
         context "when SSL is false" do
           let(:ssl) { false }
           let(:base_options) { super.merge(:hosts => [https_hostname_port]) }
-          
+
           it "should refuse to handle an https url" do
             expect {
               subject.host_to_url(https_hostname_port)
@@ -73,13 +73,13 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
             subject
             expect(subject.host_to_url(https_hostname_port).to_s).to eq(https_hostname_port.to_s + "/")
           end
-        end       
+        end
       end
 
       describe "path" do
         let(:url) { http_hostname_port_path }
         let(:base_options) { super.merge(:hosts => [url]) }
-        
+
         it "should allow paths in a url" do
           expect(subject.host_to_url(url)).to eq(url)
         end
@@ -93,12 +93,12 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
             }.to raise_error(LogStash::ConfigurationError)
           end
         end
-        
+
         context "with a path missing a leading /" do
           let(:url) { http_hostname_port }
           let(:base_options) { super.merge(:client_settings => {:path => "otherpath"}) }
-          
-          
+
+
           it "should automatically insert a / in front of path overlays" do
             expected = url.clone
             expected.path = url.path + "/otherpath"
@@ -190,14 +190,13 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message}],
     ]}
 
-    context "if a message is over TARGET_BULK_BYTES" do
-      let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
-      let(:message) { "a" * (target_bulk_bytes + 1) }
+    context "if a message is over http_max_content_length" do
+      let(:message) { "a" * (subject.http_max_content_length + 1) }
 
       it "should be handled properly" do
         allow(subject).to receive(:join_bulk_responses)
         expect(subject).to receive(:bulk_send).once do |data|
-          expect(data.size).to be > target_bulk_bytes
+          expect(data.size).to be > subject.http_max_content_length
         end
         s = subject.send(:bulk, actions)
       end
@@ -216,9 +215,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
         s = subject.send(:bulk, actions)
       end
 
-      context "if one exceeds TARGET_BULK_BYTES" do
-        let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
-        let(:message1) { "a" * (target_bulk_bytes + 1) }
+      context "if one exceeds http_max_content_length" do
+        let(:message1) { "a" * (subject.http_max_content_length + 1) }
         it "executes two bulk_send operations" do
           allow(subject).to receive(:join_bulk_responses)
           expect(subject).to receive(:bulk_send).twice
