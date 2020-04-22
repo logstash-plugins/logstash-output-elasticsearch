@@ -21,6 +21,17 @@ include::{include_path}/plugin_header.asciidoc[]
 
 ==== Description
 
+If you plan to use the Kibana web
+interface, use the Elasticsearch output plugin to get your log data into
+Elasticsearch. 
+
+This output only speaks the HTTP protocol. HTTP is the preferred protocol for interacting with Elasticsearch as of Logstash 2.0.
+We strongly encourage the use of HTTP over the node protocol for a number of reasons. HTTP is only marginally slower,
+yet far easier to administer and work with. When using the HTTP protocol one may upgrade Elasticsearch versions without having
+to upgrade Logstash in lock-step. 
+
+You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
+
 .Compatibility Note
 [NOTE]
 ================================================================================
@@ -36,47 +47,12 @@ ensure your template uses the `_doc` document-type before
 connecting to Elasticsearch 7.x.
 ================================================================================
 
-.Compatibility Note
-[NOTE]
-================================================================================
-Starting with Elasticsearch 5.3, there's an {ref}/modules-http.html[HTTP setting]
-called `http.content_type.required`. If this option is set to `true`, and you
-are using Logstash 2.4 through 5.2, you need to update the Elasticsearch output
-plugin to version 6.2.5 or higher.
+===== Hosted {es} Service on Elastic Cloud
 
-================================================================================
-
-If you plan to use the Kibana web
-interface, use the Elasticsearch output plugin to get your log data into
-Elasticsearch. 
-
-TIP: You can run Elasticsearch on your own hardware, or use our
+You can run Elasticsearch on your own hardware, or use our
 https://www.elastic.co/cloud/elasticsearch-service[hosted {es} Service] on
-Elastic Cloud. The Elasticsearch Service is available on both AWS and GCP.
-{ess-trial}[Try the {es} Service for free].
-
-This output only speaks the HTTP protocol. HTTP is the preferred protocol for interacting with Elasticsearch as of Logstash 2.0.
-We strongly encourage the use of HTTP over the node protocol for a number of reasons. HTTP is only marginally slower,
-yet far easier to administer and work with. When using the HTTP protocol one may upgrade Elasticsearch versions without having
-to upgrade Logstash in lock-step. 
-
-You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
-
-==== Template management for Elasticsearch 5.x
-
-Index template for this version (Logstash 5.0) has been changed to reflect Elasticsearch's mapping changes in version 5.0.
-Most importantly, the subfield for string multi-fields has changed from `.raw` to `.keyword` to match ES default
-behavior.
-
-**Users installing ES 5.x and LS 5.x**
-
-This change will not affect you and you will continue to use the ES defaults.
-
-**Users upgrading from LS 2.x to LS 5.x with ES 5.x**
-
-LS will not force upgrade the template, if `logstash` template already exists. This means you will still use
-`.raw` for sub-fields coming from 2.x. If you choose to use the new template, you will have to reindex your data after
-the new template is installed.
+Elastic Cloud. The Elasticsearch Service is available on AWS, Google Cloud
+Platform, and Microsoft Azure. {ess-trial}[Try the {es} Service for free].
 
 ==== Writing to different indices: best practices
 
