@@ -1,3 +1,6 @@
+## 10.5.0
+  - Added api_key support [#934](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/934)
+
 ## 10.4.1
  - [DOC] Added note about `_type` setting change from `doc` to `_doc` [#884](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/884)
 

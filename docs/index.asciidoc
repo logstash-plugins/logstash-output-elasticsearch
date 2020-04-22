@@ -232,6 +232,9 @@ Elasticsearch] to take advantage of response compression when using this plugin
 For requests compression, regardless of the Elasticsearch version, users have to enable `http_compression` 
 setting in their Logstash config file.
 
+==== Authentication
+
+Authentication to a secure Elasticsearch cluster is possible using one of the `user`/`password`, `cloud_auth` or `api_key` options.
 
 [id="plugins-{type}s-{plugin}-options"]
 ==== Elasticsearch Output Configuration Options
@@ -242,6 +245,7 @@ This plugin supports the following configuration options plus the <<plugins-{typ
 |=======================================================================
 |Setting |Input type|Required
 | <<plugins-{type}s-{plugin}-action>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-api_key>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-bulk_path>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-cacert>> |a valid filesystem path|No
 | <<plugins-{type}s-{plugin}-cloud_auth>> |<<password,password>>|No
@@ -323,6 +327,16 @@ The Elasticsearch action to perform. Valid actions are:
   would use the foo field for the action
 
 For more details on actions, check out the http://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
+
+[id="plugins-{type}s-{plugin}-api_key"]
+===== `api_key`
+
+  * Value type is <<password,password>>
+  * There is no default value for this setting.
+
+Authenticate using Elasticsearch API key. Note that this option also requires enabling the `ssl` option.
+
+Format is `id:api_key` where `id` and `api_key` are as returned by the Elasticsearch https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html[Create API key API].
 
 [id="plugins-{type}s-{plugin}-bulk_path"]
 ===== `bulk_path` 

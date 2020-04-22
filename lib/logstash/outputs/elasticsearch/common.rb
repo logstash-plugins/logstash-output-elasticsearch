@@ -20,10 +20,6 @@ module LogStash; module Outputs; class ElasticSearch;
       @stopping = Concurrent::AtomicBoolean.new(false)
       # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
       @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
-
-      fill_hosts_from_cloud_id
-      fill_user_password_from_cloud_auth
-      setup_hosts # properly sets @hosts
       build_client
       setup_after_successful_connection
       check_action_validity
@@ -112,6 +108,28 @@ module LogStash; module Outputs; class ElasticSearch;
       [action, params, event]
     end
 
+    def validate_authentication
+      authn_options = 0
+      authn_options += 1 if @cloud_auth
+      authn_options += 1 if (@api_key && @api_key.value)
+      authn_options += 1 if (@user || (@password && @password.value))
+
+      if authn_options > 1
+        raise LogStash::ConfigurationError, 'Multiple authentication options are specified, please only use one of user/password, cloud_auth or api_key'
+      end
+
+      if @api_key && @api_key.value && @ssl   != true
+        raise(LogStash::ConfigurationError, "Using api_key authentication requires SSL/TLS secured communication using the `ssl => true` option")
+      end
+
+      if @cloud_auth
+        @user, @password = parse_user_password_from_cloud_auth(@cloud_auth)
+        # params is the plugin global params hash which will be passed to HttpClientBuilder.build
+        params['user'], params['password'] = @user, @password
+      end
+    end
+    private :validate_authentication
+
     def setup_hosts
       @hosts = Array(@hosts)
       if @hosts.empty?
@@ -133,16 +151,6 @@ module LogStash; module Outputs; class ElasticSearch;
         raise LogStash::ConfigurationError, 'Both cloud_id and hosts specified, please only use one of those.'
       end
       @hosts = parse_host_uri_from_cloud_id(@cloud_id)
-    end
-
-    def fill_user_password_from_cloud_auth
-      return unless @cloud_auth
-
-      if @user || @password
-        raise LogStash::ConfigurationError, 'Both cloud_auth and user/password specified, please only use one.'
-      end
-      @user, @password = parse_user_password_from_cloud_auth(@cloud_auth)
-      params['user'], params['password'] = @user, @password
     end
 
     def parse_host_uri_from_cloud_id(cloud_id)
