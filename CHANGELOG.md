@@ -1,3 +1,6 @@
+## 10.5.1
+  - [DOC] Removed outdated compatibility notices, reworked cloud notice, and fixed formatting for `hosts` examples [#938](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/938)
+
 ## 10.5.0
   - Added api_key support [#934](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/934)
 
