@@ -1,3 +1,6 @@
+## 10.4.2
+ - Changed cloud id, credential and host setup to happen in `build_client` [#939](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/939)
+
 ## 10.4.1
  - [DOC] Added note about `_type` setting change from `doc` to `_doc` [#884](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/884)
 
