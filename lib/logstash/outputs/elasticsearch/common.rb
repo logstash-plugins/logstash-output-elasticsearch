@@ -21,9 +21,6 @@ module LogStash; module Outputs; class ElasticSearch;
       # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
       @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
 
-      fill_hosts_from_cloud_id
-      fill_user_password_from_cloud_auth
-      setup_hosts # properly sets @hosts
       build_client
       setup_after_successful_connection
       check_action_validity

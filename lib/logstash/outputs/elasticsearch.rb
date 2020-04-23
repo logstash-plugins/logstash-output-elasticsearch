@@ -255,6 +255,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   def build_client
+    fill_user_password_from_cloud_auth
+    fill_hosts_from_cloud_id
+    setup_hosts
+
     params["metric"] = metric
     if @proxy.eql?('')
       @logger.warn "Supplied proxy setting (proxy => '') has no effect"
