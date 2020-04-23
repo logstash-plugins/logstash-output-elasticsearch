@@ -21,7 +21,7 @@ include::{include_path}/plugin_header.asciidoc[]
 
 ==== Description
 
-If you plan to use the Kibana web interface, use the Elasticsearch output plugin
+If you plan to use the Kibana web interface to analyze data transformed by Logstash, use the Elasticsearch output plugin
 to get your data into Elasticsearch. 
 
 This output only speaks the HTTP protocol. HTTP is the preferred protocol for interacting with Elasticsearch.
