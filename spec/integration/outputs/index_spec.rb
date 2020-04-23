@@ -1,8 +1,7 @@
 require_relative "../../../spec/es_spec_helper"
 require "logstash/outputs/elasticsearch"
 
-describe "TARGET_BULK_BYTES", :integration => true do
-  let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
+describe "http_max_content_length", :integration => true do
   let(:event_count) { 1000 }
   let(:events) { event_count.times.map { event }.to_a }
   let(:config) {
@@ -23,11 +22,11 @@ describe "TARGET_BULK_BYTES", :integration => true do
   end
 
   describe "batches that are too large for one" do
-    let(:event) { LogStash::Event.new("message" => "a " * (((target_bulk_bytes/2) / event_count)+1)) }
+    let(:event) { LogStash::Event.new("message" => "a " * (((subject.client.http_max_content_length/2) / event_count)+1)) }
 
     it "should send in two batches" do
       expect(subject.client).to have_received(:bulk_send).twice do |payload|
-        expect(payload.size).to be <= target_bulk_bytes
+        expect(payload.size).to be <= subject.client.http_max_content_length
       end
     end
 
@@ -38,7 +37,7 @@ describe "TARGET_BULK_BYTES", :integration => true do
 
       it "should send in one batch" do
         expect(subject.client).to have_received(:bulk_send).once do |payload|
-          expect(payload.size).to be <= target_bulk_bytes
+          expect(payload.size).to be <= subject.client.http_max_content_length
         end
       end
     end
@@ -53,7 +52,7 @@ describe "indexing" do
   let(:config) { "not implemented" }
   let(:events) { event_count.times.map { event }.to_a }
   subject { LogStash::Outputs::ElasticSearch.new(config) }
-  
+
   let(:es_url) { "http://#{get_host_port}" }
   let(:index_url) {"#{es_url}/#{index}"}
   let(:http_client_options) { {} }
@@ -65,7 +64,7 @@ describe "indexing" do
     subject.register
     subject.multi_receive([])
   end
-  
+
   shared_examples "an indexer" do |secure|
     it "ships events" do
       subject.multi_receive(events)
@@ -85,13 +84,13 @@ describe "indexing" do
         expect(doc["_index"]).to eq(index)
       end
     end
-    
+
     it "sets the correct content-type header" do
       expected_manticore_opts = {:headers => {"Content-Type" => "application/json"}, :body => anything}
       if secure
         expected_manticore_opts = {
-          :headers => {"Content-Type" => "application/json"}, 
-          :body => anything, 
+          :headers => {"Content-Type" => "application/json"},
+          :body => anything,
           :auth => {
             :user => user,
             :password => password,
@@ -146,7 +145,7 @@ describe "indexing" do
         :auth => {
           :user => user,
           :password => password
-        }, 
+        },
         :ssl => {
           :enabled => true,
           :ca_file => cacert
@@ -154,14 +153,14 @@ describe "indexing" do
       }
     end
     it_behaves_like("an indexer", true)
-    
+
     describe "with a password requiring escaping" do
       let(:user) { "f@ncyuser" }
       let(:password) { "ab%12#" }
-      
+
       include_examples("an indexer", true)
     end
-    
+
     describe "with a user/password requiring escaping in the URL" do
       let(:config) do
         {
@@ -171,7 +170,7 @@ describe "indexing" do
           "index" => index
         }
       end
-      
+
       include_examples("an indexer", true)
     end
   end
