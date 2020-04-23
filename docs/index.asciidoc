@@ -22,7 +22,7 @@ include::{include_path}/plugin_header.asciidoc[]
 ==== Description
 
 If you plan to use the Kibana web interface, use the Elasticsearch output plugin
-to get your log data into Elasticsearch. 
+to get your data into Elasticsearch. 
 
 This output only speaks the HTTP protocol. HTTP is the preferred protocol for interacting with Elasticsearch.
 We strongly encourage the use of HTTP over the node protocol for a number of reasons. HTTP is only marginally slower,
