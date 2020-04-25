@@ -75,12 +75,12 @@ require "forwardable"
 #
 # ==== HTTP Compression
 #
-# This plugin supports request and response compression. Response compression is enabled by default and 
-# for Elasticsearch versions 5.0 and later, the user doesn't have to set any configs in Elasticsearch for 
-# it to send back compressed response. For versions before 5.0, `http.compression` must be set to `true` in 
+# This plugin supports request and response compression. Response compression is enabled by default and
+# for Elasticsearch versions 5.0 and later, the user doesn't have to set any configs in Elasticsearch for
+# it to send back compressed response. For versions before 5.0, `http.compression` must be set to `true` in
 # Elasticsearch[https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http] to take advantage of response compression when using this plugin
 #
-# For requests compression, regardless of the Elasticsearch version, users have to enable `http_compression` 
+# For requests compression, regardless of the Elasticsearch version, users have to enable `http_compression`
 # setting in their Logstash config file.
 #
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
@@ -102,6 +102,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   include(LogStash::Outputs::ElasticSearch::Ilm)
 
   config_name "elasticsearch"
+
+  DEFAULT_BATCH_SIZE = 20 * 1024 * 1024 # 20MiB
 
   # The Elasticsearch action to perform. Valid actions are:
   #
@@ -241,6 +243,19 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Custom Headers to send on each request to elasticsearch nodes
   config :custom_headers, :validate => :hash, :default => {}
+
+  # Bulk batch size is used to determine at what point to send the bulk requests.
+  # The criteria used for default value is:
+  # 1. We need a number that's less than 100MiB because ES
+  #    won't accept bulks larger than that.
+  # 2. It must be large enough to amortize the connection constant
+  #    across multiple requests.
+  # 3. It must be small enough that even if multiple threads hit this size
+  #    we won't use a lot of heap.
+  #
+  # We wound up agreeing that a number greater than 10 MiB and less than 100MiB
+  # made sense. We picked one on the lowish side to not use too much heap.
+  config :bulk_batch_size, :validate => :number, :default => DEFAULT_BATCH_SIZE
 
   # @override to handle proxy => '' as if none was set
   def config_init(params)

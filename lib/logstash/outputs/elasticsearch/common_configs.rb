@@ -19,8 +19,8 @@ module LogStash; module Outputs; class ElasticSearch
       # Joda formats are defined http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html[here].
       mod.config :index, :validate => :string, :default => DEFAULT_INDEX_NAME
 
-      mod.config :document_type, 
-        :validate => :string, 
+      mod.config :document_type,
+        :validate => :string,
         :deprecated => "Document types are being deprecated in Elasticsearch 6.0, and removed entirely in 7.0. You should avoid this feature"
 
       # From Logstash 1.3 onwards, a template is applied to Elasticsearch during
@@ -69,7 +69,7 @@ module LogStash; module Outputs; class ElasticSearch
       # The version to use for indexing. Use sprintf syntax like `%{my_version}` to use a field value here.
       # See https://www.elastic.co/blog/elasticsearch-versioning-support.
       mod.config :version, :validate => :string
-      
+
       # The version_type to use for indexing.
       # See https://www.elastic.co/blog/elasticsearch-versioning-support.
       # See also https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types
@@ -144,7 +144,6 @@ module LogStash; module Outputs; class ElasticSearch
       # Set which ingest pipeline you wish to execute for an event. You can also use event dependent configuration
       # here like `pipeline => "%{INGEST_PIPELINE}"`
       mod.config :pipeline, :validate => :string, :default => nil
-
 
       # -----
       # ILM configurations (beta)

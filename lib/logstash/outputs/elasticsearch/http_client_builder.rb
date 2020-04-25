@@ -11,13 +11,14 @@ module LogStash; module Outputs; class ElasticSearch;
         :http_compression => params["http_compression"],
         :headers => params["custom_headers"] || {}
       }
-      
+
       client_settings[:proxy] = params["proxy"] if params["proxy"]
-      
+
       common_options = {
         :client_settings => client_settings,
         :metric => params["metric"],
-        :resurrect_delay => params["resurrect_delay"]
+        :resurrect_delay => params["resurrect_delay"],
+        :bulk_batch_size => params["bulk_batch_size"]
       }
 
       if params["sniffing"]
@@ -65,7 +66,7 @@ module LogStash; module Outputs; class ElasticSearch;
         LogStash::ConfigurationError,
         "External versioning requires the presence of a version number."
       ) if external_version_types.include?(params.fetch('version_type', '')) and params.fetch("version", nil) == nil
- 
+
 
       # Create API setup
       raise(
@@ -144,7 +145,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def self.setup_basic_auth(logger, params)
       user, password = params["user"], params["password"]
-      
+
       return {} unless user && password && password.value
 
       {
