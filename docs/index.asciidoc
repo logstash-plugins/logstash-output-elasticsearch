@@ -21,11 +21,18 @@ include::{include_path}/plugin_header.asciidoc[]
 
 ==== Description
 
-If you plan to use the Kibana web interface to analyze data transformed by Logstash, use the Elasticsearch output plugin
-to get your data into Elasticsearch. 
+If you plan to use the Kibana web interface to analyze data transformed by
+Logstash, use the Elasticsearch output plugin to get your data into
+Elasticsearch. 
 
-This output only speaks the HTTP protocol as it is the preferred protocol for interacting with Elasticsearch.
-In previous versions it was possible to communicate with Elasticsearch through the transport protocol, which is now reserved for internal cluster communication between nodes https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-transport.html. This has been deprecated in Elasticsearch 7.0.0 and will be removed in 8.0.0 https://www.elastic.co/guide/en/elasticsearch/reference/current/java-clients.html
+This output only speaks the HTTP protocol as it is the preferred protocol for
+interacting with Elasticsearch. In previous versions it was possible to
+communicate with Elasticsearch through the transport protocol, which is now
+reserved for internal cluster communication between nodes
+https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-transport.html[communication between nodes].
+Using the https://www.elastic.co/guide/en/elasticsearch/reference/current/java-clients.html[transport protocol] 
+to communicate with the cluster has been deprecated in Elasticsearch 7.0.0 and
+will be removed in 8.0.0
 
 You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
 
@@ -60,7 +67,7 @@ when using `ilm_rollover_alias`.
 
 ================================================================================
 
-If you're sending events to the same Elasticsearch cluster but you're targeting different indices you can:
+If you're sending events to the same Elasticsearch cluster, but you're targeting different indices you can:
 
  * use different Elasticsearch outputs, each one with a different value for the `index` parameter
  * use one Elasticsearch output and use the dynamic variable substitution for the `index` parameter
