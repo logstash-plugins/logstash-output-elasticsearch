@@ -21,6 +21,21 @@ include::{include_path}/plugin_header.asciidoc[]
 
 ==== Description
 
+If you plan to use the Kibana web interface to analyze data transformed by
+Logstash, use the Elasticsearch output plugin to get your data into
+Elasticsearch. 
+
+This output only speaks the HTTP protocol as it is the preferred protocol for
+interacting with Elasticsearch. In previous versions it was possible to
+communicate with Elasticsearch through the transport protocol, which is now
+reserved for internal cluster communication between nodes
+https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-transport.html[communication between nodes].
+Using the https://www.elastic.co/guide/en/elasticsearch/reference/current/java-clients.html[transport protocol] 
+to communicate with the cluster has been deprecated in Elasticsearch 7.0.0 and
+will be removed in 8.0.0
+
+You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
+
 .Compatibility Note
 [NOTE]
 ================================================================================
@@ -36,47 +51,12 @@ ensure your template uses the `_doc` document-type before
 connecting to Elasticsearch 7.x.
 ================================================================================
 
-.Compatibility Note
-[NOTE]
-================================================================================
-Starting with Elasticsearch 5.3, there's an {ref}/modules-http.html[HTTP setting]
-called `http.content_type.required`. If this option is set to `true`, and you
-are using Logstash 2.4 through 5.2, you need to update the Elasticsearch output
-plugin to version 6.2.5 or higher.
+===== Hosted {es} Service on Elastic Cloud
 
-================================================================================
-
-If you plan to use the Kibana web
-interface, use the Elasticsearch output plugin to get your log data into
-Elasticsearch. 
-
-TIP: You can run Elasticsearch on your own hardware, or use our
+You can run Elasticsearch on your own hardware, or use our
 https://www.elastic.co/cloud/elasticsearch-service[hosted {es} Service] on
-Elastic Cloud. The Elasticsearch Service is available on both AWS and GCP.
-{ess-trial}[Try the {es} Service for free].
-
-This output only speaks the HTTP protocol. HTTP is the preferred protocol for interacting with Elasticsearch as of Logstash 2.0.
-We strongly encourage the use of HTTP over the node protocol for a number of reasons. HTTP is only marginally slower,
-yet far easier to administer and work with. When using the HTTP protocol one may upgrade Elasticsearch versions without having
-to upgrade Logstash in lock-step. 
-
-You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
-
-==== Template management for Elasticsearch 5.x
-
-Index template for this version (Logstash 5.0) has been changed to reflect Elasticsearch's mapping changes in version 5.0.
-Most importantly, the subfield for string multi-fields has changed from `.raw` to `.keyword` to match ES default
-behavior.
-
-**Users installing ES 5.x and LS 5.x**
-
-This change will not affect you and you will continue to use the ES defaults.
-
-**Users upgrading from LS 2.x to LS 5.x with ES 5.x**
-
-LS will not force upgrade the template, if `logstash` template already exists. This means you will still use
-`.raw` for sub-fields coming from 2.x. If you choose to use the new template, you will have to reindex your data after
-the new template is installed.
+Elastic Cloud. The Elasticsearch Service is available on AWS, Google Cloud
+Platform, and Microsoft Azure. {ess-trial}[Try the {es} Service for free].
 
 ==== Writing to different indices: best practices
 
@@ -87,7 +67,7 @@ when using `ilm_rollover_alias`.
 
 ================================================================================
 
-If you're sending events to the same Elasticsearch cluster but you're targeting different indices you can:
+If you're sending events to the same Elasticsearch cluster, but you're targeting different indices you can:
 
  * use different Elasticsearch outputs, each one with a different value for the `index` parameter
  * use one Elasticsearch output and use the dynamic variable substitution for the `index` parameter
@@ -453,11 +433,15 @@ If you have custom firewall rules you may need to change this
 
 Sets the host(s) of the remote instance. If given an array it will load balance requests across the hosts specified in the `hosts` parameter.
 Remember the `http` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http[http] address (eg. 9200, not 9300).
+
+Examples:
+
     `"127.0.0.1"`
     `["127.0.0.1:9200","127.0.0.2:9200"]`
     `["http://127.0.0.1"]`
     `["https://127.0.0.1:9200"]`
     `["https://127.0.0.1:9200/mypath"]` (If using a proxy on a subpath)
+
 It is important to exclude http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated master nodes] from the `hosts` list
 to prevent LS from sending bulk requests to the master nodes.  So this parameter should only reference either data or client nodes in Elasticsearch.
 
