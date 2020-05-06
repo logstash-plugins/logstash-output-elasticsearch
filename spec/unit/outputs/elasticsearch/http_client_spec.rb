@@ -247,4 +247,46 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       end
     end
   end
+
+  describe "skip_update_action_builder" do
+    let(:client) { LogStash::Outputs::ElasticSearch::HttpClient.new(base_options.merge(client_opts)) }
+    let(:client_opts) { {:script_var_name => "event", :script_type => "inline", :script_lang => ""} }
+    let(:args) { {:action => "update"} }
+    let(:args_script) { {:action => "update", :_script => "test-script"} }
+    let(:doc) { {'field1' => "value1", 'field2' => "value2"} }
+
+    context "without skip_update_action_builder" do
+      it "should build es bulk update action" do
+        expect(client.send(:update_action_builder, args, doc)).to eql([args, {'doc' => doc}])
+      end
+
+      it "should build es bulk scripted update action" do
+        expect(client.send(:update_action_builder, args_script, doc)).to eql([args, { 'script' => {'params' => { 'event' => doc }, 'inline' => "test-script"} }])
+      end
+    end
+
+    context "with skip_update_action_builder = false" do
+      let(:client_opts) { super.merge(:skip_update_action_builder => false) }
+
+      it "should build es bulk update action" do
+        expect(client.send(:update_action_builder, args, doc)).to eql([args, {'doc' => doc}])
+      end
+
+      it "should build es bulk scripted update action" do
+        expect(client.send(:update_action_builder, args_script, doc)).to eql([args, { 'script' => {'params' => { 'event' => doc }, 'inline' => "test-script"} }])
+      end
+    end
+
+    context "with skip_update_action_builder = true" do
+      let(:client_opts) { super.merge(:skip_update_action_builder => true) }
+
+      it "should pass source as is" do
+        expect(client.send(:update_action_builder, args, doc)).to eql([args, doc])
+      end
+
+      it "should pass source as is with script" do
+        expect(client.send(:update_action_builder, args_script, doc)).to eql([args_script, doc])
+      end
+    end
+  end
 end

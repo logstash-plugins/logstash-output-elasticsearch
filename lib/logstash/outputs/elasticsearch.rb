@@ -226,6 +226,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # to see if they have come back to life
   config :resurrect_delay, :validate => :number, :default => 5
 
+  # Whether to skip update_action_builder and pass event content as is (useful when 
+  # input is already in es_bulk format) or build the action (doc => event, or scripted)
+  config :skip_update_action_builder, :validate => :boolean, :default => false
+
   # How long to wait before checking if the connection is stale before executing a request on a connection using keepalive.
   # You may want to set this lower, if you get connection errors regularly
   # Quoting the Apache commons docs (this client is based Apache Commmons):
