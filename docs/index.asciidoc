@@ -53,10 +53,7 @@ connecting to Elasticsearch 7.x.
 
 ===== Hosted {es} Service on Elastic Cloud
 
-You can run Elasticsearch on your own hardware, or use our
-https://www.elastic.co/cloud/elasticsearch-service[hosted {es} Service] on
-Elastic Cloud. The Elasticsearch Service is available on AWS, Google Cloud
-Platform, and Microsoft Azure. {ess-trial}[Try the {es} Service for free].
+{ess-leadin}
 
 ==== Writing to different indices: best practices
 
