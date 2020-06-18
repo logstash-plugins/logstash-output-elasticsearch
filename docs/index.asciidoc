@@ -333,7 +333,7 @@ this defaults to a concatenation of the path parameter and "_bulk"
   * Value type is <<path,path>>
   * There is no default value for this setting.
 
-The .cer or .pem file to validate the server's certificate
+The .cer or .crt file to validate the server's certificate
 
 [id="plugins-{type}s-{plugin}-cloud_auth"]
 ===== `cloud_auth`

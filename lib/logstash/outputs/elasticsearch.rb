@@ -156,7 +156,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
   config :ssl_certificate_verification, :validate => :boolean, :default => true
 
-  # The .cer or .pem file to validate the server's certificate
+  # The .cer or .crt file to validate the server's certificate
   config :cacert, :validate => :path
 
   # The JKS truststore to validate the server's certificate.
