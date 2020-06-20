@@ -416,7 +416,7 @@ module LogStash; module Outputs; class ElasticSearch;
         end
 
         sleep_interval = sleep_for_interval(sleep_interval)
-        retry
+        retry unless @stopping.true?
       rescue => e
         # Stuff that should never happen
         # For all other errors print out full connection issues
