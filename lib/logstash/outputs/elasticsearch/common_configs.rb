@@ -116,10 +116,11 @@ module LogStash; module Outputs; class ElasticSearch
       mod.config :script, :validate => :string, :default => ""
 
       # Define the type of script referenced by "script" variable
-      #  inline : "script" contains inline script
+      #  inline : "script" contains inline script (ES 5.x)
+      #  source : "script" contains inline script (ES +6.0)
       #  indexed : "script" contains the name of script directly indexed in elasticsearch
       #  file    : "script" contains the name of script stored in elasticseach's config directory
-      mod.config :script_type, :validate => ["inline", 'indexed', "file"], :default => ["inline"]
+      mod.config :script_type, :validate => ["inline", 'indexed', "file", "source"], :default => ["inline"]
 
       # Set the language of the used script. If not set, this defaults to painless in ES 5.0
       mod.config :script_lang, :validate => :string, :default => "painless"

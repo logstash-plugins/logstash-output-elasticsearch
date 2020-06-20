@@ -3,6 +3,9 @@ require "base64"
 
 module LogStash; module Outputs; class ElasticSearch;
   module HttpClientBuilder
+    include LogStash::Util::Loggable
+    include LogStash::PluginMixins::DeprecationLoggerSupport
+
     def self.build(logger, hosts, params)
       client_settings = {
         :pool_max => params["pool_max"],
@@ -77,6 +80,10 @@ module LogStash; module Outputs; class ElasticSearch;
       raise( LogStash::ConfigurationError,
         "doc_as_upsert and scripted_upsert are mutually exclusive."
       ) if params["doc_as_upsert"] and params["scripted_upsert"]
+
+      if params['action'] == 'update' && params['script_type'] == 'inline'
+        deprecation_logger.deprecated("The 'inline' value for script type is deprecated and won't be supported in Elasticsearch 8.0. Please use 'source' instead.")
+      end
 
       raise(
         LogStash::ConfigurationError,

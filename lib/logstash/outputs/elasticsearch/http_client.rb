@@ -416,6 +416,8 @@ module LogStash; module Outputs; class ElasticSearch;
           source['script']['file'] = args.delete(:_script)
         when 'inline'
           source['script']['inline'] = args.delete(:_script)
+        when 'source'
+          source['script']['source'] = args.delete(:_script)
         end
         source['script']['lang'] = @options[:script_lang] if @options[:script_lang] != ''
       else

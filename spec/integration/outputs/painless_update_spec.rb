@@ -67,6 +67,18 @@ if ESHelper.es_version_satisfies?(">= 5")
         expect(r["_source"]["counter"]).to eq(4)
       end
 
+      it "should increment a counter with event/doc 'count' variable with source script" do
+        subject = get_es_output({
+          'document_id' => "123",
+          'script' => 'ctx._source.counter += params.event.counter',
+          'script_type' => 'source'
+        })
+        subject.register
+        subject.multi_receive([LogStash::Event.new("counter" => 3 )])
+        r = @es.get(:index => 'logstash-update', :type => doc_type, :id => "123", :refresh => true)
+        expect(r["_source"]["counter"]).to eq(4)
+      end
+
       it "should increment a counter with event/doc 'count' variable with event/doc as upsert and inline script" do
         subject = get_es_output({
           'document_id' => "123",
