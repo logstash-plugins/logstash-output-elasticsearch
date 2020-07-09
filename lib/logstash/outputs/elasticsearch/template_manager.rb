@@ -48,7 +48,7 @@ module LogStash; module Outputs; class ElasticSearch
 
     def self.default_template_path(es_major_version)
       template_version = es_major_version == 1 ? 2 : es_major_version
-      default_template_name = "elasticsearch-template-es#{template_version}x.json"
+      default_template_name = "templates/ecs-disabled/elasticsearch-#{template_version}x.json"
       ::File.expand_path(default_template_name, ::File.dirname(__FILE__))
     end
 
