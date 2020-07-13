@@ -17,7 +17,7 @@ module LogStash; module Outputs; class ElasticSearch
       # For weekly indexes ISO 8601 format is recommended, eg. logstash-%{+xxxx.ww}.
       # LS uses Joda to format the index pattern from event timestamp.
       # Joda formats are defined http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html[here].
-      mod.config :index, :validate => :string, :default => DEFAULT_INDEX_NAME
+      mod.config :index, :validate => :string
 
       mod.config :document_type, 
         :validate => :string, 
@@ -44,7 +44,7 @@ module LogStash; module Outputs; class ElasticSearch
       # `curl -XDELETE <http://localhost:9200/_template/OldTemplateName?pretty>`
       #
       # where `OldTemplateName` is whatever the former setting was.
-      mod.config :template_name, :validate => :string, :default => "logstash"
+      mod.config :template_name, :validate => :string
 
       # You can set the path to your own template here, if you so desire.
       # If not set, the included template will be used.
@@ -153,7 +153,7 @@ module LogStash; module Outputs; class ElasticSearch
       mod.config :ilm_enabled, :validate => [true, false, 'true', 'false', 'auto'], :default => 'auto'
 
       # Rollover alias used for indexing data. If rollover alias doesn't exist, Logstash will create it and map it to the relevant index
-      mod.config :ilm_rollover_alias, :validate => :string, :default => DEFAULT_ROLLOVER_ALIAS
+      mod.config :ilm_rollover_alias, :validate => :string
 
       # appends “{now/d}-000001” by default for new index creation, subsequent rollover indices will increment based on this pattern i.e. “000002”
       # {now/d} is date math, and will insert the appropriate value automatically.

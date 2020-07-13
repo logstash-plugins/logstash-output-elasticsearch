@@ -249,9 +249,9 @@ if ESHelper.es_version_satisfies?(">= 6.6")
     }
     let (:small_max_doc_policy) { max_docs_policy(3) }
     let (:large_max_doc_policy) { max_docs_policy(1000000) }
-    let (:expected_index) { LogStash::Outputs::ElasticSearch::DEFAULT_ROLLOVER_ALIAS }
+    let (:expected_index) { elasticsearch_output_plugin.default_ilm_rollover_alias }
 
-    subject { LogStash::Outputs::ElasticSearch.new(settings) }
+    subject(:elasticsearch_output_plugin) { LogStash::Outputs::ElasticSearch.new(settings) }
 
     before :each do
       # Delete all templates first.

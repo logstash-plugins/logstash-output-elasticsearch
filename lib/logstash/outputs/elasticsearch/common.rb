@@ -436,7 +436,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def default_index?(index)
-      @index == LogStash::Outputs::ElasticSearch::CommonConfigs::DEFAULT_INDEX_NAME
+      @index == @default_index
     end
 
     def dlq_enabled?

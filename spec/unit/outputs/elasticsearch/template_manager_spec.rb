@@ -22,4 +22,10 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
       end
     end
   end
+
+  context 'when ECS v1 is requested' do
+    it 'resolves' do
+      expect(described_class.default_template_path(7, :v1)).to end_with("/templates/ecs-v1/elasticsearch-7x.json")
+    end
+  end
 end

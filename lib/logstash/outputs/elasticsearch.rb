@@ -92,6 +92,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   require "logstash/outputs/elasticsearch/common"
   require "logstash/outputs/elasticsearch/ilm"
 
+  require 'logstash/plugin_mixins/ecs_compatibility_support'
+
   # Protocol agnostic (i.e. non-http, non-java specific) configs go here
   include(LogStash::Outputs::ElasticSearch::CommonConfigs)
 
@@ -100,6 +102,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Methods for ILM support
   include(LogStash::Outputs::ElasticSearch::Ilm)
+
+  # ecs_compatibility option, provided by Logstash core or the support adapter.
+  include(LogStash::PluginMixins::ECSCompatibilitySupport)
 
   config_name "elasticsearch"
 
@@ -241,6 +246,34 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Custom Headers to send on each request to elasticsearch nodes
   config :custom_headers, :validate => :hash, :default => {}
+
+  def initialize(*params)
+    super
+    setup_ecs_compatibility_related_defaults
+  end
+
+  def setup_ecs_compatibility_related_defaults
+    case ecs_compatibility
+    when :disabled
+      @default_index = "logstash-%{+yyyy.MM.dd}"
+      @default_ilm_rollover_alias = "logstash"
+      @default_template_name = 'logstash'
+    when :v1
+      @default_index = "ecs-logstash-%{+yyyy.MM.dd}"
+      @default_ilm_rollover_alias = "ecs-logstash"
+      @default_template_name = 'ecs-logstash'
+    else
+      fail("unsupported ECS Compatibility `#{ecs_compatibility}`")
+    end
+
+    @index ||= default_index
+    @ilm_rollover_alias ||= default_ilm_rollover_alias
+    @template_name ||= default_template_name
+  end
+
+  attr_reader :default_index
+  attr_reader :default_ilm_rollover_alias
+  attr_reader :default_template_name
 
   # @override to handle proxy => '' as if none was set
   def config_init(params)
