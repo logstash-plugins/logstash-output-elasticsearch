@@ -11,10 +11,10 @@ describe "whitelisting error types in expected behavior" do
 
   before :each do
     allow(subject.logger).to receive(:warn)
+    allow(subject).to receive(:maximum_seen_major_version).and_return(0)
 
     subject.register
 
-    allow(subject.client).to receive(:maximum_seen_major_version).and_return(0)
     allow(subject.client).to receive(:get_xpack_info)
     allow(subject.client).to receive(:bulk).and_return(
       {
