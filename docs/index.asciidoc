@@ -68,7 +68,7 @@ definition.
 
 However, the Elasticsearch Index Templates it manages can be configured to
 be ECS-compatible by setting <<plugins-{type}s-{plugin}-ecs_compatibility>>.
-By having an ECS-compatible template in-place, we can ensure that Elasticsearch
+By having an ECS-compatible template in place, we can ensure that Elasticsearch
 is prepared to create and index fields in a way that is compatible with ECS,
 and will correctly reject events with fields that conflict and cannot be coerced.
 
