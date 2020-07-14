@@ -62,12 +62,15 @@ Platform, and Microsoft Azure. {ess-trial}[Try the {es} Service for free].
 
 This plugin will persist events to Elasticsearch in the shape produced by
 your pipeline, and _cannot_ be used to re-shape the event structure into a
-shape that complies with ECS.
+shape that complies with ECS. To produce events that fully comply with ECS,
+you will need to populate ECS-defined fields throughout your pipeline
+definition.
 
 However, the Elasticsearch Index Templates it manages can be configured to
 be ECS-compatible by setting <<plugins-{type}s-{plugin}-ecs_compatibility>>.
 By having an ECS-compatible template in-place, we can ensure that Elasticsearch
-is prepared to create and index fields in a way that is compatible with ECS.
+is prepared to create and index fields in a way that is compatible with ECS,
+and will correctly reject events with fields that conflict and cannot be coerced.
 
 ==== Writing to different indices: best practices
 
@@ -416,8 +419,8 @@ If you don't set a value for this option:
 ** When Logstash provides a `pipeline.ecs_compatibility` setting, its value is used as the default
 ** Otherwise, the default value is `disabled`.
 
-Controls this plugin's desired compatibility with the https://www.elastic.co/blog/introducing-the-elastic-common-schema[Elastic Common Schema],
-including the installation of ECS-Compatible index templates.
+Controls this plugin's compatibility with the {ecs-ref}}[Elastic Common Schema (ECS)],
+including the installation of ECS-compatible index templates.
 The value of this setting affects the _default_ values of:
 
 * <<plugins-{type}s-{plugin}-index>>
@@ -533,7 +536,7 @@ NOTE: If this setting is specified, the policy must already exist in Elasticsear
   * Value type is <<string,string>>
   * Default value depends on whether <<plugins-{type}s-{plugin}-ecs_compatibility>> is enabled:
   ** ECS Compatibility disabled: `logstash`
-  ** ECS Compatibility enabled: `ecs-logstash` (ECS Compatibility is enabled)
+  ** ECS Compatibility enabled: `ecs-logstash`
 
 The rollover alias is the alias where indices managed using Index Lifecycle Management will be written to.
 
