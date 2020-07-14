@@ -12,7 +12,7 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def default_rollover_alias?(rollover_alias)
-      rollover_alias == LogStash::Outputs::ElasticSearch::DEFAULT_ROLLOVER_ALIAS
+      rollover_alias == default_ilm_rollover_alias
     end
 
     def ilm_alias_set?

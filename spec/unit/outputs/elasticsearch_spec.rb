@@ -6,7 +6,7 @@ require "logstash/outputs/elasticsearch"
 describe LogStash::Outputs::ElasticSearch do
   subject { described_class.new(options) }
   let(:options) { {} }
-  let(:maximum_seen_major_version) { rand(100) }
+  let(:maximum_seen_major_version) { [1,2,5,6,7,8].sample }
 
   let(:do_register) { true }
 

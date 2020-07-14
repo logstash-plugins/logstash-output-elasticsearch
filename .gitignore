@@ -12,3 +12,4 @@ target/
 vendor/
 /spec/fixtures/server.key
 /spec/fixtures/server.crt
+/lib/logstash/outputs/elasticsearch/templates/ecs-v*

@@ -1,3 +1,6 @@
+## 10.6.0
+ - Added `ecs_compatiblity` mode, for managing ECS-compatable templates [#952](https://github.com/logstash-plugins/logstash-output-elasticsearch/issue/952)
+
 ## 10.5.1
   - [DOC] Removed outdated compatibility notices, reworked cloud notice, and fixed formatting for `hosts` examples [#938](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/938)
 

@@ -60,8 +60,8 @@ module LogStash; module Outputs; class ElasticSearch;
       !!maximum_seen_major_version
     end
 
-    def use_event_type?(client)
-      client.maximum_seen_major_version < 8
+    def use_event_type?
+      maximum_seen_major_version < 8
     end
 
     # Convert the event into a 3-tuple of action, params, and event
@@ -74,7 +74,7 @@ module LogStash; module Outputs; class ElasticSearch;
         routing_field_name => @routing ? event.sprintf(@routing) : nil
       }
 
-      params[:_type] = get_event_type(event) if use_event_type?(client)
+      params[:_type] = get_event_type(event) if use_event_type?
 
       if @pipeline
         params[:pipeline] = event.sprintf(@pipeline)
@@ -347,11 +347,11 @@ module LogStash; module Outputs; class ElasticSearch;
       type = if @document_type
                event.sprintf(@document_type)
              else
-               if client.maximum_seen_major_version < 6
+               if maximum_seen_major_version < 6
                  event.get("type") || DEFAULT_EVENT_TYPE_ES6
-               elsif client.maximum_seen_major_version == 6
+               elsif maximum_seen_major_version == 6
                  DEFAULT_EVENT_TYPE_ES6
-               elsif client.maximum_seen_major_version == 7
+               elsif maximum_seen_major_version == 7
                  DEFAULT_EVENT_TYPE_ES7
                else
                  nil
@@ -436,7 +436,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def default_index?(index)
-      @index == LogStash::Outputs::ElasticSearch::CommonConfigs::DEFAULT_INDEX_NAME
+      @index == @default_index
     end
 
     def dlq_enabled?
