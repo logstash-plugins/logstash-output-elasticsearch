@@ -419,7 +419,7 @@ If you don't set a value for this option:
 ** When Logstash provides a `pipeline.ecs_compatibility` setting, its value is used as the default
 ** Otherwise, the default value is `disabled`.
 
-Controls this plugin's compatibility with the {ecs-ref}[Elastic Common Schema (ECS)],
+Controls this plugin's compatibility with the https://www.elastic.co/guide/en/ecs/current/index.html[Elastic Common Schema (ECS)],
 including the installation of ECS-compatible index templates.
 The value of this setting affects the _default_ values of:
 
