@@ -60,7 +60,14 @@ module LogStash; module Outputs; class ElasticSearch;
       !!maximum_seen_major_version
     end
 
-    def use_event_type?
+    ##
+    # WARNING: This method is overridden in a subclass in Logstash Core 7.7-7.8's monitoring,
+    #          where a `client` argument is both required and ignored. In later versions of
+    #          Logstash Core it is optional and ignored, but to make it optional here would
+    #          allow us to accidentally break compatibility with Logstashes where it was required.
+    # @param noop_required_client [nil]: required `nil` for legacy reasons.
+    # @return [Boolean]
+    def use_event_type?(noop_required_client)
       maximum_seen_major_version < 8
     end
 
@@ -74,7 +81,7 @@ module LogStash; module Outputs; class ElasticSearch;
         routing_field_name => @routing ? event.sprintf(@routing) : nil
       }
 
-      params[:_type] = get_event_type(event) if use_event_type?
+      params[:_type] = get_event_type(event) if use_event_type?(nil)
 
       if @pipeline
         params[:pipeline] = event.sprintf(@pipeline)
