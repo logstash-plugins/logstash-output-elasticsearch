@@ -1,3 +1,6 @@
+## 10.6.1
+ - Fixed an issue introduced in 10.6.0 that broke Logstash Core's monitoring feature when this plugin is run in Logstash 7.7-7.8. [#953](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/953)
+
 ## 10.6.0
  - Added `ecs_compatiblity` mode, for managing ECS-compatable templates [#952](https://github.com/logstash-plugins/logstash-output-elasticsearch/issue/952)
 
