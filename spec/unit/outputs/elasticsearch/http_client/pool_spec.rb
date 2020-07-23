@@ -54,6 +54,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
     describe "healthcheck url handling" do
       let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
+      let(:success_response) { double("Response", :code => 200) }
 
       context "and not setting healthcheck_path" do
         it "performs the healthcheck to the root" do
@@ -61,6 +62,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
             expect(method).to eq(:head)
             expect(url.path).to be_empty
             expect(req_path).to eq("/")
+
+            success_response
           end
           subject.healthcheck!
         end
@@ -74,6 +77,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
             expect(method).to eq(:head)
             expect(url.path).to be_empty
             expect(req_path).to eq(healthcheck_path)
+
+            success_response
           end
           subject.healthcheck!
         end
@@ -180,9 +185,10 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
     context "with multiple URLs in the list" do
       before :each do
-        allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil)
+        allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil).and_return(success_response)
       end
       let(:initial_urls) { [ ::LogStash::Util::SafeURI.new("http://localhost:9200"), ::LogStash::Util::SafeURI.new("http://localhost:9201"), ::LogStash::Util::SafeURI.new("http://localhost:9202") ] }
+      let(:success_response) { double("Response", :code => 200)}
 
       it "should minimize the number of connections to a single URL" do
         connected_urls = []
@@ -205,7 +211,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
         u,m = subject.get_connection
 
         # The resurrectionist will call this to check on the backend
-        response = double("response")
+        response = double("response", :code => 200)
         expect(adapter).to receive(:perform_request).with(u, :head, subject.healthcheck_path, {}, nil).and_return(response)
 
         subject.return_connection(u)
@@ -224,8 +230,10 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       ::LogStash::Util::SafeURI.new("http://otherhost:9201")
     ] }
 
+    let(:success_response) { double("Response", :code => 200) }
+
     before(:each) do
-      allow(subject).to receive(:perform_request_to_url).and_return(nil)
+      allow(subject).to receive(:perform_request_to_url).and_return(success_response)
       subject.start
     end
 
