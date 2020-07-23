@@ -266,7 +266,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         begin
           logger.debug("Running health check to see if an Elasticsearch connection is working",
-                        :healthcheck_url => url, :path => @healthcheck_path)
+                        :healthcheck_url => url.sanitized.to_s, :path => @healthcheck_path)
           health_check_request(url)
           # If no exception was raised it must have succeeded!
           logger.warn("Restored connection to ES instance", :url => url.sanitized.to_s)
