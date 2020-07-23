@@ -237,6 +237,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # Try to keep locking granularity low such that we don't affect IO...
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         begin
+          logger.debug("Running health check to see if an Elasticsearch connection is working",
+                        :healthcheck_url => url.sanitized.to_s, :path => @healthcheck_path)
           health_check_request(url)
 
           # when called from resurrectionist skip the product check done during register phase
