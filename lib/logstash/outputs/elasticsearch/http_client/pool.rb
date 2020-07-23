@@ -229,8 +229,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def health_check_request(url)
-      logger.debug("Running health check to see if an ES connection is working", url: url.sanitized.to_s, path: @healthcheck_path)
-      perform_request_to_url(url, :head, @healthcheck_path)
+      response = perform_request_to_url(url, :head, @healthcheck_path)
+      raise BadResponseCodeError.new(response.code, url, nil, response.body) unless (200..299).cover?(response.code)
     end
 
     def healthcheck!(register_phase = true)
