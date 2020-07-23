@@ -251,6 +251,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           logger.warn("Restored connection to ES instance", url: url.sanitized.to_s)
           # We reconnected to this node, check its ES version
           es_version = get_es_version(url)
+          if es_version.nil?
+            logger.warn("Failed to retrieve Elasticsearch version data from connected endpoint, connection aborted", :url => url.sanitized.to_s)
+            next
+          end
           @state_mutex.synchronize do
             meta[:version] = es_version
             set_last_es_version(es_version, url)
@@ -466,8 +470,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def get_es_version(url)
-      request = perform_request_to_url(url, :get, ROOT_URI_PATH)
-      LogStash::Json.load(request.body)["version"]["number"] # e.g. "7.10.0"
+      response = perform_request_to_url(url, :get, ROOT_URI_PATH)
+      return nil unless (200..299).cover?(response.code)
+
+      response = LogStash::Json.load(response.body)
+
+      response.fetch('version', {}).fetch('number', nil)
     end
 
     def last_es_version
