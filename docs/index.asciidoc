@@ -523,7 +523,7 @@ NOTE: The pattern must finish with a dash and a number that will be automaticall
 ===== `ilm_policy`
 
   * Value type is <<string,string>>
-  * Default value is `logstash`
+  * Default value is `logstash-policy`
 
 Modify this setting to use a custom Index Lifecycle Management policy, rather than the default. If this value is not set, the default policy will
 be automatically installed into Elasticsearch
