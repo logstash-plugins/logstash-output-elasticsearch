@@ -1,8 +1,12 @@
+## 10.6.2
+ - [DOC] Added clarifying info on http compression settings and behaviors [#943](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/943)
+ - [DOC] Fixed entry for ilm_policy default value[#956](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/956)
+
 ## 10.6.1
  - Fixed an issue introduced in 10.6.0 that broke Logstash Core's monitoring feature when this plugin is run in Logstash 7.7-7.8. [#953](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/953)
 
 ## 10.6.0
- - Added `ecs_compatiblity` mode, for managing ECS-compatable templates [#952](https://github.com/logstash-plugins/logstash-output-elasticsearch/issue/952)
+ - Added `ecs_compatiblity` mode, for managing ECS-compatable templates [#952](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/952)
 
 ## 10.5.1
   - [DOC] Removed outdated compatibility notices, reworked cloud notice, and fixed formatting for `hosts` examples [#938](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/938)
