@@ -4,7 +4,7 @@ require "flores/random"
 require "logstash/outputs/elasticsearch"
 
 describe LogStash::Outputs::ElasticSearch do
-  subject { described_class.new(options) }
+  subject(:elasticsearch_output_plugin) { described_class.new(options) }
   let(:options) { {} }
   let(:maximum_seen_major_version) { [1,2,5,6,7,8].sample }
 
@@ -247,18 +247,28 @@ describe LogStash::Outputs::ElasticSearch do
     end
 
     describe "#multi_receive" do
-      let(:events) { [double("one"), double("two"), double("three")] }
-      let(:events_tuples) { [double("one t"), double("two t"), double("three t")] }
+      context 'with many events' do
+        let(:events) { [double("one"), double("two"), double("three")] }
+        let(:events_tuples) { [double("one t"), double("two t"), double("three t")] }
 
-      before do
-        allow(subject).to receive(:retrying_submit).with(anything)
-        events.each_with_index do |e,i|
-          et = events_tuples[i]
-          allow(subject).to receive(:event_action_tuple).with(e).and_return(et)
+        it 'enters retrying submit with action tuples' do
+          expect(elasticsearch_output_plugin).to receive(:retrying_submit).with(events_tuples)
+          events.zip(events_tuples).each do |event, action_tuple|
+            allow(elasticsearch_output_plugin).to receive(:event_action_tuple).with(event).and_return(action_tuple)
+          end
+
+          elasticsearch_output_plugin.multi_receive(events)
         end
-        subject.multi_receive(events)
       end
 
+      context 'with zero events' do
+        let(:events) { [] }
+        it 'does not enter retrying submit loop' do
+          expect(elasticsearch_output_plugin).to_not receive(:retrying_submit)
+
+          elasticsearch_output_plugin.multi_receive([])
+        end
+      end
     end
 
     context "429 errors" do

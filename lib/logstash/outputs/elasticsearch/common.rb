@@ -33,7 +33,7 @@ module LogStash; module Outputs; class ElasticSearch;
       until @template_installed.true?
         sleep 1
       end
-      retrying_submit(events.map {|e| event_action_tuple(e)})
+      retrying_submit(events.map {|e| event_action_tuple(e)}) unless events.empty?
     end
 
     def setup_after_successful_connection
