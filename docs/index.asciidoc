@@ -647,8 +647,9 @@ not also set this field. That will raise an error at startup
   * Value type is <<string,string>>
   * Default value is `nil`
 
-Set which ingest pipeline you wish to execute for an event. You can also use event dependent configuration here
-like `pipeline => "%{[@metadata][pipeline]}"`. The pipeline parameter won't be set if the value resolves to empty string ("").
+Set which ingest pipeline you wish to execute for an event. You can also use event dependent configuration
+here like `pipeline => "%{INGEST_PIPELINE}"`. The pipeline parameter won't be set if the option is set to 
+an empty string ("") or `nil`.
 
 [id="plugins-{type}s-{plugin}-pool_max"]
 ===== `pool_max` 
