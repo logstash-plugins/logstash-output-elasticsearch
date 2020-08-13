@@ -355,6 +355,28 @@ describe LogStash::Outputs::ElasticSearch do
     end
   end
 
+  describe "the pipeline option" do
+    context "with a sprintf and set pipeline" do
+      let(:options) { {"pipeline" => "%{pipeline}" } }
+
+      let(:event) { LogStash::Event.new("pipeline" => "my-ingest-pipeline") }
+
+      it "should interpolate the pipeline value and set it" do
+        expect(subject.event_action_tuple(event)[1]).to include(:pipeline => "my-ingest-pipeline")
+      end
+    end
+
+    context "with a sprintf and empty pipeline" do
+      let(:options) { {"pipeline" => "%{pipeline}" } }
+
+      let(:event) { LogStash::Event.new("pipeline" => "") }
+
+      it "should interpolate the pipeline value but not set it because it is empty" do
+        expect(subject.event_action_tuple(event)[1]).not_to include(:pipeline)
+      end
+    end
+  end
+
   describe "SSL end to end" do
     let(:do_register) { false } # skip the register in the global before block, as is called here.
 

@@ -1,3 +1,6 @@
+## 10.7.0
+ - Changed: don't set the pipeline parameter if the value resolves to an empty string [#962](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/962)
+
 ## 10.6.2
  - [DOC] Added clarifying info on http compression settings and behaviors [#943](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/943)
  - [DOC] Fixed entry for ilm_policy default value[#956](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/956)

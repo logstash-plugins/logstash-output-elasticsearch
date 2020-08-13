@@ -84,7 +84,13 @@ module LogStash; module Outputs; class ElasticSearch;
       params[:_type] = get_event_type(event) if use_event_type?(nil)
 
       if @pipeline
-        params[:pipeline] = event.sprintf(@pipeline)
+        value = event.sprintf(@pipeline)
+        # convention: empty string equates to not using a pipeline
+        # this is useful when using a field reference in the pipeline setting, e.g.
+        #      elasticsearch {
+        #        pipeline => "%{[@metadata][pipeline]}"
+        #      }
+        params[:pipeline] = value unless value.empty?
       end
 
       if @parent
