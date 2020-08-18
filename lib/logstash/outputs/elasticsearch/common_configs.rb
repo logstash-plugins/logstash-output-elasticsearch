@@ -26,7 +26,7 @@ module LogStash; module Outputs; class ElasticSearch
       # From Logstash 1.3 onwards, a template is applied to Elasticsearch during
       # Logstash's startup if one with the name `template_name` does not already exist.
       # By default, the contents of this template is the default template for
-      # `logstash-%{+YYYY.MM.dd}` which always matches indices based on the pattern
+      # `logstash-%{+yyyy.MM.dd}` which always matches indices based on the pattern
       # `logstash-*`.  Should you require support for other index names, or would like
       # to change the mappings in the template in general, a custom template can be
       # specified by setting `template` to the path of a template file.
