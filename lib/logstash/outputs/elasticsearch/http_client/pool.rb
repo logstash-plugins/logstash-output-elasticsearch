@@ -28,7 +28,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
     end
 
-    attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :healthcheck_path, :sniffing_path, :bulk_path
+    attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :healthcheck_path, :sniffing_path, :bulk_path, :sniffing_attributes
 
     ROOT_URI_PATH = '/'.freeze
     LICENSE_PATH = '/_license'.freeze
@@ -40,6 +40,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       :scheme => 'http',
       :resurrect_delay => 5,
       :sniffing => false,
+      :sniffing_attributes => {},
       :sniffer_delay => 10,
     }.freeze
 
@@ -48,7 +49,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @adapter = adapter
       @metric = options[:metric]
       @initial_urls = initial_urls
-      
+
       raise ArgumentError, "No URL Normalizer specified!" unless options[:url_normalizer]
       @url_normalizer = options[:url_normalizer]
       DEFAULT_OPTIONS.merge(options).tap do |merged|
@@ -58,6 +59,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         @resurrect_delay = merged[:resurrect_delay]
         @sniffing = merged[:sniffing]
         @sniffer_delay = merged[:sniffer_delay]
+        @sniffing_attributes = merged[:sniffing_attributes]
       end
 
       # Used for all concurrent operations in this class
@@ -71,7 +73,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def oss?
      LogStash::Outputs::ElasticSearch.oss?
     end
-    
+
     def start
       update_initial_urls
       start_resurrectionist
@@ -189,15 +191,20 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         end
       end
     end
-    
+
     def major_version(version_string)
       version_string.split('.').first.to_i
     end
-    
+
     def sniff_5x_and_above(nodes)
       nodes.map do |id,info|
         # Skip master-only nodes
         next if info["roles"] && info["roles"] == ["master"]
+        # if !@sniffing_attributes.nil? or !@sniffing_attributes.to_h.empty?
+        if !@sniffing_attributes.to_h.empty?
+          attributes = info["attributes"].clone.delete_if { |key, value| !@sniffing_attributes.key? key }
+          next if attributes != @sniffing_attributes
+        end
         address_str_to_uri(info["http"]["publish_address"]) if info["http"]
       end.compact
     end
@@ -215,7 +222,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       nodes.map do |id,info|
         # TODO Make sure this works with shield. Does that listed
         # stuff as 'https_address?'
-        
+
         addr_str = info['http_address'].to_s
         next unless addr_str # Skip hosts with HTTP disabled
 
@@ -344,7 +351,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
     def update_urls(new_urls)
       return if new_urls.nil?
-      
+
       # Normalize URLs
       new_urls = new_urls.map(&method(:normalize_url))
 
@@ -374,14 +381,14 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           logger.info("Elasticsearch pool URLs updated", :changes => state_changes)
         end
       end
-      
+
       # Run an inline healthcheck anytime URLs are updated
       # This guarantees that during startup / post-startup
       # sniffing we don't have idle periods waiting for the
       # periodic sniffer to allow new hosts to come online
-      healthcheck! 
+      healthcheck!
     end
-    
+
     def size
       @state_mutex.synchronize { @url_info.size }
     end

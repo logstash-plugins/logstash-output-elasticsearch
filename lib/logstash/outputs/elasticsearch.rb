@@ -194,6 +194,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # do not use full URL here, only paths, e.g. "/sniff/_nodes/http"
   config :sniffing_path, :validate => :string
 
+  # Node attribute(s) to filter for. Those that possess and match the following hash of attributes
+  # will be selected.
+  config :sniffing_attributes, :validate => :hash, :default => {}
+
   # Set the address of a forward HTTP proxy.
   # This used to accept hashes as arguments but now only accepts
   # arguments of the URI type to prevent leaking credentials.
