@@ -91,7 +91,7 @@ Each Elasticsearch output is a new client connected to the cluster:
  * it has to initialize the client and connect to Elasticsearch (restart time is longer if you have more clients)
  * it has an associated connection pool
 
-In order to minimize the number of open connections to Elasticsearch, maximize the bulk size and reduce the number of "small" bulk requests (which could easily fill up the queue), it is usually more efficient to have a single Elasticsearch output.
+In order to minimize the number of open connections to Elasticsearch, maximize the bulk size and reduce the number of "small" bulk requests (which could easily fill up the queue), it is usually more efficient to have a single Elasticsearch output.  Bulk request size is set with the logstash configuration `pipeline.batch.size`.
 
 Example:
 [source,ruby]
