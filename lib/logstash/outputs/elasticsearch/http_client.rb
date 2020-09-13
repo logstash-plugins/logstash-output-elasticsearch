@@ -252,6 +252,10 @@ module LogStash; module Outputs; class ElasticSearch;
       client_settings.fetch(:http_compression, false)
     end
 
+    def legacy_template
+      client_settings.fetch(:legacy)
+    end
+
     def build_adapter(options)
       timeout = options[:timeout] || 0
       
@@ -343,11 +347,19 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def template_exists?(name)
-      exists?("/_template/#{name}")
+      if legacy_template
+        exists?("/_template/#{name}")
+      else
+        exists?("/_index_template/#{name}")
+      end
     end
 
     def template_put(name, template)
-      path = "_template/#{name}"
+      if legacy_template
+        path = "_template/#{name}"
+      else
+        path = "_index_template/#{name}"
+      end
       logger.info("Installing elasticsearch template to #{path}")
       @pool.put(path, nil, LogStash::Json.dump(template))
     end

@@ -50,6 +50,12 @@ module LogStash; module Outputs; class ElasticSearch
       # If not set, the included template will be used.
       mod.config :template, :validate => :path
 
+      # The legacy_template option will use the old /_template (ELK >7.7) 
+      # path for creating index templates.
+      # It will also construct the ilm configurations for the template in a manner
+      # which is compatible with legacy templates
+      mod.config :legacy_template, :validate => :boolean, :default => false
+
       # The template_overwrite option will always overwrite the indicated template
       # in Elasticsearch with either the one indicated by template or the included one.
       # This option is set to false by default. If you always want to stay up to date
