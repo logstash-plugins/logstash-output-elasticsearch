@@ -32,14 +32,63 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def self.add_ilm_settings_to_template(plugin, template)
-      # Overwrite any index patterns, and use the rollover alias. Use 'index_patterns' rather than 'template' for pattern
-      # definition - remove any existing definition of 'template'
-      template.delete('template') if template.include?('template')
-      template['index_patterns'] = "#{plugin.ilm_rollover_alias}-*"
-      if template['settings'] && (template['settings']['index.lifecycle.name'] || template['settings']['index.lifecycle.rollover_alias'])
-        plugin.logger.info("Overwriting index lifecycle name and rollover alias as ILM is enabled.")
+      if plugin.original_params.key?('ilm_rollover_alias')
+        # If no index patterns in the 'index_pattern' array would include the 'ilm_rollover_alias' add the 'ilm_rollover_alias' to the 'index_pattern' array
+	if template.key?('index_patterns') && template['index_patterns'].kind_of?(Array) && !template['index_patterns'].any? { |idx_pattern| "#{plugin.ilm_rollover_alias}-".include?(idx_pattern.tr('*','')) }
+          plugin.logger.info("Adding index pattern name for rollover alias as ILM is enabled.")
+  	  template['index_patterns'].append("#{plugin.ilm_rollover_alias}-*")
+        # If 'index_pattern' is not an array and doesn't include the 'ilm_rollover_alias' set the 'index_pattern' to the 'ilm_rollover_alias'
+  	elsif template.key?('index_patterns') && !template['index_patterns'].kind_of?(Array) && !"#{plugin.ilm_rollover_alias}-".include?(template['index_patterns'].tr('*',''))
+          plugin.logger.info("Overwriting index pattern name for rollover alias as ILM is enabled.")
+ 	  template['index_patterns'] = "#{plugin.ilm_rollover_alias}-*"
+        # If 'index_pattern' doesn't exist, set it to the 'ilm_rollover_alias'
+	elsif !template.key('index_patterns')
+          plugin.logger.info("Setting index pattern name for rollover alias as ILM is enabled.")
+	  template['index_patterns'] = "#{plugin.ilm_rollover_alias}-*"
+	end
       end
-      template['settings'].update({ 'index.lifecycle.name' => plugin.ilm_policy, 'index.lifecycle.rollover_alias' => plugin.ilm_rollover_alias})
+      if plugin.legacy_template
+        # definition - remove any existing definition of 'template'
+        template.delete('template') if template.include?('template')
+        # Create settings hash if not in the template, but ilm is enabled
+        if !template.key?('settings')
+          template['settings'] = { }
+        end
+        if plugin.original_params.key?('ilm_rollover_alias')
+          if template['settings']
+	    # Overwrite the rollover_alias, sense it was defined in the output plugin
+            plugin.logger.info("Overwriting index rollover alias with plugin defined alias.")
+            template['settings'].update({ 'index.lifecycle.rollover_alias' => plugin.ilm_rollover_alias})
+          end
+        end
+        if plugin.original_params.key?('ilm_policy')
+          if template['settings'] 
+	    # Overwrite the ilm_policy, sense it was defined in the output plugin
+            plugin.logger.info("Overwriting index lifecycle name with plugin defined ilm policy.")
+            template['settings'].update({ 'index.lifecycle.name' => plugin.ilm_policy})
+	  end
+        end
+      else
+        #plugin.logger.warn(plugin.original_params.key?('ilm_rollover_alias'))
+        # Create settings hash if not in the template, but ilm is enabled
+        if !template['template'].key?('settings')
+          template['template']['settings'] = { }
+        end
+        if plugin.original_params.key?('ilm_rollover_alias')
+          if template['template']['settings']
+	    # Overwrite the rollover_alias, sense it was defined in the output plugin
+            plugin.logger.info("Overwriting index rollover alias with plugin defined alias.")
+            template['template']['settings'].update({ 'index.lifecycle.rollover_alias' => plugin.ilm_rollover_alias})
+          end
+        end
+        if plugin.original_params.key?('ilm_policy')
+          if template['template']['settings'] 
+	    # Overwrite the ilm_policy, sense it was defined in the output plugin
+            plugin.logger.info("Overwriting index lifecycle name with plugin defined ilm policy.")
+            template['template']['settings'].update({ 'index.lifecycle.name' => plugin.ilm_policy})
+	  end
+        end
+      end
     end
 
     # Template name - if template_name set, use it
