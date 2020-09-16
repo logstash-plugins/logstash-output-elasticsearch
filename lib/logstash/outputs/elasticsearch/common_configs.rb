@@ -54,7 +54,7 @@ module LogStash; module Outputs; class ElasticSearch
       # path for creating index templates.
       # It will also construct the ilm configurations for the template in a manner
       # which is compatible with legacy templates
-      mod.config :legacy_template, :validate => :boolean, :default => false
+      mod.config :legacy_template, :validate => :boolean, :default => true
 
       # The template_overwrite option will always overwrite the indicated template
       # in Elasticsearch with either the one indicated by template or the included one.
