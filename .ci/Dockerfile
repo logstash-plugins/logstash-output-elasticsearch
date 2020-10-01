@@ -6,7 +6,7 @@ USER logstash
 COPY --chown=logstash:logstash Gemfile /usr/share/plugins/plugin/Gemfile
 COPY --chown=logstash:logstash *.gemspec VERSION* version* /usr/share/plugins/plugin/
 RUN cp /usr/share/logstash/logstash-core/versions-gem-copy.yml /usr/share/logstash/versions.yml
-ENV PATH="${PATH}:/usr/share/logstash/vendor/jruby/bin"
+ENV PATH="${PATH}:/usr/share/logstash/vendor/jruby/bin:/usr/share/logstash/jdk/bin"
 ENV LOGSTASH_SOURCE="1"
 ENV ELASTIC_STACK_VERSION=$ELASTIC_STACK_VERSION
 # DISTRIBUTION="default" (by default) or "oss"
