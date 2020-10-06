@@ -258,7 +258,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def health_check_request(url)
-      perform_request_to_url(url, :head, @healthcheck_path)
+      response = perform_request_to_url(url, :head, @healthcheck_path)
+      raise BadResponseCodeError.new(response.code, url, nil, response.body) unless (200..299).cover?(response.code)
     end
 
     def healthcheck!
@@ -266,12 +267,16 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         begin
           logger.debug("Running health check to see if an Elasticsearch connection is working",
-                        :healthcheck_url => url, :path => @healthcheck_path)
+                        :healthcheck_url => url.sanitized.to_s, :path => @healthcheck_path)
           health_check_request(url)
           # If no exception was raised it must have succeeded!
           logger.warn("Restored connection to ES instance", :url => url.sanitized.to_s)
           # We reconnected to this node, check its ES version
           es_version = get_es_version(url)
+          if es_version.nil?
+            logger.warn("Failed to retrieve Elasticsearch version data from connected endpoint, connection aborted", :url => url.sanitized.to_s)
+            next
+          end
           @state_mutex.synchronize do
             meta[:version] = es_version
             major = major_version(es_version)
@@ -481,8 +486,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def get_es_version(url)
-      request = perform_request_to_url(url, :get, ROOT_URI_PATH)
-      LogStash::Json.load(request.body)["version"]["number"]
+      response = perform_request_to_url(url, :get, ROOT_URI_PATH)
+      return nil unless (200..299).cover?(response.code)
+
+      response = LogStash::Json.load(response.body)
+
+      response.fetch('version', {}).fetch('number', nil)
     end
 
     def set_new_major_version(version)

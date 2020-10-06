@@ -1,3 +1,9 @@
+## 10.7.1 (UNRELEASED)
+  - Improved connection handling under several partial-failure scenarios [#955](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/955)
+   - Ensures an HTTP connection can be established before adding
+   - Ensures that the version of the connected Elasticsearch is retrieved _successfully_ before the connection is added to the pool.
+   - Fixes a crash that could occur when the plugin is configured to connect to a live HTTP resource that is _not_ Elasticsearch
+
 ## 10.7.0
  - Changed: don't set the pipeline parameter if the value resolves to an empty string [#962](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/962)
 
