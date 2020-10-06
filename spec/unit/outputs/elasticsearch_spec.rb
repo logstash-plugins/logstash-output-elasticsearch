@@ -4,7 +4,7 @@ require "flores/random"
 require "logstash/outputs/elasticsearch"
 
 describe LogStash::Outputs::ElasticSearch do
-  subject { described_class.new(options) }
+  subject(:elasticsearch_output_instance) { described_class.new(options) }
   let(:options) { {} }
   let(:maximum_seen_major_version) { [1,2,5,6,7,8].sample }
 
@@ -265,11 +265,13 @@ describe LogStash::Outputs::ElasticSearch do
       let(:event) { ::LogStash::Event.new("foo" => "bar") }
       let(:error) do
         ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(
-          429, double("url").as_null_object, double("request body"), double("response body")
+          429, double("url").as_null_object, request_body, double("response body")
         )
       end
       let(:logger) { double("logger").as_null_object }
       let(:response) { { :errors => [], :items => [] } }
+
+      let(:request_body) { double(:request_body, :bytesize => 1023) }
 
       before(:each) do
 
@@ -347,6 +349,43 @@ describe LogStash::Outputs::ElasticSearch do
 
         subject.multi_receive(events)
       end
+    end
+  end
+
+  context '413 errors' do
+    let(:payload_size) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES + 1024 }
+    let(:event) { ::LogStash::Event.new("message" => ("a" * payload_size ) ) }
+
+    let(:logger_stub) { double("logger").as_null_object }
+
+    before(:each) do
+      allow(elasticsearch_output_instance.client).to receive(:logger).and_return(logger_stub)
+
+      allow(elasticsearch_output_instance.client).to receive(:bulk).and_call_original
+
+      max_bytes = payload_size * 3 / 4 # ensure a failure first attempt
+      allow(elasticsearch_output_instance.client.pool).to receive(:post) do |path, params, body|
+        if body.length > max_bytes
+          max_bytes *= 2 # ensure a successful retry
+          double("Response", :code => 413, :body => "")
+        else
+          double("Response", :code => 200, :body => '{"errors":false,"items":[{"index":{"status":200,"result":"created"}}]}')
+        end
+      end
+    end
+
+    it 'retries the 413 until it goes away' do
+      elasticsearch_output_instance.multi_receive([event])
+
+      expect(elasticsearch_output_instance.client).to have_received(:bulk).twice
+    end
+
+    it 'logs about payload quantity and size' do
+      elasticsearch_output_instance.multi_receive([event])
+
+      expect(logger_stub).to have_received(:warn)
+                                 .with(a_string_matching(/413 Payload Too Large/),
+                                       hash_including(:action_count => 1, :content_length => a_value > 20_000_000))
     end
   end
 
