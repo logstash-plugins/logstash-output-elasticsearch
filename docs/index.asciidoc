@@ -523,7 +523,8 @@ NOTE: Updating the pattern will require the index template to be rewritten
 
 NOTE: The pattern must finish with a dash and a number that will be automatically incremented when indices rollover.
 
-NOTE: The pattern number is a string zero-padded 6 digits wide, see {ref}/indices-rollover-index.html#rollover-index-api-path-params[Rollover path parameters API docs] for details
+NOTE: The pattern is a 6-digit string padded by zeros, regardless of prior index name. Example: 000001.
+See {ref}/indices-rollover-index.html#rollover-index-api-path-params[Rollover path parameters API docs] for details.
 
 [id="plugins-{type}s-{plugin}-ilm_policy"]
 ===== `ilm_policy`
