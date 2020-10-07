@@ -2,13 +2,14 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
   class Pool
     class NoConnectionAvailableError < Error; end
     class BadResponseCodeError < Error
-      attr_reader :url, :response_code, :request_body, :response_body
+      attr_reader :url, :response_code, :request_body, :response_body, :num_actions_in_request
 
-      def initialize(response_code, url, request_body, response_body)
+      def initialize(response_code, url, request_body, response_body, num_actions_in_request = 1)
         @response_code = response_code
         @url = url
         @request_body = request_body
         @response_body = response_body
+        @num_actions_in_request = num_actions_in_request
       end
 
       def message

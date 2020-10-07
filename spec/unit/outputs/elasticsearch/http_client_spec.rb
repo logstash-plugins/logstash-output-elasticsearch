@@ -190,14 +190,13 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message}],
     ]}
 
-    context "if a message is over TARGET_BULK_BYTES" do
-      let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
-      let(:message) { "a" * (target_bulk_bytes + 1) }
+    context "if a message is over target_bulk_bytes" do
+      let(:message) { "a" * (subject.target_bulk_bytes + 1) }
 
       it "should be handled properly" do
         allow(subject).to receive(:join_bulk_responses)
         expect(subject).to receive(:bulk_send).once do |data|
-          expect(data.size).to be > target_bulk_bytes
+          expect(data.size).to be > subject.target_bulk_bytes
         end
         s = subject.send(:bulk, actions)
       end
@@ -216,9 +215,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
         s = subject.send(:bulk, actions)
       end
 
-      context "if one exceeds TARGET_BULK_BYTES" do
-        let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
-        let(:message1) { "a" * (target_bulk_bytes + 1) }
+      context "if one exceeds target_bulk_bytes" do
+        let(:message1) { "a" * (subject.target_bulk_bytes + 1) }
         it "executes two bulk_send operations" do
           allow(subject).to receive(:join_bulk_responses)
           expect(subject).to receive(:bulk_send).twice
