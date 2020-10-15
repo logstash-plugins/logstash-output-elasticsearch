@@ -1,3 +1,6 @@
+## 10.7.1
+ - [DOC] Document the permissions required in secured clusters [#969](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/969)
+  
 ## 10.7.0
  - Changed: don't set the pipeline parameter if the value resolves to an empty string [#962](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/962)
 

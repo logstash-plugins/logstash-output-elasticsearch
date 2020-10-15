@@ -234,6 +234,13 @@ For requests compression, regardless of the Elasticsearch version, enable the
 
 Authentication to a secure Elasticsearch cluster is possible using one of the `user`/`password`, `cloud_auth` or `api_key` options.
 
+[id="plugins-{type}s-{plugin}-autz"]
+==== Authorization
+
+Authorization to a secure Elasticsearch cluster requires `read` permission at index level and `monitoring` permissions at cluster level.
+The `monitoring` permission at cluster level is necessary to perform periodic connectivity checks.
+
+
 [id="plugins-{type}s-{plugin}-options"]
 ==== Elasticsearch Output Configuration Options
 
