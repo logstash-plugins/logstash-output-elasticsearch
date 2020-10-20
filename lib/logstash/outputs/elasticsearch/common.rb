@@ -153,7 +153,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def hosts_default?(hosts)
       # NOTE: would be nice if pipeline allowed us a clean way to detect a config default :
-      hosts.is_a?(Array) && hosts.size == 1 && hosts.first.equal?(CommonConfigs::DEFAULT_HOST)
+      hosts.is_a?(Array) && hosts.size == 1 && hosts.first.equal?(LogStash::PluginMixins::ElasticSearch::APIConfigs::DEFAULT_HOST)
     end
     private :hosts_default?
 

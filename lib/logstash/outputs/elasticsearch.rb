@@ -88,14 +88,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   require "logstash/outputs/elasticsearch/http_client"
   require "logstash/outputs/elasticsearch/http_client_builder"
-  require "logstash/outputs/elasticsearch/common_configs"
+  require "logstash/plugin_mixins/elasticsearch/api_configs"
   require "logstash/outputs/elasticsearch/common"
   require "logstash/outputs/elasticsearch/ilm"
-
   require 'logstash/plugin_mixins/ecs_compatibility_support'
-
-  # Protocol agnostic (i.e. non-http, non-java specific) configs go here
-  include(LogStash::Outputs::ElasticSearch::CommonConfigs)
 
   # Protocol agnostic methods
   include(LogStash::Outputs::ElasticSearch::Common)
@@ -105,6 +101,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # ecs_compatibility option, provided by Logstash core or the support adapter.
   include(LogStash::PluginMixins::ECSCompatibilitySupport)
+
+  # Generic/API config options that any document indexer output needs
+  include(LogStash::PluginMixins::ElasticSearch::APIConfigs)
+
+  DEFAULT_POLICY = "logstash-policy"
 
   config_name "elasticsearch"
 
@@ -122,130 +123,128 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # For more details on actions, check out the http://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
   config :action, :validate => :string, :default => "index"
 
-  # Username to authenticate to a secure Elasticsearch cluster
-  config :user, :validate => :string
-  # Password to authenticate to a secure Elasticsearch cluster
-  config :password, :validate => :password
+  # The index to write events to. This can be dynamic using the `%{foo}` syntax.
+  # The default value will partition your indices by day so you can more easily
+  # delete old data or only search specific date ranges.
+  # Indexes may not contain uppercase characters.
+  # For weekly indexes ISO 8601 format is recommended, eg. logstash-%{+xxxx.ww}.
+  # LS uses Joda to format the index pattern from event timestamp.
+  # Joda formats are defined http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html[here].
+  config :index, :validate => :string
 
-  # Authenticate using Elasticsearch API key.
-  # format is id:api_key (as returned by https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html[Create API key])
-  config :api_key, :validate => :password
+  config :document_type,
+    :validate => :string,
+    :deprecated => "Document types are being deprecated in Elasticsearch 6.0, and removed entirely in 7.0. You should avoid this feature"
 
-  # Cloud authentication string ("<username>:<password>" format) is an alternative for the `user`/`password` configuration.
+  # From Logstash 1.3 onwards, a template is applied to Elasticsearch during
+  # Logstash's startup if one with the name `template_name` does not already exist.
+  # By default, the contents of this template is the default template for
+  # `logstash-%{+YYYY.MM.dd}` which always matches indices based on the pattern
+  # `logstash-*`.  Should you require support for other index names, or would like
+  # to change the mappings in the template in general, a custom template can be
+  # specified by setting `template` to the path of a template file.
   #
-  # For more details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_auth[cloud documentation]
-  config :cloud_auth, :validate => :password
+  # Setting `manage_template` to false disables this feature.  If you require more
+  # control over template creation, (e.g. creating indices dynamically based on
+  # field names) you should set `manage_template` to false and use the REST
+  # API to apply your templates manually.
+  config :manage_template, :validate => :boolean, :default => true
 
-  # HTTP Path at which the Elasticsearch server lives. Use this if you must run Elasticsearch behind a proxy that remaps
-  # the root path for the Elasticsearch HTTP API lives.
-  # Note that if you use paths as components of URLs in the 'hosts' field you may
-  # not also set this field. That will raise an error at startup
-  config :path, :validate => :string
+  # This configuration option defines how the template is named inside Elasticsearch.
+  # Note that if you have used the template management features and subsequently
+  # change this, you will need to prune the old template manually, e.g.
+  #
+  # `curl -XDELETE <http://localhost:9200/_template/OldTemplateName?pretty>`
+  #
+  # where `OldTemplateName` is whatever the former setting was.
+  config :template_name, :validate => :string
 
-  # HTTP Path to perform the _bulk requests to
-  # this defaults to a concatenation of the path parameter and "_bulk"
-  config :bulk_path, :validate => :string
+  # You can set the path to your own template here, if you so desire.
+  # If not set, the included template will be used.
+  config :template, :validate => :path
 
-  # Pass a set of key value pairs as the URL query string. This query string is added
-  # to every host listed in the 'hosts' configuration. If the 'hosts' list contains
-  # urls that already have query strings, the one specified here will be appended.
-  config :parameters, :validate => :hash
+  # The template_overwrite option will always overwrite the indicated template
+  # in Elasticsearch with either the one indicated by template or the included one.
+  # This option is set to false by default. If you always want to stay up to date
+  # with the template provided by Logstash, this option could be very useful to you.
+  # Likewise, if you have your own template file managed by puppet, for example, and
+  # you wanted to be able to update it regularly, this option could help there as well.
+  #
+  # Please note that if you are using your own customized version of the Logstash
+  # template (logstash), setting this to true will make Logstash to overwrite
+  # the "logstash" template (i.e. removing all customized settings)
+  config :template_overwrite, :validate => :boolean, :default => false
 
-  # Enable SSL/TLS secured communication to Elasticsearch cluster. Leaving this unspecified will use whatever scheme
-  # is specified in the URLs listed in 'hosts'. If no explicit protocol is specified plain HTTP will be used.
-  # If SSL is explicitly disabled here the plugin will refuse to start if an HTTPS URL is given in 'hosts'
-  config :ssl, :validate => :boolean
+  # The version to use for indexing. Use sprintf syntax like `%{my_version}` to use a field value here.
+  # See https://www.elastic.co/blog/elasticsearch-versioning-support.
+  config :version, :validate => :string
 
-  # Option to validate the server's certificate. Disabling this severely compromises security.
-  # For more information on disabling certificate verification please read
-  # https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
-  config :ssl_certificate_verification, :validate => :boolean, :default => true
+  # The version_type to use for indexing.
+  # See https://www.elastic.co/blog/elasticsearch-versioning-support.
+  # See also https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types
+  config :version_type, :validate => ["internal", 'external', "external_gt", "external_gte", "force"]
 
-  # The .cer or .pem file to validate the server's certificate
-  config :cacert, :validate => :path
+  # A routing override to be applied to all processed events.
+  # This can be dynamic using the `%{foo}` syntax.
+  config :routing, :validate => :string
 
-  # The JKS truststore to validate the server's certificate.
-  # Use either `:truststore` or `:cacert`
-  config :truststore, :validate => :path
+  # For child documents, ID of the associated parent.
+  # This can be dynamic using the `%{foo}` syntax.
+  config :parent, :validate => :string, :default => nil
 
-  # Set the truststore password
-  config :truststore_password, :validate => :password
+  # For child documents, name of the join field
+  config :join_field, :validate => :string, :default => nil
 
-  # The keystore used to present a certificate to the server.
-  # It can be either .jks or .p12
-  config :keystore, :validate => :path
+  # Set upsert content for update mode.s
+  # Create a new document with this parameter as json string if `document_id` doesn't exists
+  config :upsert, :validate => :string, :default => ""
 
-  # Set the keystore password
-  config :keystore_password, :validate => :password
+  # Enable `doc_as_upsert` for update mode.
+  # Create a new document with source if `document_id` doesn't exist in Elasticsearch
+  config :doc_as_upsert, :validate => :boolean, :default => false
 
-  # This setting asks Elasticsearch for the list of all cluster nodes and adds them to the hosts list.
-  # Note: This will return ALL nodes with HTTP enabled (including master nodes!). If you use
-  # this with master nodes, you probably want to disable HTTP on them by setting
-  # `http.enabled` to false in their elasticsearch.yml. You can either use the `sniffing` option or
-  # manually enter multiple Elasticsearch hosts using the `hosts` parameter.
-  config :sniffing, :validate => :boolean, :default => false
+  # Set script name for scripted update mode
+  config :script, :validate => :string, :default => ""
 
-  # How long to wait, in seconds, between sniffing attempts
-  config :sniffing_delay, :validate => :number, :default => 5
+  # Define the type of script referenced by "script" variable
+  #  inline : "script" contains inline script
+  #  indexed : "script" contains the name of script directly indexed in elasticsearch
+  #  file    : "script" contains the name of script stored in elasticseach's config directory
+  config :script_type, :validate => ["inline", 'indexed', "file"], :default => ["inline"]
 
-  # HTTP Path to be used for the sniffing requests
-  # the default value is computed by concatenating the path value and "_nodes/http"
-  # if sniffing_path is set it will be used as an absolute path
-  # do not use full URL here, only paths, e.g. "/sniff/_nodes/http"
-  config :sniffing_path, :validate => :string
+  # Set the language of the used script. If not set, this defaults to painless in ES 5.0
+  config :script_lang, :validate => :string, :default => "painless"
 
-  # Set the address of a forward HTTP proxy.
-  # This used to accept hashes as arguments but now only accepts
-  # arguments of the URI type to prevent leaking credentials.
-  config :proxy, :validate => :uri # but empty string is allowed
+  # Set variable name passed to script (scripted update)
+  config :script_var_name, :validate => :string, :default => "event"
 
-  # Set the timeout, in seconds, for network operations and requests sent Elasticsearch. If
-  # a timeout occurs, the request will be retried.
-  config :timeout, :validate => :number, :default => 60
+  # if enabled, script is in charge of creating non-existent document (scripted update)
+  config :scripted_upsert, :validate => :boolean, :default => false
 
-  # Set the Elasticsearch errors in the whitelist that you don't want to log.
-  # A useful example is when you want to skip all 409 errors
-  # which are `document_already_exists_exception`.
-  config :failure_type_logging_whitelist, :validate => :array, :default => []
+  # The number of times Elasticsearch should internally retry an update/upserted document
+  # See the https://www.elastic.co/guide/en/elasticsearch/guide/current/partial-updates.html[partial updates]
+  # for more info
+  config :retry_on_conflict, :validate => :number, :default => 1
 
-  # While the output tries to reuse connections efficiently we have a maximum.
-  # This sets the maximum number of open connections the output will create.
-  # Setting this too low may mean frequently closing / opening connections
-  # which is bad.
-  config :pool_max, :validate => :number, :default => 1000
+  # Set which ingest pipeline you wish to execute for an event. You can also use event dependent configuration
+  # here like `pipeline => "%{INGEST_PIPELINE}"`
+  config :pipeline, :validate => :string, :default => nil
 
-  # While the output tries to reuse connections efficiently we have a maximum per endpoint.
-  # This sets the maximum number of open connections per endpoint the output will create.
-  # Setting this too low may mean frequently closing / opening connections
-  # which is bad.
-  config :pool_max_per_route, :validate => :number, :default => 100
+  # -----
+  # ILM configurations (beta)
+  # -----
+  # Flag for enabling Index Lifecycle Management integration.
+  config :ilm_enabled, :validate => [true, false, 'true', 'false', 'auto'], :default => 'auto'
 
-  # HTTP Path where a HEAD request is sent when a backend is marked down
-  # the request is sent in the background to see if it has come back again
-  # before it is once again eligible to service requests.
-  # If you have custom firewall rules you may need to change this
-  config :healthcheck_path, :validate => :string
+  # Rollover alias used for indexing data. If rollover alias doesn't exist, Logstash will create it and map it to the relevant index
+  config :ilm_rollover_alias, :validate => :string
 
-  # How frequently, in seconds, to wait between resurrection attempts.
-  # Resurrection is the process by which backend endpoints marked 'down' are checked
-  # to see if they have come back to life
-  config :resurrect_delay, :validate => :number, :default => 5
+  # appends “{now/d}-000001” by default for new index creation, subsequent rollover indices will increment based on this pattern i.e. “000002”
+  # {now/d} is date math, and will insert the appropriate value automatically.
+  config :ilm_pattern, :validate => :string, :default => '{now/d}-000001'
 
-  # How long to wait before checking if the connection is stale before executing a request on a connection using keepalive.
-  # You may want to set this lower, if you get connection errors regularly
-  # Quoting the Apache commons docs (this client is based Apache Commmons):
-  # 'Defines period of inactivity in milliseconds after which persistent connections must
-  # be re-validated prior to being leased to the consumer. Non-positive value passed to
-  # this method disables connection validation. This check helps detect connections that
-  # have become stale (half-closed) while kept inactive in the pool.'
-  # See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/conn/PoolingHttpClientConnectionManager.html#setValidateAfterInactivity(int)[these docs for more info]
-  config :validate_after_inactivity, :validate => :number, :default => 10000
-
-  # Enable gzip compression on requests. Note that response compression is on by default for Elasticsearch v5.0 and beyond
-  config :http_compression, :validate => :boolean, :default => false
-
-  # Custom Headers to send on each request to elasticsearch nodes
-  config :custom_headers, :validate => :hash, :default => {}
+  # ILM policy to use, if undefined the default policy will be used.
+  config :ilm_policy, :validate => :string, :default => DEFAULT_POLICY
 
   def initialize(*params)
     super
@@ -323,5 +322,4 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     name = plugin.name.split('-')[-1]
     require "logstash/outputs/elasticsearch/#{name}"
   end
-
-end # class LogStash::Outputs::Elasticsearch
+end
