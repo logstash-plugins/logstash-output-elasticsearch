@@ -369,7 +369,7 @@ The .cer or .pem file to validate the server's certificate
 
 Cloud authentication string ("<username>:<password>" format) is an alternative for the `user`/`password` pair.
 
-For more details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_auth[Logstash-to-Cloud documentation]
+For more details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html[Logstash-to-Cloud documentation]
 
 [id="plugins-{type}s-{plugin}-cloud_id"]
 ===== `cloud_id`
@@ -379,7 +379,7 @@ For more details, check out the https://www.elastic.co/guide/en/logstash/current
 
 Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
 
-For more details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_id[Logstash-to-Cloud documentation]
+For more details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html[Logstash-to-Cloud documentation]
 
 [id="plugins-{type}s-{plugin}-doc_as_upsert"]
 ===== `doc_as_upsert`
