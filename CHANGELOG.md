@@ -1,3 +1,6 @@
+## 10.7.2
+ - [DOC] Fixed links to restructured Logstash-to-cloud docs [#975](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/975)
+
 ## 10.7.1
  - [DOC] Document the permissions required in secured clusters [#969](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/969)
   
