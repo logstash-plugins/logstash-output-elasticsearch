@@ -286,6 +286,7 @@ module LogStash; module Outputs; class ElasticSearch;
       adapter = build_adapter(options)
 
       pool_options = {
+        :license_checker => options[:license_checker],
         :sniffing => sniffing,
         :sniffer_delay => options[:sniffer_delay],
         :sniffing_path => options[:sniffing_path],

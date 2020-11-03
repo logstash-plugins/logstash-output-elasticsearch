@@ -1,5 +1,6 @@
 ## unreleased
  - Refactored configuration options into specific and shared in PluginMixins namespace [#973](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/973)
+ - Refactored common methods into specific and shared in PluginMixins namespace [#976](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/976)
 
 ## 10.7.3
  - Added composable index template support for elasticsearch version 8 [#980](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/980)

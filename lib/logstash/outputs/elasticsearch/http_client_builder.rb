@@ -15,6 +15,7 @@ module LogStash; module Outputs; class ElasticSearch;
       client_settings[:proxy] = params["proxy"] if params["proxy"]
       
       common_options = {
+        :license_checker => params["license_checker"],
         :client_settings => client_settings,
         :metric => params["metric"],
         :resurrect_delay => params["resurrect_delay"]
