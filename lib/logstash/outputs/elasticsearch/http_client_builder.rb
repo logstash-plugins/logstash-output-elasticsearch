@@ -9,7 +9,8 @@ module LogStash; module Outputs; class ElasticSearch;
         :pool_max_per_route => params["pool_max_per_route"],
         :check_connection_timeout => params["validate_after_inactivity"],
         :http_compression => params["http_compression"],
-        :headers => params["custom_headers"] || {}
+        :headers => params["custom_headers"] || {},
+        :legacy => params["legacy_template"]
       }
       
       client_settings[:proxy] = params["proxy"] if params["proxy"]
