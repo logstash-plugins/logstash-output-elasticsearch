@@ -343,13 +343,17 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def template_exists?(name)
-      exists?("/_template/#{name}")
+      exists?("/#{template_endpoint}/#{name}")
     end
 
     def template_put(name, template)
-      path = "_template/#{name}"
+      path = "#{template_endpoint}/#{name}"
       logger.info("Installing elasticsearch template to #{path}")
       @pool.put(path, nil, LogStash::Json.dump(template))
+    end
+
+    def template_endpoint
+      maximum_seen_major_version < 8 ? '_template' : '_index_template'
     end
 
     # ILM methods
