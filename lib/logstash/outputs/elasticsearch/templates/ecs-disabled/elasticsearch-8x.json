@@ -43,7 +43,8 @@
       }
     }
   },
+  "priority": 200,
   "_meta" : {
-    "description": "logstash default template for elasticsearch 8x"
+    "description": "index template for logstash-output-elasticsearch"
   }
 }
