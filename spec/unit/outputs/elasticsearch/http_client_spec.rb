@@ -1,3 +1,4 @@
+require_relative "../../../../spec/es_spec_helper"
 require "logstash/devutils/rspec/spec_helper"
 require "logstash/outputs/elasticsearch/http_client"
 require "java"
