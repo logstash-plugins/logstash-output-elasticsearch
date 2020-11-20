@@ -578,7 +578,7 @@ describe LogStash::Outputs::ElasticSearch do
       let(:options) { { 'cloud_id' => 'invalid:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlv' } }
 
       it "should fail" do
-        expect { subject.register }.to raise_error /Cloud Id.*? is invalid/
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /cloud_id.*? is invalid/
       end
     end
 
