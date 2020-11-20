@@ -59,7 +59,12 @@ module ESHelper
   end
 
   def field_properties_from_template(template_name, field)
-    mappings = @es.indices.get_template(name: template_name)[template_name]["mappings"]
+    template = get_template(@es, template_name)
+    mappings = if ESHelper.es_version_satisfies?(">=8")
+      template['template']['mappings']
+    else
+      template['mappings']
+    end
     mapping = default_mapping_from_mappings(mappings)
     mapping["properties"][field]["properties"]
   end
