@@ -105,6 +105,7 @@ module ESHelper
 
   def clean(client)
     client.indices.delete_template(:name => "*")
+    client.indices.delete_index_template(:name => "logstash*") rescue nil
     # This can fail if there are no indexes, ignore failure.
     client.indices.delete(:index => "*") rescue nil
     clean_ilm(client) if supports_ilm?(client)
@@ -181,6 +182,24 @@ module ESHelper
       }
     }
   }
+  end
+
+  def get_template(client, name)
+    if ESHelper.es_version_satisfies?(">=8")
+      t = client.indices.get_index_template(name: name)
+      t['index_templates'][0]['index_template']
+    else
+      t = client.indices.get_template(name: name)
+      t[name]
+    end
+  end
+
+  def get_template_settings(template)
+    if ESHelper.es_version_satisfies?(">=8")
+      template['template']['settings']
+    else
+      template['settings']
+    end
   end
 end
 
