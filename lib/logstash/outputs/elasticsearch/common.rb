@@ -250,6 +250,8 @@ module LogStash; module Outputs; class ElasticSearch;
 
       sleep_interval = @retry_initial_interval
 
+      failed_retries = 0
+
       while submit_actions && submit_actions.length > 0
 
         # We retry with whatever is didn't succeed
@@ -267,6 +269,16 @@ module LogStash; module Outputs; class ElasticSearch;
 
         # Everything was a success!
         break if !submit_actions || submit_actions.empty?
+
+        failed_retries += 1
+
+        if @retry_max_failures > 0 && failed_retries == @retry_max_failures
+          @logger.warn("Giving up on individual bulk actions that failed or were rejected by the previous bulk request.",
+                      :actions => submit_actions.map { |action_type, params, event| [action_type, params, event.to_s] },
+                      :retries => failed_retries,
+                      :count => submit_actions.size)
+          break
+        end
 
         # If we're retrying the action sleep for the recommended interval
         # Double the interval for the next time through to achieve exponential backoff
