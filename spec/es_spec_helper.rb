@@ -49,24 +49,10 @@ module ESHelper
     Time.now.strftime("%Y.%m.%d")
   end
 
-
-  def default_mapping_from_mappings(mappings)
-    if ESHelper.es_version_satisfies?(">=7")
-      mappings
-    else
-      mappings["_default_"]
-    end
-  end
-
   def field_properties_from_template(template_name, field)
     template = get_template(@es, template_name)
-    mappings = if ESHelper.es_version_satisfies?(">=8")
-      template['template']['mappings']
-    else
-      template['mappings']
-    end
-    mapping = default_mapping_from_mappings(mappings)
-    mapping["properties"][field]["properties"]
+    mappings = get_template_mappings(template)
+    mappings["properties"][field]["properties"]
   end
 
   def routing_field_name
@@ -204,6 +190,16 @@ module ESHelper
       template['template']['settings']
     else
       template['settings']
+    end
+  end
+
+  def get_template_mappings(template)
+    if ESHelper.es_version_satisfies?(">=8")
+      template['template']['mappings']
+    elsif ESHelper.es_version_satisfies?(">=7")
+      template['mappings']
+    else
+      template['mappings']["_default_"]
     end
   end
 end
