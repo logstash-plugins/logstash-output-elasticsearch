@@ -49,19 +49,10 @@ module ESHelper
     Time.now.strftime("%Y.%m.%d")
   end
 
-
-  def default_mapping_from_mappings(mappings)
-    if ESHelper.es_version_satisfies?(">=7")
-      mappings
-    else
-      mappings["_default_"]
-    end
-  end
-
   def field_properties_from_template(template_name, field)
-    mappings = @es.indices.get_template(name: template_name)[template_name]["mappings"]
-    mapping = default_mapping_from_mappings(mappings)
-    mapping["properties"][field]["properties"]
+    template = get_template(@es, template_name)
+    mappings = get_template_mappings(template)
+    mappings["properties"][field]["properties"]
   end
 
   def routing_field_name
@@ -105,6 +96,7 @@ module ESHelper
 
   def clean(client)
     client.indices.delete_template(:name => "*")
+    client.indices.delete_index_template(:name => "logstash*") rescue nil
     # This can fail if there are no indexes, ignore failure.
     client.indices.delete(:index => "*") rescue nil
     clean_ilm(client) if supports_ilm?(client)
@@ -181,6 +173,34 @@ module ESHelper
       }
     }
   }
+  end
+
+  def get_template(client, name)
+    if ESHelper.es_version_satisfies?(">=8")
+      t = client.indices.get_index_template(name: name)
+      t['index_templates'][0]['index_template']
+    else
+      t = client.indices.get_template(name: name)
+      t[name]
+    end
+  end
+
+  def get_template_settings(template)
+    if ESHelper.es_version_satisfies?(">=8")
+      template['template']['settings']
+    else
+      template['settings']
+    end
+  end
+
+  def get_template_mappings(template)
+    if ESHelper.es_version_satisfies?(">=8")
+      template['template']['mappings']
+    elsif ESHelper.es_version_satisfies?(">=7")
+      template['mappings']
+    else
+      template['mappings']["_default_"]
+    end
   end
 end
 

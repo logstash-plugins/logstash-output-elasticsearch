@@ -1,3 +1,4 @@
+require_relative "../../../../spec/es_spec_helper"
 require "logstash/devutils/rspec/spec_helper"
 require "logstash/outputs/elasticsearch/http_client"
 require "java"
@@ -135,6 +136,27 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     it "returns the hash response" do
       expect(subject.pool).to receive(:get).with(path, nil).and_return(get_response)
       expect(subject.get(path)["body"]).to eq(body)
+    end
+  end
+
+  describe "index template" do
+    subject { described_class.new(base_options) }
+    let(:template_name) { "logstash" }
+    let(:template) { {} }
+    let(:get_response) {
+      double("response", :body => {})
+    }
+
+    it "should call composable index template in version 8+" do
+      expect(subject).to receive(:maximum_seen_major_version).and_return(8)
+      expect(subject.pool).to receive(:put).with("_index_template/#{template_name}", nil, anything).and_return(get_response)
+      subject.template_put(template_name, template)
+    end
+
+    it "should call index template in version < 8" do
+      expect(subject).to receive(:maximum_seen_major_version).and_return(7)
+      expect(subject.pool).to receive(:put).with("_template/#{template_name}", nil, anything).and_return(get_response)
+      subject.template_put(template_name, template)
     end
   end
 

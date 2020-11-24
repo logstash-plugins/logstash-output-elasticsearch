@@ -8,7 +8,7 @@ shared_examples_for 'an ILM enabled Logstash' do
     let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
 
     it 'should rollover when the policy max docs is reached' do
-      put_policy(@es,ilm_policy_name, policy)
+      put_policy(@es, ilm_policy_name, policy)
       subject.register
 
       subject.multi_receive([
@@ -108,9 +108,11 @@ shared_examples_for 'an ILM disabled Logstash' do
   it 'should not write the ILM settings into the template' do
     subject.register
     sleep(1)
-    expect(@es.indices.get_template(name: "logstash")["logstash"]).to have_index_pattern("logstash-*")
+
+    template = get_template(@es, "logstash")
+    expect(template).to have_index_pattern("logstash-*")
     if ESHelper.es_version_satisfies?(">= 2")
-      expect(@es.indices.get_template(name: "logstash")["logstash"]["settings"]['index']['lifecycle']).to be_nil
+      expect(get_template_settings(template)['index']['lifecycle']).to be_nil
     end
   end
 
@@ -152,16 +154,17 @@ shared_examples_for 'an ILM disabled Logstash' do
   end
 
   context 'with a custom template name' do
-    let (:template_name) { "custom_template_name" }
+    let (:template_name) { "logstash_custom_template_name" }
     let (:settings) { super.merge('template_name' => template_name)}
 
     it 'should not write the ILM settings into the template' do
       subject.register
       sleep(1)
 
-      expect(@es.indices.get_template(name: template_name)[template_name]).to have_index_pattern("logstash-*")
+      template = get_template(@es, template_name)
+      expect(template).to have_index_pattern("logstash-*")
       if ESHelper.es_version_satisfies?(">= 2")
-        expect(@es.indices.get_template(name: template_name)[template_name]["settings"]['index']['lifecycle']).to be_nil
+        expect(get_template_settings(template)['index']['lifecycle']).to be_nil
       end
     end
   end
@@ -387,16 +390,20 @@ if ESHelper.es_version_satisfies?(">= 6.6")
         it 'should write the ILM settings into the template' do
           subject.register
           sleep(1)
-          expect(@es.indices.get_template(name: "logstash")["logstash"]).to have_index_pattern("logstash-*")
-          expect(@es.indices.get_template(name: "logstash")["logstash"]["settings"]['index']['lifecycle']['name']).to eq("logstash-policy")
-          expect(@es.indices.get_template(name: "logstash")["logstash"]["settings"]['index']['lifecycle']['rollover_alias']).to eq("logstash")
+
+          template = get_template(@es, "logstash")
+          expect(template).to have_index_pattern("logstash-*")
+          expect(get_template_settings(template)['index']['lifecycle']['name']).to eq("logstash-policy")
+          expect(get_template_settings(template)['index']['lifecycle']['rollover_alias']).to eq("logstash")
         end
 
         it_behaves_like 'an ILM enabled Logstash'
       end
 
       context 'with a set index and a custom index pattern' do
-        if ESHelper.es_version_satisfies?(">= 7.0")
+        if ESHelper.es_version_satisfies?(">= 8.0")
+          let (:template) { "spec/fixtures/template-with-policy-es8x.json" }
+        elsif ESHelper.es_version_satisfies?(">= 7.0")
           let (:template) { "spec/fixtures/template-with-policy-es7x.json" }
         else
           let (:template) { "spec/fixtures/template-with-policy-es6x.json" }
@@ -408,13 +415,15 @@ if ESHelper.es_version_satisfies?(">= 6.6")
         it 'should not overwrite the index patterns' do
           subject.register
           sleep(1)
-          expect(@es.indices.get_template(name: "logstash")["logstash"]).to have_index_pattern("overwrite-*")
+
+          template = get_template(@es, "logstash")
+          expect(template).to have_index_pattern("overwrite-*")
         end
       end
 
 
       context 'with a custom template' do
-        let (:ilm_rollover_alias) { "the_cat_in_the_hat" }
+        let (:ilm_rollover_alias) { "logstash_the_cat_in_the_hat" }
         let (:index) { ilm_rollover_alias }
         let(:expected_index) { index }
         let (:settings) { super.merge("ilm_policy" => ilm_policy_name,
@@ -422,7 +431,9 @@ if ESHelper.es_version_satisfies?(">= 6.6")
                                       "ilm_rollover_alias" => ilm_rollover_alias)}
 
 
-        if ESHelper.es_version_satisfies?(">= 7.0")
+        if ESHelper.es_version_satisfies?(">= 8.0")
+          let (:template) { "spec/fixtures/template-with-policy-es8x.json" }
+        elsif ESHelper.es_version_satisfies?(">= 7.0")
           let (:template) { "spec/fixtures/template-with-policy-es7x.json" }
         else
           let (:template) { "spec/fixtures/template-with-policy-es6x.json" }
@@ -460,13 +471,15 @@ if ESHelper.es_version_satisfies?(">= 6.6")
         it 'should write the ILM settings into the template' do
           subject.register
           sleep(1)
-          expect(@es.indices.get_template(name: ilm_rollover_alias)[ilm_rollover_alias]).to have_index_pattern("#{ilm_rollover_alias}-*")
-          expect(@es.indices.get_template(name: ilm_rollover_alias)[ilm_rollover_alias]["settings"]['index']['lifecycle']['name']).to eq(ilm_policy_name)
-          expect(@es.indices.get_template(name: ilm_rollover_alias)[ilm_rollover_alias]["settings"]['index']['lifecycle']['rollover_alias']).to eq(ilm_rollover_alias)
+
+          template = get_template(@es, ilm_rollover_alias)
+          expect(template).to have_index_pattern("#{ilm_rollover_alias}-*")
+          expect(get_template_settings(template)['index']['lifecycle']['name']).to eq(ilm_policy_name)
+          expect(get_template_settings(template)['index']['lifecycle']['rollover_alias']).to eq(ilm_rollover_alias)
         end
 
         context 'with a different template_name' do
-          let (:template_name) { "custom_template_name" }
+          let (:template_name) { "logstash_custom_template_name" }
           let (:settings) { super.merge('template_name' => template_name)}
 
           it_behaves_like 'an ILM enabled Logstash'
@@ -474,9 +487,10 @@ if ESHelper.es_version_satisfies?(">= 6.6")
           it 'should write the ILM settings into the template' do
             subject.register
             sleep(1)
-            expect(@es.indices.get_template(name: template_name)[template_name]).to have_index_pattern("#{ilm_rollover_alias}-*")
-            expect(@es.indices.get_template(name: template_name)[template_name]["settings"]['index']['lifecycle']['name']).to eq(ilm_policy_name)
-            expect(@es.indices.get_template(name: template_name)[template_name]["settings"]['index']['lifecycle']['rollover_alias']).to eq(ilm_rollover_alias)
+            template = get_template(@es, template_name)
+            expect(template).to have_index_pattern("#{ilm_rollover_alias}-*")
+            expect(get_template_settings(template)['index']['lifecycle']['name']).to eq(ilm_policy_name)
+            expect(get_template_settings(template)['index']['lifecycle']['rollover_alias']).to eq(ilm_rollover_alias)
           end
         end
 

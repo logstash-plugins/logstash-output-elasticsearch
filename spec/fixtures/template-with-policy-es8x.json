@@ -1,9 +1,9 @@
 {
-  "index_patterns" : "logstash-*",
+  "index_patterns" : "overwrite-*",
   "version" : 80001,
   "template" : {
     "settings" : {
-      "index.refresh_interval" : "5s",
+      "index.refresh_interval" : "1s",
       "number_of_shards": 1
     },
     "mappings" : {

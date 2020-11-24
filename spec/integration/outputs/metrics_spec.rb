@@ -19,11 +19,7 @@ describe "metrics", :integration => true do
 
     # Clean ES of data before we start.
     @es = get_client
-    @es.indices.delete_template(:name => "*")
-
-    # This can fail if there are no indexes, ignore failure.
-    @es.indices.delete(:index => "*") rescue nil
-    #@es.indices.refresh
+    clean(@es)
     subject.register
   end
 
