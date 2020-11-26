@@ -11,5 +11,5 @@ if Dir.exist?(logstash_path) && use_logstash_source
 end
 
 if RUBY_VERSION == "1.9.3"
-  gem 'rake', '12.2.1'
+  gem 'rake', '12.3.3'
 end
