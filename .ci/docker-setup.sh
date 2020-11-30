@@ -7,39 +7,11 @@ set -e
 VERSION_URL="https://raw.githubusercontent.com/elastic/logstash/master/ci/logstash_releases.json"
 
 
-download_and_load_docker_snapshot_artifact() {
+pull_docker_snapshot() {
   project="${1?project name required}"
-
-  artifact_type="docker-image"
-  artifact_name_base="${project}${DISTRIBUTION_SUFFIX}-${ELASTIC_STACK_VERSION}-${artifact_type}"
-  echo "Downloading snapshot docker image: ${project}${DISTRIBUTION_SUFFIX} (${ELASTIC_STACK_VERSION})"
-
-  artifact_name_noarch="${artifact_name_base}.tar.gz"
-  artifact_name_arch="${artifact_name_base}-x86_64.tar.gz"
-
-  jq_extract_artifact_url=".build.projects.\"${project}\".packages | (.\"${artifact_name_noarch}\" // .\"${artifact_name_arch}\") | .url"
-
-  artifact_list=$(curl --silent "https://artifacts-api.elastic.co/v1/versions/${ELASTIC_STACK_VERSION}/builds/latest")
-  artifact_url=$(echo "${artifact_list}" | jq --raw-output "${jq_extract_artifact_url}")
-
-  if [[ "${artifact_url}" == "null" ]]; then
-    echo "Failed to find '${artifact_name_noarch}'"
-    echo "Failed to find '${artifact_name_arch}'"
-    echo "Listing:"
-    echo "${artifact_list}" | jq --raw-output ".build.projects.\"${project}\".packages | keys | map(select(contains(\"${artifact_type}\")))"
-    return 1
-  fi
-
-  echo "${artifact_url}"
-
-  cd /tmp
-  curl "${artifact_url}" > "${project}-docker-image.tar.gz"
-  tar xfvz "${project}-docker-image.tar.gz" repositories
-  echo "Loading ${project} docker image: "
-  cat repositories
-  docker load < "${project}-docker-image.tar.gz"
-  rm "${project}-docker-image.tar.gz"
-  cd -
+  local docker_image="docker.elastic.co/${project}/${project}${DISTRIBUTION_SUFFIX}:${ELASTIC_STACK_VERSION}"
+  echo "Pulling $docker_image"
+  docker pull "$docker_image"
 }
 
 if [ "$ELASTIC_STACK_VERSION" ]; then
@@ -68,9 +40,9 @@ if [ "$ELASTIC_STACK_VERSION" ]; then
     echo "Testing against version: $ELASTIC_STACK_VERSION (distribution: ${DISTRIBUTION:-'default'})"
 
     if [[ "$ELASTIC_STACK_VERSION" = *"-SNAPSHOT" ]]; then
-        download_and_load_docker_snapshot_artifact "logstash"
+        pull_docker_snapshot "logstash"
         if [ "$INTEGRATION" == "true" ]; then
-          download_and_load_docker_snapshot_artifact "elasticsearch"
+          pull_docker_snapshot "elasticsearch"
         fi
     fi
 
