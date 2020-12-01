@@ -86,15 +86,16 @@ require "forwardable"
 class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   declare_threadsafe!
 
+  require "logstash/outputs/elasticsearch/license_checker"
   require "logstash/outputs/elasticsearch/http_client"
   require "logstash/outputs/elasticsearch/http_client_builder"
   require "logstash/plugin_mixins/elasticsearch/api_configs"
-  require "logstash/outputs/elasticsearch/common"
+  require "logstash/plugin_mixins/elasticsearch/common"
   require "logstash/outputs/elasticsearch/ilm"
   require 'logstash/plugin_mixins/ecs_compatibility_support'
 
   # Protocol agnostic methods
-  include(LogStash::Outputs::ElasticSearch::Common)
+  include(LogStash::PluginMixins::ElasticSearch::Common)
 
   # Methods for ILM support
   include(LogStash::Outputs::ElasticSearch::Ilm)
@@ -246,9 +247,182 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # ILM policy to use, if undefined the default policy will be used.
   config :ilm_policy, :validate => :string, :default => DEFAULT_POLICY
 
+  attr_reader :default_index
+  attr_reader :default_ilm_rollover_alias
+  attr_reader :default_template_name
+
   def initialize(*params)
     super
     setup_ecs_compatibility_related_defaults
+  end
+
+  def register
+    @template_installed = Concurrent::AtomicBoolean.new(false)
+    @stopping = Concurrent::AtomicBoolean.new(false)
+    # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
+    @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
+
+    check_action_validity
+
+    # the license_checking behaviour in the Pool class is externalized in the LogStash::ElasticSearchOutputLicenseChecker
+    # class defined in license_check.rb. This license checking is specific to the elasticsearch output here and passed
+    # to build_client down to the Pool class.
+    build_client(LicenseChecker.new(@logger))
+
+    @template_installer = setup_after_successful_connection do
+      discover_cluster_uuid
+      install_template
+      setup_ilm if ilm_in_use?
+    end
+    @bulk_request_metrics = metric.namespace(:bulk_requests)
+    @document_level_metrics = metric.namespace(:documents)
+    @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
+  end
+
+  # @override to handle proxy => '' as if none was set
+  def config_init(params)
+    proxy = params['proxy']
+    if proxy.is_a?(String)
+      # environment variables references aren't yet resolved
+      proxy = deep_replace(proxy)
+      if proxy.empty?
+        params.delete('proxy')
+        @proxy = ''
+      else
+        params['proxy'] = proxy # do not do resolving again
+      end
+    end
+    super(params)
+  end
+
+  # Receive an array of events and immediately attempt to index them (no buffering)
+  def multi_receive(events)
+    until @template_installed.true?
+      sleep 1
+    end
+    retrying_submit(events.map {|e| event_action_tuple(e)})
+  end
+
+  def close
+    @stopping.make_true if @stopping
+    stop_template_installer
+    @client.close if @client
+  end
+
+  # not private because used by ILM specs
+  def stop_template_installer
+    @template_installer.join unless @template_installer.nil?
+  end
+
+  # not private for elasticsearch_spec.rb
+  # Convert the event into a 3-tuple of action, params, and event
+  def event_action_tuple(event)
+    action = event.sprintf(@action)
+
+    params = {
+      :_id => @document_id ? event.sprintf(@document_id) : nil,
+      :_index => event.sprintf(@index),
+      routing_field_name => @routing ? event.sprintf(@routing) : nil
+    }
+
+    params[:_type] = get_event_type(event) if use_event_type?(nil)
+
+    if @pipeline
+      value = event.sprintf(@pipeline)
+      # convention: empty string equates to not using a pipeline
+      # this is useful when using a field reference in the pipeline setting, e.g.
+      #      elasticsearch {
+      #        pipeline => "%{[@metadata][pipeline]}"
+      #      }
+      params[:pipeline] = value unless value.empty?
+    end
+
+    if @parent
+      if @join_field
+        join_value = event.get(@join_field)
+        parent_value = event.sprintf(@parent)
+        event.set(@join_field, { "name" => join_value, "parent" => parent_value })
+        params[routing_field_name] = event.sprintf(@parent)
+      else
+        params[:parent] = event.sprintf(@parent)
+      end
+    end
+
+    if action == 'update'
+      params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
+      params[:_script] = event.sprintf(@script) if @script != ""
+      params[retry_on_conflict_action_name] = @retry_on_conflict
+    end
+
+    if @version
+      params[:version] = event.sprintf(@version)
+    end
+
+    if @version_type
+      params[:version_type] = event.sprintf(@version_type)
+    end
+
+    [action, params, event]
+  end
+
+  # not private for elasticsearch_spec.rb
+  def retry_on_conflict_action_name
+    maximum_seen_major_version >= 7 ? :retry_on_conflict : :_retry_on_conflict
+  end
+
+  @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }
+
+  @@plugins.each do |plugin|
+    name = plugin.name.split('-')[-1]
+    require "logstash/outputs/elasticsearch/#{name}"
+  end
+
+  private
+
+  def routing_field_name
+    maximum_seen_major_version >= 6 ? :routing : :_routing
+  end
+
+  # Determine the correct value for the 'type' field for the given event
+  DEFAULT_EVENT_TYPE_ES6="doc".freeze
+  DEFAULT_EVENT_TYPE_ES7="_doc".freeze
+  def get_event_type(event)
+    # Set the 'type' value for the index.
+    type = if @document_type
+             event.sprintf(@document_type)
+           else
+             if maximum_seen_major_version < 6
+               event.get("type") || DEFAULT_EVENT_TYPE_ES6
+             elsif maximum_seen_major_version == 6
+               DEFAULT_EVENT_TYPE_ES6
+             elsif maximum_seen_major_version == 7
+               DEFAULT_EVENT_TYPE_ES7
+             else
+               nil
+             end
+           end
+
+    if !(type.is_a?(String) || type.is_a?(Numeric))
+      @logger.warn("Bad event type! Non-string/integer type value set!", :type_class => type.class, :type_value => type.to_s, :event => event)
+    end
+
+    type.to_s
+  end
+
+  ##
+  # WARNING: This method is overridden in a subclass in Logstash Core 7.7-7.8's monitoring,
+  #          where a `client` argument is both required and ignored. In later versions of
+  #          Logstash Core it is optional and ignored, but to make it optional here would
+  #          allow us to accidentally break compatibility with Logstashes where it was required.
+  # @param noop_required_client [nil]: required `nil` for legacy reasons.
+  # @return [Boolean]
+  def use_event_type?(noop_required_client)
+    maximum_seen_major_version < 8
+  end
+
+  def install_template
+    TemplateManager.install_template(self)
+    @template_installed.make_true
   end
 
   def setup_ecs_compatibility_related_defaults
@@ -270,56 +444,19 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @template_name ||= default_template_name
   end
 
-  attr_reader :default_index
-  attr_reader :default_ilm_rollover_alias
-  attr_reader :default_template_name
-
-  # @override to handle proxy => '' as if none was set
-  def config_init(params)
-    proxy = params['proxy']
-    if proxy.is_a?(String)
-      # environment variables references aren't yet resolved
-      proxy = deep_replace(proxy)
-      if proxy.empty?
-        params.delete('proxy')
-        @proxy = ''
-      else
-        params['proxy'] = proxy # do not do resolving again
-      end
-    end
-    super(params)
+  # To be overidden by the -java version
+  VALID_HTTP_ACTIONS=["index", "delete", "create", "update"]
+  def valid_actions
+    VALID_HTTP_ACTIONS
   end
 
-  def build_client
-    # the following 3 options validation & setup methods are called inside build_client
-    # because they must be executed prior to building the client and logstash
-    # monitoring and management rely on directly calling build_client
-    # see https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/934#pullrequestreview-396203307
-    validate_authentication
-    fill_hosts_from_cloud_id
-    setup_hosts
+  def check_action_validity
+    raise LogStash::ConfigurationError, "No action specified!" unless @action
 
-    params["metric"] = metric
-    if @proxy.eql?('')
-      @logger.warn "Supplied proxy setting (proxy => '') has no effect"
-    end
-    @client ||= ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
-  end
+    # If we're using string interpolation, we're good!
+    return if @action =~ /%{.+}/
+    return if valid_actions.include?(@action)
 
-  def close
-    @stopping.make_true if @stopping
-    stop_template_installer
-    @client.close if @client
-  end
-
-  def self.oss?
-    LogStash::OSS
-  end
-
-  @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }
-
-  @@plugins.each do |plugin|
-    name = plugin.name.split('-')[-1]
-    require "logstash/outputs/elasticsearch/#{name}"
+    raise LogStash::ConfigurationError, "Action '#{@action}' is invalid! Pick one of #{valid_actions} or use a sprintf style statement"
   end
 end

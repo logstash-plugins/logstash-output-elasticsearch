@@ -5,10 +5,10 @@ module LogStash; module Outputs; class ElasticSearch
 
     def setup_ilm
       return unless ilm_in_use?
-        logger.warn("Overwriting supplied index #{@index} with rollover alias #{@ilm_rollover_alias}") unless default_index?(@index)
-        @index = @ilm_rollover_alias
-        maybe_create_rollover_alias
-        maybe_create_ilm_policy
+      logger.warn("Overwriting supplied index #{@index} with rollover alias #{@ilm_rollover_alias}") unless default_index?(@index)
+      @index = @ilm_rollover_alias
+      maybe_create_rollover_alias
+      maybe_create_ilm_policy
     end
 
     def default_rollover_alias?(rollover_alias)
@@ -75,6 +75,10 @@ module LogStash; module Outputs; class ElasticSearch
 
     private
 
+    def default_index?(index)
+      index == @default_index
+    end
+
     def ilm_policy_default?
       ilm_policy == LogStash::Outputs::ElasticSearch::DEFAULT_POLICY
     end
@@ -110,4 +114,4 @@ module LogStash; module Outputs; class ElasticSearch
       LogStash::Json.load(::IO.read(policy_path))
     end
   end
- end end end
+end; end; end

@@ -1,7 +1,10 @@
 require "logstash/outputs/elasticsearch/template_manager"
 
-module LogStash; module Outputs; class ElasticSearch;
+module LogStash; module PluginMixins; module ElasticSearch
   module Common
+
+    # This module defines common methods that can be reused by alternate elasticsearch output plugins such as the elasticsearch_data_streams output.
+
     attr_reader :client, :hosts
 
     # These codes apply to documents, not at the request level
@@ -9,116 +12,26 @@ module LogStash; module Outputs; class ElasticSearch;
     DOC_SUCCESS_CODES = [200, 201]
     DOC_CONFLICT_CODE = 409
 
-    # When you use external versioning, you are communicating that you want
-    # to ignore conflicts. More obviously, since an external version is a
-    # constant part of the incoming document, we should not retry, as retrying
-    # will never succeed.
-    VERSION_TYPES_PERMITTING_CONFLICT = ["external", "external_gt", "external_gte"]
+    # Perform some ES options validations and Build the HttpClient.
+    # Note that this methods may sets the @user, @password, @hosts and @client ivars as a side effect.
+    # @param license_checker [#appropriate_license?] An optional license checker that will be used by the Pool class.
+    # @return [HttpClient] the new http client
+    def build_client(license_checker = nil)
+      params["license_checker"] = license_checker
 
-    def register
-      @template_installed = Concurrent::AtomicBoolean.new(false)
-      @stopping = Concurrent::AtomicBoolean.new(false)
-      # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
-      @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
-      build_client
-      setup_after_successful_connection
-      check_action_validity
-      @bulk_request_metrics = metric.namespace(:bulk_requests)
-      @document_level_metrics = metric.namespace(:documents)
-      @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
-    end
+      # the following 3 options validation & setup methods are called inside build_client
+      # because they must be executed prior to building the client and logstash
+      # monitoring and management rely on directly calling build_client
+      # see https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/934#pullrequestreview-396203307
+      validate_authentication
+      fill_hosts_from_cloud_id
+      setup_hosts
 
-    # Receive an array of events and immediately attempt to index them (no buffering)
-    def multi_receive(events)
-      until @template_installed.true?
-        sleep 1
+      params["metric"] = metric
+      if @proxy.eql?('')
+        @logger.warn "Supplied proxy setting (proxy => '') has no effect"
       end
-      retrying_submit(events.map {|e| event_action_tuple(e)})
-    end
-
-    def setup_after_successful_connection
-      @template_installer ||= Thread.new do
-        sleep_interval = @retry_initial_interval
-        until successful_connection? || @stopping.true?
-          @logger.debug("Waiting for connectivity to Elasticsearch cluster. Retrying in #{sleep_interval}s")
-          Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
-          sleep_interval = next_sleep_interval(sleep_interval)
-        end
-        if successful_connection?
-          discover_cluster_uuid
-          install_template
-          setup_ilm if ilm_in_use?
-        end
-      end
-    end
-
-    def stop_template_installer
-      @template_installer.join unless @template_installer.nil?
-    end
-
-    def successful_connection?
-      !!maximum_seen_major_version
-    end
-
-    ##
-    # WARNING: This method is overridden in a subclass in Logstash Core 7.7-7.8's monitoring,
-    #          where a `client` argument is both required and ignored. In later versions of
-    #          Logstash Core it is optional and ignored, but to make it optional here would
-    #          allow us to accidentally break compatibility with Logstashes where it was required.
-    # @param noop_required_client [nil]: required `nil` for legacy reasons.
-    # @return [Boolean]
-    def use_event_type?(noop_required_client)
-      maximum_seen_major_version < 8
-    end
-
-    # Convert the event into a 3-tuple of action, params, and event
-    def event_action_tuple(event)
-      action = event.sprintf(@action)
-
-      params = {
-        :_id => @document_id ? event.sprintf(@document_id) : nil,
-        :_index => event.sprintf(@index),
-        routing_field_name => @routing ? event.sprintf(@routing) : nil
-      }
-
-      params[:_type] = get_event_type(event) if use_event_type?(nil)
-
-      if @pipeline
-        value = event.sprintf(@pipeline)
-        # convention: empty string equates to not using a pipeline
-        # this is useful when using a field reference in the pipeline setting, e.g.
-        #      elasticsearch {
-        #        pipeline => "%{[@metadata][pipeline]}"
-        #      }
-        params[:pipeline] = value unless value.empty?
-      end
-
-      if @parent
-        if @join_field
-          join_value = event.get(@join_field)
-          parent_value = event.sprintf(@parent)
-          event.set(@join_field, { "name" => join_value, "parent" => parent_value })
-          params[routing_field_name] = event.sprintf(@parent)
-        else
-          params[:parent] = event.sprintf(@parent)
-        end
-      end
-
-      if action == 'update'
-        params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
-        params[:_script] = event.sprintf(@script) if @script != ""
-        params[retry_on_conflict_action_name] = @retry_on_conflict
-      end
-
-      if @version
-        params[:version] = event.sprintf(@version)
-      end
-
-      if @version_type
-        params[:version_type] = event.sprintf(@version_type)
-      end
-
-      [action, params, event]
+      @client ||= ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
     end
 
     def validate_authentication
@@ -206,17 +119,23 @@ module LogStash; module Outputs; class ElasticSearch;
       client.maximum_seen_major_version
     end
 
-    def routing_field_name
-      maximum_seen_major_version >= 6 ? :routing : :_routing
+    def successful_connection?
+      !!maximum_seen_major_version
     end
 
-    def retry_on_conflict_action_name
-      maximum_seen_major_version >= 7 ? :retry_on_conflict : :_retry_on_conflict
-    end
-
-    def install_template
-      TemplateManager.install_template(self)
-      @template_installed.make_true
+    # launch a thread that waits for an initial successful connection to the ES cluster to call the given block
+    # @param block [Proc] the block to execute upon initial successful connection
+    # @return [Thread] the successful connection wait thread
+    def setup_after_successful_connection(&block)
+      Thread.new do
+        sleep_interval = @retry_initial_interval
+        until successful_connection? || @stopping.true?
+          @logger.debug("Waiting for connectivity to Elasticsearch cluster. Retrying in #{sleep_interval}s")
+          Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
+          sleep_interval = next_sleep_interval(sleep_interval)
+        end
+        block.call if successful_connection?
+      end
     end
 
     def discover_cluster_uuid
@@ -226,22 +145,6 @@ module LogStash; module Outputs; class ElasticSearch;
     rescue => e
       # TODO introducing this logging message breaks many tests that need refactoring
       # @logger.error("Unable to retrieve elasticsearch cluster uuid", error => e.message)
-    end
-
-    def check_action_validity
-      raise LogStash::ConfigurationError, "No action specified!" unless @action
-
-      # If we're using string interpolation, we're good!
-      return if @action =~ /%{.+}/
-      return if valid_actions.include?(@action)
-
-      raise LogStash::ConfigurationError, "Action '#{@action}' is invalid! Pick one of #{valid_actions} or use a sprintf style statement"
-    end
-
-    # To be overidden by the -java version
-    VALID_HTTP_ACTIONS=["index", "delete", "create", "update"]
-    def valid_actions
-      VALID_HTTP_ACTIONS
     end
 
     def retrying_submit(actions)
@@ -352,32 +255,6 @@ module LogStash; module Outputs; class ElasticSearch;
       end
     end
 
-    # Determine the correct value for the 'type' field for the given event
-    DEFAULT_EVENT_TYPE_ES6="doc".freeze
-    DEFAULT_EVENT_TYPE_ES7="_doc".freeze
-    def get_event_type(event)
-      # Set the 'type' value for the index.
-      type = if @document_type
-               event.sprintf(@document_type)
-             else
-               if maximum_seen_major_version < 6
-                 event.get("type") || DEFAULT_EVENT_TYPE_ES6
-               elsif maximum_seen_major_version == 6
-                 DEFAULT_EVENT_TYPE_ES6
-               elsif maximum_seen_major_version == 7
-                 DEFAULT_EVENT_TYPE_ES7
-               else
-                 nil
-               end
-             end
-
-      if !(type.is_a?(String) || type.is_a?(Numeric))
-        @logger.warn("Bad event type! Non-string/integer type value set!", :type_class => type.class, :type_value => type.to_s, :event => event)
-      end
-
-      type.to_s
-    end
-
     # Rescue retryable errors during bulk submission
     def safe_bulk(actions)
       sleep_interval = @retry_initial_interval
@@ -448,10 +325,6 @@ module LogStash; module Outputs; class ElasticSearch;
       end
     end
 
-    def default_index?(index)
-      @index == @default_index
-    end
-
     def dlq_enabled?
       # TODO there should be a better way to query if DLQ is enabled
       # See more in: https://github.com/elastic/logstash/issues/8064
@@ -459,4 +332,4 @@ module LogStash; module Outputs; class ElasticSearch;
         !execution_context.dlq_writer.inner_writer.is_a?(::LogStash::Util::DummyDeadLetterQueueWriter)
     end
   end
-end end end
+end; end; end

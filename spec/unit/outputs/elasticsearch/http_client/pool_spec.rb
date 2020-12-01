@@ -15,8 +15,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
   let(:manticore_double) { double("manticore a") }
   before(:each) do
+    stub_const('LogStash::OSS', oss)
 
-    allow(::LogStash::Outputs::ElasticSearch).to receive(:oss?).and_return(oss)
     response_double = double("manticore response").as_null_object
     # Allow healtchecks
     allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
@@ -26,8 +26,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
 
     allow(subject).to receive(:get_es_version).with(any_args).and_return(*es_node_versions)
-    allow(subject).to receive(:oss?).and_return(oss)
-    allow(subject).to receive(:valid_es_license?).and_return(valid_license)
+    allow(subject.license_checker).to receive(:oss?).and_return(oss)
+    allow(subject.license_checker).to receive(:valid_es_license?).and_return(valid_license)
   end
 
   after do
@@ -245,27 +245,67 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     before(:each) do
       allow(subject).to receive(:health_check_request)
     end
+
+    let(:options) do
+      super.merge(:license_checker => license_checker)
+    end
+
+    context 'when LicenseChecker#acceptable_license? returns false' do
+      let(:license_checker) { double('LicenseChecker', :appropriate_license? => false) }
+
+      it 'does not mark the URL as active' do
+        subject.update_initial_urls
+        expect(subject.alive_urls_count).to eq(0)
+      end
+    end
+
+    context 'when LicenseChecker#acceptable_license? returns true' do
+      let(:license_checker) { double('LicenseChecker', :appropriate_license? => true) }
+
+      it 'marks the URL as active' do
+        subject.update_initial_urls
+        expect(subject.alive_urls_count).to eq(1)
+      end
+    end
+  end
+
+  # TODO: extract to ElasticSearchOutputLicenseChecker unit spec
+  describe "license checking with ElasticSearchOutputLicenseChecker" do
+    let(:options) do
+      super().merge(:license_checker => LogStash::Outputs::ElasticSearch::LicenseChecker.new(logger))
+    end
+
+    before(:each) do
+      allow(subject).to receive(:health_check_request)
+    end
+
     context "when using default logstash distribution" do
       let(:oss) { false }
+
       context "if ES doesn't return a valid license" do
         let(:valid_license) { false }
+
         it "marks the url as active" do
           subject.update_initial_urls
           expect(subject.alive_urls_count).to eq(1)
         end
+
         it "logs a warning" do
-          expect(subject).to receive(:log_license_deprecation_warn).once
+          expect(subject.license_checker).to receive(:log_license_deprecation_warn).once
           subject.update_initial_urls
         end
       end
+
       context "if ES returns a valid license" do
         let(:valid_license) { true }
+
         it "marks the url as active" do
           subject.update_initial_urls
           expect(subject.alive_urls_count).to eq(1)
         end
+
         it "does not log a warning" do
-          expect(subject).to_not receive(:log_license_deprecation_warn)
+          expect(subject.license_checker).to_not receive(:log_license_deprecation_warn)
           subject.update_initial_urls
         end
       end
