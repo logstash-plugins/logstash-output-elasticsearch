@@ -1,4 +1,4 @@
-## unreleased
+## 10.8.0
  - Refactored configuration options into specific and shared in PluginMixins namespace [#973](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/973)
  - Refactored common methods into specific and shared in PluginMixins namespace [#976](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/976)
 
