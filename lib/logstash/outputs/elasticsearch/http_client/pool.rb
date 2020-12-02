@@ -70,7 +70,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @url_info = {}
       @stopping = false
 
-      @license_checker = options.fetch(:license_checker) { LogStash::PluginMixins::ElasticSearch::NoopLicenseChecker::INSTANCE }
+      @license_checker = options[:license_checker] || LogStash::PluginMixins::ElasticSearch::NoopLicenseChecker::INSTANCE
     end
 
     def start
