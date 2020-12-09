@@ -29,12 +29,12 @@ This output only speaks the HTTP protocol as it is the preferred protocol for
 interacting with Elasticsearch. In previous versions it was possible to
 communicate with Elasticsearch through the transport protocol, which is now
 reserved for internal cluster communication between nodes
-https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-transport.html[communication between nodes].
-Using the https://www.elastic.co/guide/en/elasticsearch/reference/current/java-clients.html[transport protocol]
+{ref}/modules-transport.html[communication between nodes].
+Using the {ref}/java-clients.html[transport protocol]
 to communicate with the cluster has been deprecated in Elasticsearch 7.0.0 and
 will be removed in 8.0.0
 
-You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
+You can learn more about Elasticsearch at {ref}
 
 .Compatibility Note
 [NOTE]
@@ -105,7 +105,7 @@ Example:
 
 You can use the `mutate` filter and conditionals to add a `[@metadata]` field
 (see
-https://www.elastic.co/guide/en/logstash/current/event-dependent-configuration.html#metadata)
+{logstash-ref}/event-dependent-configuration.html#metadata)
 to set the destination index for each event. The `[@metadata]` fields will not
 be sent to Elasticsearch.
 
@@ -159,30 +159,37 @@ happens, the problem is logged as a warning, and the event is dropped. See
 [id="plugins-{type}s-{plugin}-ilm"]
 ==== Index Lifecycle Management
 
-
 [NOTE]
 The Index Lifecycle Management feature requires plugin version `9.3.1` or higher.
 
 [NOTE]
 This feature requires an Elasticsearch instance of 6.6.0 or higher with at least a Basic license
 
-Logstash can use {ref}/index-lifecycle-management.html[Index Lifecycle Management] to automate the management of indices over time.
+Logstash can use {ref}/index-lifecycle-management.html[Index Lifecycle
+Management] to automate the management of indices over time.
 
 The use of Index Lifecycle Management is controlled by the `ilm_enabled`
 setting. By default, this setting detects whether the Elasticsearch instance
 supports ILM, and uses it if it is available. `ilm_enabled` can also be set to
 `true` or `false` to override the automatic detection, or disable ILM.
 
-This will overwrite the index settings and adjust the Logstash template to write the necessary settings for the template
-to support index lifecycle management, including the index policy and rollover alias to be used.
+This will overwrite the index settings and adjust the Logstash template to write
+the necessary settings for the template to support index lifecycle management,
+including the index policy and rollover alias to be used.
 
-Logstash will create a rollover alias for the indices to be written to, including a pattern for how the actual indices will be named, and unless an ILM policy that already exists has been specified,
-a default policy will also be created. The default policy is configured to rollover an index when it reaches either 50 gigabytes in size, or is 30 days old, whichever happens first.
+Logstash will create a rollover alias for the indices to be written to,
+including a pattern for how the actual indices will be named, and unless an ILM
+policy that already exists has been specified, a default policy will also be
+created. The default policy is configured to rollover an index when it reaches
+either 50 gigabytes in size, or is 30 days old, whichever happens first.
 
-The default rollover alias is called `logstash`, with a default pattern for the rollover index of `{now/d}-00001`,
-which will name indices on the date that the index is rolled over, followed by an incrementing number. Note that the pattern must end with a dash and a number that will be incremented.
+The default rollover alias is called `logstash`, with a default pattern for the
+rollover index of `{now/d}-00001`, which will name indices on the date that the
+index is rolled over, followed by an incrementing number. Note that the pattern
+must end with a dash and a number that will be incremented.
 
-See the {ref}/indices-rollover-index.html#_using_date_math_with_the_rollover_api[Rollover API documentation] for more details on naming.
+See the {ref}/indices-rollover-index.html#_using_date_math_with_the_rollover_api[Rollover
+API documentation] for more details on naming.
 
 The rollover alias, ilm pattern and policy can be modified.
 
@@ -198,7 +205,9 @@ See config below for an example:
 
 NOTE: Custom ILM policies must already exist on the Elasticsearch cluster before they can be used.
 
-NOTE: If the rollover alias or pattern is modified, the index template will need to be overwritten as the settings `index.lifecycle.name` and `index.lifecycle.rollover_alias` are automatically written to the template
+NOTE: If the rollover alias or pattern is modified, the index template will need to be
+overwritten as the settings `index.lifecycle.name` and
+`index.lifecycle.rollover_alias` are automatically written to the template
 
 NOTE: If the index property is supplied in the output definition, it will be overwritten by the rollover alias.
 
@@ -206,11 +215,13 @@ NOTE: If the index property is supplied in the output definition, it will be ove
 ==== Batch Sizes
 
 This plugin attempts to send batches of events as a single request. However, if
-a request exceeds 20MB we will break it up into multiple batch requests. If a single document exceeds 20MB it will be sent as a single request.
+a request exceeds 20MB we will break it up into multiple batch requests. If a
+single document exceeds 20MB it will be sent as a single request.
 
 ==== DNS Caching
 
-This plugin uses the JVM to lookup DNS entries and is subject to the value of https://docs.oracle.com/javase/7/docs/technotes/guides/net/properties.html[networkaddress.cache.ttl],
+This plugin uses the JVM to lookup DNS entries and is subject to the value of
+https://docs.oracle.com/javase/7/docs/technotes/guides/net/properties.html[networkaddress.cache.ttl],
 a global setting for the JVM.
 
 As an example, to set your DNS TTL to 1 second you would set
@@ -226,8 +237,7 @@ enabled by default for HTTP and for Elasticsearch versions 5.0 and later.
 
 You don't have to set any configs in Elasticsearch for it to send back a
 compressed response. For versions before 5.0, or if HTTPS is enabled,
-`http.compression` must be set to `true`
-https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http[in
+`http.compression` must be set to `true` {ref}/modules-http.html#modules-http[in
 Elasticsearch] to take advantage of response compression when using this plugin.
 
 For requests compression, regardless of the Elasticsearch version, enable the
@@ -235,19 +245,23 @@ For requests compression, regardless of the Elasticsearch version, enable the
 
 ==== Authentication
 
-Authentication to a secure Elasticsearch cluster is possible using one of the `user`/`password`, `cloud_auth` or `api_key` options.
+Authentication to a secure Elasticsearch cluster is possible using one of the
+`user`/`password`, `cloud_auth` or `api_key` options.
 
 [id="plugins-{type}s-{plugin}-autz"]
 ==== Authorization
 
-Authorization to a secure Elasticsearch cluster requires `read` permission at index level and `monitoring` permissions at cluster level.
-The `monitoring` permission at cluster level is necessary to perform periodic connectivity checks.
+Authorization to a secure Elasticsearch cluster requires `read` permission at
+index level and `monitoring` permissions at cluster level. The `monitoring`
+permission at cluster level is necessary to perform periodic connectivity
+checks.
 
 
 [id="plugins-{type}s-{plugin}-options"]
 ==== Elasticsearch Output Configuration Options
 
-This plugin supports the following configuration options plus the <<plugins-{type}s-{plugin}-common-options>> described later.
+This plugin supports the following configuration options plus the
+<<plugins-{type}s-{plugin}-common-options>> described later.
 
 [cols="<,<,<",options="header",]
 |=======================================================================
@@ -335,7 +349,8 @@ The Elasticsearch action to perform. Valid actions are:
 - A sprintf style string to change the action based on the content of the event. The value `%{[foo]}`
   would use the foo field for the action
 
-For more details on actions, check out the http://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
+For more details on actions, check out the {ref}/docs-bulk.html[Elasticsearch
+bulk API documentation].
 
 [id="plugins-{type}s-{plugin}-api_key"]
 ===== `api_key`
@@ -343,9 +358,11 @@ For more details on actions, check out the http://www.elastic.co/guide/en/elasti
   * Value type is <<password,password>>
   * There is no default value for this setting.
 
-Authenticate using Elasticsearch API key. Note that this option also requires enabling the `ssl` option.
+Authenticate using Elasticsearch API key. Note that this option also requires
+enabling the `ssl` option.
 
-Format is `id:api_key` where `id` and `api_key` are as returned by the Elasticsearch https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html[Create API key API].
+Format is `id:api_key` where `id` and `api_key` are as returned by the
+Elasticsearch {ref}/security-api-create-api-key.html[Create API key API].
 
 [id="plugins-{type}s-{plugin}-bulk_path"]
 ===== `bulk_path`
@@ -370,9 +387,11 @@ The .cer or .pem file to validate the server's certificate
   * Value type is <<password,password>>
   * There is no default value for this setting.
 
-Cloud authentication string ("<username>:<password>" format) is an alternative for the `user`/`password` pair.
+Cloud authentication string ("<username>:<password>" format) is an alternative
+for the `user`/`password` pair.
 
-For more details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html[Logstash-to-Cloud documentation]
+For more details, check out the
+{logstash-ref}/connecting-to-cloud.html[Logstash-to-Cloud documentation]
 
 [id="plugins-{type}s-{plugin}-cloud_id"]
 ===== `cloud_id`
@@ -382,7 +401,8 @@ For more details, check out the https://www.elastic.co/guide/en/logstash/current
 
 Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
 
-For more details, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html[Logstash-to-Cloud documentation]
+For more details, check out the
+{logstash-ref}/connecting-to-cloud.html[Logstash-to-Cloud documentation]
 
 [id="plugins-{type}s-{plugin}-doc_as_upsert"]
 ===== `doc_as_upsert`
@@ -391,7 +411,7 @@ For more details, check out the https://www.elastic.co/guide/en/logstash/current
   * Default value is `false`
 
 Enable `doc_as_upsert` for update mode.
-Create a new document with source if `document_id` doesn't exist in Elasticsearch
+Create a new document with source if `document_id` doesn't exist in Elasticsearch.
 
 [id="plugins-{type}s-{plugin}-document_id"]
 ===== `document_id`
@@ -399,7 +419,8 @@ Create a new document with source if `document_id` doesn't exist in Elasticsearc
   * Value type is <<string,string>>
   * There is no default value for this setting.
 
-The document ID for the index. Useful for overwriting existing entries in Elasticsearch with the same ID.
+The document ID for the index. Useful for overwriting existing entries in
+Elasticsearch with the same ID.
 
 [id="plugins-{type}s-{plugin}-document_type"]
 ===== `document_type`
@@ -408,8 +429,10 @@ The document ID for the index. Useful for overwriting existing entries in Elasti
   * There is no default value for this setting.
   * This option is deprecated
 
-NOTE: This option is deprecated due to the https://www.elastic.co/guide/en/elasticsearch/reference/6.0/removal-of-types.html[removal of types in Elasticsearch 6.0].
-It will be removed in the next major version of Logstash.
+NOTE: This option is deprecated due to the
+https://www.elastic.co/guide/en/elasticsearch/reference/6.0/removal-of-types.html[removal
+of types in Elasticsearch 6.0]. It will be removed in the next major version of
+Logstash.
 
 NOTE: This value is ignored and has no effect for Elasticsearch clusters `8.x`.
 
@@ -433,9 +456,10 @@ If you don't set a value for this option:
 ** When Logstash provides a `pipeline.ecs_compatibility` setting, its value is used as the default
 ** Otherwise, the default value is `disabled`.
 
-Controls this plugin's compatibility with the https://www.elastic.co/guide/en/ecs/current/index.html[Elastic Common Schema (ECS)],
-including the installation of ECS-compatible index templates.
-The value of this setting affects the _default_ values of:
+Controls this plugin's compatibility with the
+https://www.elastic.co/guide/en/ecs/current/index.html[Elastic Common Schema
+(ECS)], including the installation of ECS-compatible index templates. The value
+of this setting affects the _default_ values of:
 
 * <<plugins-{type}s-{plugin}-index>>
 * <<plugins-{type}s-{plugin}-template_name>>
@@ -479,8 +503,10 @@ If you have custom firewall rules you may need to change this
   * Value type is <<uri,uri>>
   * Default value is `[//127.0.0.1]`
 
-Sets the host(s) of the remote instance. If given an array it will load balance requests across the hosts specified in the `hosts` parameter.
-Remember the `http` protocol uses the http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-http.html#modules-http[http] address (eg. 9200, not 9300).
+Sets the host(s) of the remote instance. If given an array it will load balance
+requests across the hosts specified in the `hosts` parameter. Remember the
+`http` protocol uses the {ref}/modules-http.html#modules-http[http] address (eg.
+9200, not 9300).
 
 Examples:
 
@@ -490,11 +516,9 @@ Examples:
     `["https://127.0.0.1:9200"]`
     `["https://127.0.0.1:9200/mypath"]` (If using a proxy on a subpath)
 
-Exclude
-http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html[dedicated
-master nodes] from the `hosts` list to prevent Logstash from sending bulk
-requests to the master nodes. This parameter should reference only data or
-client nodes in Elasticsearch.
+Exclude {ref}/modules-node.html[dedicated master nodes] from the `hosts` list to
+prevent Logstash from sending bulk requests to the master nodes. This parameter
+should reference only data or client nodes in Elasticsearch.
 
 Any special characters present in the URLs here MUST be URL escaped! This means
 `#` should be put in as `%23` for instance.
@@ -505,7 +529,8 @@ Any special characters present in the URLs here MUST be URL escaped! This means
   * Value type is <<boolean,boolean>>
   * Default value is `false`
 
-Enable gzip compression on requests. Note that response compression is on by default for Elasticsearch v5.0 and beyond
+Enable gzip compression on requests. Note that response compression is on by
+default for Elasticsearch v5.0 and beyond
 
 [id="plugins-{type}s-{plugin}-ilm_enabled"]
 ===== `ilm_enabled`
@@ -513,14 +538,19 @@ Enable gzip compression on requests. Note that response compression is on by def
   * Value can be any of: `true`, `false`, `auto`
   * Default value is `auto`
 
-The default setting of `auto` will automatically enable the Index Lifecycle Management feature, if the Elasticsearch
- cluster is running Elasticsearch version `7.0.0` or higher with the ILM feature enabled, and disable it otherwise.
+The default setting of `auto` will automatically enable the Index Lifecycle
+Management feature, if the Elasticsearch cluster is running Elasticsearch
+version `7.0.0` or higher with the ILM feature enabled, and disable it
+otherwise.
 
-Setting this flag to `false` will disable the Index Lifecycle Management feature, even if the Elasticsearch cluster supports ILM.
-Setting this flag to `true` will enable Index Lifecycle Management feature, if the Elasticsearch cluster supports it. This is required
-to enable Index Lifecycle Management on a version of Elasticsearch earlier than version `7.0.0`.
+Setting this flag to `false` will disable the Index Lifecycle Management
+feature, even if the Elasticsearch cluster supports ILM.
+Setting this flag to `true` will enable Index Lifecycle Management feature, if
+the Elasticsearch cluster supports it. This is required to enable Index
+Lifecycle Management on a version of Elasticsearch earlier than version `7.0.0`.
 
-NOTE: This feature requires a Basic License or above to be installed on an Elasticsearch cluster version 6.6.0 or later
+NOTE: This feature requires a Basic License or above to be installed on an
+Elasticsearch cluster version 6.6.0 or later
 
 [id="plugins-{type}s-{plugin}-ilm_pattern"]
 ===== `ilm_pattern`
@@ -528,17 +558,23 @@ NOTE: This feature requires a Basic License or above to be installed on an Elast
   * Value type is <<string,string>>
   * Default value is `{now/d}-000001`
 
-Pattern used for generating indices managed by Index Lifecycle Management. The value specified in the pattern will be appended to
-the write alias, and incremented automatically when a new index is created by ILM.
+Pattern used for generating indices managed by Index Lifecycle Management. The
+value specified in the pattern will be appended to the write alias, and
+incremented automatically when a new index is created by ILM.
 
-Date Math can be used when specifying an ilm pattern, see {ref}/indices-rollover-index.html#_using_date_math_with_the_rollover_api[Rollover API docs] for details
+Date Math can be used when specifying an ilm pattern, see
+{ref}/indices-rollover-index.html#_using_date_math_with_the_rollover_api[Rollover
+API docs] for details
 
 NOTE: Updating the pattern will require the index template to be rewritten
 
-NOTE: The pattern must finish with a dash and a number that will be automatically incremented when indices rollover.
+NOTE: The pattern must finish with a dash and a number that will be automatically
+incremented when indices rollover.
 
-NOTE: The pattern is a 6-digit string padded by zeros, regardless of prior index name. Example: 000001.
-See {ref}/indices-rollover-index.html#rollover-index-api-path-params[Rollover path parameters API docs] for details.
+NOTE: The pattern is a 6-digit string padded by zeros, regardless of prior index name.
+Example: 000001. See
+{ref}/indices-rollover-index.html#rollover-index-api-path-params[Rollover path
+parameters API docs] for details.
 
 [id="plugins-{type}s-{plugin}-ilm_policy"]
 ===== `ilm_policy`
@@ -546,10 +582,12 @@ See {ref}/indices-rollover-index.html#rollover-index-api-path-params[Rollover pa
   * Value type is <<string,string>>
   * Default value is `logstash-policy`
 
-Modify this setting to use a custom Index Lifecycle Management policy, rather than the default. If this value is not set, the default policy will
-be automatically installed into Elasticsearch
+Modify this setting to use a custom Index Lifecycle Management policy, rather
+than the default. If this value is not set, the default policy will be
+automatically installed into Elasticsearch
 
-NOTE: If this setting is specified, the policy must already exist in Elasticsearch cluster.
+NOTE: If this setting is specified, the policy must already exist in Elasticsearch
+cluster.
 
 [id="plugins-{type}s-{plugin}-ilm_rollover_alias"]
 ===== `ilm_rollover_alias`
@@ -559,13 +597,17 @@ NOTE: If this setting is specified, the policy must already exist in Elasticsear
   ** ECS Compatibility disabled: `logstash`
   ** ECS Compatibility enabled: `ecs-logstash`
 
-The rollover alias is the alias where indices managed using Index Lifecycle Management will be written to.
+The rollover alias is the alias where indices managed using Index Lifecycle
+Management will be written to.
 
-NOTE: If both `index` and `ilm_rollover_alias` are specified, `ilm_rollover_alias` takes precedence.
+NOTE: If both `index` and `ilm_rollover_alias` are specified,
+`ilm_rollover_alias` takes precedence.
 
-NOTE: Updating the rollover alias will require the index template to be rewritten
+NOTE: Updating the rollover alias will require the index template to be
+rewritten.
 
-NOTE: `ilm_rollover_alias` does NOT support dynamic variable substitution as `index` does.
+NOTE: `ilm_rollover_alias` does NOT support dynamic variable substitution as
+`index` does.
 
 [id="plugins-{type}s-{plugin}-index"]
 ===== `index`
@@ -580,8 +622,10 @@ The default value will partition your indices by day so you can more easily
 delete old data or only search specific date ranges.
 Indexes may not contain uppercase characters.
 For weekly indexes ISO 8601 format is recommended, eg. logstash-%{+xxxx.ww}.
-LS uses Joda to format the index pattern from event timestamp.
-Joda formats are defined http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html[here].
+Logstash uses
+http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html[Joda
+formats] for the index pattern from event timestamp.
+
 
 [id="plugins-{type}s-{plugin}-keystore"]
 ===== `keystore`
@@ -653,8 +697,9 @@ Password to authenticate to a secure Elasticsearch cluster
   * Value type is <<string,string>>
   * There is no default value for this setting.
 
-HTTP Path at which the Elasticsearch server lives. Use this if you must run Elasticsearch behind a proxy that remaps
-the root path for the Elasticsearch HTTP API lives.
+HTTP Path at which the Elasticsearch server lives. Use this if you must run
+Elasticsearch behind a proxy that remaps the root path for the Elasticsearch
+HTTP API lives.
 Note that if you use paths as components of URLs in the 'hosts' field you may
 not also set this field. That will raise an error at startup
 
@@ -664,8 +709,10 @@ not also set this field. That will raise an error at startup
   * Value type is <<string,string>>
   * Default value is `nil`
 
-Set which ingest pipeline you wish to execute for an event. You can also use event dependent configuration here
-like `pipeline => "%{[@metadata][pipeline]}"`. The pipeline parameter won't be set if the value resolves to empty string ("").
+Set which ingest pipeline you wish to execute for an event. You can also use
+event dependent configuration here like `pipeline =>
+"%{[@metadata][pipeline]}"`. The pipeline parameter won't be set if the value
+resolves to empty string ("").
 
 [id="plugins-{type}s-{plugin}-pool_max"]
 ===== `pool_max`
@@ -716,7 +763,8 @@ to see if they have come back to life
   * Value type is <<number,number>>
   * Default value is `2`
 
-Set initial interval in seconds between bulk retries. Doubled on each retry up to `retry_max_interval`
+Set initial interval in seconds between bulk retries. Doubled on each retry up
+to `retry_max_interval`
 
 [id="plugins-{type}s-{plugin}-retry_max_interval"]
 ===== `retry_max_interval`
@@ -765,8 +813,9 @@ Example:
   * Value type is <<string,string>>
   * Default value is `"painless"`
 
-Set the language of the used script. If not set, this defaults to painless in ES 5.0.
-When using indexed (stored) scripts on Elasticsearch 6 and higher, you must set this parameter to `""` (empty string).
+Set the language of the used script.
+When using indexed (stored) scripts on Elasticsearch 6.0 and higher, you must set
+this parameter to `""` (empty string).
 
 [id="plugins-{type}s-{plugin}-script_type"]
 ===== `script_type`
@@ -801,9 +850,10 @@ if enabled, script is in charge of creating non-existent document (scripted upda
   * Value type is <<boolean,boolean>>
   * Default value is `false`
 
-This setting asks Elasticsearch for the list of all cluster nodes and adds them to the hosts list.
-For Elasticsearch 1.x and 2.x any nodes with `http.enabled` (on by default) will be added to the hosts list, including master-only nodes!
-For Elasticsearch 5.x and 6.x any nodes with `http.enabled` (on by default) will be added to the hosts list, excluding master-only nodes.
+This setting asks Elasticsearch for the list of all cluster nodes and adds them
+to the hosts list.
+For Elasticsearch 5.x and 6.x any nodes with `http.enabled` (on by default) will
+be added to the hosts list, excluding master-only nodes.
 
 [id="plugins-{type}s-{plugin}-sniffing_delay"]
 ===== `sniffing_delay`
@@ -830,9 +880,11 @@ do not use full URL here, only paths, e.g. "/sniff/_nodes/http"
   * Value type is <<boolean,boolean>>
   * There is no default value for this setting.
 
-Enable SSL/TLS secured communication to Elasticsearch cluster. Leaving this unspecified will use whatever scheme
-is specified in the URLs listed in 'hosts'. If no explicit protocol is specified plain HTTP will be used.
-If SSL is explicitly disabled here the plugin will refuse to start if an HTTPS URL is given in 'hosts'
+Enable SSL/TLS secured communication to Elasticsearch cluster. Leaving this
+unspecified will use whatever scheme is specified in the URLs listed in 'hosts'.
+If no explicit protocol is specified plain HTTP will be used. If SSL is
+explicitly disabled here the plugin will refuse to start if an HTTPS URL is
+given in 'hosts'
 
 [id="plugins-{type}s-{plugin}-ssl_certificate_verification"]
 ===== `ssl_certificate_verification`
@@ -937,8 +989,9 @@ Username to authenticate to a secure Elasticsearch cluster
   * Value type is <<number,number>>
   * Default value is `10000`
 
-How long to wait before checking if the connection is stale before executing a request on a connection using keepalive.
-You may want to set this lower, if you get connection errors regularly
+How long to wait before checking if the connection is stale before executing a
+request on a connection using keepalive.
+You may want to set this lower if you get connection errors regularly
 Quoting the Apache commons docs (this client is based Apache Commmons):
 'Defines period of inactivity in milliseconds after which persistent connections must
 be re-validated prior to being leased to the consumer. Non-positive value passed to
@@ -963,8 +1016,7 @@ See https://www.elastic.co/blog/elasticsearch-versioning-support.
 
 The version_type to use for indexing.
 See https://www.elastic.co/blog/elasticsearch-versioning-support.
-See also https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types
-
+See also {ref}/docs-index_.html#_version_types
 
 
 [id="plugins-{type}s-{plugin}-common-options"]
