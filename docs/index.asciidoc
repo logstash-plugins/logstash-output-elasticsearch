@@ -30,11 +30,11 @@ interacting with Elasticsearch. In previous versions it was possible to
 communicate with Elasticsearch through the transport protocol, which is now
 reserved for internal cluster communication between nodes
 {ref}/modules-transport.html[communication between nodes].
-Using the {ref}/java-clients.html[transport protocol]
-to communicate with the cluster has been deprecated in Elasticsearch 7.0.0 and
-will be removed in 8.0.0
+Using the transport protocol to communicate with the cluster has been deprecated
+in Elasticsearch 7.0.0 and will be removed in 8.0.0
 
-You can learn more about Elasticsearch at {ref}
+You can https://www.elastic.co/elasticsearch/[learn more about Elasticsearch] on
+the website landing page or in the {ref}[Elasticsearch documentation].
 
 .Compatibility Note
 [NOTE]
@@ -103,9 +103,8 @@ Example:
 
 **What to do in case there is no field in the event containing the destination index prefix?**
 
-You can use the `mutate` filter and conditionals to add a `[@metadata]` field
-(see
-{logstash-ref}/event-dependent-configuration.html#metadata)
+You can use the `mutate` filter and conditionals to add a
+{logstash-ref}/event-dependent-configuration.html#metadata[`[@metadata]` field]
 to set the destination index for each event. The `[@metadata]` fields will not
 be sent to Elasticsearch.
 
@@ -538,10 +537,10 @@ default for Elasticsearch v5.0 and beyond
   * Value can be any of: `true`, `false`, `auto`
   * Default value is `auto`
 
-The default setting of `auto` will automatically enable the Index Lifecycle
-Management feature, if the Elasticsearch cluster is running Elasticsearch
-version `7.0.0` or higher with the ILM feature enabled, and disable it
-otherwise.
+The default setting of `auto` will automatically enable
+{ref}/index-lifecycle-management.html[Index Lifecycle Management], if the
+Elasticsearch cluster is running Elasticsearch version `7.0.0` or higher with
+the ILM feature enabled, and disable it otherwise.
 
 Setting this flag to `false` will disable the Index Lifecycle Management
 feature, even if the Elasticsearch cluster supports ILM.
@@ -550,7 +549,7 @@ the Elasticsearch cluster supports it. This is required to enable Index
 Lifecycle Management on a version of Elasticsearch earlier than version `7.0.0`.
 
 NOTE: This feature requires a Basic License or above to be installed on an
-Elasticsearch cluster version 6.6.0 or later
+Elasticsearch cluster version 6.6.0 or later.
 
 [id="plugins-{type}s-{plugin}-ilm_pattern"]
 ===== `ilm_pattern`
@@ -558,15 +557,16 @@ Elasticsearch cluster version 6.6.0 or later
   * Value type is <<string,string>>
   * Default value is `{now/d}-000001`
 
-Pattern used for generating indices managed by Index Lifecycle Management. The
-value specified in the pattern will be appended to the write alias, and
-incremented automatically when a new index is created by ILM.
+Pattern used for generating indices managed by
+{ref}/index-lifecycle-management.html[Index Lifecycle Management]. The value
+specified in the pattern will be appended to the write alias, and incremented
+automatically when a new index is created by ILM.
 
 Date Math can be used when specifying an ilm pattern, see
 {ref}/indices-rollover-index.html#_using_date_math_with_the_rollover_api[Rollover
-API docs] for details
+API docs] for details.
 
-NOTE: Updating the pattern will require the index template to be rewritten
+NOTE: Updating the pattern will require the index template to be rewritten.
 
 NOTE: The pattern must finish with a dash and a number that will be automatically
 incremented when indices rollover.
