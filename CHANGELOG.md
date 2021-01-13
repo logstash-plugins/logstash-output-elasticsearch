@@ -1,3 +1,6 @@
+## 10.8.2
+ - [DOC] Update links to use shared attributes [#985](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/985)
+
 ## 10.8.1
  - Fixed an issue when assigning the no-op license checker [#984](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/984)
 
