@@ -213,9 +213,10 @@ NOTE: If the index property is supplied in the output definition, it will be ove
 
 ==== Batch Sizes
 
-This plugin attempts to send batches of events as a single request. However, if
-a request exceeds 20MB we will break it up into multiple batch requests. If a
-single document exceeds 20MB it will be sent as a single request.
+This plugin attempts to send batches of events to the {ref}/docs-bulk.html[{es}
+Bulk API] as a single request. However, if a batch exceeds 20MB we break it up
+into multiple bulk requests. If a single document exceeds 20MB it is sent as a
+single request.
 
 ==== DNS Caching
 
