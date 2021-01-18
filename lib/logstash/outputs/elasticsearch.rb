@@ -4,7 +4,7 @@ require "logstash/environment"
 require "logstash/outputs/base"
 require "logstash/json"
 require "concurrent"
-require "stud/buffer"
+require "stud/interval"
 require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
 require "uri" # for escaping user input
