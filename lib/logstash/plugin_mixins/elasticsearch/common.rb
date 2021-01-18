@@ -126,7 +126,7 @@ module LogStash; module PluginMixins; module ElasticSearch
     # launch a thread that waits for an initial successful connection to the ES cluster to call the given block
     # @param block [Proc] the block to execute upon initial successful connection
     # @return [Thread] the successful connection wait thread
-    def setup_after_successful_connection(&block)
+    def after_successful_connection(&block)
       Thread.new do
         sleep_interval = @retry_initial_interval
         until successful_connection? || @stopping.true?

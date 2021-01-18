@@ -269,7 +269,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     # to build_client down to the Pool class.
     build_client(LicenseChecker.new(@logger))
 
-    @template_installer = setup_after_successful_connection do
+    @after_successful_connection_thread = after_successful_connection do
       discover_cluster_uuid
       install_template
       setup_ilm if ilm_in_use?
@@ -305,13 +305,13 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   def close
     @stopping.make_true if @stopping
-    stop_template_installer
+    stop_after_successful_connection_thread
     @client.close if @client
   end
 
   # not private because used by ILM specs
-  def stop_template_installer
-    @template_installer.join unless @template_installer.nil?
+  def stop_after_successful_connection_thread
+    @after_successful_connection_thread.join unless @after_successful_connection_thread.nil?
   end
 
   # not private for elasticsearch_spec.rb
