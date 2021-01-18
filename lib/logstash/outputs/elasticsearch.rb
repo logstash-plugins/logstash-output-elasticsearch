@@ -257,7 +257,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   def register
-    @template_installed = Concurrent::AtomicBoolean.new(false)
+    @successful_connection_init = Concurrent::AtomicBoolean.new(false)
     @stopping = Concurrent::AtomicBoolean.new(false)
     # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
     @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
@@ -273,6 +273,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       discover_cluster_uuid
       install_template
       setup_ilm if ilm_in_use?
+      @successful_connection_init.make_true
     end
     @bulk_request_metrics = metric.namespace(:bulk_requests)
     @document_level_metrics = metric.namespace(:documents)
@@ -297,9 +298,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Receive an array of events and immediately attempt to index them (no buffering)
   def multi_receive(events)
-    until @template_installed.true?
-      sleep 1
-    end
+    sleep 1 until @successful_connection_init.true?
     retrying_submit(events.map {|e| event_action_tuple(e)})
   end
 
@@ -424,7 +423,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   def install_template
     TemplateManager.install_template(self)
-    @template_installed.make_true
   end
 
   def setup_ecs_compatibility_related_defaults
