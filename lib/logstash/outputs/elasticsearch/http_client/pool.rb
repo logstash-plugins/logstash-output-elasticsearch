@@ -1,3 +1,4 @@
+require "concurrent/atomic/atomic_reference"
 require "logstash/plugin_mixins/elasticsearch/noop_license_checker"
 
 module LogStash; module Outputs; class ElasticSearch; class HttpClient;
@@ -71,6 +72,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @stopping = false
 
       @license_checker = options[:license_checker] || LogStash::PluginMixins::ElasticSearch::NoopLicenseChecker::INSTANCE
+
+      @last_es_version = Concurrent::AtomicReference.new
     end
 
     def start
@@ -116,12 +119,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
     def url_info
       @state_mutex.synchronize { @url_info }
-    end
-
-    def maximum_seen_major_version
-      @state_mutex.synchronize do
-        @maximum_seen_major_version
-      end
     end
 
     def urls
@@ -252,11 +249,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       response = perform_request_to_url(url, :get, LICENSE_PATH)
       LogStash::Json.load(response.body)
     rescue => e
-      logger.error("Unable to get license information", url: url.sanitized.to_s, error_type: e.class, error: e.message)
+      logger.error("Unable to get license information", url: url.sanitized.to_s, exception: e.class, message: e.message)
       {}
     end
 
     def health_check_request(url)
+      logger.debug("Running health check to see if an ES connection is working", url: url.sanitized.to_s, path: @healthcheck_path)
       perform_request_to_url(url, :head, @healthcheck_path)
     end
 
@@ -264,29 +262,20 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       # Try to keep locking granularity low such that we don't affect IO...
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         begin
-          logger.debug("Running health check to see if an Elasticsearch connection is working",
-                        :healthcheck_url => url, :path => @healthcheck_path)
           health_check_request(url)
           # If no exception was raised it must have succeeded!
-          logger.warn("Restored connection to ES instance", :url => url.sanitized.to_s)
+          logger.warn("Restored connection to ES instance", url: url.sanitized.to_s)
           # We reconnected to this node, check its ES version
           es_version = get_es_version(url)
           @state_mutex.synchronize do
             meta[:version] = es_version
-            major = major_version(es_version)
-            if !@maximum_seen_major_version
-              @logger.info("ES Output version determined", :es_version => major)
-              set_new_major_version(major)
-            elsif major > @maximum_seen_major_version
-              @logger.warn("Detected a node with a higher major version than previously observed. This could be the result of an elasticsearch cluster upgrade.", :previous_major => @maximum_seen_major_version, :new_major => major, :node_url => url.sanitized.to_s)
-              set_new_major_version(major)
-            end
+            set_last_es_version(es_version, url)
 
             alive = @license_checker.appropriate_license?(self, url)
             meta[:state] = alive ? :alive : :dead
           end
         rescue HostUnreachableError, BadResponseCodeError => e
-          logger.warn("Attempted to resurrect connection to dead ES instance, but got an error.", url: url.sanitized.to_s, error_type: e.class, error: e.message)
+          logger.warn("Attempted to resurrect connection to dead ES instance, but got an error", url: url.sanitized.to_s, exception: e.class, message: e.message)
         end
       end
     end
@@ -355,9 +344,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
 
       if state_changes[:removed].size > 0 || state_changes[:added].size > 0
-        if logger.info?
-          logger.info("Elasticsearch pool URLs updated", :changes => state_changes)
-        end
+        logger.info? && logger.info("Elasticsearch pool URLs updated", :changes => state_changes)
       end
       
       # Run an inline healthcheck anytime URLs are updated
@@ -368,10 +355,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
     
     def size
-      @state_mutex.synchronize { @url_info.size }
-    end
-
-    def es_versions
       @state_mutex.synchronize { @url_info.size }
     end
 
@@ -459,22 +442,52 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
     def return_connection(url)
       @state_mutex.synchronize do
-        if @url_info[url] # Guard against the condition where the connection has already been deleted
-          @url_info[url][:in_use] -= 1
-        end
+        info = @url_info[url]
+        info[:in_use] -= 1 if info # Guard against the condition where the connection has already been deleted
       end
     end
 
     def get_es_version(url)
       request = perform_request_to_url(url, :get, ROOT_URI_PATH)
-      LogStash::Json.load(request.body)["version"]["number"]
+      LogStash::Json.load(request.body)["version"]["number"] # e.g. "7.10.0"
     end
 
-    def set_new_major_version(version)
-      @maximum_seen_major_version = version
-      if @maximum_seen_major_version >= 6
-        @logger.warn("Detected a 6.x and above cluster: the `type` event field won't be used to determine the document _type", :es_version => @maximum_seen_major_version)
+    def last_es_version
+      @last_es_version.get
+    end
+
+    def maximum_seen_major_version
+      @state_mutex.synchronize { @maximum_seen_major_version }
+    end
+
+    private
+
+    # @private executing within @state_mutex
+    def set_last_es_version(version, url)
+      @last_es_version.set(version)
+
+      major = major_version(version)
+      if @maximum_seen_major_version.nil?
+        @logger.info("Elasticsearch version determined (#{version})", es_version: major)
+        set_maximum_seen_major_version(major)
+      elsif major > @maximum_seen_major_version
+        warn_on_higher_major_version(major, url)
+        @maximum_seen_major_version = major
       end
     end
+
+    def set_maximum_seen_major_version(major)
+      if major >= 6
+        @logger.warn("Detected a 6.x and above cluster: the `type` event field won't be used to determine the document _type", es_version: major)
+      end
+      @maximum_seen_major_version = major
+    end
+
+    def warn_on_higher_major_version(major, url)
+      @logger.warn("Detected a node with a higher major version than previously observed, " +
+                   "this could be the result of an Elasticsearch cluster upgrade",
+                   previous_major: @maximum_seen_major_version, new_major: major, node_url: url.sanitized.to_s)
+    end
+
   end
 end; end; end; end;

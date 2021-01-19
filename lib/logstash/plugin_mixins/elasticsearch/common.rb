@@ -115,6 +115,10 @@ module LogStash; module PluginMixins; module ElasticSearch
     end
     private :parse_user_password_from_cloud_auth
 
+    def last_es_version
+      client.last_es_version
+    end
+
     def maximum_seen_major_version
       client.maximum_seen_major_version
     end
