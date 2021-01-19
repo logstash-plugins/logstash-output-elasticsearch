@@ -372,11 +372,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     [action, params, event]
   end
 
-  # not private for elasticsearch_spec.rb
-  def retry_on_conflict_action_name
-    maximum_seen_major_version >= 7 ? :retry_on_conflict : :_retry_on_conflict
-  end
-
   @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }
 
   @@plugins.each do |plugin|
@@ -386,34 +381,45 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   private
 
+  def retry_on_conflict_action_name
+    maximum_seen_major_version >= 7 ? :retry_on_conflict : :_retry_on_conflict
+  end
+
   def routing_field_name
     maximum_seen_major_version >= 6 ? :routing : :_routing
   end
 
   # Determine the correct value for the 'type' field for the given event
-  DEFAULT_EVENT_TYPE_ES6="doc".freeze
-  DEFAULT_EVENT_TYPE_ES7="_doc".freeze
+  DEFAULT_EVENT_TYPE_ES6 = "doc".freeze
+  DEFAULT_EVENT_TYPE_ES7 = "_doc".freeze
+
   def get_event_type(event)
     # Set the 'type' value for the index.
     type = if @document_type
              event.sprintf(@document_type)
            else
-             if maximum_seen_major_version < 6
-               event.get("type") || DEFAULT_EVENT_TYPE_ES6
-             elsif maximum_seen_major_version == 6
+             major_version = maximum_seen_major_version
+             if major_version < 6
+               es5_event_type(event)
+             elsif major_version == 6
                DEFAULT_EVENT_TYPE_ES6
-             elsif maximum_seen_major_version == 7
+             elsif major_version == 7
                DEFAULT_EVENT_TYPE_ES7
              else
                nil
              end
            end
 
-    if !(type.is_a?(String) || type.is_a?(Numeric))
-      @logger.warn("Bad event type! Non-string/integer type value set!", :type_class => type.class, :type_value => type.to_s, :event => event)
-    end
-
     type.to_s
+  end
+
+  def es5_event_type(event)
+    type = event.get('type')
+    return DEFAULT_EVENT_TYPE_ES6 unless type
+    if !type.is_a?(String) && !type.is_a?(Numeric)
+      @logger.warn("Bad event type (non-string/integer type value set)!", :type_class => type.class, :type_value => type.to_s, :event => event)
+    end
+    type
   end
 
   ##
