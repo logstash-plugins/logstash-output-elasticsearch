@@ -324,25 +324,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # not private for elasticsearch_spec.rb
   # Convert the event into a 3-tuple of action, params, and event
   def event_action_tuple(event)
-    action = event.sprintf(@action)
-
-    params = {
-      :_id => @document_id ? event.sprintf(@document_id) : nil,
-      :_index => event.sprintf(@index),
-      routing_field_name => @routing ? event.sprintf(@routing) : nil
-    }
-
+    params = common_event_params(event)
     params[:_type] = get_event_type(event) if use_event_type?(nil)
-
-    if @pipeline
-      value = event.sprintf(@pipeline)
-      # convention: empty string equates to not using a pipeline
-      # this is useful when using a field reference in the pipeline setting, e.g.
-      #      elasticsearch {
-      #        pipeline => "%{[@metadata][pipeline]}"
-      #      }
-      params[:pipeline] = value unless value.empty?
-    end
 
     if @parent
       if @join_field
@@ -355,21 +338,40 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       end
     end
 
+    action = event.sprintf(@action)
+
     if action == 'update'
       params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
       params[:_script] = event.sprintf(@script) if @script != ""
       params[retry_on_conflict_action_name] = @retry_on_conflict
     end
 
-    if @version
-      params[:version] = event.sprintf(@version)
-    end
-
-    if @version_type
-      params[:version_type] = event.sprintf(@version_type)
-    end
+    params[:version] = event.sprintf(@version) if @version
+    params[:version_type] = event.sprintf(@version_type) if @version_type
 
     [action, params, event]
+  end
+
+  # @return Hash (initial) parameters for given event
+  # @private shared event params factory between index and data_stream mode
+  def common_event_params(event)
+    params = {
+        :_id => @document_id ? event.sprintf(@document_id) : nil,
+        :_index => event.sprintf(@index),
+        routing_field_name => @routing ? event.sprintf(@routing) : nil
+    }
+
+    if @pipeline
+      value = event.sprintf(@pipeline)
+      # convention: empty string equates to not using a pipeline
+      # this is useful when using a field reference in the pipeline setting, e.g.
+      #      elasticsearch {
+      #        pipeline => "%{[@metadata][pipeline]}"
+      #      }
+      params[:pipeline] = value unless value.empty?
+    end
+
+    params
   end
 
   @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }
