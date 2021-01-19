@@ -311,7 +311,7 @@ describe LogStash::Outputs::ElasticSearch do
 
     before do
       # Expect a timeout to be logged.
-      expect(subject.logger).to receive(:error).with(/Attempted to send a bulk request to Elasticsearch/i, anything).at_least(:once)
+      expect(subject.logger).to receive(:error).with(/Attempted to send a bulk request/i, anything).at_least(:once)
       expect(subject.client).to receive(:bulk).at_least(:twice).and_call_original
     end
 
@@ -331,7 +331,7 @@ describe LogStash::Outputs::ElasticSearch do
       let(:event) { LogStash::Event.new("myactionfield" => "update", "message" => "blah") }
 
       it "should interpolate the requested action value when creating an event_action_tuple" do
-        expect(subject.event_action_tuple(event).first).to eql("update")
+        expect(subject.send(:event_action_tuple, event).first).to eql("update")
       end
     end
 
@@ -341,7 +341,7 @@ describe LogStash::Outputs::ElasticSearch do
       let(:event) { LogStash::Event.new("myactionfield" => "update", "message" => "blah") }
 
       it "should obtain specific action's params from event_action_tuple" do
-        expect(subject.event_action_tuple(event)[1]).to include(:_upsert)
+        expect(subject.send(:event_action_tuple, event)[1]).to include(:_upsert)
       end
     end
 
@@ -362,7 +362,7 @@ describe LogStash::Outputs::ElasticSearch do
       let(:event) { LogStash::Event.new("pipeline" => "my-ingest-pipeline") }
 
       it "should interpolate the pipeline value and set it" do
-        expect(subject.event_action_tuple(event)[1]).to include(:pipeline => "my-ingest-pipeline")
+        expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "my-ingest-pipeline")
       end
     end
 
@@ -372,7 +372,7 @@ describe LogStash::Outputs::ElasticSearch do
       let(:event) { LogStash::Event.new("pipeline" => "") }
 
       it "should interpolate the pipeline value but not set it because it is empty" do
-        expect(subject.event_action_tuple(event)[1]).not_to include(:pipeline)
+        expect(subject.send(:event_action_tuple, event)[1]).not_to include(:pipeline)
       end
     end
   end
@@ -414,7 +414,7 @@ describe LogStash::Outputs::ElasticSearch do
 
       it "should not set the retry_on_conflict parameter when creating an event_action_tuple" do
         allow(subject.client).to receive(:maximum_seen_major_version).and_return(maximum_seen_major_version)
-        action, params, event_data = subject.event_action_tuple(event)
+        action, params, event_data = subject.send(:event_action_tuple, event)
         expect(params).not_to include({subject.send(:retry_on_conflict_action_name) => num_retries})
       end
     end
@@ -423,7 +423,7 @@ describe LogStash::Outputs::ElasticSearch do
       let(:options) { super.merge("action" => "update", "retry_on_conflict" => num_retries, "document_id" => 1) }
 
       it "should set the retry_on_conflict parameter when creating an event_action_tuple" do
-        action, params, event_data = subject.event_action_tuple(event)
+        action, params, event_data = subject.send(:event_action_tuple, event)
         expect(params).to include({subject.send(:retry_on_conflict_action_name) => num_retries})
       end
     end
@@ -432,7 +432,7 @@ describe LogStash::Outputs::ElasticSearch do
       let(:options) { super.merge("action" => "%{myactionfield}", "retry_on_conflict" => num_retries, "document_id" => 1) }
 
       it "should set the retry_on_conflict parameter when creating an event_action_tuple" do
-        action, params, event_data = subject.event_action_tuple(event)
+        action, params, event_data = subject.send(:event_action_tuple, event)
         expect(params).to include({subject.send(:retry_on_conflict_action_name) => num_retries})
         expect(action).to eq("update")
       end

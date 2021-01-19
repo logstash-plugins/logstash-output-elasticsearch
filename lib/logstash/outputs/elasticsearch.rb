@@ -419,7 +419,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     type = event.get('type')
     return DEFAULT_EVENT_TYPE_ES6 unless type
     if !type.is_a?(String) && !type.is_a?(Numeric)
-      @logger.warn("Bad event type (non-string/integer type value set)!", :type_class => type.class, :type_value => type.to_s, :event => event)
+      @logger.warn("Bad event type (non-string/integer type value set)", :type_class => type.class, :type_value => type, :event => event.to_hash)
     end
     type
   end
