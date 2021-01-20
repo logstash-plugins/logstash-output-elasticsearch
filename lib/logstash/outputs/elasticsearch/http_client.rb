@@ -1,6 +1,4 @@
 require "logstash/outputs/elasticsearch"
-require "cabin"
-require "base64"
 require 'logstash/outputs/elasticsearch/http_client/pool'
 require 'logstash/outputs/elasticsearch/http_client/manticore_adapter'
 require 'cgi'

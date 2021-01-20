@@ -1,6 +1,6 @@
 require "logstash/devutils/rspec/spec_helper"
 require "logstash/outputs/elasticsearch/http_client"
-require "json"
+require 'cabin'
 
 describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:logger) { Cabin::Channel.get }
