@@ -325,6 +325,11 @@ describe LogStash::Outputs::ElasticSearch do
   end
 
   describe "the action option" do
+
+    before do
+      allow(subject).to receive(:install_template)
+    end
+
     context "with a sprintf action" do
       let(:options) { {"action" => "%{myactionfield}" } }
 
@@ -356,6 +361,11 @@ describe LogStash::Outputs::ElasticSearch do
   end
 
   describe "the pipeline option" do
+
+    before do
+      allow(subject).to receive(:install_template)
+    end
+
     context "with a sprintf and set pipeline" do
       let(:options) { {"pipeline" => "%{pipeline}" } }
 
@@ -409,6 +419,10 @@ describe LogStash::Outputs::ElasticSearch do
     let(:event) { LogStash::Event.new("myactionfield" => "update", "message" => "blah") }
     let(:options) { { 'retry_on_conflict' => num_retries } }
 
+    before do
+      allow(subject).to receive(:install_template)
+    end
+
     context "with a regular index" do
       let(:options) { super.merge("action" => "index") }
 
@@ -443,6 +457,10 @@ describe LogStash::Outputs::ElasticSearch do
     let(:retry_max_interval) { 64 }
     let(:options) { { "retry_max_interval" => retry_max_interval } }
 
+    before do
+      allow(subject).to receive(:install_template)
+    end
+
     it "should double the given value" do
       expect(subject.next_sleep_interval(2)).to eql(4)
       expect(subject.next_sleep_interval(32)).to eql(64)
@@ -463,6 +481,8 @@ describe LogStash::Outputs::ElasticSearch do
     let(:do_register) { false }
 
     before :each do
+      allow(subject).to receive(:install_template)
+
       allow(::Manticore::Client).to receive(:new).with(any_args).and_call_original
     end
 
@@ -507,6 +527,10 @@ describe LogStash::Outputs::ElasticSearch do
     end
 
     context "using url hosts" do
+
+      before do
+        allow(subject).to receive(:install_template)
+      end
 
       context "with embedded query parameters" do
         let(:options) {
@@ -692,7 +716,11 @@ describe LogStash::Outputs::ElasticSearch do
   end
 
   describe "custom headers" do
-    let(:manticore_options) { subject.client.pool.adapter.manticore.instance_variable_get(:@options) } 
+    let(:manticore_options) { subject.client.pool.adapter.manticore.instance_variable_get(:@options) }
+
+    before do
+      allow(subject).to receive(:install_template)
+    end
 
     context "when set" do
       let(:headers) { { "X-Thing" => "Test" } }
@@ -713,6 +741,10 @@ describe LogStash::Outputs::ElasticSearch do
     let(:manticore_options) { subject.client.pool.adapter.manticore.instance_variable_get(:@options) }
     let(:api_key) { "some_id:some_api_key" }
     let(:base64_api_key) { "ApiKey c29tZV9pZDpzb21lX2FwaV9rZXk=" }
+
+    before do
+      allow(subject).to receive(:install_template)
+    end
 
     context "when set without ssl" do
       let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
