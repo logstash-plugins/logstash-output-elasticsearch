@@ -23,13 +23,13 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency "manticore", '>= 0.5.4', '< 1.0.0'
   s.add_runtime_dependency 'stud', ['>= 0.0.17', '~> 0.0']
-  s.add_runtime_dependency 'cabin', ['~> 0.6']
   s.add_runtime_dependency "logstash-core-plugin-api", ">= 1.60", "<= 2.99"
   s.add_runtime_dependency 'logstash-mixin-ecs_compatibility_support', '~>1.0'
 
   s.add_development_dependency 'logstash-codec-plain'
   s.add_development_dependency 'logstash-devutils'
   s.add_development_dependency 'flores'
+  s.add_development_dependency 'cabin', ['~> 0.6']
   # Still used in some specs, we should remove this ASAP
   s.add_development_dependency 'elasticsearch'
 end

@@ -8,6 +8,7 @@ require_relative "support/elasticsearch/api/actions/get_ilm_policy"
 require_relative "support/elasticsearch/api/actions/put_ilm_policy"
 
 require 'json'
+require 'cabin'
 
 unless defined?(LogStash::OSS)
   LogStash::OSS = ENV['DISTRIBUTION'] != "default"
