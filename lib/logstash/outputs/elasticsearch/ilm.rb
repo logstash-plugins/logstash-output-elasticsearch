@@ -10,14 +10,6 @@ module LogStash; module Outputs; class ElasticSearch
       maybe_create_ilm_policy
     end
 
-    def default_rollover_alias?(rollover_alias)
-      rollover_alias == default_ilm_rollover_alias
-    end
-
-    def ilm_alias_set?
-      default_index?(@index) || !default_rollover_alias?(@ilm_rollover_alias)
-    end
-
     def ilm_in_use?
       return @ilm_actually_enabled if defined?(@ilm_actually_enabled)
       @ilm_actually_enabled =
@@ -43,6 +35,12 @@ module LogStash; module Outputs; class ElasticSearch
             false
           end
         end
+    end
+
+    private
+
+    def ilm_alias_set?
+      default_index?(@index) || !default_rollover_alias?(@ilm_rollover_alias)
     end
 
     def ilm_on_by_default?
@@ -72,10 +70,12 @@ module LogStash; module Outputs; class ElasticSearch
       end
     end
 
-    private
-
     def default_index?(index)
       index == @default_index
+    end
+
+    def default_rollover_alias?(rollover_alias)
+      rollover_alias == default_ilm_rollover_alias
     end
 
     def ilm_policy_default?
