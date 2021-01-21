@@ -253,6 +253,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   def initialize(*params)
     super
+    @mutex = Mutex.new
     setup_ecs_compatibility_related_defaults
   end
 
@@ -270,14 +271,23 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     build_client(LicenseChecker.new(@logger))
 
     @after_successful_connection_thread = after_successful_connection do
-      discover_cluster_uuid
-      install_template
-      setup_ilm if ilm_in_use?
+      finish_register
       @after_successful_connection.make_true
     end
+
     @bulk_request_metrics = metric.namespace(:bulk_requests)
     @document_level_metrics = metric.namespace(:documents)
     @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
+  end
+
+  # @override post-register when ES connection established
+  def finish_register
+    synchronize do # due @i-vars being set on the plugin
+      discover_cluster_uuid
+      install_template
+      setup_ilm if ilm_in_use?
+      super
+    end
   end
 
   # @override to handle proxy => '' as if none was set
@@ -316,13 +326,16 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @client.close if @client
   end
 
-  # not private because used by ILM specs
+  private
+
   def stop_after_successful_connection_thread
     @after_successful_connection_thread.join unless @after_successful_connection_thread.nil?
   end
 
-  # not private for elasticsearch_spec.rb
-  # Convert the event into a 3-tuple of action, params, and event
+  def synchronize(&block)
+    @mutex.synchronize(&block)
+  end
+
   def event_action_tuple(event)
     params = common_event_params(event)
     params[:_type] = get_event_type(event) if use_event_type?(nil)
@@ -380,8 +393,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     name = plugin.name.split('-')[-1]
     require "logstash/outputs/elasticsearch/#{name}"
   end
-
-  private
 
   def retry_on_conflict_action_name
     maximum_seen_major_version >= 7 ? :retry_on_conflict : :_retry_on_conflict

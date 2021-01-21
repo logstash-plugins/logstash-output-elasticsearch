@@ -115,6 +115,11 @@ module LogStash; module PluginMixins; module ElasticSearch
     end
     private :parse_user_password_from_cloud_auth
 
+    # Plugin initialization extension point (after a successful ES connection).
+    def finish_register
+    end
+    protected :finish_register
+
     def last_es_version
       client.last_es_version
     end
@@ -140,6 +145,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         block.call if successful_connection?
       end
     end
+    private :after_successful_connection
 
     def discover_cluster_uuid
       return unless defined?(plugin_metadata)
