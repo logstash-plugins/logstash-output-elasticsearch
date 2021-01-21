@@ -15,8 +15,6 @@ module LogStash; module Outputs; class ElasticSearch
       add_ilm_settings_to_template(plugin, template) if plugin.ilm_in_use?
       plugin.logger.debug("Attempting to install template", template: template)
       install(plugin.client, template_name(plugin), template, plugin.template_overwrite)
-    rescue => e
-      plugin.logger.error("Failed to install template", message: e.message, exception: e.class, backtrace: e.backtrace)
     end
 
     private

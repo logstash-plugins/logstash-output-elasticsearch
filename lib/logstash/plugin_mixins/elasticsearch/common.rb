@@ -152,8 +152,7 @@ module LogStash; module PluginMixins; module ElasticSearch
       cluster_info = client.get('/')
       plugin_metadata.set(:cluster_uuid, cluster_info['cluster_uuid'])
     rescue => e
-      # TODO introducing this logging message breaks many tests that need refactoring
-      # @logger.error("Unable to retrieve elasticsearch cluster uuid", error => e.message)
+      @logger.error("Unable to retrieve Elasticsearch cluster uuid", message: e.message, exception: e.class, backtrace: e.backtrace)
     end
 
     def retrying_submit(actions)

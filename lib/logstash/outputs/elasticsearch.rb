@@ -450,6 +450,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   def install_template
     TemplateManager.install_template(self)
+  rescue => e
+    @logger.error("Failed to install template", message: e.message, exception: e.class, backtrace: e.backtrace)
   end
 
   def setup_ecs_compatibility_related_defaults

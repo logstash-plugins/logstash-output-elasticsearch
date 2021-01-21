@@ -1,6 +1,7 @@
 require_relative "../../../spec/es_spec_helper"
 require "base64"
 require "flores/random"
+require 'concurrent/atomic/count_down_latch'
 require "logstash/outputs/elasticsearch"
 
 describe LogStash::Outputs::ElasticSearch do
@@ -772,6 +773,35 @@ describe LogStash::Outputs::ElasticSearch do
         expect { subject.register }.to raise_error LogStash::ConfigurationError, /Multiple authentication options are specified/
       end
     end
+  end
+
+  describe "post-register logging" do
+    let(:do_register) { false }
+    let(:logger) { subject.logger }
+
+    before do
+      allow(logger).to receive(:error) # expect tracking
+      # emulate 'successful' ES connection on the same thread
+      expect(subject).to receive(:after_successful_connection) { |&block| block.call }
+      allow(subject).to receive(:stop_after_successful_connection_thread)
+    end
+
+    it "logs inability to retrieve uuid" do
+      allow(subject).to receive(:install_template)
+      allow(subject).to receive(:ilm_in_use?).and_return nil
+      subject.register
+
+      expect(logger).to have_received(:error).with(/Unable to retrieve Elasticsearch cluster uuid/i, anything)
+    end if LOGSTASH_VERSION >= '7.0.0'
+
+    it "logs template install failure" do
+      allow(subject).to receive(:discover_cluster_uuid)
+      allow(subject).to receive(:ilm_in_use?).and_return nil
+      subject.register
+
+      expect(logger).to have_received(:error).with(/Failed to install template/i, anything)
+    end
+
   end
 
   @private
