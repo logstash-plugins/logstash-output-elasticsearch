@@ -1,0 +1,147 @@
+require_relative '../../../../spec/es_spec_helper'
+require "logstash/outputs/elasticsearch"
+
+describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
+
+  subject { LogStash::Outputs::ElasticSearch.new(options) }
+  let(:options) { { 'hosts' => [ 'localhost:123456' ] } }
+  let(:es_version) { '7.10.1' }
+
+  before(:each) do
+    allow(subject).to receive(:last_es_version).and_return(es_version)
+  end
+
+  context "empty configuration" do
+
+    let(:options) { {} }
+
+    it "does not use data-streams on LS 7.x" do
+      change_constant :LOGSTASH_VERSION, '7.10.0' do
+        expect( subject.data_stream_config? ).to be false
+      end
+    end
+
+    it "defaults to using data-streams on LS 8.0" do
+      change_constant :LOGSTASH_VERSION, '8.0.0' do
+        expect( subject.data_stream_config? ).to be true
+      end
+    end
+
+    context 'non-compatible ES' do
+
+      let(:es_version) { '7.8.1' }
+
+      it "raises when running on LS 8.0" do
+        change_constant :LOGSTASH_VERSION, '8.0.0' do
+          error_message = /data_stream is only supported since Elasticsearch 7.9.0 \(detected version 7.8.1\)/
+          expect { subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, error_message)
+        end
+      end
+
+    end
+
+  end
+
+  context "ds-compatible configuration" do
+
+    let(:options) do
+      {
+          'hosts' => [ 'http://127.0.0.1:123456' ],
+          'http_compression' => 'true', 'bulk_path' => '_bulk', 'timeout' => '30',
+          'user' => 'elastic', 'password' => 'ForSearch!', 'ssl' => 'false'
+      }
+    end
+
+    it "does not use data-streams on LS 7.x" do
+      change_constant :LOGSTASH_VERSION, '7.10.0' do
+        expect( subject.data_stream_config? ).to be false
+      end
+    end
+
+    it "defaults to using data-streams on LS 8.0" do
+      change_constant :LOGSTASH_VERSION, '8.0.1' do
+        expect( subject.data_stream_config? ).to be true
+      end
+      change_constant :LOGSTASH_VERSION, '8.1.0' do
+        expect( subject.send(:check_data_stream_config!) ).to be true
+      end
+    end
+
+    it "warns about not using data-streams on LS 8.0 (OSS)" do
+      expect( subject.logger ).to receive(:warn) do |msg|
+        msg.index "Configuration is data_stream compliant but won't be used"
+      end
+      change_constant :LOGSTASH_VERSION, '8.0.1' do
+        change_constant :OSS, true, target: LogStash do
+          expect( subject.data_stream_config? ).to be false
+        end
+      end
+    end
+
+  end
+
+  context "(explicit) ds disabled configuration" do
+
+    let(:options) { super.merge('data_stream' => false.to_s) }
+
+    it "does not use data-streams on LS 7.x" do
+      change_constant :LOGSTASH_VERSION, '7.10.0' do
+        expect( subject.data_stream_config? ).to be false
+      end
+    end
+
+    it "does not use data-streams on LS 8.0" do
+      change_constant :LOGSTASH_VERSION, '8.0.0' do
+        expect( subject.data_stream_config? ).to be false
+      end
+    end
+
+  end
+
+
+  context "(explicit) ds enabled configuration" do
+
+    let(:options) { super.merge('data_stream' => true.to_s) }
+
+    it "does use data-streams on LS 7.x" do
+      change_constant :LOGSTASH_VERSION, '7.9.1' do
+        expect( subject.data_stream_config? ).to be true
+      end
+    end
+
+    it "does use data-streams on LS 8.0" do
+      change_constant :LOGSTASH_VERSION, '8.1.0' do
+        expect( subject.data_stream_config? ).to be true
+      end
+    end
+
+    context 'non-compatible ES' do
+
+      let(:es_version) { '6.8.11' }
+
+      it "raises when running on LS 8.0" do
+        change_constant :LOGSTASH_VERSION, '8.0.0' do
+          error_message = /data_stream is only supported since Elasticsearch 7.9.0 \(detected version 6.8.11\)/
+          expect { subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, error_message)
+        end
+      end
+
+    end
+
+  end
+
+  private
+
+  def change_constant(name, new_value, target: Object)
+    old_value = target.const_get name
+    begin
+      target.send :remove_const, name
+      target.const_set name, new_value
+      yield
+    ensure
+      target.send :remove_const, name rescue nil
+      target.const_set name, old_value
+    end
+  end
+
+end

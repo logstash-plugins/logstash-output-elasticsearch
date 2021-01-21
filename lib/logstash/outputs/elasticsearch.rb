@@ -92,6 +92,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   require "logstash/plugin_mixins/elasticsearch/api_configs"
   require "logstash/plugin_mixins/elasticsearch/common"
   require "logstash/outputs/elasticsearch/ilm"
+  require "logstash/outputs/elasticsearch/data_stream_support"
   require 'logstash/plugin_mixins/ecs_compatibility_support'
 
   # Protocol agnostic methods
@@ -105,6 +106,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Generic/API config options that any document indexer output needs
   include(LogStash::PluginMixins::ElasticSearch::APIConfigs)
+
+  # DS support
+  include(LogStash::Outputs::ElasticSearch::DataStreamSupport)
 
   DEFAULT_POLICY = "logstash-policy"
 
@@ -269,6 +273,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     # to build_client down to the Pool class.
     @client = build_client(LicenseChecker.new(@logger))
 
+    @event_mapper = -> (e) { event_action_tuple(e) }
+
     @after_successful_connection_thread = after_successful_connection do
       finish_register
       @after_successful_connection.make_true
@@ -308,7 +314,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Receive an array of events and immediately attempt to index them (no buffering)
   def multi_receive(events)
     wait_for_successful_connection if @after_successful_connection
-    retrying_submit(events.map {|e| event_action_tuple(e)})
+    retrying_submit events.map(&@event_mapper)
   end
 
   def wait_for_successful_connection
