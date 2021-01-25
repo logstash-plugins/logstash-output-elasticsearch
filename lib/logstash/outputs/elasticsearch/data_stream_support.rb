@@ -32,45 +32,6 @@ module LogStash module Outputs class ElasticSearch
       @data_stream_config.nil? ? @data_stream_config = check_data_stream_config! : @data_stream_config
     end
 
-    # @param data_stream true if user configured `data_stream => true` or default is to use DS
-    # def check_data_stream_config111!(params, data_stream)
-    #   common_params = ApiConfigs::CONFIG_PARAMS.keys.map(&:to_s)
-    #   invalid_data_stream_params = params.reject do |name, _|
-    #     # NOTE: intentionally do not support explicit DS configuration like:
-    #     # - `action => 'index'` (despite 'index' being the default) since
-    #     # - `index => ...` identifier provided by data_stream_xxx settings
-    #     # - `manage_template => false` implied by not setting the parameter
-    #     case name
-    #     when 'routing', 'pipeline'
-    #       true
-    #     else
-    #       name.start_with?('data_stream_') || common_params.include?(name)
-    #     end
-    #   end
-    #
-    #   if data_stream
-    #     if invalid_data_stream_params.any?
-    #       if params.key?('data_stream')
-    #         @logger.error "Invalid data_stream configuration, following settings are not supported:", invalid_data_stream_params
-    #       else # data_stream => (auto) default ended up as true
-    #       @logger.error "Due Elasticsearch version (#{last_es_version}) a data stream setup is recommended " +
-    #                         "(set `data_stream => false` if you intend to use current output configuration), " +
-    #                         "following settings are not supported for data_stream:", invalid_data_stream_params
-    #       end
-    #       raise LogStash::ConfigurationError, "invalid data stream configuration: #{invalid_data_stream_params.keys}"
-    #     end
-    #     return true
-    #   else
-    #     data_stream_params = params.select { |name, _| name.start_with?('data_stream_') } # exclude data_stream => false
-    #     if data_stream_params.any?
-    #       @logger.error "invalid configuration (includes data_stream settings):", data_stream_params
-    #       non_data_stream_params = params.reject { |name, _| data_stream_params.key?(name) }
-    #       raise LogStash::ConfigurationError, "invalid configuration: #{data_stream_params} is not supported with: #{non_data_stream_params}"
-    #     end
-    #     return false
-    #   end
-    # end
-
     private
 
     # @param params the user configuration for the ES output
@@ -153,18 +114,9 @@ module LogStash module Outputs class ElasticSearch
     end
 
     def last_es_version_object
-      es_version = last_es_version
-      # fail 'expected a valid ES connection' unless es_version TODO
-      Gem::Version.create(es_version)
+      fail 'no last_es_version' unless last_es_version # assert - should not happen
+      Gem::Version.create(last_es_version)
     end
-
-    def data_stream_set?
-      !@data_stream.nil?
-    end
-
-    # def data_stream_auto?
-    #   @data_stream.eql?('auto')
-    # end
 
     DATA_STREAMS_ENABLED_BY_DEFAULT_LS_VERSION = '8.0.0'
 
