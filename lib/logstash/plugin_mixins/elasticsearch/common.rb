@@ -270,11 +270,12 @@ module LogStash; module PluginMixins; module ElasticSearch
     end
 
     # Rescue retryable errors during bulk submission
+    # @param actions a [action, params, event.to_hash] tuple
+    # @return response [Hash] which contains 'errors' and processed 'items' entries
     def safe_bulk(actions)
       sleep_interval = @retry_initial_interval
       begin
-        es_actions = actions.map {|action_type, params, event| [action_type, params, event.to_hash]}
-        @client.bulk(es_actions) # return response
+        @client.bulk(actions) # returns { 'errors': ..., 'items': ... }
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError => e
         # If we can't even connect to the server let's just print out the URL (:hosts is actually a URL)
         # and let the user sort it out from there

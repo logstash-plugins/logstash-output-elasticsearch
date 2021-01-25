@@ -336,6 +336,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @mutex.synchronize(&block)
   end
 
+  # Convert the event into a 3-tuple of action, params and event hash
   def event_action_tuple(event)
     params = common_event_params(event)
     params[:_type] = get_event_type(event) if use_event_type?(nil)
@@ -362,7 +363,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     params[:version] = event.sprintf(@version) if @version
     params[:version_type] = event.sprintf(@version_type) if @version_type
 
-    [action, params, event]
+    [action, params, event.to_hash]
   end
 
   # @return Hash (initial) parameters for given event
@@ -474,13 +475,13 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   # To be overidden by the -java version
-  VALID_HTTP_ACTIONS=["index", "delete", "create", "update"]
+  VALID_HTTP_ACTIONS = ["index", "delete", "create", "update"]
   def valid_actions
     VALID_HTTP_ACTIONS
   end
 
   def check_action_validity
-    raise LogStash::ConfigurationError, "No action specified!" unless @action
+    raise LogStash::ConfigurationError, "No action specified!" if (@action || '').empty?
 
     # If we're using string interpolation, we're good!
     return if @action =~ /%{.+}/
