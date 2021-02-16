@@ -204,8 +204,15 @@ module LogStash; module PluginMixins; module ElasticSearch
         return
       end
 
+      responses = bulk_response["items"]
+      if responses.size != actions.size # can not map action -> response reliably
+        msg = "Sent #{actions.size} documents but Elasticsearch returned #{responses.size} responses"
+        @logger.debug? && @logger.debug(msg, actions: actions, responses: responses)
+        fail("#{msg} (likely a bug with _bulk endpoint)")
+      end
+
       actions_to_retry = []
-      bulk_response["items"].each_with_index do |response,idx|
+      responses.each_with_index do |response,idx|
         action_type, action_props = response.first
 
         status = action_props["status"]
