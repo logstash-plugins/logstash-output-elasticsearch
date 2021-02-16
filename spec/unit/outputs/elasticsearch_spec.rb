@@ -297,6 +297,58 @@ describe LogStash::Outputs::ElasticSearch do
         expect(subject.logger).to have_received(:debug).with(/Encountered a retryable error/i, anything)
       end
     end
+
+    context "unexpected bulk response" do
+      let(:options) do
+        { "hosts" => "127.0.0.1:9999", "index" => "%{foo}", "manage_template" => false }
+      end
+
+      let(:events) { [ ::LogStash::Event.new("foo" => "bar1"), ::LogStash::Event.new("foo" => "bar2") ] }
+
+      let(:bulk_response) do
+        # shouldn't really happen but we've seen this happen - here ES returns more items than were sent
+        { "took"=>1, "ingest_took"=>9, "errors"=>true,
+          "items"=>[{"index"=>{"_index"=>"bar1", "_type"=>"_doc", "_id"=>nil, "status"=>500,
+                              "error"=>{"type" => "illegal_state_exception",
+                                      "reason" => "pipeline with id [test-ingest] could not be loaded, caused by [ElasticsearchParseException[Error updating pipeline with id [test-ingest]]; nested: ElasticsearchException[java.lang.IllegalArgumentException: no enrich index exists for policy with name [test-metadata1]]; nested: IllegalArgumentException[no enrich index exists for policy with name [test-metadata1]];; ElasticsearchException[java.lang.IllegalArgumentException: no enrich index exists for policy with name [test-metadata1]]; nested: IllegalArgumentException[no enrich index exists for policy with name [test-metadata1]];; java.lang.IllegalArgumentException: no enrich index exists for policy with name [test-metadata1]]"
+                                      }
+                              }
+                    },
+                    # NOTE: this is an artificial success (usually everything fails with a 500) but even if some doc where
+                    # to succeed due the unexpected reponse items we can not clearly identify which actions to retry ...
+                    {"index"=>{"_index"=>"bar2", "_type"=>"_doc", "_id"=>nil, "status"=>201}},
+                    {"index"=>{"_index"=>"bar2", "_type"=>"_doc", "_id"=>nil, "status"=>500,
+                               "error"=>{"type" => "illegal_state_exception",
+                                        "reason" => "pipeline with id [test-ingest] could not be loaded, caused by [ElasticsearchParseException[Error updating pipeline with id [test-ingest]]; nested: ElasticsearchException[java.lang.IllegalArgumentException: no enrich index exists for policy with name [test-metadata1]];"
+                                        }
+                              }
+                    }]
+        }
+    end
+
+      before(:each) do
+        allow(subject.client).to receive(:bulk_send).with(instance_of(StringIO)) do |stream|
+          expect( stream.string ).to include '"foo":"bar1"'
+          expect( stream.string ).to include '"foo":"bar2"'
+        end.and_return(bulk_response, {"errors"=>false}) # let's make it go away (second call) to not retry indefinitely
+      end
+
+      it "should retry submit" do
+        allow(subject.logger).to receive(:error).with(/Encountered an unexpected error/i, anything)
+        allow(subject.client).to receive(:bulk).and_call_original # track count
+
+        subject.multi_receive(events)
+
+        expect(subject.client).to have_received(:bulk).twice
+      end
+
+      it "should log specific error message  xxx" do
+        expect(subject.logger).to receive(:error).with(/Encountered an unexpected error/i,
+                                                       hash_including(:message => 'Sent 2 documents but Elasticsearch returned 3 responses (likely a bug with _bulk endpoint)'))
+
+        subject.multi_receive(events)
+      end
+    end
   end
 
   context "with timeout set" do
