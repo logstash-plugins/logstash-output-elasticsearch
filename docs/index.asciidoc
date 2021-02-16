@@ -523,7 +523,7 @@ should reference only data or client nodes in Elasticsearch.
 Any special characters present in the URLs here MUST be URL escaped! This means
 `#` should be put in as `%23` for instance.
 
-Whem using Logstash 7.9+, this setting supports defining an environment variable
+When using Logstash 7.9+, this setting supports defining an environment variable
 `hosts => '${ES_HOSTS:}' with multiple {logstash-ref}/plugin-concepts.html[whitespace-delimited URIs], e.g.:
 
 ```
