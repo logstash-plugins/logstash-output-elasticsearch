@@ -274,6 +274,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @client = build_client(LicenseChecker.new(@logger))
 
     @event_mapper = -> (e) { event_action_tuple(e) }
+    @event_target = -> (e) { e.sprintf(@index) }
 
     @after_successful_connection_thread = after_successful_connection do
       finish_register
@@ -314,7 +315,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Receive an array of events and immediately attempt to index them (no buffering)
   def multi_receive(events)
     wait_for_successful_connection if @after_successful_connection
-    retrying_submit events.map(&@event_mapper)
+    retrying_submit map_events(events)
+  end
+
+  def map_events(events)
+    events.map(&@event_mapper)
   end
 
   def wait_for_successful_connection
@@ -376,7 +381,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def common_event_params(event)
     params = {
         :_id => @document_id ? event.sprintf(@document_id) : nil,
-        :_index => event.sprintf(@index),
+        :_index => @event_target.call(event),
         routing_field_name => @routing ? event.sprintf(@routing) : nil
     }
 

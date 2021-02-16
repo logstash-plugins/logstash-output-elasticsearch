@@ -9,8 +9,7 @@ module LogStash module Outputs class ElasticSearch
       # Defaults to `false` in Logstash 7.x and `auto` starting in Logstash 8.0.
       base.config :data_stream, :validate => ['true', 'false', 'auto']
 
-      # TODO do we allow using a custom type?
-      base.config :data_stream_type, :validate => ['logs', 'metrics'], :default => 'logs'
+      base.config :data_stream_type, :validate => ['logs', 'metrics', 'synthetics'], :default => 'logs'
       base.config :data_stream_dataset, :validate => :dataset_identifier, :default => 'generic'
       base.config :data_stream_namespace, :validate => :namespace_identifier, :default => 'default'
 
@@ -24,7 +23,11 @@ module LogStash module Outputs class ElasticSearch
     def finish_register
       super
 
-      @event_mapper = -> (e) { data_stream_event_action_tuple(e) } if data_stream_config?
+      if data_stream_config?
+        @event_mapper = -> (e) { data_stream_event_action_tuple(e) }
+        @event_target = -> (e) { data_stream_name(e) }
+        @index = "#{data_stream_type}-#{data_stream_dataset}-#{data_stream_namespace}".freeze # default name
+      end
     end
 
     # @note assumes to be running AFTER {after_successful_connection} completed, otherwise detection won't work
@@ -33,6 +36,16 @@ module LogStash module Outputs class ElasticSearch
     end
 
     private
+
+    def data_stream_name(event)
+      data_stream = event.get('data_stream')
+      return @index if !data_stream_auto_routing || !data_stream.is_a?(Hash)
+
+      type = data_stream['type'] || data_stream_type
+      dataset = data_stream['dataset'] || data_stream_dataset
+      namespace = data_stream['namespace'] || data_stream_namespace
+      "#{type}-#{dataset}-#{namespace}" # TODO validate name?
+    end
 
     # @param params the user configuration for the ES output
     # @note LS initialized configuration (with filled defaults) won't detect as data-stream
