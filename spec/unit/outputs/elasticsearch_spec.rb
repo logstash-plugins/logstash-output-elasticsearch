@@ -1,4 +1,4 @@
-require_relative "../../../spec/es_spec_helper"
+require_relative "../../../spec/spec_helper"
 require "base64"
 require "flores/random"
 require 'concurrent/atomic/count_down_latch'

@@ -1,17 +1,25 @@
-require_relative '../../../../spec/es_spec_helper'
+require_relative '../../../../spec/spec_helper'
 require "logstash/outputs/elasticsearch"
 
 describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
   subject { LogStash::Outputs::ElasticSearch.new(options) }
-  let(:options) { { 'hosts' => [ 'localhost:123456' ] } }
+  let(:options) { { 'hosts' => [ 'localhost:12345' ] } }
   let(:es_version) { '7.10.1' }
 
+  @@logstash_oss = LogStash::OSS
+
   before(:each) do
+    change_constant :OSS, false, target: LogStash # assume non-OSS by default
+
     allow(subject).to receive(:last_es_version).and_return(es_version)
   end
 
-  context "empty configuration" do
+  after(:each) do
+    change_constant :OSS, @@logstash_oss, target: LogStash
+  end
+
+  context "default configuration" do
 
     let(:options) { {} }
 
@@ -46,7 +54,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
     let(:options) do
       {
-          'hosts' => [ 'http://127.0.0.1:123456' ],
+          'hosts' => [ 'http://127.0.0.1:12345' ],
           'http_compression' => 'true', 'bulk_path' => '_bulk', 'timeout' => '30',
           'user' => 'elastic', 'password' => 'ForSearch!', 'ssl' => 'false'
       }
@@ -137,10 +145,12 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
     begin
       target.send :remove_const, name
       target.const_set name, new_value
-      yield
+      yield if block_given?
     ensure
-      target.send :remove_const, name rescue nil
-      target.const_set name, old_value
+      if block_given?
+        target.send :remove_const, name rescue nil
+        target.const_set name, old_value
+      end
     end
   end
 
