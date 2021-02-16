@@ -1,5 +1,5 @@
 require_relative '../../../../spec/spec_helper'
-require "logstash/outputs/elasticsearch"
+require "logstash/outputs/elasticsearch/data_stream_support"
 
 describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
