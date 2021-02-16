@@ -523,6 +523,13 @@ should reference only data or client nodes in Elasticsearch.
 Any special characters present in the URLs here MUST be URL escaped! This means
 `#` should be put in as `%23` for instance.
 
+This setting supports defining an environment variable `hosts => '${ES_HOSTS:}',
+with multiple {logstash-ref}/plugin-concepts.html[whitespace-delimited URIs], e.g.:
+
+```
+ES_HOSTS="es1.example.com es2.example.com:9201 es3.example.com:9201"
+```
+
 [id="plugins-{type}s-{plugin}-http_compression"]
 ===== `http_compression`
 
