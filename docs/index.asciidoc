@@ -40,7 +40,8 @@ the website landing page or in the {ref}[Elasticsearch documentation].
 [NOTE]
 ================================================================================
 When connected to Elasticsearch 7.x, modern versions of this plugin
-use the required `_doc` document-type when inserting documents.
+don't use the document-type when inserting documents, unless the user
+explicitly sets <<plugins-{type}s-{plugin}-document_type>>.
 
 If you are using an earlier version of Logstash and wish to connect to
 Elasticsearch 7.x, first upgrade Logstash to version 6.8 to ensure it

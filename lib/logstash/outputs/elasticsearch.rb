@@ -417,7 +417,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # @param noop_required_client [nil]: required `nil` for legacy reasons.
   # @return [Boolean]
   def use_event_type?(noop_required_client)
-    maximum_seen_major_version < 8
+    # always set type for ES <= 6
+    # for ES 7 only set it if the user defined it
+    (maximum_seen_major_version < 7) || (maximum_seen_major_version == 7 && @document_type)
   end
 
   def install_template

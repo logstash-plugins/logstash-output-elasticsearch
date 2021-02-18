@@ -80,10 +80,10 @@ describe LogStash::Outputs::ElasticSearch do
     describe "building an event action tuple" do
       context "for 7.x elasticsearch clusters" do
         let(:maximum_seen_major_version) { 7 }
-        it "should include '_type'" do
+        it "should not include '_type' when 'document_type' is not explicitly defined" do
           action_tuple = subject.send(:event_action_tuple, LogStash::Event.new("type" => "foo"))
           action_params = action_tuple[1]
-          expect(action_params).to include(:_type => "_doc")
+          expect(action_params).not_to include(:_type => "_doc")
         end
 
         context "with 'document type set'" do
