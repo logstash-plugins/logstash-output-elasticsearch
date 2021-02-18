@@ -524,11 +524,14 @@ Any special characters present in the URLs here MUST be URL escaped! This means
 `#` should be put in as `%23` for instance.
 
 When using Logstash 7.9+, this setting supports defining an environment variable
-`hosts => '${ES_HOSTS:}' with multiple {logstash-ref}/plugin-concepts.html#space-delimited-uris-in-list-params[whitespace-delimited URIs], e.g.:
+`hosts => '${S}'` with multiple {logstash-ref}/plugin-concepts.html#space-delimited-uris-in-list-params[whitespace-delimited URIs]:
 
-```
-ES_HOSTS="es1.example.com es2.example.com:9201 es3.example.com:9201"
-```
+Examples:
+
+    `ES_HOSTS="es1.example.com es2.example.com:9201 es3.example.com:9201"`
+    `ES_HOSTS="127.0.0.1:9200 127.0.0.2:9200"`
+    `ES_HOSTS="http://127.0.0.1 http://127.0.0.2"`
+    `ES_HOSTS="https://127.0.0.1:9200/mypath https://127.0.0.2:9200/mypath"`
 
 [id="plugins-{type}s-{plugin}-http_compression"]
 ===== `http_compression`
