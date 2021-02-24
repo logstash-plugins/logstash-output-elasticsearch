@@ -1,3 +1,6 @@
+## 10.8.4
+ - Fixed an issue where a retried request would drop "update" parameters [#800](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/800)
+
 ## 10.8.3
  - Avoid to implicitly set deprecated type to `_doc` when connects to Elasticsearch version 7.x  [#994](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/994)
 
