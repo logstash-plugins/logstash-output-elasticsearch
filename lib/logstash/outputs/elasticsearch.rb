@@ -247,9 +247,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # ILM policy to use, if undefined the default policy will be used.
   config :ilm_policy, :validate => :string, :default => DEFAULT_POLICY
 
-  attr_reader :default_index
-  attr_reader :default_ilm_rollover_alias
-  attr_reader :default_template_name
+  attr_reader :client
+  attr_reader :default_index, :default_ilm_rollover_alias, :default_template_name
 
   def initialize(*params)
     super
@@ -268,7 +267,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     # the license_checking behaviour in the Pool class is externalized in the LogStash::ElasticSearchOutputLicenseChecker
     # class defined in license_check.rb. This license checking is specific to the elasticsearch output here and passed
     # to build_client down to the Pool class.
-    build_client(LicenseChecker.new(@logger))
+    @client = build_client(LicenseChecker.new(@logger))
 
     @after_successful_connection_thread = after_successful_connection do
       finish_register

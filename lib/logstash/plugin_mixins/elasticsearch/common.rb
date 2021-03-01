@@ -5,7 +5,7 @@ module LogStash; module PluginMixins; module ElasticSearch
 
     # This module defines common methods that can be reused by alternate elasticsearch output plugins such as the elasticsearch_data_streams output.
 
-    attr_reader :client, :hosts
+    attr_reader :hosts
 
     # These codes apply to documents, not at the request level
     DOC_DLQ_CODES = [400, 404]
@@ -31,7 +31,7 @@ module LogStash; module PluginMixins; module ElasticSearch
       if @proxy.eql?('')
         @logger.warn "Supplied proxy setting (proxy => '') has no effect"
       end
-      @client ||= ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
+      ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
     end
 
     def validate_authentication
