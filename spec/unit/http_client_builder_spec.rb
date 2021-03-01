@@ -40,10 +40,10 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
 
       context "when setting bulk_path" do
         let(:bulk_path) { "/meh" }
-        let(:options) { super.merge("bulk_path" => bulk_path) }
+        let(:options) { super().merge("bulk_path" => bulk_path) }
 
         context "when using path" do
-          let(:options) { super.merge("path" => "/path") }
+          let(:options) { super().merge("path" => "/path") }
           it "ignores the path setting" do
             expect(described_class).to receive(:create_http_client) do |options|
               expect(options[:bulk_path]).to eq(bulk_path)
@@ -66,7 +66,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
 
         context "when using path" do
           let(:path) { "/meh" }
-          let(:options) { super.merge("path" => path) }
+          let(:options) { super().merge("path" => path) }
           it "sets bulk_path to path+_bulk" do
             expect(described_class).to receive(:create_http_client) do |options|
               expect(options[:bulk_path]).to eq("#{path}/_bulk")
@@ -88,10 +88,10 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
     describe "healthcheck_path" do
       context "when setting healthcheck_path" do
         let(:healthcheck_path) { "/meh" }
-        let(:options) { super.merge("healthcheck_path" => healthcheck_path) }
+        let(:options) { super().merge("healthcheck_path" => healthcheck_path) }
 
         context "when using path" do
-          let(:options) { super.merge("path" => "/path") }
+          let(:options) { super().merge("path" => "/path") }
           it "ignores the path setting" do
             expect(described_class).to receive(:create_http_client) do |options|
               expect(options[:healthcheck_path]).to eq(healthcheck_path)
@@ -114,7 +114,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
 
         context "when using path" do
           let(:path) { "/meh" }
-          let(:options) { super.merge("path" => path) }
+          let(:options) { super().merge("path" => path) }
           it "sets healthcheck_path to path" do
             expect(described_class).to receive(:create_http_client) do |options|
               expect(options[:healthcheck_path]).to eq(path)
@@ -136,10 +136,10 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
     describe "sniffing_path" do
       context "when setting sniffing_path" do
         let(:sniffing_path) { "/meh" }
-        let(:options) { super.merge("sniffing_path" => sniffing_path) }
+        let(:options) { super().merge("sniffing_path" => sniffing_path) }
 
         context "when using path" do
-          let(:options) { super.merge("path" => "/path") }
+          let(:options) { super().merge("path" => "/path") }
           it "ignores the path setting" do
             expect(described_class).to receive(:create_http_client) do |options|
               expect(options[:sniffing_path]).to eq(sniffing_path)
@@ -162,7 +162,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
 
         context "when using path" do
           let(:path) { "/meh" }
-          let(:options) { super.merge("path" => path) }
+          let(:options) { super().merge("path" => path) }
           it "sets sniffing_path to path+_nodes/http" do
             expect(described_class).to receive(:create_http_client) do |options|
               expect(options[:sniffing_path]).to eq("#{path}/_nodes/http")

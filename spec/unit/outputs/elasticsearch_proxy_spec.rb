@@ -23,7 +23,7 @@ describe "Proxy option" do
 
     context "when specified as a URI" do
       shared_examples("hash conversion") do |hash|
-        let(:settings) { super.merge("proxy" => proxy)}
+        let(:settings) { super().merge("proxy" => proxy)}
         
         it "should set the proxy to the correct hash value" do
           expect(::Manticore::Client).to have_received(:new) do |options|
@@ -70,7 +70,7 @@ describe "Proxy option" do
   end
 
   context "when specified as ''" do
-    let(:settings) { super.merge("proxy" => "${A_MISSING_ENV_VARIABLE:}")}
+    let(:settings) { super().merge("proxy" => "${A_MISSING_ENV_VARIABLE:}")}
 
     it "should not send the proxy option to manticore" do
       expect { subject.register }.not_to raise_error
@@ -84,7 +84,7 @@ describe "Proxy option" do
   end
 
   context "when specified as invalid uri" do
-    let(:settings) { super.merge("proxy" => ":")}
+    let(:settings) { super().merge("proxy" => ":")}
 
     it "should fail" do
       # SafeURI isn't doing the proper exception wrapping for us, we can not simply :

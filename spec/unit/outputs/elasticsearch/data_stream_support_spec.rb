@@ -111,7 +111,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
   context "(explicit) ds disabled configuration" do
 
-    let(:options) { super.merge('data_stream' => false.to_s) }
+    let(:options) { super().merge('data_stream' => false.to_s) }
 
     it "does not use data-streams on LS 7.x" do
       change_constant :LOGSTASH_VERSION, '7.10.0' do
@@ -130,7 +130,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
   context "(explicit) ds enabled configuration" do
 
-    let(:options) { super.merge('data_stream' => true.to_s) }
+    let(:options) { super().merge('data_stream' => true.to_s) }
 
     it "does use data-streams on LS 7.x" do
       change_constant :LOGSTASH_VERSION, '7.9.1' do
@@ -161,7 +161,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
   describe "auto routing" do
 
-    let(:options) { super.merge('data_stream' => 'true') }
+    let(:options) { super().merge('data_stream' => 'true') }
     let(:do_register) { true }
 
     let(:event) do
@@ -173,7 +173,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
     context 'with data_stream.* event data' do
 
       let(:event) do
-        super.tap do |event|
+        super().tap do |event|
           event.set '[data_stream][type]', 'metrics'
           event.set '[data_stream][dataset]', 'src1'
           event.set '[data_stream][namespace]', 'test'
@@ -191,10 +191,10 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
     context 'with routing turned off' do
 
-      let(:options) { super.merge('data_stream_auto_routing' => 'false') }
+      let(:options) { super().merge('data_stream_auto_routing' => 'false') }
 
       let(:event) do
-        super.tap do |event|
+        super().tap do |event|
           event.set '[data_stream][type]', 'metrics'
           event.set '[data_stream][dataset]', 'src1'
           event.set '[data_stream][namespace]', 'test'
@@ -212,10 +212,10 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
     context 'with partial data_stream.* data' do
 
-      let(:options) { super.merge('data_stream_dataset' => 'data') }
+      let(:options) { super().merge('data_stream_dataset' => 'data') }
 
       let(:event) do
-        super.tap do |event|
+        super().tap do |event|
           event.set '[data_stream][type]', 'metrics'
           event.set '[data_stream][dataset]', 'src1'
         end
@@ -232,7 +232,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
     context 'with no data_stream.* fields' do
 
-      let(:options) { super.merge('data_stream_dataset' => 'stats', 'data_stream_type' => 'metrics') }
+      let(:options) { super().merge('data_stream_dataset' => 'stats', 'data_stream_type' => 'metrics') }
 
       it 'uses configuration target' do
         tuple = subject.map_events([ event ]).first

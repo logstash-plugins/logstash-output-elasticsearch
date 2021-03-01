@@ -56,7 +56,7 @@ describe LogStash::Outputs::ElasticSearch do
 
     describe "getting a document type" do
       context "if document_type isn't set" do
-        let(:options) { super.merge("document_type" => nil)}
+        let(:options) { super().merge("document_type" => nil)}
         context "for 7.x elasticsearch clusters" do
           let(:maximum_seen_major_version) { 7 }
           it "should return '_doc'" do
@@ -80,7 +80,7 @@ describe LogStash::Outputs::ElasticSearch do
       end
 
       context "with 'document type set'" do
-        let(:options) { super.merge("document_type" => "bar")}
+        let(:options) { super().merge("document_type" => "bar")}
         it "should get the event type from the 'document_type' setting" do
           expect(subject.send(:get_event_type, LogStash::Event.new())).to eql("bar")
         end
@@ -97,7 +97,7 @@ describe LogStash::Outputs::ElasticSearch do
         end
 
         context "with 'document type set'" do
-          let(:options) { super.merge("document_type" => "bar")}
+          let(:options) { super().merge("document_type" => "bar")}
           it "should get the event type from the 'document_type' setting" do
             action_tuple = subject.send(:event_action_tuple, LogStash::Event.new("type" => "foo"))
             action_params = action_tuple[1]
@@ -115,7 +115,7 @@ describe LogStash::Outputs::ElasticSearch do
         end
 
         context "with 'document type set'" do
-          let(:options) { super.merge("document_type" => "bar")}
+          let(:options) { super().merge("document_type" => "bar")}
           it "should not include '_type'" do
             action_tuple = subject.send(:event_action_tuple, LogStash::Event.new("type" => "foo"))
             action_params = action_tuple[1]
@@ -137,7 +137,7 @@ describe LogStash::Outputs::ElasticSearch do
 
       context "as part of a URL" do
         let(:options) {
-          super.merge("hosts" => ["http://#{user}:#{password.value}@localhost:9200"])
+          super().merge("hosts" => ["http://#{user}:#{password.value}@localhost:9200"])
         }
 
         include_examples("an authenticated config")
@@ -145,7 +145,7 @@ describe LogStash::Outputs::ElasticSearch do
 
       context "as a hash option" do
           let(:options) {
-            super.merge!(
+            super().merge!(
               "user" => user,
               "password" => password
             )
@@ -185,7 +185,7 @@ describe LogStash::Outputs::ElasticSearch do
 
       context "with extra slashes" do
         let(:path) { "/slashed-path/ "}
-        let(:options) { super.merge("path" => "/some-path/") }
+        let(:options) { super().merge("path" => "/some-path/") }
 
         it "should properly set the path on the HTTP client without adding slashes" do
           expect(manticore_url.path).to eql(options["path"])
@@ -244,13 +244,13 @@ describe LogStash::Outputs::ElasticSearch do
     end
 
     describe "without a port specified" do
-      let(:options) { super.merge('hosts' => 'localhost') }
+      let(:options) { super().merge('hosts' => 'localhost') }
       it "should properly set the default port (9200) on the HTTP client" do
         expect(manticore_url.port).to eql(9200)
       end
     end
     describe "with a port other than 9200 specified" do
-      let(:options) { super.merge('hosts' => 'localhost:9202') }
+      let(:options) { super().merge('hosts' => 'localhost:9202') }
       it "should properly set the specified port on the HTTP client" do
         expect(manticore_url.port).to eql(9202)
       end
@@ -475,7 +475,7 @@ describe LogStash::Outputs::ElasticSearch do
     let(:options) { { 'retry_on_conflict' => num_retries } }
 
     context "with a regular index" do
-      let(:options) { super.merge("action" => "index") }
+      let(:options) { super().merge("action" => "index") }
 
       it "should not set the retry_on_conflict parameter when creating an event_action_tuple" do
         allow(subject.client).to receive(:maximum_seen_major_version).and_return(maximum_seen_major_version)
@@ -485,7 +485,7 @@ describe LogStash::Outputs::ElasticSearch do
     end
 
     context "using a plain update" do
-      let(:options) { super.merge("action" => "update", "retry_on_conflict" => num_retries, "document_id" => 1) }
+      let(:options) { super().merge("action" => "update", "retry_on_conflict" => num_retries, "document_id" => 1) }
 
       it "should set the retry_on_conflict parameter when creating an event_action_tuple" do
         action, params, event_data = subject.send(:event_action_tuple, event)
@@ -494,7 +494,7 @@ describe LogStash::Outputs::ElasticSearch do
     end
 
     context "with a sprintf action that resolves to update" do
-      let(:options) { super.merge("action" => "%{myactionfield}", "retry_on_conflict" => num_retries, "document_id" => 1) }
+      let(:options) { super().merge("action" => "%{myactionfield}", "retry_on_conflict" => num_retries, "document_id" => 1) }
 
       it "should set the retry_on_conflict parameter when creating an event_action_tuple" do
         action, params, event_data = subject.send(:event_action_tuple, event)
