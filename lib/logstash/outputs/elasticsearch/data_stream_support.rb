@@ -158,7 +158,23 @@ module LogStash module Outputs class ElasticSearch
 
     # an {event_action_tuple} replacement when a data-stream configuration is detected
     def data_stream_event_action_tuple(event)
+      data_stream_event_sync(event) if data_stream_sync_fields
       ['create', common_event_params(event), event.to_hash] # action always 'create'
+    end
+
+    def data_stream_event_sync(event)
+      data_stream = event.get('data_stream')
+      if data_stream.nil?
+        data_stream = Hash.new
+      elsif !data_stream.is_a?(Hash)
+        @logger.info "Can not sync 'data_stream' event field, unexpected type", value: data_stream, event: event.to_hash
+        return
+      end
+
+      data_stream['type'] ||= data_stream_type
+      data_stream['dataset'] ||= data_stream_dataset
+      data_stream['namespace'] ||= data_stream_namespace
+      event.set('data_stream', data_stream)
     end
 
     module Validator

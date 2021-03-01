@@ -256,6 +256,96 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
   end
 
+  describe "field sync" do
+
+    let(:do_register) { true }
+
+    let(:event) do
+      event = LogStash::Event.new
+      event.set '[host][hostname]', 'orangutan'
+      event
+    end
+
+    context 'enabled and no event data' do
+
+      let(:options) { super().merge('data_stream' => 'true', 'data_stream_sync_fields' => 'true') }
+
+      it 'fills in DS fields' do
+        tuple = subject.map_events([ event ]).first
+        expect( tuple.size ).to eql 3
+        expect( tuple[2]['data_stream'] ).to eql({"type" => "logs", "dataset" => "generic", "namespace" => "default"})
+      end
+
+    end
+
+    context 'enabled and some event data' do
+
+      let(:options) { super().merge('data_stream' => 'true', 'data_stream_dataset' => 'ds1', 'data_stream_sync_fields' => 'true') }
+
+      let(:event) do
+        super().tap do |event|
+          event.set '[data_stream][namespace]', 'custom'
+        end
+      end
+
+      it 'fills in missing fields' do
+        tuple = subject.map_events([ event ]).first
+        expect( tuple.size ).to eql 3
+        expect( tuple[2]['data_stream'] ).to eql({"type" => "logs", "dataset" => "ds1", "namespace" => "custom"})
+      end
+
+    end
+
+    context 'enabled with invalid data' do
+
+      let(:options) { super().merge('data_stream' => 'true', 'data_stream_sync_fields' => 'true') }
+
+      let(:event) do
+        super().tap do |event|
+          event.set '[data_stream]', false
+        end
+      end
+
+      it 'does not fill ds fields' do
+        tuple = subject.map_events([ event ]).first
+        expect( tuple.size ).to eql 3
+        expect( tuple[2]['data_stream'] ).to eql(false)
+      end
+
+    end
+
+    context 'disabled and no event data' do
+
+      let(:options) { super().merge('data_stream' => 'true', 'data_stream_dataset' => 'ds1', 'data_stream_sync_fields' => 'false') }
+
+      it 'does not fill DS fields' do
+        tuple = subject.map_events([ event ]).first
+        expect( tuple.size ).to eql 3
+        expect( tuple[2].keys ).to_not include 'data_stream'
+      end
+
+    end
+
+    context 'disabled and some event data' do
+
+      let(:options) { super().merge('data_stream' => 'true', 'data_stream_sync_fields' => 'false') }
+
+      let(:event) do
+        super().tap do |event|
+          event.set '[data_stream][type]', 'logs'
+        end
+      end
+
+      it 'does not fill DS fields' do
+        tuple = subject.map_events([ event ]).first
+        expect( tuple.size ).to eql 3
+        expect( tuple[2]['data_stream'] ).to eql({ 'type' => 'logs'})
+      end
+
+    end
+
+  end
+
   private
 
   def change_constant(name, new_value, target: Object)
