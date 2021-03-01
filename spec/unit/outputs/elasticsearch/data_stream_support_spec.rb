@@ -17,15 +17,20 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
     allow(subject).to receive(:last_es_version).and_return(es_version)
 
     if do_register
-      stub_client(subject)
-      allow(subject.client).to receive(:maximum_seen_major_version).and_return(Integer(es_version.split('.').first))
+      allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:start)
 
       # stub-out unrelated (finish_register) setup:
       allow(subject).to receive(:discover_cluster_uuid)
       allow(subject).to receive(:install_template)
       allow(subject).to receive(:ilm_in_use?).and_return nil
 
+      # emulate 'successful' ES connection on the same thread
+      allow(subject).to receive(:after_successful_connection) { |&block| block.call }
+      allow(subject).to receive(:stop_after_successful_connection_thread)
+
       subject.register
+
+      allow(subject.client).to receive(:maximum_seen_major_version).and_return(Integer(es_version.split('.').first))
     end
   end
 
