@@ -11,21 +11,20 @@ describe LogStash::Outputs::ElasticSearch do
 
   let(:do_register) { true }
 
+  let(:stub_http_client_pool!) do
+    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:start)
+  end
+
   before(:each) do
     if do_register
-      # Build the client and set mocks before calling register to avoid races.
-      subject.build_client
-
-      # Rspec mocks can't handle background threads, so... we can't use any
-      allow(subject.client.pool).to receive(:start_resurrectionist)
-      allow(subject.client.pool).to receive(:start_sniffer)
-      allow(subject.client.pool).to receive(:healthcheck!)
-      allow(subject.client).to receive(:maximum_seen_major_version).at_least(:once).and_return(maximum_seen_major_version)
-      allow(subject.client).to receive(:get_xpack_info)
+      stub_http_client_pool!
 
       allow(subject).to receive(:finish_register) # stub-out thread completion (to avoid error log entries)
 
       subject.register
+
+      allow(subject.client).to receive(:maximum_seen_major_version).at_least(:once).and_return(maximum_seen_major_version)
+      allow(subject.client).to receive(:get_xpack_info)
 
       subject.client.pool.adapter.manticore.respond_with(:body => "{}")
     end
@@ -48,6 +47,12 @@ describe LogStash::Outputs::ElasticSearch do
 
     let(:manticore_urls) { subject.client.pool.urls }
     let(:manticore_url) { manticore_urls.first }
+
+    let(:stub_http_client_pool!) do
+      [:start_resurrectionist, :start_sniffer, :healthcheck!].each do |method|
+        allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(method)
+      end
+    end
 
     describe "getting a document type" do
       context "if document_type isn't set" do
@@ -547,6 +552,12 @@ describe LogStash::Outputs::ElasticSearch do
 
     let(:custom_parameters_hash) { { "id" => 1, "name" => "logstash" } }
     let(:custom_parameters_query) { custom_parameters_hash.map {|k,v| "#{k}=#{v}" }.join("&") }
+
+    let(:stub_http_client_pool!) do
+      [:start_resurrectionist, :start_sniffer, :healthcheck!].each do |method|
+        allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(method)
+      end
+    end
 
     context "using non-url hosts" do
 
