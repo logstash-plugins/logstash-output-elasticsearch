@@ -30,7 +30,7 @@ module LogStash module Outputs class ElasticSearch
       end
     end
 
-    # @note assumes to be running AFTER {after_successful_connection} completed, otherwise detection won't work
+    # @note assumes to be running AFTER {after_successful_connection} completed, due ES version checks
     def data_stream_config?
       @data_stream_config.nil? ? @data_stream_config = check_data_stream_config! : @data_stream_config
     end
@@ -44,7 +44,7 @@ module LogStash module Outputs class ElasticSearch
       type = data_stream['type'] || data_stream_type
       dataset = data_stream['dataset'] || data_stream_dataset
       namespace = data_stream['namespace'] || data_stream_namespace
-      "#{type}-#{dataset}-#{namespace}" # TODO validate name?
+      "#{type}-#{dataset}-#{namespace}"
     end
 
     # @param params the user configuration for the ES output
@@ -54,18 +54,18 @@ module LogStash module Outputs class ElasticSearch
     def check_data_stream_config!(params = original_params)
       use_data_stream = data_stream_explicit?
       data_stream_params = params.select { |name, _| name.start_with?('data_stream_') } # exclude data_stream =>
+      invalid_data_stream_params = invalid_data_stream_params(params)
 
       if use_data_stream.eql?(false) && data_stream_params.any?
         @logger.warn "Ignoring data stream specific settings (due data_stream => false)", data_stream_params
       end
 
-      invalid_data_stream_params = invalid_data_stream_params(params)
       if use_data_stream.nil?
         use_data_stream = data_stream_default(params, invalid_data_stream_params.empty?)
       end
 
       if use_data_stream
-        if invalid_data_stream_params.any? # explicit data_stream => true
+        if invalid_data_stream_params.any?
           @logger.error "Invalid data_stream configuration, following parameters are not supported:", invalid_data_stream_params
           raise LogStash::ConfigurationError, "invalid data stream configuration: #{invalid_data_stream_params.keys}"
         end
@@ -95,7 +95,7 @@ module LogStash module Outputs class ElasticSearch
         # - `manage_template => false` implied by not setting the parameter
         case name
         when 'action'
-          value == 'create' # TODO warn to remove explicit `action => create` ?
+          value == 'create'
         when 'routing', 'pipeline'
           true
         when 'data_stream'
@@ -156,6 +156,7 @@ module LogStash module Outputs class ElasticSearch
       valid_data_stream_config && assert_es_version_supports_data_streams(false)
     end
 
+    # an {event_action_tuple} replacement when a data-stream configuration is detected
     def data_stream_event_action_tuple(event)
       ['create', common_event_params(event), event.to_hash] # action always 'create'
     end
