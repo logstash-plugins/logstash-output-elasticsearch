@@ -126,7 +126,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   #   would use the foo field for the action
   #
   # For more details on actions, check out the http://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
-  config :action, :validate => :string, :default => "index"
+  config :action, :validate => :string # :default => "index" unless data_stream
 
   # The index to write events to. This can be dynamic using the `%{foo}` syntax.
   # The default value will partition your indices by day so you can more easily
@@ -362,7 +362,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       end
     end
 
-    action = event.sprintf(@action)
+    action = event.sprintf(@action || 'index')
 
     if action == 'update'
       params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
@@ -491,7 +491,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   def check_action_validity
-    raise LogStash::ConfigurationError, "No action specified!" if (@action || '').empty?
+    return if @action.nil? # not set
+    raise LogStash::ConfigurationError, "No action specified!" if @action.empty?
 
     # If we're using string interpolation, we're good!
     return if @action =~ /%{.+}/
