@@ -100,13 +100,20 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
       end
     end
 
-    it "warns about not using data-streams on LS 8.0 (OSS)" do
-      expect( subject.logger ).to receive(:warn) do |msg|
-        msg.index "Configuration is data_stream compliant but won't be used"
-      end
+    # it "warns about not using data-streams on LS 8.0 (OSS)" do
+    #   expect( subject.logger ).to receive(:warn) do |msg|
+    #     msg.index "Configuration is data_stream compliant but won't be used"
+    #   end
+    #   change_constant :LOGSTASH_VERSION, '8.0.1' do
+    #     change_constant :OSS, true, target: LogStash do
+    #       expect( subject.data_stream_config? ).to be false
+    #     end
+    #   end
+    # end
+    it "uses data-streams on LS 8.0 (OSS)" do
       change_constant :LOGSTASH_VERSION, '8.0.1' do
         change_constant :OSS, true, target: LogStash do
-          expect( subject.data_stream_config? ).to be false
+          expect( subject.data_stream_config? ).to be true
         end
       end
     end
