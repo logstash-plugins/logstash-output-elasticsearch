@@ -3,7 +3,7 @@ require "logstash/namespace"
 require "logstash/environment"
 require "logstash/outputs/base"
 require "logstash/json"
-require "concurrent"
+require "concurrent/atomic/atomic_boolean"
 require "stud/interval"
 require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
