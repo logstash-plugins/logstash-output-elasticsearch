@@ -186,10 +186,10 @@ module LogStash module Outputs class ElasticSearch
       # @return [Array(false,String)]: if validation is a failure, a tuple containing `false` and the failure reason.
       def validate_value(value, validator)
         if validator == :dataset_identifier
-          return validate_dataset_identifier(value, validator)
+          return validate_dataset_identifier(value)
         end
         if validator == :namespace_identifier
-          return validate_namespace_identifier(value, validator)
+          return validate_namespace_identifier(value)
         end
         return super unless validator == :ds_identifier_string
 
@@ -198,19 +198,36 @@ module LogStash module Outputs class ElasticSearch
 
       private
 
-      def validate_dataset_identifier(value, validator)
-        value = deep_replace(value)
-        value = hash_or_array(value)
+      def validate_dataset_identifier(value)
+        valid, value = validate_value(value, :string)
+        return false, value unless valid
 
-        # TODO
-        # return true, value.first if value.size == 1 && value.first.empty?
-        validate_value(value, :string)
+        validate_identifier(value)
       end
 
-      def validate_namespace_identifier(value, validator)
-        # TODO
-        validate_value(value, :string)
+      def validate_namespace_identifier(value)
+        valid, value = validate_value(value, :string)
+        return false, value unless valid
+
+        validate_identifier(value)
       end
+
+      def validate_identifier(value, max_size = 100)
+        if value.empty?
+          return false, "Invalid identifier - empty string"
+        end
+        if value.bytesize > max_size
+          return false, "Invalid identifier - too long (#{value.bytesize} bytes)"
+        end
+        # cannot include \, /, *, ?, ", <, >, |, ' ' (space char), ',', #, :
+        if value.match? Regexp.union(INVALID_IDENTIFIER_CHARS)
+          return false, "Invalid characters detected #{INVALID_IDENTIFIER_CHARS.inspect} are not allowed"
+        end
+        return true, value
+      end
+
+      INVALID_IDENTIFIER_CHARS = [ '\\', '/', '*', '?', '"', '<', '>', '|', ' ', ',', '#', ':' ]
+      private_constant :INVALID_IDENTIFIER_CHARS
 
     end
 

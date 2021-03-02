@@ -14,9 +14,9 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
   before(:each) do
     change_constant :OSS, false, target: LogStash # assume non-OSS by default
 
-    allow(subject).to receive(:last_es_version).and_return(es_version)
-
     if do_register
+      allow(subject).to receive(:last_es_version).and_return(es_version)
+
       allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:start)
 
       # stub-out unrelated (finish_register) setup:
@@ -43,6 +43,8 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
   context "default configuration" do
 
     let(:options) { {} }
+
+    before { allow(subject).to receive(:last_es_version).and_return(es_version) }
 
     it "does not use data-streams on LS 7.x" do
       change_constant :LOGSTASH_VERSION, '7.10.0' do
@@ -81,6 +83,8 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
       }
     end
 
+    before { allow(subject).to receive(:last_es_version).and_return(es_version) }
+
     it "does not use data-streams on LS 7.x" do
       change_constant :LOGSTASH_VERSION, '7.10.0' do
         expect( subject.data_stream_config? ).to be false
@@ -113,6 +117,8 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
     let(:options) { super().merge('data_stream' => false.to_s) }
 
+    before { allow(subject).to receive(:last_es_version).and_return(es_version) }
+
     it "does not use data-streams on LS 7.x" do
       change_constant :LOGSTASH_VERSION, '7.10.0' do
         expect( subject.data_stream_config? ).to be false
@@ -131,6 +137,8 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
   context "(explicit) ds enabled configuration" do
 
     let(:options) { super().merge('data_stream' => true.to_s) }
+
+    before { allow(subject).to receive(:last_es_version).and_return(es_version) }
 
     it "does use data-streams on LS 7.x" do
       change_constant :LOGSTASH_VERSION, '7.9.1' do
@@ -340,6 +348,70 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
         tuple = subject.map_events([ event ]).first
         expect( tuple.size ).to eql 3
         expect( tuple[2]['data_stream'] ).to eql({ 'type' => 'logs'})
+      end
+
+    end
+
+  end
+
+  describe "validation" do
+
+    context 'with too long dataset name' do
+
+      let(:options) { super().merge('data_stream' => 'true', 'data_stream_dataset' => 'x' * 120) }
+
+      it 'fails' do
+        expect { LogStash::Outputs::ElasticSearch.new(options) }.to raise_error LogStash::ConfigurationError
+      end
+
+    end
+
+    context 'with empty dataset name' do
+
+      let(:options) { super().merge('data_stream' => 'true', 'data_stream_dataset' => '') }
+
+      it 'fails' do
+        expect { LogStash::Outputs::ElasticSearch.new(options) }.to raise_error LogStash::ConfigurationError
+      end
+
+    end
+
+    context 'with invalid dataset char' do
+
+      let(:options) { super().merge('data_stream' => 'true', 'data_stream_dataset' => 'foo/bar') }
+
+      it 'fails' do
+        expect { LogStash::Outputs::ElasticSearch.new(options) }.to raise_error LogStash::ConfigurationError
+      end
+
+    end
+
+    context 'with invalid namespace char' do
+
+      let(:options) { super().merge('data_stream' => 'true', 'data_stream_namespace' => 'foo*') }
+
+      it 'fails' do
+        expect { LogStash::Outputs::ElasticSearch.new(options) }.to raise_error LogStash::ConfigurationError
+      end
+
+    end
+
+    context 'with invalid "empty" namespace' do
+
+      let(:options) { super().merge('data_stream' => 'true', 'data_stream_namespace' => ' ') }
+
+      it 'fails' do
+        expect { LogStash::Outputs::ElasticSearch.new(options) }.to raise_error LogStash::ConfigurationError
+      end
+
+    end
+
+    context 'with invalid type' do
+
+      let(:options) { super().merge('data_stream' => 'true', 'data_stream_type' => 'custom') }
+
+      it 'fails' do
+        expect { LogStash::Outputs::ElasticSearch.new(options) }.to raise_error LogStash::ConfigurationError
       end
 
     end
