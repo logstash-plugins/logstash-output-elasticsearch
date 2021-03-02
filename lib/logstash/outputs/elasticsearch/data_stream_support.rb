@@ -144,8 +144,8 @@ module LogStash module Outputs class ElasticSearch
         if LogStash::OSS
           if assert_es_version_supports_data_streams(false)
             @logger.warn "Configuration is data_stream compliant but won't be used (enable explicitly with data_stream => true)"
-            return false
           end
+          return false
         else
           assert_es_version_supports_data_streams(true)
         end
