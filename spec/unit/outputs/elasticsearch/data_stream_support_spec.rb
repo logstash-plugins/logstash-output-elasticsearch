@@ -266,6 +266,8 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
   describe "field sync" do
 
+    let(:options) { super().merge('data_stream' => 'true') }
+
     let(:do_register) { true }
 
     let(:event) do
@@ -276,7 +278,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
     context 'enabled and no event data' do
 
-      let(:options) { super().merge('data_stream' => 'true', 'data_stream_sync_fields' => 'true') }
+      let(:options) { super().merge('data_stream_sync_fields' => 'true') }
 
       it 'fills in DS fields' do
         tuple = subject.map_events([ event ]).first
@@ -288,7 +290,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
     context 'enabled and some event data' do
 
-      let(:options) { super().merge('data_stream' => 'true', 'data_stream_dataset' => 'ds1', 'data_stream_sync_fields' => 'true') }
+      let(:options) { super().merge('data_stream_dataset' => 'ds1', 'data_stream_sync_fields' => 'true') }
 
       let(:event) do
         super().tap do |event|
@@ -306,7 +308,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
     context 'enabled with invalid data' do
 
-      let(:options) { super().merge('data_stream' => 'true', 'data_stream_sync_fields' => 'true') }
+      let(:options) { super().merge('data_stream_sync_fields' => 'true') }
 
       let(:event) do
         super().tap do |event|
@@ -314,17 +316,39 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
         end
       end
 
-      it 'does not fill ds fields' do
+      it 'overwrites invalid data_stream field' do
         tuple = subject.map_events([ event ]).first
         expect( tuple.size ).to eql 3
-        expect( tuple[2]['data_stream'] ).to eql(false)
+        expect( tuple[2]['data_stream'] ).to eql({"type" => "logs", "dataset" => "generic", "namespace" => "default"})
+      end
+
+    end
+
+    context 'enabled having invalid data with routing disabled' do
+
+      let(:options) do
+        super().merge('data_stream_sync_fields' => 'true', 'data_stream_auto_routing' => 'false', 'data_stream_namespace' => 'ns1')
+      end
+
+      let(:event) do
+        super().tap do |event|
+          event.set '[data_stream][type]', 'foo'
+          event.set '[data_stream][dataset]', false
+          event.set '[data_stream][extra]', 0
+        end
+      end
+
+      it 'overwrites invalid data_stream sub-fields' do
+        tuple = subject.map_events([ event ]).first
+        expect( tuple.size ).to eql 3
+        expect( tuple[2]['data_stream'] ).to eql({"type" => "logs", "dataset" => "generic", "namespace" => "ns1", "extra" => 0})
       end
 
     end
 
     context 'disabled and no event data' do
 
-      let(:options) { super().merge('data_stream' => 'true', 'data_stream_dataset' => 'ds1', 'data_stream_sync_fields' => 'false') }
+      let(:options) { super().merge('data_stream_dataset' => 'ds1', 'data_stream_sync_fields' => 'false') }
 
       it 'does not fill DS fields' do
         tuple = subject.map_events([ event ]).first
@@ -336,7 +360,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
     context 'disabled and some event data' do
 
-      let(:options) { super().merge('data_stream' => 'true', 'data_stream_sync_fields' => 'false') }
+      let(:options) { super().merge('data_stream_sync_fields' => 'false') }
 
       let(:event) do
         super().tap do |event|

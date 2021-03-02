@@ -162,18 +162,32 @@ module LogStash module Outputs class ElasticSearch
       ['create', common_event_params(event), event.to_hash] # action always 'create'
     end
 
+    DATA_STREAM_SYNC_FIELDS = [ 'type', 'dataset', 'namespace' ].freeze
+
     def data_stream_event_sync(event)
       data_stream = event.get('data_stream')
-      if data_stream.nil?
+      if data_stream.is_a?(Hash)
+        unless data_stream_auto_routing
+          sync_fields = DATA_STREAM_SYNC_FIELDS.select { |name| data_stream.key?(name) && data_stream[name] != send(:"data_stream_#{name}") }
+          if sync_fields.any? # these fields will need to be overwritten
+            info = sync_fields.inject({}) { |info, name| info[name] = data_stream[name]; info }
+            info[:event] = event.to_hash
+            @logger.warn "Some data_stream fields are out of sync, these will be updated to reflect data-stream name", info
+
+            sync_fields.each { |name| data_stream[name] = nil } # fallback to ||= bellow
+          end
+        end
+      else
+        unless data_stream.nil?
+          @logger.warn "Invalid 'data_stream' field type, due fields sync will overwrite", value: data_stream, event: event.to_hash
+        end
         data_stream = Hash.new
-      elsif !data_stream.is_a?(Hash)
-        @logger.info "Can not sync 'data_stream' event field, unexpected type", value: data_stream, event: event.to_hash
-        return
       end
 
       data_stream['type'] ||= data_stream_type
       data_stream['dataset'] ||= data_stream_dataset
       data_stream['namespace'] ||= data_stream_namespace
+
       event.set('data_stream', data_stream)
     end
 
