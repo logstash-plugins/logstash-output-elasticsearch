@@ -130,10 +130,17 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
         end
       end
 
-      it "uses index-ing on OSS LS 8.0" do
+      # it "uses index-ing on OSS LS 8.0" do
+      #   change_constant :LOGSTASH_VERSION, '8.0.0' do
+      #     change_constant :OSS, true, target: LogStash do
+      #       expect( subject.data_stream_config? ).to be false
+      #     end
+      #   end
+      # end
+      it "fails to start on OSS LS 8.0" do
         change_constant :LOGSTASH_VERSION, '8.0.0' do
           change_constant :OSS, true, target: LogStash do
-            expect( subject.data_stream_config? ).to be false
+            expect { subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, /data_stream is only supported since Elasticsearch/)
           end
         end
       end

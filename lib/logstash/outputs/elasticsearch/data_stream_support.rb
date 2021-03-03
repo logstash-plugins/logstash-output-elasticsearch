@@ -142,8 +142,6 @@ module LogStash module Outputs class ElasticSearch
       if ds_default # LS 8.0
         return false unless valid_data_stream_config
 
-        return assert_es_version_supports_data_streams(false) if LogStash::OSS
-
         assert_es_version_supports_data_streams(true)
         return true
       end
