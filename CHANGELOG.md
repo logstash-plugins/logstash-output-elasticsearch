@@ -1,3 +1,7 @@
+## 10.9.0
+ - Feat: Data stream support [#988](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/988)
+ - Refactor: unified logging + improvements when ES returns invalid bulk response see [#989](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/989) 
+
 ## 10.8.4
  - Fixed an issue where a retried request would drop "update" parameters [#800](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/800)
 
