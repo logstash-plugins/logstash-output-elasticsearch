@@ -325,7 +325,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def wait_for_successful_connection
     after_successful_connection = @after_successful_connection
     return unless after_successful_connection
-    sleep 1 until after_successful_connection.true?
+    stoppable_sleep 1 until after_successful_connection.true?
     @after_successful_connection = nil
   end
   private :wait_for_successful_connection
