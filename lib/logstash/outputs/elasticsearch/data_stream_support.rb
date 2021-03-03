@@ -116,7 +116,8 @@ module LogStash module Outputs class ElasticSearch
 
     # @return [Gem::Version] if ES supports DS nil (or raise) otherwise
     def assert_es_version_supports_data_streams(raise_error = true)
-      es_version = last_es_version_object
+      fail 'no last_es_version' unless last_es_version # assert - should not happen
+      es_version = Gem::Version.create(last_es_version)
       if es_version < Gem::Version.create(DATA_STREAMS_ORIGIN_ES_VERSION)
         return nil unless raise_error
         @logger.info "Elasticsearch version does not support data streams", es_version: es_version.version
@@ -124,11 +125,6 @@ module LogStash module Outputs class ElasticSearch
                                             "(detected version #{es_version.version}), please upgrade your cluster"
       end
       es_version # return truthy
-    end
-
-    def last_es_version_object
-      fail 'no last_es_version' unless last_es_version # assert - should not happen
-      Gem::Version.create(last_es_version)
     end
 
     DATA_STREAMS_ENABLED_BY_DEFAULT_LS_VERSION = '8.0.0'
