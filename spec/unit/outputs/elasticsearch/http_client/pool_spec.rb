@@ -68,7 +68,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
       context "and setting healthcheck_path" do
         let(:healthcheck_path) { "/my/health" }
-        let(:options) { super.merge(:healthcheck_path => healthcheck_path) }
+        let(:options) { super().merge(:healthcheck_path => healthcheck_path) }
         it "performs the healthcheck to the healthcheck_path" do
           expect(adapter).to receive(:perform_request) do |url, method, req_path, _, _|
             expect(method).to eq(:head)
@@ -130,7 +130,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     end
 
     context "when enabled" do
-      let(:options) { super.merge(:sniffing => true)}
+      let(:options) { super().merge(:sniffing => true)}
 
       it "should start the sniffer" do
         expect(subject.sniffer_alive?).to eql(true)
@@ -247,7 +247,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     end
 
     let(:options) do
-      super.merge(:license_checker => license_checker)
+      super().merge(:license_checker => license_checker)
     end
 
     context 'when LicenseChecker#acceptable_license? returns false' do

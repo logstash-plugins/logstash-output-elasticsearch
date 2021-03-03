@@ -48,7 +48,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       describe "ssl" do
         context "when SSL is true" do
           let(:ssl) { true }
-          let(:base_options) { super.merge(:hosts => [http_hostname_port]) }
+          let(:base_options) { super().merge(:hosts => [http_hostname_port]) }
 
           it "should refuse to handle an http url" do
             expect {
@@ -59,7 +59,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
 
         context "when SSL is false" do
           let(:ssl) { false }
-          let(:base_options) { super.merge(:hosts => [https_hostname_port]) }
+          let(:base_options) { super().merge(:hosts => [https_hostname_port]) }
           
           it "should refuse to handle an https url" do
             expect {
@@ -69,7 +69,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
         end
 
         describe "ssl is nil" do
-          let(:base_options) { super.merge(:hosts => [https_hostname_port]) }
+          let(:base_options) { super().merge(:hosts => [https_hostname_port]) }
           it "should handle an ssl url correctly when SSL is nil" do
             subject
             expect(subject.host_to_url(https_hostname_port).to_s).to eq(https_hostname_port.to_s + "/")
@@ -79,14 +79,14 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
 
       describe "path" do
         let(:url) { http_hostname_port_path }
-        let(:base_options) { super.merge(:hosts => [url]) }
+        let(:base_options) { super().merge(:hosts => [url]) }
         
         it "should allow paths in a url" do
           expect(subject.host_to_url(url)).to eq(url)
         end
 
         context "with the path option set" do
-          let(:base_options) { super.merge(:client_settings => {:path => "/otherpath"}) }
+          let(:base_options) { super().merge(:client_settings => {:path => "/otherpath"}) }
 
           it "should not allow paths in two places" do
             expect {
@@ -97,7 +97,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
         
         context "with a path missing a leading /" do
           let(:url) { http_hostname_port }
-          let(:base_options) { super.merge(:client_settings => {:path => "otherpath"}) }
+          let(:base_options) { super().merge(:client_settings => {:path => "otherpath"}) }
           
           
           it "should automatically insert a / in front of path overlays" do

@@ -5,7 +5,7 @@ shared_examples_for 'an ILM enabled Logstash' do
   context 'with a policy with a maximum number of documents' do
     let (:policy) { small_max_doc_policy }
     let (:ilm_policy_name) { "logstash-policy-custom"}
-    let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
+    let (:settings) { super().merge("ilm_policy" => ilm_policy_name)}
 
     it 'should rollover when the policy max docs is reached' do
       put_policy(@es, ilm_policy_name, policy)
@@ -54,7 +54,7 @@ shared_examples_for 'an ILM enabled Logstash' do
   context 'with a policy where the maximum number of documents is not reached' do
     let (:policy) { large_max_doc_policy }
     let (:ilm_policy_name) { "logstash-policy-custom-policy"}
-    let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
+    let (:settings) { super().merge("ilm_policy" => ilm_policy_name)}
 
     it 'should ingest into a single index when max docs is not reached' do
       put_policy(@es,ilm_policy_name, policy)
@@ -119,7 +119,7 @@ shared_examples_for 'an ILM disabled Logstash' do
   context 'with an existing policy that will roll over' do
     let (:policy) { small_max_doc_policy }
     let (:ilm_policy_name) { "logstash-policy-3_docs"}
-    let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
+    let (:settings) { super().merge("ilm_policy" => ilm_policy_name)}
 
     it 'should not roll over indices' do
       subject.register
@@ -155,7 +155,7 @@ shared_examples_for 'an ILM disabled Logstash' do
 
   context 'with a custom template name' do
     let (:template_name) { "logstash_custom_template_name" }
-    let (:settings) { super.merge('template_name' => template_name)}
+    let (:settings) { super().merge('template_name' => template_name)}
 
     it 'should not write the ILM settings into the template' do
       subject.register
@@ -195,7 +195,7 @@ shared_examples_for 'an Elasticsearch instance that does not support index lifec
   subject { LogStash::Outputs::ElasticSearch.new(settings) }
 
   context 'when ilm is enabled in Logstash' do
-    let (:settings) { super.merge!({ 'ilm_enabled' => true }) }
+    let (:settings) { super().merge!({ 'ilm_enabled' => true }) }
 
     it 'should raise a configuration error' do
       expect do
@@ -210,13 +210,13 @@ shared_examples_for 'an Elasticsearch instance that does not support index lifec
   end
 
   context 'when ilm is disabled in Logstash' do
-    let (:settings) { super.merge!({ 'ilm_enabled' => false }) }
+    let (:settings) { super().merge!({ 'ilm_enabled' => false }) }
 
     it_behaves_like 'an ILM disabled Logstash'
   end
 
   context 'when ilm is set to auto in Logstash' do
-    let (:settings) { super.merge!({ 'ilm_enabled' => 'auto' }) }
+    let (:settings) { super().merge!({ 'ilm_enabled' => 'auto' }) }
 
     it_behaves_like 'an ILM disabled Logstash'
   end
@@ -286,7 +286,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
 
       context 'when using the default policy' do
         context 'with a custom pattern' do
-          let (:settings) { super.merge("ilm_pattern" => "000001")}
+          let (:settings) { super().merge("ilm_pattern" => "000001")}
           it 'should create a rollover alias' do
             expect(@es.indices.exists_alias(name: "logstash")).to be_falsey
             subject.register
@@ -346,7 +346,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
 
       context 'when not using the default policy' do
         let (:ilm_policy_name) {"logstash-policy-small"}
-        let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
+        let (:settings) { super().merge("ilm_policy" => ilm_policy_name)}
         let (:policy) { small_max_doc_policy }
 
         before do
@@ -363,7 +363,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
 
       context 'when using a time based policy' do
         let (:ilm_policy_name) {"logstash-policy-time"}
-        let (:settings) { super.merge("ilm_policy" => ilm_policy_name)}
+        let (:settings) { super().merge("ilm_policy" => ilm_policy_name)}
         let (:policy) { max_age_policy("1d") }
 
         before do
@@ -409,7 +409,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
           let (:template) { "spec/fixtures/template-with-policy-es6x.json" }
         end
 
-        let (:settings) { super.merge("template" => template,
+        let (:settings) { super().merge("template" => template,
                                       "index" => "overwrite-4")}
 
         it 'should not overwrite the index patterns' do
@@ -426,7 +426,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
         let (:ilm_rollover_alias) { "logstash_the_cat_in_the_hat" }
         let (:index) { ilm_rollover_alias }
         let(:expected_index) { index }
-        let (:settings) { super.merge("ilm_policy" => ilm_policy_name,
+        let (:settings) { super().merge("ilm_policy" => ilm_policy_name,
                                       "template" => template,
                                       "ilm_rollover_alias" => ilm_rollover_alias)}
 
@@ -480,7 +480,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
 
         context 'with a different template_name' do
           let (:template_name) { "logstash_custom_template_name" }
-          let (:settings) { super.merge('template_name' => template_name)}
+          let (:settings) { super().merge('template_name' => template_name)}
 
           it_behaves_like 'an ILM enabled Logstash'
 
@@ -514,7 +514,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
     end
 
     context 'when ilm_enabled is the default' do
-      let (:settings) { super.tap{|x|x.delete('ilm_enabled')}}
+      let (:settings) { super().tap{|x|x.delete('ilm_enabled')}}
 
       if ESHelper.es_version_satisfies?(">=7.0")
         context 'when Elasticsearch is version 7 or above' do
@@ -530,13 +530,13 @@ if ESHelper.es_version_satisfies?(">= 6.6")
     end
 
     context 'with ilm disabled' do
-      let (:settings) { super.merge('ilm_enabled' => false )}
+      let (:settings) { super().merge('ilm_enabled' => false )}
 
       it_behaves_like 'an ILM disabled Logstash'
     end
 
     context 'with ilm disabled using a string' do
-      let (:settings) { super.merge('ilm_enabled' => 'false' )}
+      let (:settings) { super().merge('ilm_enabled' => 'false' )}
 
       it_behaves_like 'an ILM disabled Logstash'
     end
