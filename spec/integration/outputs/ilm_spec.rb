@@ -514,7 +514,7 @@ if ESHelper.es_version_satisfies?(">= 6.6")
     end
 
     context 'when ilm_enabled is the default' do
-      let (:settings) { super.tap{|x|x.delete('ilm_enabled')}}
+      let (:settings) { super().tap{|x|x.delete('ilm_enabled')}}
 
       if ESHelper.es_version_satisfies?(">=7.0")
         context 'when Elasticsearch is version 7 or above' do
