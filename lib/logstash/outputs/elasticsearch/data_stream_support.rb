@@ -57,7 +57,7 @@ module LogStash module Outputs class ElasticSearch
       invalid_data_stream_params = invalid_data_stream_params(params)
 
       if use_data_stream.eql?(false) && data_stream_params.any?
-        @logger.warn "Ignoring data stream specific settings (due data_stream => false)", data_stream_params
+        @logger.debug "Ignoring data stream specific configuration (due data_stream => false)", data_stream_params
       end
 
       if use_data_stream.nil?
@@ -125,7 +125,10 @@ module LogStash module Outputs class ElasticSearch
       fail 'no last_es_version' unless last_es_version # assert - should not happen
       es_version = Gem::Version.create(last_es_version)
       if es_version < Gem::Version.create(DATA_STREAMS_ORIGIN_ES_VERSION)
-        return nil unless raise_error
+        unless raise_error
+          @logger.debug "Elasticsearch version does not support data streams", es_version: es_version.version
+          return nil
+        end
         @logger.info "Elasticsearch version does not support data streams", es_version: es_version.version
         raise LogStash::ConfigurationError, "data_stream is only supported since Elasticsearch #{DATA_STREAMS_ORIGIN_ES_VERSION} " +
                                             "(detected version #{es_version.version}), please upgrade your cluster"
@@ -145,6 +148,7 @@ module LogStash module Outputs class ElasticSearch
         return false unless valid_data_stream_config
 
         assert_es_version_supports_data_streams(true)
+        @logger.debug 'Configuration is data_stream compatible'
         return true
       end
 
