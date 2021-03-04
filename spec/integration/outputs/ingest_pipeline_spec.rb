@@ -6,7 +6,8 @@ if ESHelper.es_version_satisfies?(">= 5")
       require "logstash/outputs/elasticsearch"
       settings = {
         "hosts" => "#{get_host_port()}",
-        "pipeline" => "apache-logs"
+        "pipeline" => "apache-logs",
+        "data_stream" => 'false'
       }
       next LogStash::Outputs::ElasticSearch.new(settings)
     end
@@ -52,9 +53,10 @@ if ESHelper.es_version_satisfies?(">= 5")
       @es.indices.refresh
 
       #Wait or fail until everything's indexed.
-      Stud::try(20.times) do
+      Stud::try(10.times) do
         r = @es.search(index: 'logstash-*')
         expect(r).to have_hits(1)
+        sleep(0.1)
       end
     end
 
