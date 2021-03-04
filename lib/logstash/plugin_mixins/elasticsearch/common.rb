@@ -204,8 +204,16 @@ module LogStash; module PluginMixins; module ElasticSearch
         return
       end
 
+      responses = bulk_response["items"]
+      if responses.size != actions.size # can not map action -> response reliably
+        # an ES bug (on 7.10.2, 7.11.1) where a _bulk request to index X documents would return Y (> X) items
+        msg = "Sent #{actions.size} documents but Elasticsearch returned #{responses.size} responses"
+        @logger.warn(msg, actions: actions, responses: responses)
+        fail("#{msg} (likely a bug with _bulk endpoint)")
+      end
+
       actions_to_retry = []
-      bulk_response["items"].each_with_index do |response,idx|
+      responses.each_with_index do |response,idx|
         action_type, action_props = response.first
 
         status = action_props["status"]
