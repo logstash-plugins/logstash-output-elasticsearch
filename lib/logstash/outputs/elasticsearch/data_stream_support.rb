@@ -61,13 +61,19 @@ module LogStash module Outputs class ElasticSearch
       end
 
       if use_data_stream.nil?
-        use_data_stream = data_stream_default(params, invalid_data_stream_params.empty?)
+        use_data_stream = data_stream_default(invalid_data_stream_params.empty?)
+        if !use_data_stream && data_stream_params.any?
+          # DS (auto) disabled but there's still some data-stream parameters (and no `data_stream => false`)
+          @logger.warn "Ambiguous configuration, data stream settings have no effect", data_stream_params
+          raise LogStash::ConfigurationError, "Ambiguous configuration, please set data_stream => true/false " +
+                                              "or remove data stream specific settings: #{data_stream_params.keys}"
+        end
       end
 
       if use_data_stream
         if invalid_data_stream_params.any?
-          @logger.error "Invalid data_stream configuration, following parameters are not supported:", invalid_data_stream_params
-          raise LogStash::ConfigurationError, "invalid data stream configuration: #{invalid_data_stream_params.keys}"
+          @logger.error "Invalid data stream configuration, following parameters are not supported:", invalid_data_stream_params
+          raise LogStash::ConfigurationError, "Invalid data stream configuration: #{invalid_data_stream_params.keys}"
         end
         true
       else
@@ -130,7 +136,7 @@ module LogStash module Outputs class ElasticSearch
     DATA_STREAMS_ENABLED_BY_DEFAULT_LS_VERSION = '8.0.0'
 
     # when data_stream => is either 'auto' or not set
-    def data_stream_default(params, valid_data_stream_config)
+    def data_stream_default(valid_data_stream_config)
       ds_default = Gem::Version.create(LOGSTASH_VERSION) >= Gem::Version.create(DATA_STREAMS_ENABLED_BY_DEFAULT_LS_VERSION)
 
       return false if @data_stream.nil? && !ds_default # data_stream => ... not set on LS 7.x

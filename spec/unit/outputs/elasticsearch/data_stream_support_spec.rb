@@ -149,6 +149,38 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
   end
 
+  context "default (non data-stream) configuration (on 7.x)" do
+
+    let(:options) do
+      { 'data_stream_dataset' => 'test', 'data_stream_auto_routing' => 'false', 'user' => 'elastic' }
+    end
+
+    before { allow(subject).to receive(:last_es_version).and_return(es_version) }
+
+    it "does not use data-streams by default" do
+      expect( subject.logger ).to receive(:warn) do |msg|
+        expect(msg).to include "Ambiguous configuration, data stream settings have no effect"
+      end
+      change_constant :LOGSTASH_VERSION, '7.10.2' do
+        expect { subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, /Ambiguous configuration/i)
+      end
+    end
+
+    context 'explicit data_stream => false' do
+
+      let(:options) { super().merge('data_stream' => 'false') }
+
+      it "no longer prints a warning" do
+        expect( subject.logger ).to_not receive(:warn)
+        change_constant :LOGSTASH_VERSION, '7.10.2' do
+          expect( subject.data_stream_config? ).to be false
+        end
+      end
+
+    end
+
+  end
+
   context "(explicit) ds disabled configuration" do
 
     let(:options) { super().merge('data_stream' => false.to_s) }
