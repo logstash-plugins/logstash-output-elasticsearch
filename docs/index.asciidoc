@@ -287,7 +287,9 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-ilm_policy>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-ilm_rollover_alias>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-index>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-tls_certificate>> |a valid filesystem path|No
 | <<plugins-{type}s-{plugin}-keystore>> |a valid filesystem path|No
+| <<plugins-{type}s-{plugin}-tls_private_key>> |a valid filesystem path|No
 | <<plugins-{type}s-{plugin}-keystore_password>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-manage_template>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-parameters>> |<<hash,hash>>|No
@@ -627,6 +629,24 @@ For weekly indexes ISO 8601 format is recommended, eg. logstash-%{+xxxx.ww}.
 Logstash uses
 http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html[Joda
 formats] for the index pattern from event timestamp.
+
+[id="plugins-{type}s-{plugin}-tls_certificate"]
+===== `tls_certificate`
+
+  * Value type is <<path,path>>
+  * There is no default value for this setting.
+
+The tls_certificate used to present a client certificate to the server.
+It accepts .pem formatted files
+
+[id="plugins-{type}s-{plugin}-tls_private_key"]
+===== `tls_private_key`
+
+  * Value type is <<path,path>>
+  * There is no default value for this setting.
+
+The tls_private_key used to present a client private key to the server, to be used in conjunction with tls_certificate.
+It accepts .pkcs8 formatted files
 
 
 [id="plugins-{type}s-{plugin}-keystore"]

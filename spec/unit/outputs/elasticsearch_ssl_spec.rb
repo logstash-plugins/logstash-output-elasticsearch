@@ -77,6 +77,121 @@ describe "SSL option" do
       end.and_call_original
       subject.register
     end
+  end
 
+  context "when using ssl with pem-encoded client certificates" do
+    let(:tls_certificate) { Stud::Temporary.file.path }
+    let(:tls_private_key) { Stud::Temporary.file.path }
+    before do
+      `openssl req -x509  -batch -nodes -newkey rsa:2048 -keyout #{tls_private_key} -out #{tls_certificate}`
+    end
+
+    after :each do
+      File.delete(tls_certificate)
+      File.delete(tls_private_key)
+      subject.close
+    end
+
+    subject do
+      settings = {
+        "hosts" => "node01",
+        "ssl" => true,
+        "tls_certificate" => tls_certificate,
+        "tls_private_key" => tls_private_key
+      }
+      next LogStash::Outputs::ElasticSearch.new(settings)
+    end
+
+    it "should pass the pem certificate parameters to the ES client" do
+      expect(::Manticore::Client)
+        .to receive(:new) { |args| expect(args[:ssl]).to include(:client_cert => tls_certificate, :client_key => tls_private_key) }
+        .and_return(manticore_double)
+      subject.register
+    end
+
+  end
+  
+  context "when using both pem-encoded and jks-encoded client certificates" do
+    let(:tls_certificate) { Stud::Temporary.file.path }
+    let(:tls_private_key) { Stud::Temporary.file.path }
+    before do
+      `openssl req -x509  -batch -nodes -newkey rsa:2048 -keyout #{tls_private_key} -out #{tls_certificate}`
+    end
+
+    after :each do
+      File.delete(tls_private_key)
+      File.delete(tls_certificate)
+      subject.close
+    end
+
+    subject do
+      settings = {
+        "hosts" => "node01",
+        "ssl" => true,
+        "tls_certificate" => tls_certificate,
+        "tls_private_key" => tls_private_key,
+        # just any file will do for this test
+        "keystore" => tls_certificate
+      }
+      next LogStash::Outputs::ElasticSearch.new(settings)
+    end
+
+    it "should fail to load the plugin" do
+      expect { subject.register }.to raise_error(LogStash::ConfigurationError)
+    end
+  end
+  
+  context "when configuring only tls_certificate but ommitting the private_key" do
+    let(:tls_certificate) { Stud::Temporary.file.path }
+    let(:tls_private_key) { Stud::Temporary.file.path }
+    before do
+      `openssl req -x509  -batch -nodes -newkey rsa:2048 -keyout #{tls_private_key} -out #{tls_certificate}`
+    end
+
+    after :each do
+      File.delete(tls_private_key)
+      File.delete(tls_certificate)
+      subject.close
+    end
+
+    subject do
+      settings = {
+        "hosts" => "node01",
+        "ssl" => true,
+        "tls_certificate" => tls_certificate,
+      }
+      next LogStash::Outputs::ElasticSearch.new(settings)
+    end
+
+    it "should fail to load the plugin" do
+      expect { subject.register }.to raise_error(LogStash::ConfigurationError)
+    end
+  end
+
+  context "when configuring only private_key but ommitting the tls_certificate" do
+    let(:tls_certificate) { Stud::Temporary.file.path }
+    let(:tls_private_key) { Stud::Temporary.file.path }
+    before do
+      `openssl req -x509  -batch -nodes -newkey rsa:2048 -keyout #{tls_private_key} -out #{tls_certificate}`
+    end
+
+    after :each do
+      File.delete(tls_private_key)
+      File.delete(tls_certificate)
+      subject.close
+    end
+
+    subject do
+      settings = {
+        "hosts" => "node01",
+        "ssl" => true,
+        "tls_private_key" => tls_private_key,
+      }
+      next LogStash::Outputs::ElasticSearch.new(settings)
+    end
+
+    it "should fail to load the plugin" do
+      expect { subject.register }.to raise_error(LogStash::ConfigurationError)
+    end
   end
 end

@@ -66,6 +66,11 @@ module LogStash; module PluginMixins; module ElasticSearch
       # Set the keystore password
       mod.config :keystore_password, :validate => :password
 
+      # The certificate to present to the server. (only pem format supported)
+      mod.config :tls_certificate, :validate => :path
+      # The private key to present to the server. (only pkcs8 format supported)
+      mod.config :tls_private_key, :validate => :path
+
       # This setting asks Elasticsearch for the list of all cluster nodes and adds them to the hosts list.
       # Note: This will return ALL nodes with HTTP enabled (including master nodes!). If you use
       # this with master nodes, you probably want to disable HTTP on them by setting

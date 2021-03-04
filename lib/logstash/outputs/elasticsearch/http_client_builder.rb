@@ -112,11 +112,19 @@ module LogStash; module Outputs; class ElasticSearch;
 
       return {:ssl => {:enabled => false}} if params["ssl"] == false
 
-      cacert, truststore, truststore_password, keystore, keystore_password =
-        params.values_at('cacert', 'truststore', 'truststore_password', 'keystore', 'keystore_password')
+      cacert, truststore, truststore_password, keystore, keystore_password, tls_certificate, tls_private_key =
+        params.values_at('cacert', 'truststore', 'truststore_password', 'keystore', 'keystore_password', 'tls_certificate', 'tls_private_key')
 
       if cacert && truststore
         raise(LogStash::ConfigurationError, "Use either \"cacert\" or \"truststore\" when configuring the CA certificate") if truststore
+      end
+
+      if tls_certificate && keystore
+        raise(LogStash::ConfigurationError, "Use either \"tls_certificate\" or \"keystore\" when configuring the client certificate")
+      end
+
+      if (tls_private_key && !tls_certificate) || (tls_certificate && !tls_private_key)
+        raise(LogStash::ConfigurationError, "Both a \"tls_private_key\" and a \"tls_certificate\" need to be present")
       end
 
       ssl_options = {:enabled => true}
@@ -131,7 +139,11 @@ module LogStash; module Outputs; class ElasticSearch;
       if keystore
         ssl_options[:keystore] = keystore
         ssl_options[:keystore_password] = keystore_password.value if keystore_password
+      elsif tls_certificate && tls_private_key
+        ssl_options[:client_cert] = tls_certificate
+        ssl_options[:client_key] = tls_private_key
       end
+
       if !params["ssl_certificate_verification"]
         logger.warn [
                        "** WARNING ** Detected UNSAFE options in elasticsearch output configuration!",
