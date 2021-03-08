@@ -174,6 +174,7 @@ module LogStash module Outputs class ElasticSearch
             info[:event] = event.to_hash
             @logger.warn "Some data_stream fields are out of sync, these will be updated to reflect data-stream name", info
 
+            data_stream = data_stream.dup
             sync_fields.each { |name| data_stream[name] = nil } # fallback to ||= bellow
           end
         end
