@@ -52,7 +52,7 @@ module LogStash module Outputs class ElasticSearch
     # compatible, only explicit (`original_params`) config should be tested.
     # @return [TrueClass|FalseClass] whether given configuration is data-stream compatible
     def check_data_stream_config!(params = original_params)
-      use_data_stream = data_stream_explicit?
+      use_data_stream = data_stream_explicit_value
       data_stream_params = params.select { |name, _| name.start_with?('data_stream_') } # exclude data_stream =>
       invalid_data_stream_params = invalid_data_stream_params(params)
 
@@ -81,7 +81,7 @@ module LogStash module Outputs class ElasticSearch
       end
     end
 
-    def data_stream_explicit?
+    def data_stream_explicit_value
       case @data_stream
       when 'true'
         assert_es_version_supports_data_streams
