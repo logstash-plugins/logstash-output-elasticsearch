@@ -256,7 +256,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   def initialize(*params)
     super
-    @mutex = Mutex.new
+    @finish_register_mutex = Mutex.new
     setup_ecs_compatibility_related_defaults
   end
 
@@ -288,7 +288,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # @override post-register when ES connection established
   def finish_register
-    synchronize do # due @i-vars being set on the plugin
+    @finish_register_mutex.synchronize do
+      # synchronization is for visibility due @i-vars being set on the plugin
+      # while this executes from another thread -> we force a memory barrier
       discover_cluster_uuid
       install_template
       setup_ilm if ilm_in_use?
@@ -340,10 +342,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   def stop_after_successful_connection_thread
     @after_successful_connection_thread.join unless @after_successful_connection_thread.nil?
-  end
-
-  def synchronize(&block)
-    @mutex.synchronize(&block)
   end
 
   # Convert the event into a 3-tuple of action, params and event hash
