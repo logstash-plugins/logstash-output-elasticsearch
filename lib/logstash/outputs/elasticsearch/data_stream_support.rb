@@ -193,7 +193,7 @@ module LogStash module Outputs class ElasticSearch
 
     module Validator
 
-      # @override {LogStash::Config::Mixin::validate_value} to provide :ds_identifier_string validator
+      # @override {LogStash::Config::Mixin::validate_value} to handle custom validators
       # @param value [Array<Object>]
       # @param validator [nil,Array,Symbol]
       # @return [Array(true,Object)]: if validation is a success, a tuple containing `true` and the coerced value
