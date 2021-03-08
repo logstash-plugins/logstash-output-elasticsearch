@@ -199,15 +199,11 @@ module LogStash module Outputs class ElasticSearch
       # @return [Array(true,Object)]: if validation is a success, a tuple containing `true` and the coerced value
       # @return [Array(false,String)]: if validation is a failure, a tuple containing `false` and the failure reason.
       def validate_value(value, validator)
-        if validator == :dataset_identifier
-          return validate_dataset_identifier(value)
+        case validator
+        when :dataset_identifier   then validate_dataset_identifier(value)
+        when :namespace_identifier then validate_namespace_identifier(value)
+        else super
         end
-        if validator == :namespace_identifier
-          return validate_namespace_identifier(value)
-        end
-        return super unless validator == :ds_identifier_string
-
-        super(value, validator)
       end
 
       private
