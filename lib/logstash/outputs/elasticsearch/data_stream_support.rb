@@ -158,38 +158,39 @@ module LogStash module Outputs class ElasticSearch
 
     # an {event_action_tuple} replacement when a data-stream configuration is detected
     def data_stream_event_action_tuple(event)
-      data_stream_event_sync(event) if data_stream_sync_fields
-      ['create', common_event_params(event), event.to_hash] # action always 'create'
+      event_data = event.to_hash
+      data_stream_event_sync(event_data) if data_stream_sync_fields
+      ['create', common_event_params(event), event_data] # action always 'create'
     end
 
     DATA_STREAM_SYNC_FIELDS = [ 'type', 'dataset', 'namespace' ].freeze
 
-    def data_stream_event_sync(event)
-      data_stream = event.get('data_stream')
+    def data_stream_event_sync(event_data)
+      data_stream = event_data['data_stream']
       if data_stream.is_a?(Hash)
         unless data_stream_auto_routing
           sync_fields = DATA_STREAM_SYNC_FIELDS.select { |name| data_stream.key?(name) && data_stream[name] != send(:"data_stream_#{name}") }
           if sync_fields.any? # these fields will need to be overwritten
             info = sync_fields.inject({}) { |info, name| info[name] = data_stream[name]; info }
-            info[:event] = event.to_hash
+            info[:event] = event_data
             @logger.warn "Some data_stream fields are out of sync, these will be updated to reflect data-stream name", info
 
-            data_stream = data_stream.dup
+            # NOTE: we work directly with event.to_hash data thus fine to mutate the 'data_stream' hash
             sync_fields.each { |name| data_stream[name] = nil } # fallback to ||= bellow
           end
         end
       else
         unless data_stream.nil?
-          @logger.warn "Invalid 'data_stream' field type, due fields sync will overwrite", value: data_stream, event: event.to_hash
+          @logger.warn "Invalid 'data_stream' field type, due fields sync will overwrite", value: data_stream, event: event_data
         end
-        data_stream = Hash.new
+        event_data['data_stream'] = data_stream = Hash.new
       end
 
       data_stream['type'] ||= data_stream_type
       data_stream['dataset'] ||= data_stream_dataset
       data_stream['namespace'] ||= data_stream_namespace
 
-      event.set('data_stream', data_stream)
+      event_data
     end
 
     module Validator
