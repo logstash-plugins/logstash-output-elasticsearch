@@ -345,14 +345,11 @@ module LogStash; module PluginMixins; module ElasticSearch
         !execution_context.dlq_writer.inner_writer.is_a?(::LogStash::Util::DummyDeadLetterQueueWriter)
     end
 
-    EMPTY_HASH = {}.freeze
-
-    def dig_value(val, *keys)
-      keys.each do |key|
-        val = val.fetch(key, EMPTY_HASH)
-        return nil if val == EMPTY_HASH
-      end
-      val
+    def dig_value(val, first_key, *rest_keys)
+      fail(TypeError, "cannot dig value from #{val.class}") unless val.kind_of?(Hash)
+      val = val[first_key]
+      return val if rest_keys.empty? || val == nil
+      dig_value(val, *rest_keys)
     end
   end
 end; end; end
