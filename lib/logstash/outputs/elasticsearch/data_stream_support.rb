@@ -57,7 +57,7 @@ module LogStash module Outputs class ElasticSearch
       invalid_data_stream_params = invalid_data_stream_params(params)
 
       if use_data_stream.eql?(false) && data_stream_params.any?
-        @logger.debug "Ignoring data stream specific configuration (due data_stream => false)", data_stream_params
+        @logger.warn "Ignoring data stream specific configuration (due data_stream => false)", data_stream_params
       end
 
       if use_data_stream.nil?

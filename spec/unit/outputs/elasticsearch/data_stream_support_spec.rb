@@ -157,7 +157,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
     before { allow(subject).to receive(:last_es_version).and_return(es_version) }
 
-    it "does not use data-streams by default" do
+    it "does not default to data-streams" do
       expect( subject.logger ).to receive(:warn) do |msg|
         expect(msg).to include "Ambiguous configuration, data stream settings have no effect"
       end
@@ -170,8 +170,8 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
       let(:options) { super().merge('data_stream' => 'false') }
 
-      it "no longer prints a warning" do
-        expect( subject.logger ).to_not receive(:warn)
+      it "prints a warning" do
+        expect( subject.logger ).to receive(:warn).with(/Ignoring data stream specific configuration/, {"data_stream_auto_routing"=>"false", "data_stream_dataset"=>"test"})
         change_constant :LOGSTASH_VERSION, '7.10.2' do
           expect( subject.data_stream_config? ).to be false
         end
@@ -199,8 +199,14 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
       end
     end
 
-  end
+    it "does not print a warning" do
+      expect( subject.logger ).to_not receive(:warn)
+      change_constant :LOGSTASH_VERSION, '7.10.2' do
+        expect( subject.data_stream_config? ).to be false
+      end
+    end
 
+  end
 
   context "(explicit) ds enabled configuration" do
 
@@ -370,6 +376,13 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
         tuple = subject.map_events([ event ]).first
         expect( tuple.size ).to eql 3
         expect( tuple[2]['data_stream'] ).to eql({"type" => "logs", "dataset" => "ds1", "namespace" => "custom"})
+      end
+
+      it 'does not mutate data_stream hash' do
+        data_stream = event.get('data_stream')
+        data_stream_dup = data_stream.dup
+        subject.map_events([ event ])
+        expect( data_stream ).to eql data_stream_dup
       end
 
     end
