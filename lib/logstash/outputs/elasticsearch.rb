@@ -261,7 +261,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   def register
-    @after_successful_connection = Concurrent::AtomicBoolean.new(false)
+    @after_successful_connection_done = Concurrent::AtomicBoolean.new(false)
     @stopping = Concurrent::AtomicBoolean.new(false)
     # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
     @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
@@ -278,7 +278,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     @after_successful_connection_thread = after_successful_connection do
       finish_register
-      @after_successful_connection.make_true
+      @after_successful_connection_done.make_true
     end
 
     @bulk_request_metrics = metric.namespace(:bulk_requests)
@@ -316,7 +316,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Receive an array of events and immediately attempt to index them (no buffering)
   def multi_receive(events)
-    wait_for_successful_connection if @after_successful_connection
+    wait_for_successful_connection if @after_successful_connection_done
     retrying_submit map_events(events)
   end
 
@@ -325,10 +325,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   def wait_for_successful_connection
-    after_successful_connection = @after_successful_connection
-    return unless after_successful_connection
-    stoppable_sleep 1 until after_successful_connection.true?
-    @after_successful_connection = nil
+    after_successful_connection_done = @after_successful_connection_done
+    return unless after_successful_connection_done
+    stoppable_sleep 1 until after_successful_connection_done.true?
+    @after_successful_connection_done = nil
   end
   private :wait_for_successful_connection
 
