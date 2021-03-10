@@ -256,7 +256,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   def initialize(*params)
     super
-    @finish_register_mutex = Mutex.new
     setup_ecs_compatibility_related_defaults
   end
 
@@ -288,14 +287,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # @override post-register when ES connection established
   def finish_register
-    @finish_register_mutex.synchronize do
-      # synchronization is for visibility due @i-vars being set on the plugin
-      # while this executes from another thread -> we force a memory barrier
-      discover_cluster_uuid
-      install_template
-      setup_ilm if ilm_in_use?
-      super
-    end
+    discover_cluster_uuid
+    install_template
+    setup_ilm if ilm_in_use?
+    super
   end
 
   # @override to handle proxy => '' as if none was set
