@@ -341,7 +341,7 @@ output plugins.
 ===== `action`
 
   * Value type is <<string,string>>
-  * Default value depends on whether data-streams are used.
+  * Default value is `create` for data streams, and `index` for non-time series data. 
 
 The Elasticsearch action to perform. Valid actions are:
 
@@ -414,13 +414,14 @@ For more details, check out the
 ===== `data_stream`
 
 * Value can be any of: `true`, `false` and `auto`
-* Default value depends on Logstash version.
+* Default is `false` in Logstash 7.x and `auto` starting in Logstash 8.0.
 
 Defines whether data will be indexed into an Elasticsearch data stream.
-The other `data_stream_*` settings will only be used if this setting is enabled.
+The other `data_stream_*` settings will be used only if this setting is enabled.
 Defaults to `false` in Logstash 7.x and `auto` starting in Logstash 8.0.
 
-The `auto` behavior means that whenever the supplied configuration is compatible
+Logstash handles the output as a data stream when the supplied configuration
+is compatible with data streams and this value is set to `auto`.
 with data streams Logstash will assume to be handling events as if `true` was set.
 
 [id="plugins-{type}s-{plugin}-data_stream_auto_routing"]
@@ -458,11 +459,12 @@ The data stream namespace used to construct the data stream at index time.
 * Value type is <<boolean,boolean>>
 * Default value is `true`
 
-Automatically syncs the `data_stream.*` event fields if they are missing from the
-event, this ensures fields match the data stream name that events are being sent to.
+Automatically adds and syncs the `data_stream.*` event fields if they are missing from the
+event. This ensures that fields match the name of the data stream that is receiving events.
 
-NOTE: when `data_stream_auto_routing` is disabled and existing `data_stream.*` event
-fields do not match the data stream name they will be overwritten (with a warning).
+NOTE: If existing `data_stream.*` event fields do not match the data stream name
+and `data_stream_auto_routing` is disabled, the event fields will be
+overwritten with a warning.
 
 [id="plugins-{type}s-{plugin}-data_stream_type"]
 ===== `data_stream_type`
@@ -471,7 +473,7 @@ fields do not match the data stream name they will be overwritten (with a warnin
 * Default value is `logs`.
 
 The data stream type used to construct the data stream at index time.
-Currently, only `logs` and `metrics` is supported.
+Currently, only `logs` and `metrics`are supported.
 
 [id="plugins-{type}s-{plugin}-doc_as_upsert"]
 ===== `doc_as_upsert`
