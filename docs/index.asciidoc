@@ -21,6 +21,10 @@ include::{include_path}/plugin_header.asciidoc[]
 
 ==== Description
 
+Elasticsearch provides near real-time search and analytics for all types of
+data. The Elasticsearch output plugin can store both time series datasets (such
+as logs, events, and metrics) and non-time series data in Elasticsearch.
+
 If you plan to use the Kibana web interface to analyze data transformed by
 Logstash, use the Elasticsearch output plugin to get your data into
 Elasticsearch.
@@ -354,8 +358,6 @@ The Elasticsearch action to perform. Valid actions are:
 - A sprintf style string to change the action based on the content of the event. The value `%{[foo]}`
   would use the foo field for the action
 
-When using data-streams a `create` default is assumed, otherwise the default action is `"index"`.
-
 For more details on actions, check out the {ref}/docs-bulk.html[Elasticsearch bulk API documentation].
 
 [id="plugins-{type}s-{plugin}-api_key"]
@@ -418,7 +420,6 @@ For more details, check out the
 
 Defines whether data will be indexed into an Elasticsearch data stream.
 The other `data_stream_*` settings will be used only if this setting is enabled.
-Defaults to `false` in Logstash 7.x and `auto` starting in Logstash 8.0.
 
 Logstash handles the output as a data stream when the supplied configuration
 is compatible with data streams and this value is set to `auto`.
