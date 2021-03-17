@@ -278,16 +278,11 @@ not reevaluate its DNS value while the keepalive is in effect.
 
 ==== HTTP Compression
 
-This plugin supports request and response compression. Response compression is
-enabled by default for HTTP and for Elasticsearch versions 5.0 and later.
+This plugin supports request compression, and will handle compressed responses
+from Elasticsearch.
 
-You don't have to set any configs in Elasticsearch for it to send back a
-compressed response. For versions before 5.0, or if HTTPS is enabled,
-`http.compression` must be set to `true` {ref}/modules-http.html#modules-http[in
-Elasticsearch] to take advantage of response compression when using this plugin.
-
-For requests compression, regardless of the Elasticsearch version, enable the
-`http_compression` setting in the Logstash config file.
+To enable request compression, use the <<plugins-{type}s-{plugin}-http_compression>>
+setting on this plugin.
 
 ==== Authentication
 
@@ -640,8 +635,13 @@ Any special characters present in the URLs here MUST be URL escaped! This means
   * Value type is <<boolean,boolean>>
   * Default value is `false`
 
-Enable gzip compression on requests. Note that response compression is on by
-default for Elasticsearch v5.0 and beyond
+Enable gzip compression on requests.
+
+This setting allows you to reduce this plugin's outbound network traffic by
+compressing each bulk _request_ to {es}.
+
+NOTE: this output plugin will read compressed _responses_ from {es} regardless
+      of the value of this setting.
 
 [id="plugins-{type}s-{plugin}-ilm_enabled"]
 ===== `ilm_enabled`
