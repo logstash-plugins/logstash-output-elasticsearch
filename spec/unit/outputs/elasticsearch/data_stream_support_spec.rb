@@ -170,10 +170,11 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
       let(:options) { super().merge('data_stream' => 'false') }
 
-      it "prints a warning" do
-        expect( subject.logger ).to receive(:warn).with(/Ignoring data stream specific configuration/, {"data_stream_auto_routing"=>"false", "data_stream_dataset"=>"test"})
+      it "raises a configuration error (due ds specific settings)" do
+        expect( subject.logger ).to receive(:warn).with(/Ambiguous configuration, data stream settings have no effect/,
+                                                        {"data_stream_auto_routing"=>"false", "data_stream_dataset"=>"test"})
         change_constant :LOGSTASH_VERSION, '7.10.2' do
-          expect( subject.data_stream_config? ).to be false
+          expect { subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, /Ambiguous configuration/i)
         end
       end
 

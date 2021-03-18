@@ -57,7 +57,8 @@ module LogStash module Outputs class ElasticSearch
       invalid_data_stream_params = invalid_data_stream_params(params)
 
       if use_data_stream.eql?(false) && data_stream_params.any?
-        @logger.warn "Ignoring data stream specific configuration (due data_stream => false)", data_stream_params
+        @logger.warn "Ambiguous configuration, data stream settings have no effect (due data_stream => false)", data_stream_params
+        raise LogStash::ConfigurationError, "Ambiguous configuration, please remove data stream specific settings: #{data_stream_params.keys}"
       end
 
       if use_data_stream.nil?
@@ -65,7 +66,7 @@ module LogStash module Outputs class ElasticSearch
         if !use_data_stream && data_stream_params.any?
           # DS (auto) disabled but there's still some data-stream parameters (and no `data_stream => false`)
           @logger.warn "Ambiguous configuration, data stream settings have no effect", data_stream_params
-          raise LogStash::ConfigurationError, "Ambiguous configuration, please set data_stream => true/false " +
+          raise LogStash::ConfigurationError, "Ambiguous configuration, please set data_stream => true " +
                                               "or remove data stream specific settings: #{data_stream_params.keys}"
         end
       end
