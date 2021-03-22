@@ -19,7 +19,7 @@ describe LogStash::Outputs::ElasticSearch do
     if do_register
       stub_http_client_pool!
 
-      allow(subject).to receive(:finish_register)
+      allow(subject).to receive(:finish_register) # stub-out thread completion (to avoid error log entries)
 
       # emulate 'successful' ES connection on the same thread
       allow(subject).to receive(:after_successful_connection) { |&block| block.call }
@@ -346,8 +346,6 @@ describe LogStash::Outputs::ElasticSearch do
       end
 
       it "should retry submit" do
-        allow(subject).to receive(:after_successful_connection) { |&block| block.call }
-
         allow(subject.logger).to receive(:error).with(/Encountered an unexpected error/i, anything)
         allow(subject.client).to receive(:bulk).and_call_original # track count
 
@@ -356,7 +354,7 @@ describe LogStash::Outputs::ElasticSearch do
         expect(subject.client).to have_received(:bulk).twice
       end
 
-      it "should log specific error message" do
+      it "should log specific error message  xxx" do
         expect(subject.logger).to receive(:error).with(/Encountered an unexpected error/i,
                                                        hash_including(:message => 'Sent 2 documents but Elasticsearch returned 3 responses (likely a bug with _bulk endpoint)'))
 
@@ -453,9 +451,6 @@ describe LogStash::Outputs::ElasticSearch do
 
     before(:each) do
       stub_manticore_client!
-      allow(subject).to receive(:after_successful_connection) { |&block| block.call }
-      allow(subject).to receive(:finish_register)
-
       subject.register
     end
 
@@ -538,10 +533,8 @@ describe LogStash::Outputs::ElasticSearch do
 
     before :each do
       allow(subject).to receive(:finish_register)
-      allow(subject).to receive(:after_successful_connection) { |&block| block.call }
 
       allow(::Manticore::Client).to receive(:new).with(any_args).and_call_original
-      stub_http_client_pool!
     end
 
     after :each do
@@ -650,8 +643,6 @@ describe LogStash::Outputs::ElasticSearch do
 
     before(:each) do
       stub_manticore_client!
-      allow(subject).to receive(:after_successful_connection) { |&block| block.call }
-      allow(subject).to receive(:finish_register)
     end
 
     it "should set host(s)" do
@@ -684,8 +675,6 @@ describe LogStash::Outputs::ElasticSearch do
 
     before(:each) do
       stub_manticore_client!
-      allow(subject).to receive(:after_successful_connection) { |&block| block.call }
-      allow(subject).to receive(:finish_register)
     end
 
     it "should set host(s)" do
@@ -802,12 +791,6 @@ describe LogStash::Outputs::ElasticSearch do
     let(:api_key) { "some_id:some_api_key" }
     let(:base64_api_key) { "ApiKey c29tZV9pZDpzb21lX2FwaV9rZXk=" }
 
-    before do
-      stub_http_client_pool!
-      allow(subject).to receive(:after_successful_connection) { |&block| block.call }
-      allow(subject).to receive(:finish_register)
-    end
-
     context "when set without ssl" do
       let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
       let(:options) { { "api_key" => api_key } }
@@ -864,7 +847,6 @@ describe LogStash::Outputs::ElasticSearch do
     let(:logger) { subject.logger }
 
     before do
-      allow(logger).to receive(:info)
       allow(logger).to receive(:error) # expect tracking
       # emulate 'successful' ES connection on the same thread
       expect(subject).to receive(:after_successful_connection) { |&block| block.call }
@@ -874,7 +856,6 @@ describe LogStash::Outputs::ElasticSearch do
     it "logs inability to retrieve uuid" do
       allow(subject).to receive(:install_template)
       allow(subject).to receive(:ilm_in_use?).and_return nil
-      allow(subject).to receive(:data_stream_config?).and_return false
       subject.register
 
       expect(logger).to have_received(:error).with(/Unable to retrieve Elasticsearch cluster uuid/i, anything)
@@ -883,7 +864,6 @@ describe LogStash::Outputs::ElasticSearch do
     it "logs template install failure" do
       allow(subject).to receive(:discover_cluster_uuid)
       allow(subject).to receive(:ilm_in_use?).and_return nil
-      allow(subject).to receive(:data_stream_config?).and_return false
       subject.register
 
       expect(logger).to have_received(:error).with(/Failed to install template/i, anything)

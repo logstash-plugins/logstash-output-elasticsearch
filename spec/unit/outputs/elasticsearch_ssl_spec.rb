@@ -12,9 +12,6 @@ describe "SSL option" do
     allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
     
     allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
-
-    allow(subject).to receive(:after_successful_connection) { |&block| block.call }
-    allow(subject).to receive(:finish_register)
   end
   
   context "when using ssl without cert verification" do

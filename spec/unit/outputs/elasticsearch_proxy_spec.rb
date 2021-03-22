@@ -4,12 +4,12 @@ require 'manticore/client'
 
 describe "Proxy option" do
   let(:settings) { { "hosts" => "node01" } }
-  subject { LogStash::Outputs::ElasticSearch.new(settings) }
+  subject {
+    LogStash::Outputs::ElasticSearch.new(settings)
+  }
 
   before do
     allow(::Manticore::Client).to receive(:new).with(any_args).and_call_original
-    allow(subject).to receive(:after_successful_connection) { |&block| block.call }
-    allow(subject).to receive(:finish_register)
   end
 
   describe "valid configs" do
@@ -84,12 +84,13 @@ describe "Proxy option" do
   end
 
   context "when specified as invalid uri" do
+    let(:settings) { super().merge("proxy" => ":")}
 
     it "should fail" do
       # SafeURI isn't doing the proper exception wrapping for us, we can not simply :
       # expect { subject.register }.to raise_error(ArgumentError, /URI is not valid/i)
       begin
-        LogStash::Outputs::ElasticSearch.new(settings.merge("proxy" => ":"))
+        subject.register
       rescue ArgumentError => e
         expect(e.message).to match /URI is not valid/i
       rescue java.net.URISyntaxException => e
@@ -98,6 +99,5 @@ describe "Proxy option" do
         fail 'exception not raised'
       end
     end
-
   end
 end
