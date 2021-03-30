@@ -148,11 +148,7 @@ module LogStash module Outputs class ElasticSearch
     def data_stream_event_action_tuple(event)
       event_data = event.to_hash
       data_stream_event_sync(event_data) if data_stream_sync_fields
-
-      params = common_event_params(event)
-      params[:require_alias] = true # we really want require_datastream
-
-      ['create', params, event_data] # action always 'create'
+      ['create', common_event_params(event), event_data] # action always 'create'
     end
 
     DATA_STREAM_SYNC_FIELDS = [ 'type', 'dataset', 'namespace' ].freeze
