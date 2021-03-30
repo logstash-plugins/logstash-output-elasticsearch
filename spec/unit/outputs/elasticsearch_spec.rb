@@ -15,6 +15,10 @@ describe LogStash::Outputs::ElasticSearch do
     allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:start)
   end
 
+  let(:after_successful_connection_thread_mock) do
+    double('after_successful_connection_thread', value: true)
+  end
+
   before(:each) do
     if do_register
       stub_http_client_pool!
@@ -22,7 +26,8 @@ describe LogStash::Outputs::ElasticSearch do
       allow(subject).to receive(:finish_register) # stub-out thread completion (to avoid error log entries)
 
       # emulate 'successful' ES connection on the same thread
-      allow(subject).to receive(:after_successful_connection) { |&block| block.call }
+      allow(subject).to receive(:after_successful_connection) { |&block| block.call }.
+          and_return after_successful_connection_thread_mock
       allow(subject).to receive(:stop_after_successful_connection_thread)
 
       subject.register
@@ -849,7 +854,9 @@ describe LogStash::Outputs::ElasticSearch do
     before do
       allow(logger).to receive(:error) # expect tracking
       # emulate 'successful' ES connection on the same thread
-      expect(subject).to receive(:after_successful_connection) { |&block| block.call }
+      allow(subject).to receive(:after_successful_connection) { |&block| block.call }.
+          and_return after_successful_connection_thread_mock
+      allow(subject).to receive(:last_es_version).and_return('7.10.0') # due DS default on LS 8.x
       allow(subject).to receive(:stop_after_successful_connection_thread)
     end
 

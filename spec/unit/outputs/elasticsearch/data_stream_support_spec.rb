@@ -8,30 +8,35 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
   let(:es_version) { '7.10.1' }
 
   let(:do_register) { false }
+  let(:stub_plugin_register!) do
+    allow(subject).to receive(:last_es_version).and_return(es_version)
+
+    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:start)
+
+    # stub-out unrelated (finish_register) setup:
+    allow(subject).to receive(:discover_cluster_uuid)
+    allow(subject).to receive(:install_template)
+    allow(subject).to receive(:ilm_in_use?).and_return nil
+
+    # emulate 'successful' ES connection on the same thread
+    allow(subject).to receive(:after_successful_connection) { |&block| block.call }
+    allow(subject).to receive(:stop_after_successful_connection_thread)
+
+    subject.register
+
+    allow(subject.client).to receive(:maximum_seen_major_version).and_return(Integer(es_version.split('.').first))
+
+    # allow( subject.logger ).to receive(:info) do |msg|
+    #   expect(msg).to include "New Elasticsearch output"
+    # end
+  end
 
   @@logstash_oss = LogStash::OSS
 
   before(:each) do
     change_constant :OSS, false, target: LogStash # assume non-OSS by default
 
-    if do_register
-      allow(subject).to receive(:last_es_version).and_return(es_version)
-
-      allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:start)
-
-      # stub-out unrelated (finish_register) setup:
-      allow(subject).to receive(:discover_cluster_uuid)
-      allow(subject).to receive(:install_template)
-      allow(subject).to receive(:ilm_in_use?).and_return nil
-
-      # emulate 'successful' ES connection on the same thread
-      allow(subject).to receive(:after_successful_connection) { |&block| block.call }
-      allow(subject).to receive(:stop_after_successful_connection_thread)
-
-      subject.register
-
-      allow(subject.client).to receive(:maximum_seen_major_version).and_return(Integer(es_version.split('.').first))
-    end
+    stub_plugin_register! if do_register
   end
 
   after(:each) do
@@ -52,6 +57,15 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
       end
     end
 
+    it "warns when configuration is data-stream compliant (LS 7.x)" do
+      expect( subject.logger ).to receive(:warn) do |msg|
+        expect(msg).to include "Configuration is data stream compliant but due backwards compatibility Logstash 7.x"
+      end
+      change_constant :LOGSTASH_VERSION, '7.11.0' do
+        expect( subject.data_stream_config? ).to be false
+      end
+    end
+
     it "defaults to using data-streams on LS 8.0" do
       change_constant :LOGSTASH_VERSION, '8.0.0' do
         expect( subject.data_stream_config? ).to be true
@@ -60,13 +74,12 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
     context 'non-compatible ES' do
 
-      let(:es_version) { '7.8.1' }
+      let(:es_version) { '7.8.0' }
 
-      it "raises when running on LS 8.0" do
-        change_constant :LOGSTASH_VERSION, '8.0.0' do
-          error_message = /data_stream is only supported since Elasticsearch 7.9.0 \(detected version 7.8.1\)/
-          expect { subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, error_message)
-        end
+      it "does not print an error (from after_successful_connection thread)" do
+        expect( subject.logger ).to_not receive(:error)
+        expect( subject ).to receive(:finish_register).once.and_call_original
+        stub_plugin_register!
       end
 
     end
@@ -100,16 +113,6 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
       end
     end
 
-    # it "warns about not using data-streams on LS 8.0 (OSS)" do
-    #   expect( subject.logger ).to receive(:warn) do |msg|
-    #     expect(msg).to include "Configuration is data_stream compliant but won't be used"
-    #   end
-    #   change_constant :LOGSTASH_VERSION, '8.0.1' do
-    #     change_constant :OSS, true, target: LogStash do
-    #       expect( subject.data_stream_config? ).to be false
-    #     end
-    #   end
-    # end
     it "uses data-streams on LS 8.0 (OSS)" do
       change_constant :LOGSTASH_VERSION, '8.0.1' do
         change_constant :OSS, true, target: LogStash do
@@ -122,26 +125,11 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
       let(:es_version) { '7.8.1' }
 
-      it "fails to start on LS 8.0" do
+      it "prints an error (from after_successful_connection thread) on LS 8.0" do
         change_constant :LOGSTASH_VERSION, '8.0.0' do
-          change_constant :OSS, false, target: LogStash do
-            expect { subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, /data_stream is only supported since Elasticsearch/)
-          end
-        end
-      end
-
-      # it "uses index-ing on OSS LS 8.0" do
-      #   change_constant :LOGSTASH_VERSION, '8.0.0' do
-      #     change_constant :OSS, true, target: LogStash do
-      #       expect( subject.data_stream_config? ).to be false
-      #     end
-      #   end
-      # end
-      it "fails to start on OSS LS 8.0" do
-        change_constant :LOGSTASH_VERSION, '8.0.0' do
-          change_constant :OSS, true, target: LogStash do
-            expect { subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, /data_stream is only supported since Elasticsearch/)
-          end
+          expect( subject.logger ).to receive(:error).with(/Elasticsearch version does not support data streams/,
+                                                           {:es_version=>"7.8.1"})
+          expect { stub_plugin_register! }.to raise_error(LogStash::Error, /data_stream configuration is only supported since Elasticsearch/)
         end
       end
 
@@ -231,10 +219,19 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
       let(:es_version) { '6.8.11' }
 
-      it "raises when running on LS 8.0" do
-        change_constant :LOGSTASH_VERSION, '8.0.0' do
-          error_message = /data_stream is only supported since Elasticsearch 7.9.0 \(detected version 6.8.11\)/
-          expect { subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, error_message)
+      it "prints an error (from after_successful_connection thread) on LS 7.x" do
+        change_constant :LOGSTASH_VERSION, '7.12.0' do
+          expect( subject.logger ).to receive(:error).with(/Elasticsearch version does not support data streams/,
+                                                           {:es_version=>"6.8.11"})
+          expect { stub_plugin_register! }.to raise_error(LogStash::Error, /data_stream configuration is only supported since Elasticsearch/)
+        end
+      end
+
+      it "prints an error (from after_successful_connection thread) on LS 8.0" do
+        change_constant :LOGSTASH_VERSION, '8.0.5' do
+          expect( subject.logger ).to receive(:error).with(/Elasticsearch version does not support data streams/,
+                                                           {:es_version=>"6.8.11"})
+          expect { stub_plugin_register! }.to raise_error(LogStash::Error, /data_stream configuration is only supported since Elasticsearch/)
         end
       end
 

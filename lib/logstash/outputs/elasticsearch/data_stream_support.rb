@@ -19,17 +19,6 @@ module LogStash module Outputs class ElasticSearch
       base.extend(Validator)
     end
 
-    # @override
-    def finish_register
-      super
-
-      if data_stream_config?
-        @event_mapper = -> (e) { data_stream_event_action_tuple(e) }
-        @event_target = -> (e) { data_stream_name(e) }
-        @index = "#{data_stream_type}-#{data_stream_dataset}-#{data_stream_namespace}".freeze # default name
-      end
-    end
-
     # @note assumes to be running AFTER {after_successful_connection} completed, due ES version checks
     def data_stream_config?
       @data_stream_config.nil? ? @data_stream_config = check_data_stream_config! : @data_stream_config
@@ -62,7 +51,7 @@ module LogStash module Outputs class ElasticSearch
       end
 
       if use_data_stream.nil?
-        use_data_stream = data_stream_default(invalid_data_stream_params.empty?)
+        use_data_stream = data_stream_default(data_stream_params, invalid_data_stream_params.empty?)
         if !use_data_stream && data_stream_params.any?
           # DS (auto) disabled but there's still some data-stream parameters (and no `data_stream => false`)
           @logger.warn "Ambiguous configuration, data stream settings have no effect", data_stream_params
@@ -85,7 +74,6 @@ module LogStash module Outputs class ElasticSearch
     def data_stream_explicit_value
       case @data_stream
       when 'true'
-        assert_es_version_supports_data_streams
         return true
       when 'false'
         return false
@@ -122,17 +110,14 @@ module LogStash module Outputs class ElasticSearch
     DATA_STREAMS_ORIGIN_ES_VERSION = '7.9.0'
 
     # @return [Gem::Version] if ES supports DS nil (or raise) otherwise
-    def assert_es_version_supports_data_streams(raise_error = true)
+    def assert_es_version_supports_data_streams
       fail 'no last_es_version' unless last_es_version # assert - should not happen
       es_version = Gem::Version.create(last_es_version)
       if es_version < Gem::Version.create(DATA_STREAMS_ORIGIN_ES_VERSION)
-        unless raise_error
-          @logger.debug "Elasticsearch version does not support data streams", es_version: es_version.version
-          return nil
-        end
-        @logger.info "Elasticsearch version does not support data streams", es_version: es_version.version
-        raise LogStash::ConfigurationError, "data_stream is only supported since Elasticsearch #{DATA_STREAMS_ORIGIN_ES_VERSION} " +
-                                            "(detected version #{es_version.version}), please upgrade your cluster"
+        @logger.error "Elasticsearch version does not support data streams, Logstash can not proceed using the current configuration", es_version: es_version.version
+        # NOTE: when switching to synchronous check from register, this should be a ConfigurationError
+        raise LogStash::Error, "A data_stream configuration is only supported since Elasticsearch #{DATA_STREAMS_ORIGIN_ES_VERSION} " +
+                               "(detected version #{es_version.version}), please upgrade your cluster"
       end
       es_version # return truthy
     end
@@ -140,21 +125,23 @@ module LogStash module Outputs class ElasticSearch
     DATA_STREAMS_ENABLED_BY_DEFAULT_LS_VERSION = '8.0.0'
 
     # when data_stream => is either 'auto' or not set
-    def data_stream_default(valid_data_stream_config)
+    def data_stream_default(data_stream_params, valid_data_stream_config)
       ds_default = Gem::Version.create(LOGSTASH_VERSION) >= Gem::Version.create(DATA_STREAMS_ENABLED_BY_DEFAULT_LS_VERSION)
-
-      return false if @data_stream.nil? && !ds_default # data_stream => ... not set on LS 7.x
 
       if ds_default # LS 8.0
         return false unless valid_data_stream_config
 
-        assert_es_version_supports_data_streams(true)
-        @logger.debug 'Configuration is data_stream compatible'
+        @logger.debug 'Configuration is data stream compliant'
         return true
       end
 
-      # LS 7.x data_stream => auto
-      valid_data_stream_config && assert_es_version_supports_data_streams(false)
+      # LS 7.x
+      if valid_data_stream_config && !data_stream_params.any?
+        @logger.warn "Configuration is data stream compliant but due backwards compatibility Logstash 7.x will not assume " +
+                     "writing to a data-stream, default behavior will change on Logstash 8.0 " +
+                     "(set `data_stream => true/false` to disable this warning)"
+      end
+      false
     end
 
     # an {event_action_tuple} replacement when a data-stream configuration is detected

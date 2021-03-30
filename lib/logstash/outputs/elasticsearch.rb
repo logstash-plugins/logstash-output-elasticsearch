@@ -262,31 +262,44 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def register
     @after_successful_connection_done = Concurrent::AtomicBoolean.new(false)
     @stopping = Concurrent::AtomicBoolean.new(false)
-    # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
-    @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
 
     check_action_validity
+
+    @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
 
     # the license_checking behaviour in the Pool class is externalized in the LogStash::ElasticSearchOutputLicenseChecker
     # class defined in license_check.rb. This license checking is specific to the elasticsearch output here and passed
     # to build_client down to the Pool class.
     @client = build_client(LicenseChecker.new(@logger))
 
-    @event_mapper = -> (e) { event_action_tuple(e) }
-    @event_target = -> (e) { e.sprintf(@index) }
-
     @after_successful_connection_thread = after_successful_connection do
-      finish_register
-      @after_successful_connection_done.make_true
+      begin
+        finish_register
+        true # thread.value
+      ensure
+        @after_successful_connection_done.make_true
+      end
+    end
+
+    # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
+    @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
+
+    if data_stream_config?
+      @event_mapper = -> (e) { data_stream_event_action_tuple(e) }
+      @event_target = -> (e) { data_stream_name(e) }
+      @index = "#{data_stream_type}-#{data_stream_dataset}-#{data_stream_namespace}".freeze # default name
+    else
+      @event_mapper = -> (e) { event_action_tuple(e) }
+      @event_target = -> (e) { e.sprintf(@index) }
     end
 
     @bulk_request_metrics = metric.namespace(:bulk_requests)
     @document_level_metrics = metric.namespace(:documents)
-    @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
   end
 
   # @override post-register when ES connection established
   def finish_register
+    assert_es_version_supports_data_streams if data_stream_config?
     discover_cluster_uuid
     install_template
     setup_ilm if ilm_in_use?
@@ -323,6 +336,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     after_successful_connection_done = @after_successful_connection_done
     return unless after_successful_connection_done
     stoppable_sleep 1 until after_successful_connection_done.true?
+    if @after_successful_connection_thread # check if thread ended with an error
+      thread_status = @after_successful_connection_thread.value
+      raise thread_status if thread_status.is_a?(Exception) # re-raise to exit LS
+    end
     @after_successful_connection_done = nil
   end
   private :wait_for_successful_connection
