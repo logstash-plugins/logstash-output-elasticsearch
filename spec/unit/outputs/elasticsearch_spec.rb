@@ -359,7 +359,7 @@ describe LogStash::Outputs::ElasticSearch do
         expect(subject.client).to have_received(:bulk).twice
       end
 
-      it "should log specific error message  xxx" do
+      it "should log specific error message" do
         expect(subject.logger).to receive(:error).with(/Encountered an unexpected error/i,
                                                        hash_including(:message => 'Sent 2 documents but Elasticsearch returned 3 responses (likely a bug with _bulk endpoint)'))
 
