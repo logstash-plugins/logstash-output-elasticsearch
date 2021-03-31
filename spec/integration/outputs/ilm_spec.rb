@@ -198,10 +198,14 @@ shared_examples_for 'an Elasticsearch instance that does not support index lifec
     let (:settings) { super().merge!({ 'ilm_enabled' => true }) }
 
     it 'should raise a configuration error' do
+      # TODO should be refactored not to rely on plugin internals
+      finish_register = subject.method(:finish_register)
+      expect(subject).to receive(:finish_register)
       expect do
         begin
           subject.register
-          sleep(1)
+          finish_register.call
+          sleep(1.5) # wait_for_successful_connection (for the thread to raise)
         ensure
           subject.send :stop_after_successful_connection_thread
         end
