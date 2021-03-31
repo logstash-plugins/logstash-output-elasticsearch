@@ -18,7 +18,7 @@ describe "data streams", :integration => true do
 
     es_version = @es.info['version']['number']
     if Gem::Version.create(es_version) < Gem::Version.create('7.9.0')
-      pending "ES version #{es_version} does not support data-streams"
+      skip "ES version #{es_version} does not support data-streams"
     end
   end
 
