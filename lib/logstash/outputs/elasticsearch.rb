@@ -252,7 +252,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   config :ilm_policy, :validate => :string, :default => DEFAULT_POLICY
 
   attr_reader :client
-  attr_reader :default_index, :default_ilm_rollover_alias, :default_template_name
+  attr_reader :default_index
+  attr_reader :default_ilm_rollover_alias
+  attr_reader :default_template_name
 
   def initialize(*params)
     super
