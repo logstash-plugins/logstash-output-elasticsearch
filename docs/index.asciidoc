@@ -432,7 +432,7 @@ with data streams Logstash will assume to be handling events as if `true` was se
 * Default value is `true`.
 
 Automatically routes events by deriving the data stream name using specific event
-fields with the `%{data_stream.type}-%{data_stream.dataset}-%{data_stream.namespace}` format.
+fields with the `%{[data_stream][type]}-%{[data_stream][dataset]}-%{[data_stream][namespace]}` format.
 
 If enabled, the `data_stream.*` event fields will take precedence over the
 `data_stream_type`, `data_stream_dataset`, and `data_stream_namespace` settings,
