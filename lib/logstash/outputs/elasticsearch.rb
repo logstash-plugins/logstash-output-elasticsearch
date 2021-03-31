@@ -276,6 +276,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       begin
         finish_register
         true # thread.value
+      rescue => e
+        # we do not want to halt the thread with an exception as that has consequences for LS
+        e # thread.value
       ensure
         @after_successful_connection_done.make_true
       end
@@ -336,11 +339,15 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     after_successful_connection_done = @after_successful_connection_done
     return unless after_successful_connection_done
     stoppable_sleep 1 until after_successful_connection_done.true?
-    if @after_successful_connection_thread # check if thread ended with an error
-      thread_status = @after_successful_connection_thread.value
-      raise thread_status if thread_status.is_a?(Exception) # re-raise to exit LS
+
+    status = @after_successful_connection_thread && @after_successful_connection_thread.value
+    if status.is_a?(Exception) # check if thread 'halted' with an error
+      # keep logging that something isn't right (from every #multi_receive)
+      @logger.error "Elasticsearch setup did not complete normally, please review previously logged errors",
+                    message: status.message, exception: status.class
+    else
+      @after_successful_connection_done = nil # do not execute __method__ again if all went well
     end
-    @after_successful_connection_done = nil
   end
   private :wait_for_successful_connection
 

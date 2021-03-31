@@ -77,9 +77,11 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
       let(:es_version) { '7.8.0' }
 
       it "does not print an error (from after_successful_connection thread)" do
-        expect( subject.logger ).to_not receive(:error)
-        expect( subject ).to receive(:finish_register).once.and_call_original
-        stub_plugin_register!
+        change_constant :LOGSTASH_VERSION, '7.8.1' do
+          expect( subject.logger ).to_not receive(:error)
+          expect( subject ).to receive(:finish_register).once.and_call_original
+          stub_plugin_register!
+        end
       end
 
     end
@@ -129,7 +131,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
         change_constant :LOGSTASH_VERSION, '8.0.0' do
           expect( subject.logger ).to receive(:error).with(/Elasticsearch version does not support data streams/,
                                                            {:es_version=>"7.8.1"})
-          expect { stub_plugin_register! }.to raise_error(LogStash::Error, /data_stream configuration is only supported since Elasticsearch/)
+          stub_plugin_register!
         end
       end
 
@@ -223,7 +225,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
         change_constant :LOGSTASH_VERSION, '7.12.0' do
           expect( subject.logger ).to receive(:error).with(/Elasticsearch version does not support data streams/,
                                                            {:es_version=>"6.8.11"})
-          expect { stub_plugin_register! }.to raise_error(LogStash::Error, /data_stream configuration is only supported since Elasticsearch/)
+          stub_plugin_register!
         end
       end
 
@@ -231,7 +233,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
         change_constant :LOGSTASH_VERSION, '8.0.5' do
           expect( subject.logger ).to receive(:error).with(/Elasticsearch version does not support data streams/,
                                                            {:es_version=>"6.8.11"})
-          expect { stub_plugin_register! }.to raise_error(LogStash::Error, /data_stream configuration is only supported since Elasticsearch/)
+          stub_plugin_register!
         end
       end
 
