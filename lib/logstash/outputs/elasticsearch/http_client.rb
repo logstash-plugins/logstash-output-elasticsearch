@@ -109,8 +109,8 @@ module LogStash; module Outputs; class ElasticSearch;
       body_stream = StringIO.new
       if http_compression
         body_stream.set_encoding "BINARY"
-        stream_writer = Zlib::GzipWriter.new(body_stream, Zlib::DEFAULT_COMPRESSION, Zlib::DEFAULT_STRATEGY)
-      else 
+        stream_writer = gzip_writer(body_stream)
+      else
         stream_writer = body_stream
       end
       bulk_responses = []
@@ -120,19 +120,37 @@ module LogStash; module Outputs; class ElasticSearch;
                     action.map {|line| LogStash::Json.dump(line)}.join("\n") :
                     LogStash::Json.dump(action)
         as_json << "\n"
-        if (body_stream.size + as_json.bytesize) > TARGET_BULK_BYTES && body_stream.size > 0
-          logger.debug("Sending partial bulk request for batch with one or more actions remaining.", :action_count => batch_actions.size, :content_length => body_stream.size, :batch_offset => (index + 1 - batch_actions.size))
+        if (stream_writer.pos + as_json.bytesize) > TARGET_BULK_BYTES && stream_writer.pos > 0
+          stream_writer.flush # ensure writer has sync'd buffers before reporting sizes
+          logger.debug("Sending partial bulk request for batch with one or more actions remaining.",
+                       :action_count => batch_actions.size,
+                       :payload_size => stream_writer.pos,
+                       :content_length => body_stream.size,
+                       :batch_offset => (index + 1 - batch_actions.size))
           bulk_responses << bulk_send(body_stream, batch_actions)
+          body_stream.truncate(0) && body_stream.seek(0)
+          stream_writer = gzip_writer(body_stream) if http_compression
           batch_actions.clear
         end
         stream_writer.write(as_json)
         batch_actions << action
       end
       stream_writer.close if http_compression
-      logger.debug("Sending final bulk request for batch.", :action_count => batch_actions.size, :content_length => body_stream.size, :batch_offset => (actions.size - batch_actions.size))
+      logger.debug("Sending final bulk request for batch.",
+                   :action_count => batch_actions.size,
+                   :payload_size => stream_writer.pos,
+                   :content_length => body_stream.size,
+                   :batch_offset => (actions.size - batch_actions.size))
       bulk_responses << bulk_send(body_stream, batch_actions) if body_stream.size > 0
       body_stream.close if !http_compression
       join_bulk_responses(bulk_responses)
+    end
+
+    def gzip_writer(io)
+      fail(ArgumentError, "Cannot create gzip writer on IO with unread bytes") unless io.eof?
+      fail(ArgumentError, "Cannot create gzip writer on non-empty IO") unless io.pos == 0
+
+      Zlib::GzipWriter.new(io, Zlib::DEFAULT_COMPRESSION, Zlib::DEFAULT_STRATEGY)
     end
 
     def join_bulk_responses(bulk_responses)
@@ -159,11 +177,6 @@ module LogStash; module Outputs; class ElasticSearch;
         raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(
           response.code, url, body_stream.to_s, response.body
         )
-      end
-    ensure
-      if !body_stream.closed?
-        body_stream.truncate(0)
-        body_stream.seek(0)
       end
     end
 

@@ -328,7 +328,7 @@ describe LogStash::Outputs::ElasticSearch do
     end
 
       before(:each) do
-        allow(subject.client).to receive(:bulk_send).with(instance_of(StringIO)) do |stream|
+        allow(subject.client).to receive(:bulk_send).with(instance_of(StringIO), instance_of(Array)) do |stream, actions|
           expect( stream.string ).to include '"foo":"bar1"'
           expect( stream.string ).to include '"foo":"bar2"'
         end.and_return(bulk_response, {"errors"=>false}) # let's make it go away (second call) to not retry indefinitely
