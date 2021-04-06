@@ -299,7 +299,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         @bulk_request_metrics.increment(:failures)
-        log_hash = {:code => e.response_code, :url => e.url.sanitized.to_s}
+        log_hash = {:code => e.response_code, :url => e.url.sanitized.to_s, :content_length => e.request_body.bytesize}
         log_hash[:body] = e.response_body if @logger.debug? # Generally this is too verbose
         message = "Encountered a retryable error. Will Retry with exponential backoff "
 
