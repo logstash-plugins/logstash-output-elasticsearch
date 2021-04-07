@@ -11,8 +11,6 @@ module LogStash; module Outputs; class ElasticSearch
     # @param license [Hash] ES node deserialized licence document
     # @return [Boolean] true if provided license is deemed appropriate
     def appropriate_license?(pool, url)
-      return true if oss?
-
       license = pool.get_license(url)
       if valid_es_license?(license)
         true
@@ -27,11 +25,6 @@ module LogStash; module Outputs; class ElasticSearch
         log_license_deprecation_warn(url)
         true
       end
-    end
-
-    # Note that oss? could be private but is used by the Pool specs
-    def oss?
-      LogStash::OSS
     end
 
     # Note that valid_es_license? could be private but is used by the Pool specs

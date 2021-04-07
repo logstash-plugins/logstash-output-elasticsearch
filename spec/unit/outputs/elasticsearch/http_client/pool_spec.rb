@@ -26,7 +26,6 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
 
     allow(subject).to receive(:get_es_version).with(any_args).and_return(*es_node_versions)
-    allow(subject.license_checker).to receive(:oss?).and_return(oss)
     allow(subject.license_checker).to receive(:valid_es_license?).and_return(valid_license)
   end
 
