@@ -148,8 +148,8 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
     before { allow(subject).to receive(:last_es_version).and_return(es_version) }
 
     it "does not default to data-streams" do
-      expect( subject.logger ).to receive(:warn) do |msg|
-        expect(msg).to include "Ambiguous configuration, data stream settings have no effect"
+      expect( subject.logger ).to receive(:error) do |msg|
+        expect(msg).to include "Ambiguous configuration; data stream settings are present, but data streams are not enabled"
       end
       change_constant :LOGSTASH_VERSION, '7.10.2' do
         expect { subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, /Ambiguous configuration/i)
@@ -161,8 +161,8 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
       let(:options) { super().merge('data_stream' => 'false') }
 
       it "raises a configuration error (due ds specific settings)" do
-        expect( subject.logger ).to receive(:warn).with(/Ambiguous configuration, data stream settings have no effect/,
-                                                        {"data_stream_auto_routing"=>"false", "data_stream_dataset"=>"test"})
+        expect( subject.logger ).to receive(:error).with(/Ambiguous configuration; data stream settings must not be present when data streams is disabled/,
+                                                         {"data_stream_auto_routing"=>"false", "data_stream_dataset"=>"test"})
         change_constant :LOGSTASH_VERSION, '7.10.2' do
           expect { subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, /Ambiguous configuration/i)
         end
