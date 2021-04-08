@@ -423,7 +423,6 @@ The other `data_stream_*` settings will be used only if this setting is enabled.
 
 Logstash handles the output as a data stream when the supplied configuration
 is compatible with data streams and this value is set to `auto`.
-with data streams Logstash will assume to be handling events as if `true` was set.
 
 [id="plugins-{type}s-{plugin}-data_stream_auto_routing"]
 ===== `data_stream_auto_routing`
