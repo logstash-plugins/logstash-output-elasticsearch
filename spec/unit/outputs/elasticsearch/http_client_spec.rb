@@ -203,7 +203,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
   end
 
   describe "#bulk" do
-    subject { described_class.new(base_options) }
+    subject(:http_client) { described_class.new(base_options) }
 
     require "json"
     let(:message) { "hey" }
@@ -211,42 +211,61 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message}],
     ]}
 
-    context "if a message is over TARGET_BULK_BYTES" do
-      let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
-      let(:message) { "a" * (target_bulk_bytes + 1) }
+    [true,false].each do |http_compression_enabled|
+      context "with `http_compression => #{http_compression_enabled}`" do
 
-      it "should be handled properly" do
-        allow(subject).to receive(:join_bulk_responses)
-        expect(subject).to receive(:bulk_send).once do |data|
-          expect(data.size).to be > target_bulk_bytes
+        let(:base_options) { super().merge(:client_settings => {:http_compression => http_compression_enabled}) }
+
+        before(:each) do
+          if http_compression_enabled
+            expect(http_client).to receive(:gzip_writer).at_least(:once).and_call_original
+          else
+            expect(http_client).to_not receive(:gzip_writer)
+          end
         end
-        s = subject.send(:bulk, actions)
-      end
-    end
 
-    context "with two messages" do
-      let(:message1) { "hey" }
-      let(:message2) { "you" }
-      let(:actions) { [
-        ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message1}],
-        ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message2}],
-      ]}
-      it "executes one bulk_send operation" do
-        allow(subject).to receive(:join_bulk_responses)
-        expect(subject).to receive(:bulk_send).once
-        s = subject.send(:bulk, actions)
-      end
+        context "if a message is over TARGET_BULK_BYTES" do
+          let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
+          let(:message) { "a" * (target_bulk_bytes + 1) }
 
-      context "if one exceeds TARGET_BULK_BYTES" do
-        let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
-        let(:message1) { "a" * (target_bulk_bytes + 1) }
-        it "executes two bulk_send operations" do
-          allow(subject).to receive(:join_bulk_responses)
-          expect(subject).to receive(:bulk_send).twice
-          s = subject.send(:bulk, actions)
+          it "should be handled properly" do
+            allow(subject).to receive(:join_bulk_responses)
+            expect(subject).to receive(:bulk_send).once do |data|
+              if !http_compression_enabled
+                expect(data.size).to be > target_bulk_bytes
+              else
+                expect(Zlib::gunzip(data.string).size).to be > target_bulk_bytes
+              end
+            end
+            s = subject.send(:bulk, actions)
+          end
         end
-      end
-    end
+
+        context "with two messages" do
+          let(:message1) { "hey" }
+          let(:message2) { "you" }
+          let(:actions) { [
+            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message1}],
+            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message2}],
+          ]}
+          it "executes one bulk_send operation" do
+            allow(subject).to receive(:join_bulk_responses)
+            expect(subject).to receive(:bulk_send).once
+            s = subject.send(:bulk, actions)
+          end
+
+          context "if one exceeds TARGET_BULK_BYTES" do
+            let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
+            let(:message1) { "a" * (target_bulk_bytes + 1) }
+            it "executes two bulk_send operations" do
+              allow(subject).to receive(:join_bulk_responses)
+              expect(subject).to receive(:bulk_send).twice
+              s = subject.send(:bulk, actions)
+            end
+          end
+        end
+       end
+     end
   end
 
   describe "sniffing" do
