@@ -41,33 +41,31 @@ module LogStash module Outputs class ElasticSearch
     # compatible, only explicit (`original_params`) config should be tested.
     # @return [TrueClass|FalseClass] whether given configuration is data-stream compatible
     def check_data_stream_config!(params = original_params)
-      use_data_stream = data_stream_explicit_value
       data_stream_params = params.select { |name, _| name.start_with?('data_stream_') } # exclude data_stream =>
       invalid_data_stream_params = invalid_data_stream_params(params)
 
-      if use_data_stream.eql?(false) && data_stream_params.any?
-        @logger.error "Ambiguous configuration; data stream settings must not be present when data streams is disabled (caused by: `data_stream => false`)", data_stream_params
-        raise LogStash::ConfigurationError, "Ambiguous configuration, please remove data stream specific settings: #{data_stream_params.keys}"
-      end
-
-      if use_data_stream.nil?
+      case data_stream_explicit_value
+      when false
+        if data_stream_params.any?
+          @logger.error "Ambiguous configuration; data stream settings must not be present when data streams is disabled (caused by: `data_stream => false`)", data_stream_params
+          raise LogStash::ConfigurationError, "Ambiguous configuration, please remove data stream specific settings: #{data_stream_params.keys}"
+        end
+        return false
+      when true
+        if invalid_data_stream_params.any?
+          @logger.error "Invalid data stream configuration, following parameters are not supported:", invalid_data_stream_params
+          raise LogStash::ConfigurationError, "Invalid data stream configuration: #{invalid_data_stream_params.keys}"
+        end
+        return true
+      else
         use_data_stream = data_stream_default(data_stream_params, invalid_data_stream_params.empty?)
         if !use_data_stream && data_stream_params.any?
           # DS (auto) disabled but there's still some data-stream parameters (and no `data_stream => false`)
           @logger.error "Ambiguous configuration; data stream settings are present, but data streams are not enabled", data_stream_params
           raise LogStash::ConfigurationError, "Ambiguous configuration, please set data_stream => true " +
-                                              "or remove data stream specific settings: #{data_stream_params.keys}"
+              "or remove data stream specific settings: #{data_stream_params.keys}"
         end
-      end
-
-      if use_data_stream
-        if invalid_data_stream_params.any?
-          @logger.error "Invalid data stream configuration, following parameters are not supported:", invalid_data_stream_params
-          raise LogStash::ConfigurationError, "Invalid data stream configuration: #{invalid_data_stream_params.keys}"
-        end
-        true
-      else
-        false
+        use_data_stream
       end
     end
 
