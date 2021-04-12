@@ -1,5 +1,6 @@
 require "logstash/devutils/rspec/spec_helper"
 require "logstash/outputs/elasticsearch/http_client"
+require 'cabin'
 
 describe LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter do
   let(:logger) { Cabin::Channel.get }

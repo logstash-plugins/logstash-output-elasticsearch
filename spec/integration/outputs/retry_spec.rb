@@ -6,17 +6,17 @@ describe "failures in bulk class expected behavior", :integration => true do
   let(:event1) { LogStash::Event.new("somevalue" => 100, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0}) }
   let(:action1) do
     if ESHelper.es_version_satisfies?(">= 6", "< 7")
-      ESHelper.action_for_version(["index", {:_id=>nil, routing_field_name =>nil, :_index=>"logstash-2014.11.17", :_type=> doc_type }, event1])
+      ESHelper.action_for_version(["index", {:_id=>nil, routing_field_name =>nil, :_index=>"logstash-2014.11.17", :_type=> doc_type }, event1.to_hash])
     else
-      ESHelper.action_for_version(["index", {:_id=>nil, routing_field_name =>nil, :_index=>"logstash-2014.11.17" }, event1])
+      ESHelper.action_for_version(["index", {:_id=>nil, routing_field_name =>nil, :_index=>"logstash-2014.11.17" }, event1.to_hash])
     end
   end
   let(:event2) { LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0] }, "@timestamp" => "2014-11-17T20:37:17.223Z", "@metadata" => {"retry_count" => 0}) }
   let(:action2) do
     if ESHelper.es_version_satisfies?(">= 6", "< 7")
-      ESHelper.action_for_version(["index", {:_id=>nil, routing_field_name =>nil, :_index=>"logstash-2014.11.17", :_type=> doc_type }, event2])
+      ESHelper.action_for_version(["index", {:_id=>nil, routing_field_name =>nil, :_index=>"logstash-2014.11.17", :_type=> doc_type }, event2.to_hash])
     else
-      ESHelper.action_for_version(["index", {:_id=>nil, routing_field_name =>nil, :_index=>"logstash-2014.11.17" }, event2])
+      ESHelper.action_for_version(["index", {:_id=>nil, routing_field_name =>nil, :_index=>"logstash-2014.11.17" }, event2.to_hash])
     end
   end
   let(:invalid_event) { LogStash::Event.new("geoip" => { "location" => "notlatlon" }, "@timestamp" => "2014-11-17T20:37:17.223Z") }

@@ -1,7 +1,6 @@
-require_relative "../../../../spec/es_spec_helper"
-require "logstash/devutils/rspec/spec_helper"
+require_relative "../../../../spec/spec_helper"
 require "logstash/outputs/elasticsearch/http_client"
-require "java"
+require "cabin"
 
 describe LogStash::Outputs::ElasticSearch::HttpClient do
   let(:ssl) { nil }

@@ -1,6 +1,5 @@
-require_relative "../../../spec/es_spec_helper"
+require_relative "../../../spec/spec_helper"
 require 'stud/temporary'
-require "logstash/outputs/elasticsearch"
 
 describe "SSL option" do
   let(:manticore_double) { double("manticoreSSL #{self.inspect}") }

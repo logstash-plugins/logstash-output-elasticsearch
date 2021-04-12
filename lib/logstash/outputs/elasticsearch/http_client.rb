@@ -1,6 +1,4 @@
 require "logstash/outputs/elasticsearch"
-require "cabin"
-require "base64"
 require 'logstash/outputs/elasticsearch/http_client/pool'
 require 'logstash/outputs/elasticsearch/http_client/manticore_adapter'
 require 'cgi'
@@ -80,10 +78,14 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def template_install(name, template, force=false)
       if template_exists?(name) && !force
-        @logger.debug("Found existing Elasticsearch template. Skipping template management", :name => name)
+        @logger.debug("Found existing Elasticsearch template, skipping template management", name: name)
         return
       end
       template_put(name, template)
+    end
+
+    def last_es_version
+      @pool.last_es_version
     end
 
     def maximum_seen_major_version
@@ -384,7 +386,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def template_put(name, template)
       path = "#{template_endpoint}/#{name}"
-      logger.info("Installing elasticsearch template to #{path}")
+      logger.info("Installing Elasticsearch template", name: name)
       @pool.put(path, nil, LogStash::Json.dump(template))
     end
 
@@ -401,13 +403,13 @@ module LogStash; module Outputs; class ElasticSearch;
 
     # Create a new rollover alias
     def rollover_alias_put(alias_name, alias_definition)
-      logger.info("Creating rollover alias #{alias_name}")
       begin
         @pool.put(CGI::escape(alias_name), nil, LogStash::Json.dump(alias_definition))
+        logger.info("Created rollover alias", name: alias_name)
         # If the rollover alias already exists, ignore the error that comes back from Elasticsearch
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         if e.response_code == 400
-            logger.info("Rollover Alias #{alias_name} already exists. Skipping")
+            logger.info("Rollover alias already exists, skipping", name: alias_name)
             return
         end
         raise e
@@ -428,7 +430,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def ilm_policy_put(name, policy)
       path = "_ilm/policy/#{name}"
-      logger.info("Installing ILM policy #{policy} to #{path}")
+      logger.info("Installing ILM policy #{policy}", name: name)
       @pool.put(path, nil, LogStash::Json.dump(policy))
     end
 

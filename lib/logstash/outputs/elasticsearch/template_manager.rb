@@ -13,10 +13,8 @@ module LogStash; module Outputs; class ElasticSearch
       end
 
       add_ilm_settings_to_template(plugin, template) if plugin.ilm_in_use?
-      plugin.logger.info("Attempting to install template", :manage_template => template)
+      plugin.logger.debug("Attempting to install template", template: template)
       install(plugin.client, template_name(plugin), template, plugin.template_overwrite)
-    rescue => e
-      plugin.logger.error("Failed to install template.", :message => e.message, :class => e.class.name, :backtrace => e.backtrace)
     end
 
     private
@@ -38,7 +36,7 @@ module LogStash; module Outputs; class ElasticSearch
       template['index_patterns'] = "#{plugin.ilm_rollover_alias}-*"
       settings = template_settings(plugin, template)
       if settings && (settings['index.lifecycle.name'] || settings['index.lifecycle.rollover_alias'])
-        plugin.logger.info("Overwriting index lifecycle name and rollover alias as ILM is enabled.")
+        plugin.logger.info("Overwriting index lifecycle name and rollover alias as ILM is enabled")
       end
       settings.update({ 'index.lifecycle.name' => plugin.ilm_policy, 'index.lifecycle.rollover_alias' => plugin.ilm_rollover_alias})
     end
@@ -61,7 +59,7 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def self.read_template_file(template_path)
-      raise ArgumentError, "Template file '#{template_path}' could not be found!" unless ::File.exists?(template_path)
+      raise ArgumentError, "Template file '#{template_path}' could not be found" unless ::File.exists?(template_path)
       template_data = ::IO.read(template_path)
       LogStash::Json.load(template_data)
     end

@@ -4,19 +4,10 @@ module LogStash; module Outputs; class ElasticSearch
     ILM_POLICY_PATH = "default-ilm-policy.json"
 
     def setup_ilm
-      return unless ilm_in_use?
       logger.warn("Overwriting supplied index #{@index} with rollover alias #{@ilm_rollover_alias}") unless default_index?(@index)
       @index = @ilm_rollover_alias
       maybe_create_rollover_alias
       maybe_create_ilm_policy
-    end
-
-    def default_rollover_alias?(rollover_alias)
-      rollover_alias == default_ilm_rollover_alias
-    end
-
-    def ilm_alias_set?
-      default_index?(@index) || !default_rollover_alias?(@ilm_rollover_alias)
     end
 
     def ilm_in_use?
@@ -46,6 +37,12 @@ module LogStash; module Outputs; class ElasticSearch
         end
     end
 
+    private
+
+    def ilm_alias_set?
+      default_index?(@index) || !default_rollover_alias?(@ilm_rollover_alias)
+    end
+
     def ilm_on_by_default?
       maximum_seen_major_version >= 7
     end
@@ -73,10 +70,12 @@ module LogStash; module Outputs; class ElasticSearch
       end
     end
 
-    private
-
     def default_index?(index)
       index == @default_index
+    end
+
+    def default_rollover_alias?(rollover_alias)
+      rollover_alias == default_ilm_rollover_alias
     end
 
     def ilm_policy_default?
@@ -85,7 +84,7 @@ module LogStash; module Outputs; class ElasticSearch
 
     def maybe_create_ilm_policy
       if ilm_policy_default?
-          client.ilm_policy_put(ilm_policy, policy_payload) unless client.ilm_policy_exists?(ilm_policy)
+        client.ilm_policy_put(ilm_policy, policy_payload) unless client.ilm_policy_exists?(ilm_policy)
       else
         raise LogStash::ConfigurationError, "The specified ILM policy #{ilm_policy} does not exist on your Elasticsearch instance" unless client.ilm_policy_exists?(ilm_policy)
       end

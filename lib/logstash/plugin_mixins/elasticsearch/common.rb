@@ -5,7 +5,7 @@ module LogStash; module PluginMixins; module ElasticSearch
 
     # This module defines common methods that can be reused by alternate elasticsearch output plugins such as the elasticsearch_data_streams output.
 
-    attr_reader :client, :hosts
+    attr_reader :hosts
 
     # These codes apply to documents, not at the request level
     DOC_DLQ_CODES = [400, 404]
@@ -31,7 +31,7 @@ module LogStash; module PluginMixins; module ElasticSearch
       if @proxy.eql?('')
         @logger.warn "Supplied proxy setting (proxy => '') has no effect"
       end
-      @client ||= ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
+      ::LogStash::Outputs::ElasticSearch::HttpClientBuilder.build(@logger, @hosts, params)
     end
 
     def validate_authentication
@@ -115,6 +115,15 @@ module LogStash; module PluginMixins; module ElasticSearch
     end
     private :parse_user_password_from_cloud_auth
 
+    # Plugin initialization extension point (after a successful ES connection).
+    def finish_register
+    end
+    protected :finish_register
+
+    def last_es_version
+      client.last_es_version
+    end
+
     def maximum_seen_major_version
       client.maximum_seen_major_version
     end
@@ -126,25 +135,24 @@ module LogStash; module PluginMixins; module ElasticSearch
     # launch a thread that waits for an initial successful connection to the ES cluster to call the given block
     # @param block [Proc] the block to execute upon initial successful connection
     # @return [Thread] the successful connection wait thread
-    def setup_after_successful_connection(&block)
+    def after_successful_connection(&block)
       Thread.new do
         sleep_interval = @retry_initial_interval
         until successful_connection? || @stopping.true?
-          @logger.debug("Waiting for connectivity to Elasticsearch cluster. Retrying in #{sleep_interval}s")
-          Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
-          sleep_interval = next_sleep_interval(sleep_interval)
+          @logger.debug("Waiting for connectivity to Elasticsearch cluster, retrying in #{sleep_interval}s")
+          sleep_interval = sleep_for_interval(sleep_interval)
         end
         block.call if successful_connection?
       end
     end
+    private :after_successful_connection
 
     def discover_cluster_uuid
       return unless defined?(plugin_metadata)
       cluster_info = client.get('/')
       plugin_metadata.set(:cluster_uuid, cluster_info['cluster_uuid'])
     rescue => e
-      # TODO introducing this logging message breaks many tests that need refactoring
-      # @logger.error("Unable to retrieve elasticsearch cluster uuid", error => e.message)
+      @logger.error("Unable to retrieve Elasticsearch cluster uuid", message: e.message, exception: e.class, backtrace: e.backtrace)
     end
 
     def retrying_submit(actions)
@@ -159,13 +167,11 @@ module LogStash; module PluginMixins; module ElasticSearch
         begin
           submit_actions = submit(submit_actions)
           if submit_actions && submit_actions.size > 0
-            @logger.info("Retrying individual bulk actions that failed or were rejected by the previous bulk request.", :count => submit_actions.size)
+            @logger.info("Retrying individual bulk actions that failed or were rejected by the previous bulk request", count: submit_actions.size)
           end
         rescue => e
-          @logger.error("Encountered an unexpected error submitting a bulk request! Will retry.",
-                       :error_message => e.message,
-                       :class => e.class.name,
-                       :backtrace => e.backtrace)
+          @logger.error("Encountered an unexpected error submitting a bulk request, will retry",
+                        message: e.message, exception: e.class, backtrace: e.backtrace)
         end
 
         # Everything was a success!
@@ -173,20 +179,40 @@ module LogStash; module PluginMixins; module ElasticSearch
 
         # If we're retrying the action sleep for the recommended interval
         # Double the interval for the next time through to achieve exponential backoff
-        Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
-        sleep_interval = next_sleep_interval(sleep_interval)
+        sleep_interval = sleep_for_interval(sleep_interval)
       end
     end
 
     def sleep_for_interval(sleep_interval)
-      Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
+      stoppable_sleep(sleep_interval)
       next_sleep_interval(sleep_interval)
+    end
+
+    def stoppable_sleep(interval)
+      Stud.stoppable_sleep(interval) { @stopping.true? }
     end
 
     def next_sleep_interval(current_interval)
       doubled = current_interval * 2
       doubled > @retry_max_interval ? @retry_max_interval : doubled
     end
+
+    def handle_dlq_status(message, action, status, response)
+      # To support bwc, we check if DLQ exists. otherwise we log and drop event (previous behavior)
+      if @dlq_writer
+        # TODO: Change this to send a map with { :status => status, :action => action } in the future
+        @dlq_writer.write(action[2], "#{message} status: #{status}, action: #{action}, response: #{response}")
+      else
+        if dig_value(response, 'index', 'error', 'type') == 'invalid_index_name_exception'
+          level = :error
+        else
+          level = :warn
+        end
+        @logger.send level, message, status: status, action: action, response: response
+      end
+    end
+
+    private
 
     def submit(actions)
       bulk_response = safe_bulk(actions)
@@ -217,7 +243,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         action_type, action_props = response.first
 
         status = action_props["status"]
-        failure  = action_props["error"]
+        error  = action_props["error"]
         action = actions[idx]
         action_params = action[1]
 
@@ -230,7 +256,7 @@ module LogStash; module PluginMixins; module ElasticSearch
           next
         elsif DOC_CONFLICT_CODE == status
           @document_level_metrics.increment(:non_retryable_failures)
-          @logger.warn "Failed action.", status: status, action: action, response: response if !failure_type_logging_whitelist.include?(failure["type"])
+          @logger.warn "Failed action", status: status, action: action, response: response if log_failure_type?(error)
           next
         elsif DOC_DLQ_CODES.include?(status)
           handle_dlq_status("Could not index event to Elasticsearch.", action, status, response)
@@ -239,7 +265,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         else
           # only log what the user whitelisted
           @document_level_metrics.increment(:retryable_failures)
-          @logger.info "retrying failed action with response code: #{status} (#{failure})" if !failure_type_logging_whitelist.include?(failure["type"])
+          @logger.info "Retrying failed action", status: status, action: action, error: error if log_failure_type?(error)
           actions_to_retry << action
         end
       end
@@ -247,40 +273,25 @@ module LogStash; module PluginMixins; module ElasticSearch
       actions_to_retry
     end
 
-    def handle_dlq_status(message, action, status, response)
-      # To support bwc, we check if DLQ exists. otherwise we log and drop event (previous behavior)
-      if @dlq_writer
-        # TODO: Change this to send a map with { :status => status, :action => action } in the future
-        @dlq_writer.write(action[2], "#{message} status: #{status}, action: #{action}, response: #{response}")
-      else
-        error_type = response.fetch('index', {}).fetch('error', {})['type']
-        if 'invalid_index_name_exception' == error_type
-          level = :error
-        else
-          level = :warn
-        end
-        @logger.send level, message, status: status, action: action, response: response
-      end
+    def log_failure_type?(failure)
+      !failure_type_logging_whitelist.include?(failure["type"])
     end
 
     # Rescue retryable errors during bulk submission
+    # @param actions a [action, params, event.to_hash] tuple
+    # @return response [Hash] which contains 'errors' and processed 'items' entries
     def safe_bulk(actions)
       sleep_interval = @retry_initial_interval
       begin
-        es_actions = actions.map {|action_type, params, event| [action_type, params, event.to_hash]}
-        response = @client.bulk(es_actions)
-        response
+        @client.bulk(actions) # returns { 'errors': ..., 'items': ... }
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError => e
         # If we can't even connect to the server let's just print out the URL (:hosts is actually a URL)
         # and let the user sort it out from there
         @logger.error(
-          "Attempted to send a bulk request to elasticsearch'"+
-            " but Elasticsearch appears to be unreachable or down!",
-          :error_message => e.message,
-          :class => e.class.name,
-          :will_retry_in_seconds => sleep_interval
+          "Attempted to send a bulk request but Elasticsearch appears to be unreachable or down",
+          message: e.message, exception: e.class, will_retry_in_seconds: sleep_interval
         )
-        @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
+        @logger.debug? && @logger.debug("Failed actions for last bad bulk request", :actions => actions)
 
         # We retry until there are no errors! Errors should all go to the retry queue
         sleep_interval = sleep_for_interval(sleep_interval)
@@ -288,20 +299,19 @@ module LogStash; module PluginMixins; module ElasticSearch
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::NoConnectionAvailableError => e
         @logger.error(
-          "Attempted to send a bulk request to elasticsearch, but no there are no living connections in the connection pool. Perhaps Elasticsearch is unreachable or down?",
-          :error_message => e.message,
-          :class => e.class.name,
-          :will_retry_in_seconds => sleep_interval
+          "Attempted to send a bulk request but there are no living connections in the pool " +
+          "(perhaps Elasticsearch is unreachable or down?)",
+          message: e.message, exception: e.class, will_retry_in_seconds: sleep_interval
         )
-        Stud.stoppable_sleep(sleep_interval) { @stopping.true? }
-        sleep_interval = next_sleep_interval(sleep_interval)
+
+        sleep_interval = sleep_for_interval(sleep_interval)
         @bulk_request_metrics.increment(:failures)
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         @bulk_request_metrics.increment(:failures)
         log_hash = {:code => e.response_code, :url => e.url.sanitized.to_s, :content_length => e.request_body.bytesize}
         log_hash[:body] = e.response_body if @logger.debug? # Generally this is too verbose
-        message = "Encountered a retryable error. Will Retry with exponential backoff "
+        message = "Encountered a retryable error (will retry with exponential backoff)"
 
         # We treat 429s as a special case because these really aren't errors, but
         # rather just ES telling us to back off a bit, which we do.
@@ -315,17 +325,12 @@ module LogStash; module PluginMixins; module ElasticSearch
 
         sleep_interval = sleep_for_interval(sleep_interval)
         retry
-      rescue => e
-        # Stuff that should never happen
-        # For all other errors print out full connection issues
+      rescue => e # Stuff that should never happen - print out full connection issues
         @logger.error(
-          "An unknown error occurred sending a bulk request to Elasticsearch. We will retry indefinitely",
-          :error_message => e.message,
-          :error_class => e.class.name,
-          :backtrace => e.backtrace
+          "An unknown error occurred sending a bulk request to Elasticsearch (will retry indefinitely)",
+          message: e.message, exception: e.class, backtrace: e.backtrace
         )
-
-        @logger.debug("Failed actions for last bad bulk request!", :actions => actions)
+        @logger.debug? && @logger.debug("Failed actions for last bad bulk request", :actions => actions)
 
         sleep_interval = sleep_for_interval(sleep_interval)
         @bulk_request_metrics.increment(:failures)
@@ -338,6 +343,13 @@ module LogStash; module PluginMixins; module ElasticSearch
       # See more in: https://github.com/elastic/logstash/issues/8064
       respond_to?(:execution_context) && execution_context.respond_to?(:dlq_writer) &&
         !execution_context.dlq_writer.inner_writer.is_a?(::LogStash::Util::DummyDeadLetterQueueWriter)
+    end
+
+    def dig_value(val, first_key, *rest_keys)
+      fail(TypeError, "cannot dig value from #{val.class}") unless val.kind_of?(Hash)
+      val = val[first_key]
+      return val if rest_keys.empty? || val == nil
+      dig_value(val, *rest_keys)
     end
   end
 end; end; end

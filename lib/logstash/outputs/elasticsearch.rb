@@ -3,8 +3,8 @@ require "logstash/namespace"
 require "logstash/environment"
 require "logstash/outputs/base"
 require "logstash/json"
-require "concurrent"
-require "stud/buffer"
+require "concurrent/atomic/atomic_boolean"
+require "stud/interval"
 require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
 require "uri" # for escaping user input
@@ -92,6 +92,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   require "logstash/plugin_mixins/elasticsearch/api_configs"
   require "logstash/plugin_mixins/elasticsearch/common"
   require "logstash/outputs/elasticsearch/ilm"
+  require "logstash/outputs/elasticsearch/data_stream_support"
   require 'logstash/plugin_mixins/ecs_compatibility_support'
 
   # Protocol agnostic methods
@@ -105,6 +106,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Generic/API config options that any document indexer output needs
   include(LogStash::PluginMixins::ElasticSearch::APIConfigs)
+
+  # DS support
+  include(LogStash::Outputs::ElasticSearch::DataStreamSupport)
 
   DEFAULT_POLICY = "logstash-policy"
 
@@ -122,7 +126,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   #   would use the foo field for the action
   #
   # For more details on actions, check out the http://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html[Elasticsearch bulk API documentation]
-  config :action, :validate => :string, :default => "index"
+  config :action, :validate => :string # :default => "index" unless data_stream
 
   # The index to write events to. This can be dynamic using the `%{foo}` syntax.
   # The default value will partition your indices by day so you can more easily
@@ -247,6 +251,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # ILM policy to use, if undefined the default policy will be used.
   config :ilm_policy, :validate => :string, :default => DEFAULT_POLICY
 
+  attr_reader :client
   attr_reader :default_index
   attr_reader :default_ilm_rollover_alias
   attr_reader :default_template_name
@@ -257,26 +262,53 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   def register
-    @template_installed = Concurrent::AtomicBoolean.new(false)
+    @after_successful_connection_done = Concurrent::AtomicBoolean.new(false)
     @stopping = Concurrent::AtomicBoolean.new(false)
-    # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
-    @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
 
     check_action_validity
+
+    @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
 
     # the license_checking behaviour in the Pool class is externalized in the LogStash::ElasticSearchOutputLicenseChecker
     # class defined in license_check.rb. This license checking is specific to the elasticsearch output here and passed
     # to build_client down to the Pool class.
-    build_client(LicenseChecker.new(@logger))
+    @client = build_client(LicenseChecker.new(@logger))
 
-    @template_installer = setup_after_successful_connection do
-      discover_cluster_uuid
-      install_template
-      setup_ilm if ilm_in_use?
+    @after_successful_connection_thread = after_successful_connection do
+      begin
+        finish_register
+        true # thread.value
+      rescue => e
+        # we do not want to halt the thread with an exception as that has consequences for LS
+        e # thread.value
+      ensure
+        @after_successful_connection_done.make_true
+      end
     end
+
+    # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
+    @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
+
+    if data_stream_config?
+      @event_mapper = -> (e) { data_stream_event_action_tuple(e) }
+      @event_target = -> (e) { data_stream_name(e) }
+      @index = "#{data_stream_type}-#{data_stream_dataset}-#{data_stream_namespace}".freeze # default name
+    else
+      @event_mapper = -> (e) { event_action_tuple(e) }
+      @event_target = -> (e) { e.sprintf(@index) }
+    end
+
     @bulk_request_metrics = metric.namespace(:bulk_requests)
     @document_level_metrics = metric.namespace(:documents)
-    @logger.info("New Elasticsearch output", :class => self.class.name, :hosts => @hosts.map(&:sanitized).map(&:to_s))
+  end
+
+  # @override post-register when ES connection established
+  def finish_register
+    assert_es_version_supports_data_streams if data_stream_config?
+    discover_cluster_uuid
+    install_template
+    setup_ilm if ilm_in_use?
+    super
   end
 
   # @override to handle proxy => '' as if none was set
@@ -297,45 +329,46 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Receive an array of events and immediately attempt to index them (no buffering)
   def multi_receive(events)
-    until @template_installed.true?
-      sleep 1
-    end
-    retrying_submit(events.map {|e| event_action_tuple(e)})
+    wait_for_successful_connection if @after_successful_connection_done
+    retrying_submit map_events(events)
   end
+
+  def map_events(events)
+    events.map(&@event_mapper)
+  end
+
+  def wait_for_successful_connection
+    after_successful_connection_done = @after_successful_connection_done
+    return unless after_successful_connection_done
+    stoppable_sleep 1 until after_successful_connection_done.true?
+
+    status = @after_successful_connection_thread && @after_successful_connection_thread.value
+    if status.is_a?(Exception) # check if thread 'halted' with an error
+      # keep logging that something isn't right (from every #multi_receive)
+      @logger.error "Elasticsearch setup did not complete normally, please review previously logged errors",
+                    message: status.message, exception: status.class
+    else
+      @after_successful_connection_done = nil # do not execute __method__ again if all went well
+    end
+  end
+  private :wait_for_successful_connection
 
   def close
     @stopping.make_true if @stopping
-    stop_template_installer
+    stop_after_successful_connection_thread
     @client.close if @client
   end
 
-  # not private because used by ILM specs
-  def stop_template_installer
-    @template_installer.join unless @template_installer.nil?
+  private
+
+  def stop_after_successful_connection_thread
+    @after_successful_connection_thread.join unless @after_successful_connection_thread.nil?
   end
 
-  # not private for elasticsearch_spec.rb
-  # Convert the event into a 3-tuple of action, params, and event
+  # Convert the event into a 3-tuple of action, params and event hash
   def event_action_tuple(event)
-    action = event.sprintf(@action)
-
-    params = {
-      :_id => @document_id ? event.sprintf(@document_id) : nil,
-      :_index => event.sprintf(@index),
-      routing_field_name => @routing ? event.sprintf(@routing) : nil
-    }
-
+    params = common_event_params(event)
     params[:_type] = get_event_type(event) if use_event_type?(nil)
-
-    if @pipeline
-      value = event.sprintf(@pipeline)
-      # convention: empty string equates to not using a pipeline
-      # this is useful when using a field reference in the pipeline setting, e.g.
-      #      elasticsearch {
-      #        pipeline => "%{[@metadata][pipeline]}"
-      #      }
-      params[:pipeline] = value unless value.empty?
-    end
 
     if @parent
       if @join_field
@@ -348,26 +381,40 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       end
     end
 
+    action = event.sprintf(@action || 'index')
+
     if action == 'update'
       params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
       params[:_script] = event.sprintf(@script) if @script != ""
       params[retry_on_conflict_action_name] = @retry_on_conflict
     end
 
-    if @version
-      params[:version] = event.sprintf(@version)
-    end
+    params[:version] = event.sprintf(@version) if @version
+    params[:version_type] = event.sprintf(@version_type) if @version_type
 
-    if @version_type
-      params[:version_type] = event.sprintf(@version_type)
-    end
-
-    [action, params, event]
+    [action, params, event.to_hash]
   end
 
-  # not private for elasticsearch_spec.rb
-  def retry_on_conflict_action_name
-    maximum_seen_major_version >= 7 ? :retry_on_conflict : :_retry_on_conflict
+  # @return Hash (initial) parameters for given event
+  # @private shared event params factory between index and data_stream mode
+  def common_event_params(event)
+    params = {
+        :_id => @document_id ? event.sprintf(@document_id) : nil,
+        :_index => @event_target.call(event),
+        routing_field_name => @routing ? event.sprintf(@routing) : nil
+    }
+
+    if @pipeline
+      value = event.sprintf(@pipeline)
+      # convention: empty string equates to not using a pipeline
+      # this is useful when using a field reference in the pipeline setting, e.g.
+      #      elasticsearch {
+      #        pipeline => "%{[@metadata][pipeline]}"
+      #      }
+      params[:pipeline] = value unless value.empty?
+    end
+
+    params
   end
 
   @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }
@@ -377,36 +424,45 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     require "logstash/outputs/elasticsearch/#{name}"
   end
 
-  private
+  def retry_on_conflict_action_name
+    maximum_seen_major_version >= 7 ? :retry_on_conflict : :_retry_on_conflict
+  end
 
   def routing_field_name
     maximum_seen_major_version >= 6 ? :routing : :_routing
   end
 
   # Determine the correct value for the 'type' field for the given event
-  DEFAULT_EVENT_TYPE_ES6="doc".freeze
-  DEFAULT_EVENT_TYPE_ES7="_doc".freeze
+  DEFAULT_EVENT_TYPE_ES6 = "doc".freeze
+  DEFAULT_EVENT_TYPE_ES7 = "_doc".freeze
+
   def get_event_type(event)
     # Set the 'type' value for the index.
     type = if @document_type
              event.sprintf(@document_type)
            else
-             if maximum_seen_major_version < 6
-               event.get("type") || DEFAULT_EVENT_TYPE_ES6
-             elsif maximum_seen_major_version == 6
+             major_version = maximum_seen_major_version
+             if major_version < 6
+               es5_event_type(event)
+             elsif major_version == 6
                DEFAULT_EVENT_TYPE_ES6
-             elsif maximum_seen_major_version == 7
+             elsif major_version == 7
                DEFAULT_EVENT_TYPE_ES7
              else
                nil
              end
            end
 
-    if !(type.is_a?(String) || type.is_a?(Numeric))
-      @logger.warn("Bad event type! Non-string/integer type value set!", :type_class => type.class, :type_value => type.to_s, :event => event)
-    end
-
     type.to_s
+  end
+
+  def es5_event_type(event)
+    type = event.get('type')
+    return DEFAULT_EVENT_TYPE_ES6 unless type
+    if !type.is_a?(String) && !type.is_a?(Numeric)
+      @logger.warn("Bad event type (non-string/integer type value set)", :type_class => type.class, :type_value => type, :event => event.to_hash)
+    end
+    type
   end
 
   ##
@@ -424,7 +480,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   def install_template
     TemplateManager.install_template(self)
-    @template_installed.make_true
+  rescue => e
+    @logger.error("Failed to install template", message: e.message, exception: e.class, backtrace: e.backtrace)
   end
 
   def setup_ecs_compatibility_related_defaults
@@ -447,13 +504,14 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   # To be overidden by the -java version
-  VALID_HTTP_ACTIONS=["index", "delete", "create", "update"]
+  VALID_HTTP_ACTIONS = ["index", "delete", "create", "update"]
   def valid_actions
     VALID_HTTP_ACTIONS
   end
 
   def check_action_validity
-    raise LogStash::ConfigurationError, "No action specified!" unless @action
+    return if @action.nil? # not set
+    raise LogStash::ConfigurationError, "No action specified!" if @action.empty?
 
     # If we're using string interpolation, we're good!
     return if @action =~ /%{.+}/

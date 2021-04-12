@@ -21,6 +21,10 @@ include::{include_path}/plugin_header.asciidoc[]
 
 ==== Description
 
+Elasticsearch provides near real-time search and analytics for all types of
+data. The Elasticsearch output plugin can store both time series datasets (such
+as logs, events, and metrics) and non-time series data in Elasticsearch.
+
 If you plan to use the Kibana web interface to analyze data transformed by
 Logstash, use the Elasticsearch output plugin to get your data into
 Elasticsearch.
@@ -274,6 +278,12 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-cloud_auth>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-cloud_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-custom_headers>> |<<hash,hash>>|No
+| <<plugins-{type}s-{plugin}-data_stream>> |<<string,string>>, one of `["true", "false", "auto"]`|No
+| <<plugins-{type}s-{plugin}-data_stream_auto_routing>> |<<boolean,boolean>>|No
+| <<plugins-{type}s-{plugin}-data_stream_dataset>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-data_stream_namespace>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-data_stream_sync_fields>> |<<boolean,boolean>>|No
+| <<plugins-{type}s-{plugin}-data_stream_type>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-doc_as_upsert>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-document_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-document_type>> |<<string,string>>|No
@@ -335,23 +345,20 @@ output plugins.
 ===== `action`
 
   * Value type is <<string,string>>
-  * Default value is `"index"`
+  * Default value is `create` for data streams, and `index` for non-time series data. 
 
-Protocol agnostic (i.e. non-http, non-java specific) configs go here
-Protocol agnostic methods
 The Elasticsearch action to perform. Valid actions are:
 
-- index: indexes a document (an event from Logstash).
-- delete: deletes a document by id (An id is required for this action)
-- create: indexes a document, fails if a document by that id already exists in the index.
-- update: updates a document by id. Update has a special case where you can upsert -- update a
+- `index`: indexes a document (an event from Logstash).
+- `delete`: deletes a document by id (An id is required for this action)
+- `create`: indexes a document, fails if a document by that id already exists in the index.
+- `update`: updates a document by id. Update has a special case where you can upsert -- update a
   document if not already present. See the `doc_as_upsert` option. NOTE: This does not work and is not supported
   in Elasticsearch 1.x. Please upgrade to ES 2.x or greater to use this feature with Logstash!
 - A sprintf style string to change the action based on the content of the event. The value `%{[foo]}`
   would use the foo field for the action
 
-For more details on actions, check out the {ref}/docs-bulk.html[Elasticsearch
-bulk API documentation].
+For more details on actions, check out the {ref}/docs-bulk.html[Elasticsearch bulk API documentation].
 
 [id="plugins-{type}s-{plugin}-api_key"]
 ===== `api_key`
@@ -404,6 +411,69 @@ Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
 
 For more details, check out the
 {logstash-ref}/connecting-to-cloud.html[Logstash-to-Cloud documentation].
+
+[id="plugins-{type}s-{plugin}-data_stream"]
+===== `data_stream`
+
+* Value can be any of: `true`, `false` and `auto`
+* Default is `false` in Logstash 7.x and `auto` starting in Logstash 8.0.
+
+Defines whether data will be indexed into an Elasticsearch data stream.
+The other `data_stream_*` settings will be used only if this setting is enabled.
+
+Logstash handles the output as a data stream when the supplied configuration
+is compatible with data streams and this value is set to `auto`.
+
+[id="plugins-{type}s-{plugin}-data_stream_auto_routing"]
+===== `data_stream_auto_routing`
+
+* Value type is <<boolean,boolean>>
+* Default value is `true`.
+
+Automatically routes events by deriving the data stream name using specific event
+fields with the `%{[data_stream][type]}-%{[data_stream][dataset]}-%{[data_stream][namespace]}` format.
+
+If enabled, the `data_stream.*` event fields will take precedence over the
+`data_stream_type`, `data_stream_dataset`, and `data_stream_namespace` settings,
+but will fall back to them if any of the fields are missing from the event.
+
+[id="plugins-{type}s-{plugin}-data_stream_dataset"]
+===== `data_stream_dataset`
+
+* Value type is <<string,string>>
+* Default value is `generic`.
+
+The data stream dataset used to construct the data stream at index time.
+
+[id="plugins-{type}s-{plugin}-data_stream_namespace"]
+===== `data_stream_namespace`
+
+* Value type is <<string,string>>
+* Default value is `default`.
+
+The data stream namespace used to construct the data stream at index time.
+
+[id="plugins-{type}s-{plugin}-data_stream_sync_fields"]
+===== `data_stream_sync_fields`
+
+* Value type is <<boolean,boolean>>
+* Default value is `true`
+
+Automatically adds and syncs the `data_stream.*` event fields if they are missing from the
+event. This ensures that fields match the name of the data stream that is receiving events.
+
+NOTE: If existing `data_stream.*` event fields do not match the data stream name
+and `data_stream_auto_routing` is disabled, the event fields will be
+overwritten with a warning.
+
+[id="plugins-{type}s-{plugin}-data_stream_type"]
+===== `data_stream_type`
+
+* Value type is <<string,string>>
+* Default value is `logs`.
+
+The data stream type used to construct the data stream at index time.
+Currently, only `logs` and `metrics`are supported.
 
 [id="plugins-{type}s-{plugin}-doc_as_upsert"]
 ===== `doc_as_upsert`

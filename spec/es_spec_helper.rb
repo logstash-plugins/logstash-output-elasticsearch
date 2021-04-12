@@ -1,5 +1,5 @@
-require "logstash/devutils/rspec/spec_helper"
-require 'manticore'
+require_relative './spec_helper'
+
 require 'elasticsearch'
 require_relative "support/elasticsearch/api/actions/delete_ilm_policy"
 require_relative "support/elasticsearch/api/actions/get_alias"
@@ -8,10 +8,7 @@ require_relative "support/elasticsearch/api/actions/get_ilm_policy"
 require_relative "support/elasticsearch/api/actions/put_ilm_policy"
 
 require 'json'
-
-unless defined?(LogStash::OSS)
-  LogStash::OSS = ENV['DISTRIBUTION'] != "default"
-end
+require 'cabin'
 
 module ESHelper
   def get_host_port
