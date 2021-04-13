@@ -105,7 +105,6 @@ output {
     elasticsearch {
         hosts => "hostname"
         data_stream => "true"
-        data_stream_timestamp => "@timestamp"
         data_stream_type => "metrics"
         data_stream_dataset => "foo"
         data_stream_namespace => "bar"
