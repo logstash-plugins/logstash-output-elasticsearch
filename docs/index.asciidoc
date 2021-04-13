@@ -25,18 +25,6 @@ Elasticsearch provides near real-time search and analytics for all types of
 data. The Elasticsearch output plugin can store both time series datasets (such
 as logs, events, and metrics) and non-time series data in Elasticsearch.
 
-If you plan to use the Kibana web interface to analyze data transformed by
-Logstash, use the Elasticsearch output plugin to get your data into
-Elasticsearch.
-
-This output only speaks the HTTP protocol as it is the preferred protocol for
-interacting with Elasticsearch. In previous versions it was possible to
-communicate with Elasticsearch through the transport protocol, which is now
-reserved for internal cluster communication between nodes
-{ref}/modules-transport.html[communication between nodes].
-Using the transport protocol to communicate with the cluster has been deprecated
-in Elasticsearch 7.0.0 and will be removed in 8.0.0
-
 You can https://www.elastic.co/elasticsearch/[learn more about Elasticsearch] on
 the website landing page or in the {ref}[Elasticsearch documentation].
 
@@ -73,6 +61,59 @@ be ECS-compatible by setting <<plugins-{type}s-{plugin}-ecs_compatibility>>.
 By having an ECS-compatible template in place, we can ensure that Elasticsearch
 is prepared to create and index fields in a way that is compatible with ECS,
 and will correctly reject events with fields that conflict and cannot be coerced.
+
+[id="plugins-{type}s-{plugin}-data-streams"]
+==== Data streams
+
+The {es} output plugin can store both time series datasets (such
+as logs, events, and metrics) and non-time series data in Elasticsearch.
+
+The data stream options are recommended for indexing time series datasets (such
+as logs, metrics, and events) into {es}:
+
+* <<plugins-{type}s-{plugin}-data_stream>> |<<string,string>>
+* <<plugins-{type}s-{plugin}-data_stream_auto_routing>> 
+* <<plugins-{type}s-{plugin}-data_stream_dataset>> 
+* <<plugins-{type}s-{plugin}-data_stream_namespace>>
+* <<plugins-{type}s-{plugin}-data_stream_sync_fields>>
+* <<plugins-{type}s-{plugin}-data_stream_type>> 
+
+[id="plugins-{type}s-{plugin}-ds-examples"]
+===== Data stream configuration examples
+
+**Example: Basic default configuration**
+
+[source,sh]
+-----
+output {
+    elasticsearch {
+        hosts => "hostname"
+        data_stream => "true"
+    }
+}
+-----
+
+This example shows the minimal settings for processing data streams. Events
+with `data_stream.*`` fields are routed to the appropriate data streams. If the
+fields are missing, routing defaults to `logs-generic-logstash`.
+
+**Example: Customize data stream name**
+
+[source,sh]
+-----
+output {
+    elasticsearch {
+        hosts => "hostname"
+        data_stream => "true"
+        data_stream_type => "metrics"
+        data_stream_dataset => "foo"
+        data_stream_namespace => "bar"
+    }
+}
+-----
+
+
+
 
 ==== Writing to different indices: best practices
 
@@ -527,8 +568,7 @@ If you don't set a value for this option:
 ** When Logstash provides a `pipeline.ecs_compatibility` setting, its value is used as the default
 ** Otherwise, the default value is `disabled`.
 
-Controls this plugin's compatibility with the
-https://www.elastic.co/guide/en/ecs/current/index.html[Elastic Common Schema
+Controls this plugin's compatibility with the {ecs-ref}[Elastic Common Schema
 (ECS)], including the installation of ECS-compatible index templates. The value
 of this setting affects the _default_ values of:
 
