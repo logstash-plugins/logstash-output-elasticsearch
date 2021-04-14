@@ -17,7 +17,7 @@ module LogStash; module Outputs; class ElasticSearch
         true
       when nil
         warn_no_license(url)
-        true
+        false
       else # 'invalid', 'expired'
         warn_invalid_license(url, license)
         true
@@ -31,8 +31,8 @@ module LogStash; module Outputs; class ElasticSearch
     private
 
     def warn_no_license(url)
-      @logger.warn("DEPRECATION WARNING: Connecting to an OSS distribution of Elasticsearch is no longer supported, " +
-                       "please upgrade to the default distribution of Elasticsearch", url: url.sanitized.to_s)
+      @logger.error("Connecting to an OSS distribution of Elasticsearch is no longer supported, " +
+                    "please upgrade to the default distribution of Elasticsearch", url: url.sanitized.to_s)
     end
 
     def warn_invalid_license(url, license)

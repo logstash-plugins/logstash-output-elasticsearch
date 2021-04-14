@@ -1,7 +1,9 @@
-## 10.9.0
+## 11.0.0
  - Feat: Data stream support [#988](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/988)
  - Refactor: reviewed logging format + restored ES (initial) setup error logging
  - Feat: always check ES license [#1005](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1005)
+
+   Since Elasticsearch no longer provides an OSS artifact the plugin will no longer skip the license check on OSS Logstash. 
 
 ## 10.8.6
  - Fixed an issue where a single over-size event being rejected by Elasticsearch would cause the entire entire batch to be retried indefinitely. The oversize event will still be retried on its own and logging has been improved to include payload sizes in this situation [#972](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/972)

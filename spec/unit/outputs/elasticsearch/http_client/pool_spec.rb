@@ -284,9 +284,9 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       context "if ES doesn't return a valid license" do
         let(:license_status) { nil }
 
-        it "marks the url as active" do
+        it "marks the url as dead" do
           subject.update_initial_urls
-          expect(subject.alive_urls_count).to eq(1)
+          expect(subject.alive_urls_count).to eq(0)
         end
 
         it "logs a warning" do
