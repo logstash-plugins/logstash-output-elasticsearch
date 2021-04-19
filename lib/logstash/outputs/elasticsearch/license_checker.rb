@@ -36,7 +36,7 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def warn_invalid_license(url, license)
-      @logger.warn("DEPRECATION WARNING: Current Elasticsearch license is not active, " +
+      @logger.warn("WARNING: Current Elasticsearch license is not active, " +
                    "please check Elasticsearch's licensing information", url: url.sanitized.to_s, license: license)
     end
 
