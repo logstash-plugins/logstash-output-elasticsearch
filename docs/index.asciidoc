@@ -71,7 +71,7 @@ as logs, events, and metrics) and non-time series data in Elasticsearch.
 The data stream options are recommended for indexing time series datasets (such
 as logs, metrics, and events) into {es}:
 
-* <<plugins-{type}s-{plugin}-data_stream>> |<<string,string>>
+* <<plugins-{type}s-{plugin}-data_stream>>
 * <<plugins-{type}s-{plugin}-data_stream_auto_routing>> 
 * <<plugins-{type}s-{plugin}-data_stream_dataset>> 
 * <<plugins-{type}s-{plugin}-data_stream_namespace>>
