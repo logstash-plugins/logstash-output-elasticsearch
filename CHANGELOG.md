@@ -1,3 +1,6 @@
+## 11.0.1
+ - [DOC] Fixed broken link in list item [#1011](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1011)
+
 ## 11.0.0
  - Feat: Data stream support [#988](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/988)
  - Refactor: reviewed logging format + restored ES (initial) setup error logging
