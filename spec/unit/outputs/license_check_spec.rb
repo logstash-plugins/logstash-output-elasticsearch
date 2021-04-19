@@ -14,22 +14,6 @@ describe LogStash::Outputs::ElasticSearch::LicenseChecker do
     end
   end
 
-  context "LicenseChecker API required by Pool specs" do
-    subject { described_class }
-
-    it "defines the oss? method" do
-      expect(subject.instance_methods).to include(:oss?)
-    end
-
-    it "defines the valid_es_license? method" do
-      expect(subject.instance_methods).to include(:valid_es_license?)
-    end
-
-    it "defines the log_license_deprecation_warn method" do
-      expect(subject.instance_methods).to include(:log_license_deprecation_warn)
-    end
-  end
-
   context "Pool class API required by the LicenseChecker" do
     subject { LogStash::Outputs::ElasticSearch::HttpClient::Pool }
 
