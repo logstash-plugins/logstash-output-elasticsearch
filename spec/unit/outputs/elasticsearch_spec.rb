@@ -836,11 +836,16 @@ describe LogStash::Outputs::ElasticSearch do
       end
 
       it "should write event to DLQ" do
-        expect(dlq_writer).to receive(:write) do |event, reason|
+        expect(dlq_writer).to receive(:write).and_wrap_original do |method, *args|
+          expect( args.size ).to eql 2
+
+          event, reason = *args
           expect( event ).to be_a LogStash::Event
           expect( event ).to be events.first
           expect( reason ).to start_with 'Could not index event to Elasticsearch. status: 400, action: ["index"'
           expect( reason ).to match /_id=>"bar".*"foo"=>"bar".*response:.*"reason"=>"TEST"/
+
+          method.call(*args) # won't hurt to call LogStash::Util::DummyDeadLetterQueueWriter
         end.once
 
         event_action_tuples = subject.map_events(events)
