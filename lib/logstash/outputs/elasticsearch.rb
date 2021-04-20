@@ -392,7 +392,21 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     params[:version] = event.sprintf(@version) if @version
     params[:version_type] = event.sprintf(@version_type) if @version_type
 
-    [action, params, event.to_hash]
+    EventActionTuple.new(action, params, event)
+  end
+
+  class EventActionTuple < Array # TODO: acting as an array for compatibility
+
+    def initialize(action, params, event, event_data = nil)
+      super(3)
+      self[0] = action
+      self[1] = params
+      self[2] = event_data || event.to_hash
+      @event = event
+    end
+
+    attr_reader :event
+
   end
 
   # @return Hash (initial) parameters for given event

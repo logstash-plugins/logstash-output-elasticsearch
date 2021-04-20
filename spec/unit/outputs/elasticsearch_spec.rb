@@ -343,7 +343,7 @@ describe LogStash::Outputs::ElasticSearch do
                               }
                     }]
         }
-    end
+      end
 
       before(:each) do
         allow(subject.client).to receive(:bulk_send).with(instance_of(StringIO), instance_of(Array)) do |stream, actions|
@@ -771,9 +771,9 @@ describe LogStash::Outputs::ElasticSearch do
 
         context 'when getting any other exception' do
           it 'should log at WARN level' do
-            dlog = double_logger = double("logger").as_null_object
-            subject.instance_variable_set(:@logger, dlog)
-            expect(dlog).to receive(:warn).with(/Could not index/, hash_including(:status, :action, :response))
+            logger = double("logger").as_null_object
+            subject.instance_variable_set(:@logger, logger)
+            expect(logger).to receive(:warn).with(/Could not index/, hash_including(:status, :action, :response))
             mock_response = { 'index' => { 'error' => { 'type' => 'illegal_argument_exception' } } }
             subject.handle_dlq_status("Could not index event to Elasticsearch.",
               [:action, :params, :event], :some_status, mock_response)
@@ -782,9 +782,9 @@ describe LogStash::Outputs::ElasticSearch do
 
         context 'when the response does not include [error]' do
           it 'should not fail, but just log a warning' do
-            dlog = double_logger = double("logger").as_null_object
-            subject.instance_variable_set(:@logger, dlog)
-            expect(dlog).to receive(:warn).with(/Could not index/, hash_including(:status, :action, :response))
+            logger = double("logger").as_null_object
+            subject.instance_variable_set(:@logger, logger)
+            expect(logger).to receive(:warn).with(/Could not index/, hash_including(:status, :action, :response))
             mock_response = { 'index' => {} }
             expect do
               subject.handle_dlq_status("Could not index event to Elasticsearch.",
@@ -804,11 +804,49 @@ describe LogStash::Outputs::ElasticSearch do
       # We should still log when sending to the DLQ.
       # This shall be solved by another issue, however: logstash-output-elasticsearch#772
       it 'should send the event to the DLQ instead, and not log' do
-        expect(dlq_writer).to receive(:write).once.with(:event, /Could not index/)
+        event = LogStash::Event.new("foo" => "bar")
+        expect(dlq_writer).to receive(:write).once.with(event, /Could not index/)
         mock_response = { 'index' => { 'error' => { 'type' => 'illegal_argument_exception' } } }
-        subject.handle_dlq_status("Could not index event to Elasticsearch.",
-          [:action, :params, :event], :some_status, mock_response)
+        action = LogStash::Outputs::ElasticSearch::EventActionTuple.new(:action, :params, event)
+        subject.handle_dlq_status("Could not index event to Elasticsearch.", action, 404, mock_response)
       end
+    end
+
+    context 'with response status 400' do
+
+      let(:options) { super().merge 'document_id' => '%{foo}' }
+
+      let(:events) { [ LogStash::Event.new("foo" => "bar") ] }
+
+      let(:dlq_writer) { subject.instance_variable_get(:@dlq_writer) }
+
+      let(:bulk_response) do
+        {
+            "took"=>1, "ingest_took"=>11, "errors"=>true, "items"=>
+            [{
+                 "index"=>{"_index"=>"bar", "_type"=>"_doc", "_id"=>'bar', "status"=>400,
+                           "error"=>{"type" => "illegal_argument_exception", "reason" => "TEST" }
+                  }
+            }]
+        }
+      end
+
+      before(:each) do
+        allow(subject.client).to receive(:bulk_send).and_return(bulk_response)
+      end
+
+      it "should write event to DLQ" do
+        expect(dlq_writer).to receive(:write) do |event, reason|
+          expect( event ).to be_a LogStash::Event
+          expect( event ).to be events.first
+          expect( reason ).to start_with 'Could not index event to Elasticsearch. status: 400, action: ["index"'
+          expect( reason ).to match /_id=>"bar".*"foo"=>"bar".*response:.*"reason"=>"TEST"/
+        end.once
+
+        event_action_tuples = subject.map_events(events)
+        subject.send(:submit, event_action_tuples)
+      end
+
     end
   end
 
