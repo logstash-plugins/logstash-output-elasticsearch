@@ -1,4 +1,5 @@
 ## 11.0.1
+ - Fix: DLQ regression shipped in 11.0.0 [#1012](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1012)
  - [DOC] Fixed broken link in list item [#1011](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1011)
 
 ## 11.0.0
