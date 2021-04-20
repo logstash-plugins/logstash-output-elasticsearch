@@ -1,3 +1,6 @@
+## 11.0.1
+ - Fix: DLQ regression shipped in 11.0.0 [#1012](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1012)
+
 ## 11.0.0
  - Feat: Data stream support [#988](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/988)
  - Refactor: reviewed logging format + restored ES (initial) setup error logging
