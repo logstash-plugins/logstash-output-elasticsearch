@@ -847,7 +847,7 @@ describe LogStash::Outputs::ElasticSearch do
         subject.send(:submit, event_action_tuples)
       end
 
-    end
+    end if LOGSTASH_VERSION > '7.0'
   end
 
   describe "custom headers" do
