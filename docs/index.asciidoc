@@ -514,7 +514,7 @@ overwritten with a warning.
 * Default value is `logs`.
 
 The data stream type used to construct the data stream at index time.
-Currently, only `logs` and `metrics`are supported.
+Currently, only `logs`, `metrics` and `synthetics` are supported.
 
 [id="plugins-{type}s-{plugin}-doc_as_upsert"]
 ===== `doc_as_upsert`
