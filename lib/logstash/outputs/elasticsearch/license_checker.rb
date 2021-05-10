@@ -11,7 +11,7 @@ module LogStash; module Outputs; class ElasticSearch
     # @param url [LogStash::Util::SafeURI] ES node URL
     # @return [Boolean] true if provided license is deemed appropriate
     def appropriate_license?(pool, url)
-      license = pool.get_license(url)
+      license = extract_license(pool.get_license(url))
       case license_status(license)
       when 'active'
         true
@@ -24,20 +24,26 @@ module LogStash; module Outputs; class ElasticSearch
       end
     end
 
+    NO_LICENSE = {}.freeze
+    private_constant :NO_LICENSE
+
+    def extract_license(license)
+      license.fetch("license", NO_LICENSE)
+    end
+
     def license_status(license)
-      license.fetch("license", {}).fetch("status", nil)
+      license.fetch("status", nil)
     end
 
     private
 
     def warn_no_license(url)
-      @logger.error("Connecting to an OSS distribution of Elasticsearch is no longer supported, " +
-                    "please upgrade to the default distribution of Elasticsearch", url: url.sanitized.to_s)
+      @logger.error("Could not connect to a compatible version of Elasticsearch", url: url.sanitized.to_s)
     end
 
     def warn_invalid_license(url, license)
-      @logger.warn("WARNING: Current Elasticsearch license is not active, " +
-                   "please check Elasticsearch's licensing information", url: url.sanitized.to_s, license: license)
+      @logger.warn("Elasticsearch license is not active, please check Elasticsearch’s licensing information",
+                   url: url.sanitized.to_s, license: license)
     end
 
   end
