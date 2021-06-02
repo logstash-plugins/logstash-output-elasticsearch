@@ -271,7 +271,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
             meta[:version] = es_version
             set_last_es_version(es_version, url)
 
-            alive = @license_checker.appropriate_license?(self, url)
+            alive = @license_checker.appropriate_license?(self, es_version, url)
             meta[:state] = alive ? :alive : :dead
           end
         rescue HostUnreachableError, BadResponseCodeError => e

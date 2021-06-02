@@ -10,14 +10,20 @@ module LogStash; module Outputs; class ElasticSearch
     # @param pool
     # @param url [LogStash::Util::SafeURI] ES node URL
     # @return [Boolean] true if provided license is deemed appropriate
-    def appropriate_license?(pool, url)
+    def appropriate_license?(pool, es_version, url)
       license = extract_license(pool.get_license(url))
       case license_status(license)
       when 'active'
         true
       when nil
-        warn_no_license(url)
-        false
+        if pool.major_version(es_version) <= 7
+          # last known OSS version 7.10.2
+          warn_no_license_depreciation(url)
+          true
+        else
+          warn_no_license(url)
+          false
+        end
       else # 'invalid', 'expired'
         warn_invalid_license(url, license)
         true
@@ -36,6 +42,10 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     private
+
+    def warn_no_license_depreciation(url)
+      @logger.warn("DEPRECATION WARNING: Connecting to an OSS distribution of Elasticsearch using the default distribution of Logstash will stop working in Logstash 8.0.0. Please upgrade to the default distribution of Elasticsearch, or use the OSS distribution of Logstash", :url => url.sanitized.to_s)
+    end
 
     def warn_no_license(url)
       @logger.error("Could not connect to a compatible version of Elasticsearch", url: url.sanitized.to_s)
