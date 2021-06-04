@@ -346,6 +346,21 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
             subject.update_initial_urls
           end
         end
+
+        context "if ES returns a valid license" do
+          let(:license_status) { 'active' }
+
+          it "marks the url as active" do
+            subject.update_initial_urls
+            expect(subject.alive_urls_count).to eq(1)
+          end
+
+          it "does not log a warning" do
+            expect(subject.license_checker).to_not receive(:warn_no_license)
+            expect(subject.license_checker).to_not receive(:warn_invalid_license)
+            subject.update_initial_urls
+          end
+        end        
       end
     end
   end
