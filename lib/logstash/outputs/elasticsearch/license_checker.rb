@@ -16,7 +16,8 @@ module LogStash; module Outputs; class ElasticSearch
       when 'active'
         true
       when nil
-        if pool.major_version(es_version) <= 7
+        if pool.major_version(es_version) < 7 || 
+            (pool.major_version(es_version) == 7 && pool.minor_version(es_version) < 11)
           # last known OSS version 7.10.2
           warn_no_license_depreciation(url)
           true

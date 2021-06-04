@@ -191,7 +191,11 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def major_version(version_string)
       version_string.split('.').first.to_i
     end
-    
+
+    def minor_version(version_string)
+      version_string.split('.')[1].to_i
+    end
+
     def sniff_5x_and_above(nodes)
       nodes.map do |id,info|
         # Skip master-only nodes
