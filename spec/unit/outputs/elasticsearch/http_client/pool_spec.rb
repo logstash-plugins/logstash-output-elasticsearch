@@ -342,7 +342,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
           end
 
           it "logs a warning" do
-            expect(subject.license_checker).to receive(:warn_no_license_depreciation).once.and_call_original
+            expect(subject.license_checker).to receive(:warn_no_license_deprecation).once.and_call_original
             subject.update_initial_urls
           end
         end

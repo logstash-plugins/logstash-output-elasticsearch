@@ -19,7 +19,7 @@ module LogStash; module Outputs; class ElasticSearch
         if pool.major_version(es_version) < 7 || 
             (pool.major_version(es_version) == 7 && pool.minor_version(es_version) < 11)
           # last known OSS version 7.10.2
-          warn_no_license_depreciation(url)
+          warn_no_license_deprecation(url)
           true
         else
           warn_no_license(url)
@@ -44,7 +44,7 @@ module LogStash; module Outputs; class ElasticSearch
 
     private
 
-    def warn_no_license_depreciation(url)
+    def warn_no_license_deprecation(url)
       @logger.warn("DEPRECATION WARNING: Connecting to an OSS distribution of Elasticsearch using the default distribution of Logstash will stop working in Logstash 8.0.0. Please upgrade to the default distribution of Elasticsearch, or use the OSS distribution of Logstash", :url => url.sanitized.to_s)
     end
 
