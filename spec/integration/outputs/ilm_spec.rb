@@ -111,9 +111,7 @@ shared_examples_for 'an ILM disabled Logstash' do
 
     template = get_template(@es, "logstash")
     expect(template).to have_index_pattern("logstash-*")
-    if ESHelper.es_version_satisfies?(">= 2")
-      expect(get_template_settings(template)['index']['lifecycle']).to be_nil
-    end
+    expect(get_template_settings(template)['index']['lifecycle']).to be_nil
   end
 
   context 'with an existing policy that will roll over' do
@@ -163,9 +161,7 @@ shared_examples_for 'an ILM disabled Logstash' do
 
       template = get_template(@es, template_name)
       expect(template).to have_index_pattern("logstash-*")
-      if ESHelper.es_version_satisfies?(">= 2")
-        expect(get_template_settings(template)['index']['lifecycle']).to be_nil
-      end
+      expect(get_template_settings(template)['index']['lifecycle']).to be_nil
     end
   end
 end

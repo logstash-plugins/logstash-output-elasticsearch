@@ -7,7 +7,7 @@ require "logstash/outputs/elasticsearch"
 describe LogStash::Outputs::ElasticSearch do
   subject(:elasticsearch_output_instance) { described_class.new(options) }
   let(:options) { {} }
-  let(:maximum_seen_major_version) { [1,2,5,6,7,8].sample }
+  let(:maximum_seen_major_version) { [6,7,8].sample }
 
   let(:do_register) { true }
 
@@ -77,13 +77,6 @@ describe LogStash::Outputs::ElasticSearch do
           let(:maximum_seen_major_version) { 6 }
           it "should return 'doc'" do
             expect(subject.send(:get_event_type, LogStash::Event.new("type" => "foo"))).to eql("doc")
-          end
-        end
-
-        context "for < 6.0 elasticsearch clusters" do
-          let(:maximum_seen_major_version) { 5 }
-          it "should get the type from the event" do
-            expect(subject.send(:get_event_type, LogStash::Event.new("type" => "foo"))).to eql("foo")
           end
         end
       end

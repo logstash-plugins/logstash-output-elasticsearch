@@ -176,15 +176,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         @logger.warn("Sniff returned no nodes! Will not update hosts.")
         return nil
       else
-        case major_version(url_meta[:version])
-        when 5, 6, 7, 8
-          sniff_5x_and_above(nodes)
-        when 2, 1
-          sniff_2x_1x(nodes)
-        else
-          @logger.warn("Could not determine version for nodes in ES cluster!")
-          return nil
-        end
+        sniff(nodes)
       end
     end
     
@@ -192,7 +184,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       version_string.split('.').first.to_i
     end
     
-    def sniff_5x_and_above(nodes)
+    def sniff(nodes)
       nodes.map do |id,info|
         # Skip master-only nodes
         next if info["roles"] && info["roles"] == ["master"]
@@ -206,24 +198,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         host = matches[1].empty? ? matches[2] : matches[1]
         ::LogStash::Util::SafeURI.new("#{host}:#{matches[3]}")
       end
-    end
-
-    def sniff_2x_1x(nodes)
-      nodes.map do |id,info|
-        # TODO Make sure this works with shield. Does that listed
-        # stuff as 'https_address?'
-        
-        addr_str = info['http_address'].to_s
-        next unless addr_str # Skip hosts with HTTP disabled
-
-        # Only connect to nodes that serve data
-        # this will skip connecting to client, tribe, and master only nodes
-        # Note that if 'attributes' is NOT set, then that's just a regular node
-        # with master + data + client enabled, so we allow that
-        attributes = info['attributes']
-        next if attributes && attributes['data'] == 'false'
-        address_str_to_uri(addr_str)
-      end.compact
     end
 
     def stop_sniffer

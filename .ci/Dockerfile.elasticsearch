@@ -8,7 +8,6 @@ ARG SECURE_INTEGRATION
 
 RUN rm -f $es_path/config/scripts
 
-COPY --chown=elasticsearch:elasticsearch spec/fixtures/scripts/groovy/* $es_path/config/scripts/
 COPY --chown=elasticsearch:elasticsearch spec/fixtures/test_certs/* $es_path/config/test_certs/
 COPY --chown=elasticsearch:elasticsearch .ci/elasticsearch-run.sh $es_path/
 

@@ -443,7 +443,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   def routing_field_name
-    maximum_seen_major_version >= 6 ? :routing : :_routing
+    :routing
   end
 
   # Determine the correct value for the 'type' field for the given event
@@ -456,9 +456,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
              event.sprintf(@document_type)
            else
              major_version = maximum_seen_major_version
-             if major_version < 6
-               es5_event_type(event)
-             elsif major_version == 6
+             if major_version == 6
                DEFAULT_EVENT_TYPE_ES6
              elsif major_version == 7
                DEFAULT_EVENT_TYPE_ES7
@@ -470,15 +468,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     type.to_s
   end
 
-  def es5_event_type(event)
-    type = event.get('type')
-    return DEFAULT_EVENT_TYPE_ES6 unless type
-    if !type.is_a?(String) && !type.is_a?(Numeric)
-      @logger.warn("Bad event type (non-string/integer type value set)", :type_class => type.class, :type_value => type, :event => event.to_hash)
-    end
-    type
-  end
-
   ##
   # WARNING: This method is overridden in a subclass in Logstash Core 7.7-7.8's monitoring,
   #          where a `client` argument is both required and ignored. In later versions of
@@ -487,7 +476,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # @param noop_required_client [nil]: required `nil` for legacy reasons.
   # @return [Boolean]
   def use_event_type?(noop_required_client)
-    # always set type for ES <= 6
+    # always set type for ES 6
     # for ES 7 only set it if the user defined it
     (maximum_seen_major_version < 7) || (maximum_seen_major_version == 7 && @document_type)
   end

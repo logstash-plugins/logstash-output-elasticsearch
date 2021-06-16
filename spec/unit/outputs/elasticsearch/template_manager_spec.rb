@@ -4,19 +4,19 @@ require "logstash/outputs/elasticsearch/template_manager"
 describe LogStash::Outputs::ElasticSearch::TemplateManager do
 
   describe ".default_template_path" do
-    context "elasticsearch 1.x" do
-      it "chooses the 2x template" do
-        expect(described_class.default_template_path(1)).to end_with("/templates/ecs-disabled/elasticsearch-2x.json")
+    context "elasticsearch 6.x" do
+      it "chooses the 6x template" do
+        expect(described_class.default_template_path(6)).to end_with("/templates/ecs-disabled/elasticsearch-6x.json")
       end
     end
-    context "elasticsearch 2.x" do
-      it "chooses the 2x template" do
-        expect(described_class.default_template_path(2)).to end_with("/templates/ecs-disabled/elasticsearch-2x.json")
+    context "elasticsearch 7.x" do
+      it "chooses the 7x template" do
+        expect(described_class.default_template_path(7)).to end_with("/templates/ecs-disabled/elasticsearch-7x.json")
       end
     end
-    context "elasticsearch 5.x" do
-      it "chooses the 5x template" do
-        expect(described_class.default_template_path(5)).to end_with("/templates/ecs-disabled/elasticsearch-5x.json")
+    context "elasticsearch 8.x" do
+      it "chooses the 8x template" do
+        expect(described_class.default_template_path(8)).to end_with("/templates/ecs-disabled/elasticsearch-8x.json")
       end
     end
   end
