@@ -1,6 +1,5 @@
 ARG ELASTIC_STACK_VERSION
-ARG DISTRIBUTION_SUFFIX
-FROM docker.elastic.co/elasticsearch/elasticsearch$DISTRIBUTION_SUFFIX:$ELASTIC_STACK_VERSION
+FROM docker.elastic.co/elasticsearch/elasticsearch:$ELASTIC_STACK_VERSION
 
 ARG plugin_path=/usr/share/plugins/plugin
 ARG es_path=/usr/share/elasticsearch
