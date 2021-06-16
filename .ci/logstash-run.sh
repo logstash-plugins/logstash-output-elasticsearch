@@ -29,11 +29,6 @@ else
     extra_tag_args="--tag ~secure_integration --tag integration"
   fi
 
-  if [[ "$DISTRIBUTION" == "oss" ]]; then
-    extra_tag_args="$extra_tag_args --tag distribution:oss --tag ~distribution:xpack"
-  elif [[ "$DISTRIBUTION" == "default" ]]; then
-    extra_tag_args="$extra_tag_args --tag ~distribution:oss --tag distribution:xpack"
-  fi
   echo "Waiting for elasticsearch to respond..."
   ES_VERSION=$(wait_for_es)
   echo "Elasticsearch $ES_VERSION is Up!"

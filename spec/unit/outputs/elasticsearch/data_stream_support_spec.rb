@@ -31,18 +31,12 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
     # end
   end
 
-  @@logstash_oss = LogStash::OSS
-
   before(:each) do
-    change_constant :OSS, false, target: LogStash # assume non-OSS by default
-
     stub_plugin_register! if do_register
   end
 
   after(:each) do
     subject.close if do_register
-
-    change_constant :OSS, @@logstash_oss, target: LogStash
   end
 
   context "default configuration" do
@@ -112,14 +106,6 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
       end
       change_constant :LOGSTASH_VERSION, '8.1.0' do
         expect( subject.send(:check_data_stream_config!) ).to be true
-      end
-    end
-
-    it "uses data-streams on LS 8.0 (OSS)" do
-      change_constant :LOGSTASH_VERSION, '8.0.1' do
-        change_constant :OSS, true, target: LogStash do
-          expect( subject.data_stream_config? ).to be true
-        end
       end
     end
 

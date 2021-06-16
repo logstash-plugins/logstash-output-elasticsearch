@@ -37,7 +37,7 @@ if [ "$ELASTIC_STACK_VERSION" ]; then
     esac
     export DISTRIBUTION_SUFFIX
 
-    echo "Testing against version: $ELASTIC_STACK_VERSION (distribution: ${DISTRIBUTION:-'default'})"
+    echo "Testing against version: $ELASTIC_STACK_VERSION"
 
     if [[ "$ELASTIC_STACK_VERSION" = *"-SNAPSHOT" ]]; then
         pull_docker_snapshot "logstash"

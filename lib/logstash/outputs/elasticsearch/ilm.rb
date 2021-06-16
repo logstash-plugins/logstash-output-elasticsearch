@@ -16,20 +16,12 @@ module LogStash; module Outputs; class ElasticSearch
         begin
           if @ilm_enabled == 'auto'
             if ilm_on_by_default?
-              ilm_ready, error = ilm_ready?
-              if !ilm_ready
-                @logger.info("Index Lifecycle Management is set to 'auto', but will be disabled - #{error}")
-                false
-              else
-                ilm_alias_set?
-              end
+              ilm_alias_set?
             else
               @logger.info("Index Lifecycle Management is set to 'auto', but will be disabled - Your Elasticsearch cluster is before 7.0.0, which is the minimum version required to automatically run Index Lifecycle Management")
               false
             end
           elsif @ilm_enabled.to_s == 'true'
-            ilm_ready, error = ilm_ready?
-            raise LogStash::ConfigurationError,"Index Lifecycle Management is set to enabled in Logstash, but cannot be used - #{error}"  unless ilm_ready
             ilm_alias_set?
           else
             false
@@ -45,29 +37,6 @@ module LogStash; module Outputs; class ElasticSearch
 
     def ilm_on_by_default?
       maximum_seen_major_version >= 7
-    end
-
-    def ilm_ready?
-      # Check the Elasticsearch instance for ILM readiness - this means that the version has to be a non-OSS release, with ILM feature
-      # available and enabled.
-      begin
-        xpack = client.get_xpack_info
-        features = xpack.nil? || xpack.empty? ? nil : xpack["features"]
-        ilm = features.nil? ? nil : features["ilm"]
-        return false, "Index Lifecycle management is not installed on your Elasticsearch cluster" if features.nil? || ilm.nil?
-        return false, "Index Lifecycle management is not available in your Elasticsearch cluster" unless ilm['available']
-        return false, "Index Lifecycle management is not enabled in your Elasticsearch cluster" unless ilm['enabled']
-        return true, nil
-      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-        # Check xpack endpoint: If no xpack endpoint, then this version of Elasticsearch is not compatible
-        if e.response_code == 404
-          return false, "Index Lifecycle management is not installed on your Elasticsearch cluster"
-        elsif e.response_code == 400
-          return false, "Index Lifecycle management is not installed on your Elasticsearch cluster"
-        else
-          raise e
-        end
-      end
     end
 
     def default_index?(index)

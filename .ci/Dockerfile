@@ -9,9 +9,6 @@ RUN cp /usr/share/logstash/logstash-core/versions-gem-copy.yml /usr/share/logsta
 ENV PATH="${PATH}:/usr/share/logstash/vendor/jruby/bin:/usr/share/logstash/jdk/bin"
 ENV LOGSTASH_SOURCE="1"
 ENV ELASTIC_STACK_VERSION=$ELASTIC_STACK_VERSION
-# DISTRIBUTION="default" (by default) or "oss"
-ARG DISTRIBUTION
-ENV DISTRIBUTION=$DISTRIBUTION
 # INTEGRATION="true" while integration testing (false-y by default)
 ARG INTEGRATION
 ENV INTEGRATION=$INTEGRATION
