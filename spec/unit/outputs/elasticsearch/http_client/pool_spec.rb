@@ -8,15 +8,12 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
   let(:options) { {:resurrect_delay => 2, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
   let(:es_node_versions) { [ "0.0.0" ] }
-  let(:oss) { true }
   let(:license_status) { 'active' }
 
   subject { described_class.new(logger, adapter, initial_urls, options) }
 
   let(:manticore_double) { double("manticore a") }
   before(:each) do
-    stub_const('LogStash::OSS', oss)
-
     response_double = double("manticore response").as_null_object
     # Allow healtchecks
     allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
@@ -278,50 +275,46 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       allow(subject).to receive(:health_check_request)
     end
 
-    context "when using default logstash distribution" do
-      let(:oss) { false }
+    context "if ES doesn't return a valid license" do
+      let(:license_status) { nil }
 
-      context "if ES doesn't return a valid license" do
-        let(:license_status) { nil }
-
-        it "marks the url as dead" do
-          subject.update_initial_urls
-          expect(subject.alive_urls_count).to eq(0)
-        end
-
-        it "logs a warning" do
-          expect(subject.license_checker).to receive(:warn_no_license).once.and_call_original
-          subject.update_initial_urls
-        end
+      it "marks the url as dead" do
+        subject.update_initial_urls
+        expect(subject.alive_urls_count).to eq(0)
       end
 
-      context "if ES returns a valid license" do
-        let(:license_status) { 'active' }
+      it "logs a warning" do
+        expect(subject.license_checker).to receive(:warn_no_license).once.and_call_original
+        subject.update_initial_urls
+      end
+    end
 
-        it "marks the url as active" do
-          subject.update_initial_urls
-          expect(subject.alive_urls_count).to eq(1)
-        end
+    context "if ES returns a valid license" do
+      let(:license_status) { 'active' }
 
-        it "does not log a warning" do
-          expect(subject.license_checker).to_not receive(:warn_no_license)
-          expect(subject.license_checker).to_not receive(:warn_invalid_license)
-          subject.update_initial_urls
-        end
+      it "marks the url as active" do
+        subject.update_initial_urls
+        expect(subject.alive_urls_count).to eq(1)
       end
 
-      context "if ES returns an invalid license" do
-        let(:license_status) { 'invalid' }
+      it "does not log a warning" do
+        expect(subject.license_checker).to_not receive(:warn_no_license)
+        expect(subject.license_checker).to_not receive(:warn_invalid_license)
+        subject.update_initial_urls
+      end
+    end
 
-        it "marks the url as active" do
-          subject.update_initial_urls
-          expect(subject.alive_urls_count).to eq(1)
-        end
+    context "if ES returns an invalid license" do
+      let(:license_status) { 'invalid' }
 
-        it "logs a warning" do
-          expect(subject.license_checker).to receive(:warn_invalid_license).and_call_original
-          subject.update_initial_urls
-        end
+      it "marks the url as active" do
+        subject.update_initial_urls
+        expect(subject.alive_urls_count).to eq(1)
+      end
+
+      it "logs a warning" do
+        expect(subject.license_checker).to receive(:warn_invalid_license).and_call_original
+        subject.update_initial_urls
       end
     end
   end

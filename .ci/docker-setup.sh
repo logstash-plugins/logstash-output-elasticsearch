@@ -9,7 +9,7 @@ VERSION_URL="https://raw.githubusercontent.com/elastic/logstash/master/ci/logsta
 
 pull_docker_snapshot() {
   project="${1?project name required}"
-  local docker_image="docker.elastic.co/${project}/${project}${DISTRIBUTION_SUFFIX}:${ELASTIC_STACK_VERSION}"
+  local docker_image="docker.elastic.co/${project}/${project}:${ELASTIC_STACK_VERSION}"
   echo "Pulling $docker_image"
   docker pull "$docker_image"
 }
@@ -31,13 +31,7 @@ if [ "$ELASTIC_STACK_VERSION" ]; then
       export ELASTIC_STACK_VERSION=$ELASTIC_STACK_RETRIEVED_VERSION
     fi
 
-    case "${DISTRIBUTION}" in
-      default) DISTRIBUTION_SUFFIX="" ;; # empty string when explicit "default" is given
-            *) DISTRIBUTION_SUFFIX="${DISTRIBUTION/*/-}${DISTRIBUTION}" ;;
-    esac
-    export DISTRIBUTION_SUFFIX
-
-    echo "Testing against version: $ELASTIC_STACK_VERSION (distribution: ${DISTRIBUTION:-'default'})"
+    echo "Testing against version: $ELASTIC_STACK_VERSION"
 
     if [[ "$ELASTIC_STACK_VERSION" = *"-SNAPSHOT" ]]; then
         pull_docker_snapshot "logstash"
