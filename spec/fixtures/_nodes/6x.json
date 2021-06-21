@@ -11,7 +11,7 @@
       "transport_address" : "http://localhost:9200",
       "host" : "localhost",
       "ip" : "127.0.0.1",
-      "version" : "5.5.1",
+      "version" : "6.8.10",
       "build_hash" : "19c13d0",
       "roles" : [
         "master"
@@ -29,7 +29,7 @@
       "transport_address" : "http://localhost:9201",
       "host" : "localhost",
       "ip" : "127.0.0.1",
-      "version" : "5.5.1",
+      "version" : "6.8.10",
       "build_hash" : "19c13d0",
       "roles" : [
         "data"
@@ -47,7 +47,7 @@
       "transport_address" : "http://localhost:9202",
       "host" : "localhost",
       "ip" : "127.0.0.1",
-      "version" : "5.5.1",
+      "version" : "6.8.10",
       "build_hash" : "19c13d0",
       "roles" : [
         "data",
@@ -66,7 +66,7 @@
       "transport_address" : "http://localhost:9203",
       "host" : "localhost",
       "ip" : "127.0.0.1",
-      "version" : "5.5.1",
+      "version" : "6.8.10",
       "build_hash" : "19c13d0",
       "roles" : [ ],
       "http" : {

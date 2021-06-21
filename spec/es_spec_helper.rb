@@ -53,11 +53,7 @@ module ESHelper
   end
 
   def routing_field_name
-    if ESHelper.es_version_satisfies?(">=6")
-      :routing
-    else
-      :_routing
-    end
+    :routing
   end
 
   def self.es_version
