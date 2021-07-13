@@ -237,21 +237,58 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         begin
           health_check_request(url)
-          # If no exception was raised it must have succeeded!
-          logger.warn("Restored connection to ES instance", url: url.sanitized.to_s)
-          # We reconnected to this node, check its ES version
-          es_version = get_es_version(url)
-          @state_mutex.synchronize do
-            meta[:version] = es_version
-            set_last_es_version(es_version, url)
+          if elasticsearch?(url)
+            # If no exception was raised it must have succeeded!
+            logger.warn("Restored connection to ES instance", url: url.sanitized.to_s)
+            # We reconnected to this node, check its ES version
+            es_version = get_es_version(url)
+            @state_mutex.synchronize do
+              meta[:version] = es_version
+              set_last_es_version(es_version, url)
 
-            alive = @license_checker.appropriate_license?(self, url)
-            meta[:state] = alive ? :alive : :dead
+              alive = @license_checker.appropriate_license?(self, url)
+              meta[:state] = alive ? :alive : :dead
+            end
+          else
+            logger.info("URL doesn't point to Elasticsearch service", url: url.sanitized.to_s )
+            @state_mutex.synchronize { meta[:state] = :dead }
           end
         rescue HostUnreachableError, BadResponseCodeError => e
           logger.warn("Attempted to resurrect connection to dead ES instance, but got an error", url: url.sanitized.to_s, exception: e.class, message: e.message)
         end
       end
+    end
+
+    def elasticsearch?(url)
+      response = perform_request_to_url(url, :get, "/")
+      return false if response.code == 401 || response.code == 403
+
+      version_info = LogStash::Json.load(response.body)
+      return false if version_info['version'].nil?
+
+      version = Gem::Version.new(version_info["version"]['number'])
+      return false if version < Gem::Version.new('6.0.0')
+
+      if version >= Gem::Version.new('6.0.0') && version < Gem::Version.new('7.0.0')
+        return valid_tagline?(version_info)
+      elsif version >= Gem::Version.new('7.0.0') && version < Gem::Version.new('7.14.0')
+        build_flavour = version_info["version"]['build_flavour']
+        return false if build_flavour.nil? || build_flavour != 'default' || !valid_tagline?(version_info)
+      else
+        # case >= 7.14
+        product_header = response.headers['X-elastic-product']
+        return false if product_header.nil? || product_header != 'Elasticsearch'
+      end
+      return true
+    rescue => e
+      logger.error("Unable to version version information", url: url.sanitized.to_s, exception: e.class, message: e.message)
+      false
+    end
+
+    def valid_tagline?(version_info)
+      tagline = version_info['tagline']
+      return false if tagline.nil? || tagline != "You Know, for Search"
+      true
     end
 
     def stop_resurrectionist
