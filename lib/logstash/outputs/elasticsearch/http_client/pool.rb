@@ -251,7 +251,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
             end
           else
             logger.info("URL doesn't point to Elasticsearch service", url: url.sanitized.to_s )
-            @state_mutex.synchronize { meta[:state] = :dead }
+            es_version = get_es_version(url)
+            @state_mutex.synchronize do
+              meta[:version] = es_version
+              set_last_es_version(es_version, url)
+              meta[:state] = :dead
+            end
           end
         rescue HostUnreachableError, BadResponseCodeError => e
           logger.warn("Attempted to resurrect connection to dead ES instance, but got an error", url: url.sanitized.to_s, exception: e.class, message: e.message)

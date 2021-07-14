@@ -50,13 +50,16 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
     describe "healthcheck url handling" do
       let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
+      before(:example) do
+        expect(adapter).to receive(:perform_request).with(anything, :get, "/", anything, anything) do |url, _, _, _, _|
+          expect(url.path).to be_empty
+        end
+      end
 
       context "and not setting healthcheck_path" do
         it "performs the healthcheck to the root" do
-          expect(adapter).to receive(:perform_request) do |url, method, req_path, _, _|
-            expect(method).to eq(:head)
+          expect(adapter).to receive(:perform_request).with(anything, :head, "/", anything, anything) do |url, _, _, _, _|
             expect(url.path).to be_empty
-            expect(req_path).to eq("/")
           end
           subject.healthcheck!
         end
@@ -66,10 +69,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
         let(:healthcheck_path) { "/my/health" }
         let(:options) { super().merge(:healthcheck_path => healthcheck_path) }
         it "performs the healthcheck to the healthcheck_path" do
-          expect(adapter).to receive(:perform_request) do |url, method, req_path, _, _|
-            expect(method).to eq(:head)
+          expect(adapter).to receive(:perform_request).with(anything, :head, eq(healthcheck_path), anything, anything) do |url, _, _, _, _|
             expect(url.path).to be_empty
-            expect(req_path).to eq(healthcheck_path)
           end
           subject.healthcheck!
         end
@@ -175,8 +176,27 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     end
 
     context "with multiple URLs in the list" do
+      let(:version_ok) do
+        class MockResponse
+          def body
+            {"tagline" => "You Know, for Search",
+             "version" => {
+               "number" => '7.13.0',
+               "build_flavour" => 'default'}
+            }.to_json
+          end
+
+          def code
+            200
+          end
+        end
+        #{ 'body' => response_body.to_json, "code" => 200 }
+        MockResponse.new
+      end
+
       before :each do
         allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil)
+        allow(adapter).to receive(:perform_request).with(anything, :get, subject.healthcheck_path, {}, nil).and_return(version_ok)
       end
       let(:initial_urls) { [ ::LogStash::Util::SafeURI.new("http://localhost:9200"), ::LogStash::Util::SafeURI.new("http://localhost:9201"), ::LogStash::Util::SafeURI.new("http://localhost:9202") ] }
 
@@ -240,6 +260,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   describe "license checking" do
     before(:each) do
       allow(subject).to receive(:health_check_request)
+      allow(subject).to receive(:elasticsearch?).and_return(true)
     end
 
     let(:options) do
@@ -273,6 +294,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
     before(:each) do
       allow(subject).to receive(:health_check_request)
+      allow(subject).to receive(:elasticsearch?).and_return(true)
     end
 
     context "if ES doesn't return a valid license" do
