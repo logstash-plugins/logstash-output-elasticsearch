@@ -156,7 +156,7 @@ describe LogStash::Outputs::ElasticSearch do
         include_examples("an authenticated config")
       end
 
-      context 'claud_auth also set' do
+      context 'cloud_auth also set' do
         let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
         let(:options) { { "user" => user, "password" => password, "cloud_auth" => "elastic:my-passwd-00" } }
 
