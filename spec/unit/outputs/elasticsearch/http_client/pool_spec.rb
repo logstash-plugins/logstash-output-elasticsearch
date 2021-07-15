@@ -1,6 +1,7 @@
 require "logstash/devutils/rspec/spec_helper"
 require "logstash/outputs/elasticsearch/http_client"
 require 'cabin'
+require 'webmock/rspec'
 
 describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:logger) { Cabin::Channel.get }
@@ -338,6 +339,102 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
         expect(subject.license_checker).to receive(:warn_invalid_license).and_call_original
         subject.update_initial_urls
       end
+    end
+  end
+end
+
+describe "#elasticsearch?" do
+  let(:logger) { Cabin::Channel.get }
+  let(:adapter) { LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter.new(logger) }
+  let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
+  let(:options) { {:resurrect_delay => 2, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
+  let(:es_node_versions) { [ "0.0.0" ] }
+  let(:license_status) { 'active' }
+
+  subject { LogStash::Outputs::ElasticSearch::HttpClient::Pool.new(logger, adapter, initial_urls, options) }
+
+  let(:url) { ::LogStash::Util::SafeURI.new("http://localhost:9200") }
+
+  context "in case HTTP error code" do
+    it "should fail for 401" do
+      stub_request(:get, "localhost:9200").to_return(status: 401)
+      expect(subject.elasticsearch?(url)).to be false
+    end
+
+    it "should fail for 403" do
+      stub_request(:get, "localhost:9200").to_return(status: 403)
+      expect(subject.elasticsearch?(url)).to be false
+    end
+  end
+
+  context "when connecting to a cluster which reply without 'version' field" do
+    it "should fail" do
+      stub_request(:get, "localhost:9200").to_return(body: '{"field": "funky"}')
+      expect(subject.elasticsearch?(url)).to be false
+    end
+  end
+
+  context "when connecting to a cluster with version < 6.0.0" do
+    it "should fail" do
+      stub_request(:get, "localhost:9200").to_return(body: '{"version": {"number": "5.0.0"}}')
+      expect(subject.elasticsearch?(url)).to be false
+    end
+  end
+
+  context "when connecting to a cluster with version in [6.0.0..7.0.0)" do
+    it "must be successful with valid 'tagline'" do
+      stub_request(:get, "localhost:9200").to_return(status: 200, body: '{"version": {"number": "6.5.0"}, "tagline": "You Know, for Search"}')
+      expect(subject.elasticsearch?(url)).to be true
+    end
+
+    it "should fail if invalid 'tagline'" do
+      stub_request(:get, "localhost:9200").to_return(body: '{"version": {"number": "6.5.0"}, "tagline": "You don\'t know"}')
+      expect(subject.elasticsearch?(url)).to be false
+    end
+
+    it "should fail if 'tagline' is not present" do
+      stub_request(:get, "localhost:9200").to_return(body: '{"version": {"number": "6.5.0"}}')
+      expect(subject.elasticsearch?(url)).to be false
+    end
+  end
+
+  context "when connecting to a cluster with version in [7.0.0..7.14.0)" do
+    it "must be successful is 'build_flavour' is 'default' and tagline is correct" do
+      stub_request(:get, "localhost:9200/").to_return(status: 200, body: '{"version": {"number": "7.5.0", "build_flavour": "default"}, "tagline": "You Know, for Search"}')
+      expect(subject.elasticsearch?(url)).to be true
+    end
+
+    it "should fail if 'build_flavour' is not 'default' and tagline is correct" do
+      stub_request(:get, "localhost:9200").to_return(status: 200, body: '{"version": {"number": "7.5.0", "build_flavour": "oss"}, "tagline": "You Know, for Search"}')
+      expect(subject.elasticsearch?(url)).to be false
+    end
+
+    it "should fail if 'build_flavour' is not present and tagline is correct" do
+      stub_request(:get, "localhost:9200").to_return(status: 200, body: '{"version": {"number": "7.5.0"}, "tagline": "You Know, for Search"}')
+      expect(subject.elasticsearch?(url)).to be false
+    end
+  end
+
+  context "when connecting to a cluster with version >= 7.14.0" do
+    it "should fail if 'X-elastic-product' header is not present" do
+      stub_request(:get, "localhost:9200").to_return(status: 200, body: '{"version": {"number": "7.14.0"}}')
+      expect(subject.elasticsearch?(url)).to be false
+    end
+
+    it "should fail if 'X-elastic-product' header is present but with bad value" do
+      stub_request(:get, "localhost:9200")
+            .to_return(status: 200,
+                       headers: {'X-elastic-product' => 'not good'},
+                       body: '{"version": {"number": "7.14.0"}}')
+      expect(subject.elasticsearch?(url)).to be false
+    end
+
+    it "must be successful when 'X-elastic-product' header is present with expected value" do
+      stub_request(:get, "localhost:9200")
+            .to_return(status: 200,
+                       headers: {'X-elastic-product': 'Elasticsearch'},
+                       body: '{"version": {"number": "7.14.0"}}')
+      expect(subject.elasticsearch?(url)).to be true
     end
   end
 end
