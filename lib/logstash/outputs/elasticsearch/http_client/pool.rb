@@ -265,8 +265,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def elasticsearch?(url)
-      response = perform_request_to_url(url, :get, "/")
-      return false if response.code == 401 || response.code == 403
+      begin
+        response = perform_request_to_url(url, :get, "/")
+      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        return false if response.code == 401 || response.code == 403
+        raise e
+      end
 
       version_info = LogStash::Json.load(response.body)
       return false if version_info['version'].nil?
@@ -281,7 +285,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         return false if build_flavour.nil? || build_flavour != 'default' || !valid_tagline?(version_info)
       else
         # case >= 7.14
-        product_header = response.headers['X-elastic-product']
+        product_header = response.headers['x-elastic-product']
         return false if product_header.nil? || product_header != 'Elasticsearch'
       end
       return true

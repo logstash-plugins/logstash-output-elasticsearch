@@ -31,6 +31,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'flores'
   s.add_development_dependency 'cabin', ['~> 0.6']
   s.add_development_dependency 'webrick'
+  s.add_development_dependency 'webmock'
   # Still used in some specs, we should remove this ASAP
   s.add_development_dependency 'elasticsearch'
 end
