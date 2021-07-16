@@ -355,6 +355,8 @@ describe "#elasticsearch?" do
 
   let(:url) { ::LogStash::Util::SafeURI.new("http://localhost:9200") }
 
+  after(:all) { WebMock.disable! }
+
   context "in case HTTP error code" do
     it "should fail for 401" do
       stub_request(:get, "localhost:9200").to_return(status: 401)
