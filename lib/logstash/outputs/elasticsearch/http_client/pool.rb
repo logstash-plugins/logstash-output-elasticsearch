@@ -285,7 +285,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         return false if build_flavour.nil? || build_flavour != 'default' || !valid_tagline?(version_info)
       else
         # case >= 7.14
-        product_header = response.headers['x-elastic-product']
+        lower_headers = response.headers.transform_keys {|key| key.to_s.downcase }
+        product_header = lower_headers['x-elastic-product']
         return false if product_header.nil? || product_header != 'Elasticsearch'
       end
       return true

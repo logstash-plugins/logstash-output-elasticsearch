@@ -1,7 +1,6 @@
 require "logstash/devutils/rspec/spec_helper"
 require "logstash/outputs/elasticsearch/http_client"
 require 'cabin'
-require 'webmock/rspec'
 
 describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:logger) { Cabin::Channel.get }
@@ -166,6 +165,20 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     end
   end
 
+  class MockResponse
+    attr_reader :code, :headers
+
+    def initialize(code = 200, body = nil, headers = {})
+        @code = code
+        @body = body
+        @headers = headers
+    end
+
+    def body
+      @body.to_json
+    end
+  end
+
   describe "connection management" do
     before(:each) { subject.start }
     context "with only one URL in the list" do
@@ -178,21 +191,11 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
     context "with multiple URLs in the list" do
       let(:version_ok) do
-        class MockResponse
-          def body
-            {"tagline" => "You Know, for Search",
-             "version" => {
-               "number" => '7.13.0',
-               "build_flavour" => 'default'}
-            }.to_json
-          end
-
-          def code
-            200
-          end
-        end
-        #{ 'body' => response_body.to_json, "code" => 200 }
-        MockResponse.new
+        MockResponse.new(200, {"tagline" => "You Know, for Search",
+                                       "version" => {
+                                         "number" => '7.13.0',
+                                         "build_flavour" => 'default'}
+                                      })
       end
 
       before :each do
@@ -345,7 +348,7 @@ end
 
 describe "#elasticsearch?" do
   let(:logger) { Cabin::Channel.get }
-  let(:adapter) { LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter.new(logger) }
+  let(:adapter) { double("Manticore Adapter") }
   let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
   let(:options) { {:resurrect_delay => 2, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
   let(:es_node_versions) { [ "0.0.0" ] }
@@ -355,87 +358,106 @@ describe "#elasticsearch?" do
 
   let(:url) { ::LogStash::Util::SafeURI.new("http://localhost:9200") }
 
-  after(:all) { WebMock.disable! }
-
   context "in case HTTP error code" do
     it "should fail for 401" do
-      stub_request(:get, "localhost:9200").to_return(status: 401)
+      allow(adapter).to receive(:perform_request)
+        .with(anything, :get, "/", anything, anything)
+        .and_return(MockResponse.new(401))
+
       expect(subject.elasticsearch?(url)).to be false
     end
 
     it "should fail for 403" do
-      stub_request(:get, "localhost:9200").to_return(status: 403)
+      allow(adapter).to receive(:perform_request)
+              .with(anything, :get, "/", anything, anything)
+              .and_return(status: 403)
       expect(subject.elasticsearch?(url)).to be false
     end
   end
 
   context "when connecting to a cluster which reply without 'version' field" do
     it "should fail" do
-      stub_request(:get, "localhost:9200").to_return(body: '{"field": "funky"}')
+      allow(adapter).to receive(:perform_request)
+                    .with(anything, :get, "/", anything, anything)
+                    .and_return(body: {"field" => "funky.com"}.to_json)
       expect(subject.elasticsearch?(url)).to be false
     end
   end
 
   context "when connecting to a cluster with version < 6.0.0" do
     it "should fail" do
-      stub_request(:get, "localhost:9200").to_return(body: '{"version": {"number": "5.0.0"}}')
+      allow(adapter).to receive(:perform_request)
+                          .with(anything, :get, "/", anything, anything)
+                          .and_return(200, {"version" => { "number" => "5.0.0"}}.to_json)
       expect(subject.elasticsearch?(url)).to be false
     end
   end
 
   context "when connecting to a cluster with version in [6.0.0..7.0.0)" do
     it "must be successful with valid 'tagline'" do
-      stub_request(:get, "localhost:9200").to_return(status: 200, body: '{"version": {"number": "6.5.0"}, "tagline": "You Know, for Search"}')
+      allow(adapter).to receive(:perform_request)
+                                .with(anything, :get, "/", anything, anything)
+                                .and_return(MockResponse.new(200, {"version" => {"number" => "6.5.0"}, "tagline" => "You Know, for Search"}))
       expect(subject.elasticsearch?(url)).to be true
     end
 
     it "should fail if invalid 'tagline'" do
-      stub_request(:get, "localhost:9200").to_return(body: '{"version": {"number": "6.5.0"}, "tagline": "You don\'t know"}')
+      allow(adapter).to receive(:perform_request)
+                                .with(anything, :get, "/", anything, anything)
+                                .and_return(MockResponse.new(200, {"version" => {"number" => "6.5.0"}, "tagline" => "You don't know"}))
       expect(subject.elasticsearch?(url)).to be false
     end
 
     it "should fail if 'tagline' is not present" do
-      stub_request(:get, "localhost:9200").to_return(body: '{"version": {"number": "6.5.0"}}')
+      allow(adapter).to receive(:perform_request)
+                                .with(anything, :get, "/", anything, anything)
+                                .and_return(MockResponse.new(200, {"version" => {"number" => "6.5.0"}}))
       expect(subject.elasticsearch?(url)).to be false
     end
   end
 
   context "when connecting to a cluster with version in [7.0.0..7.14.0)" do
     it "must be successful is 'build_flavour' is 'default' and tagline is correct" do
-      stub_request(:get, "localhost:9200/").to_return(status: 200, body: '{"version": {"number": "7.5.0", "build_flavour": "default"}, "tagline": "You Know, for Search"}')
+      allow(adapter).to receive(:perform_request)
+                                .with(anything, :get, "/", anything, anything)
+                                .and_return(MockResponse.new(200, {"version": {"number": "7.5.0", "build_flavour": "default"}, "tagline": "You Know, for Search"}))
       expect(subject.elasticsearch?(url)).to be true
     end
 
     it "should fail if 'build_flavour' is not 'default' and tagline is correct" do
-      stub_request(:get, "localhost:9200").to_return(status: 200, body: '{"version": {"number": "7.5.0", "build_flavour": "oss"}, "tagline": "You Know, for Search"}')
+      allow(adapter).to receive(:perform_request)
+                                .with(anything, :get, "/", anything, anything)
+                                .and_return(MockResponse.new(200, {"version": {"number": "7.5.0", "build_flavour": "oss"}, "tagline": "You Know, for Search"}))
       expect(subject.elasticsearch?(url)).to be false
     end
 
     it "should fail if 'build_flavour' is not present and tagline is correct" do
-      stub_request(:get, "localhost:9200").to_return(status: 200, body: '{"version": {"number": "7.5.0"}, "tagline": "You Know, for Search"}')
+      allow(adapter).to receive(:perform_request)
+                                .with(anything, :get, "/", anything, anything)
+                                .and_return(MockResponse.new(200, {"version": {"number": "7.5.0"}, "tagline": "You Know, for Search"}))
       expect(subject.elasticsearch?(url)).to be false
     end
   end
 
   context "when connecting to a cluster with version >= 7.14.0" do
     it "should fail if 'X-elastic-product' header is not present" do
-      stub_request(:get, "localhost:9200").to_return(status: 200, body: '{"version": {"number": "7.14.0"}}')
+      allow(adapter).to receive(:perform_request)
+                    .with(anything, :get, "/", anything, anything)
+                    .and_return(MockResponse.new(200, {"version": {"number": "7.14.0"}}))
       expect(subject.elasticsearch?(url)).to be false
     end
 
     it "should fail if 'X-elastic-product' header is present but with bad value" do
-      stub_request(:get, "localhost:9200")
-            .to_return(status: 200,
-                       headers: {'X-elastic-product' => 'not good'},
-                       body: '{"version": {"number": "7.14.0"}}')
+      allow(adapter).to receive(:perform_request)
+                    .with(anything, :get, "/", anything, anything)
+                    .and_return(MockResponse.new(200, {"version": {"number": "7.14.0"}}, {'X-elastic-product' => 'not good'}))
       expect(subject.elasticsearch?(url)).to be false
     end
 
-    it "must be successful when 'X-elastic-product' header is present with expected value" do
-      stub_request(:get, "localhost:9200")
-            .to_return(status: 200,
-                       headers: {'X-elastic-product': 'Elasticsearch'},
-                       body: '{"version": {"number": "7.14.0"}}')
+    it "must be successful when 'X-elastic-product' header is present with 'Elasticsearch' value" do
+      allow(adapter).to receive(:perform_request)
+                    .with(anything, :get, "/", anything, anything)
+                    .and_return(MockResponse.new(200, {"version": {"number": "7.14.0"}}, {'X-elastic-product' => 'Elasticsearch'}))
       expect(subject.elasticsearch?(url)).to be true
     end
   end
