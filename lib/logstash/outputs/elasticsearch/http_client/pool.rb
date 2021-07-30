@@ -281,8 +281,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       if version >= Gem::Version.new('6.0.0') && version < Gem::Version.new('7.0.0')
         return valid_tagline?(version_info)
       elsif version >= Gem::Version.new('7.0.0') && version < Gem::Version.new('7.14.0')
-        build_flavour = version_info["version"]['build_flavour']
-        return false if build_flavour.nil? || build_flavour != 'default' || !valid_tagline?(version_info)
+        build_flavor = version_info["version"]['build_flavor']
+        return false if build_flavor.nil? || build_flavor != 'default' || !valid_tagline?(version_info)
       else
         # case >= 7.14
         lower_headers = response.headers.transform_keys {|key| key.to_s.downcase }

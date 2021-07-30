@@ -192,10 +192,10 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     context "with multiple URLs in the list" do
       let(:version_ok) do
         MockResponse.new(200, {"tagline" => "You Know, for Search",
-                                       "version" => {
-                                         "number" => '7.13.0',
-                                         "build_flavour" => 'default'}
-                                      })
+                               "version" => {
+                                 "number" => '7.13.0',
+                                 "build_flavor" => 'default'}
+                               })
       end
 
       before :each do
@@ -417,21 +417,21 @@ describe "#elasticsearch?" do
   end
 
   context "when connecting to a cluster with version in [7.0.0..7.14.0)" do
-    it "must be successful is 'build_flavour' is 'default' and tagline is correct" do
+    it "must be successful is 'build_flavor' is 'default' and tagline is correct" do
       allow(adapter).to receive(:perform_request)
                                 .with(anything, :get, "/", anything, anything)
-                                .and_return(MockResponse.new(200, {"version": {"number": "7.5.0", "build_flavour": "default"}, "tagline": "You Know, for Search"}))
+                                .and_return(MockResponse.new(200, {"version": {"number": "7.5.0", "build_flavor": "default"}, "tagline": "You Know, for Search"}))
       expect(subject.elasticsearch?(url)).to be true
     end
 
-    it "should fail if 'build_flavour' is not 'default' and tagline is correct" do
+    it "should fail if 'build_flavor' is not 'default' and tagline is correct" do
       allow(adapter).to receive(:perform_request)
                                 .with(anything, :get, "/", anything, anything)
-                                .and_return(MockResponse.new(200, {"version": {"number": "7.5.0", "build_flavour": "oss"}, "tagline": "You Know, for Search"}))
+                                .and_return(MockResponse.new(200, {"version": {"number": "7.5.0", "build_flavor": "oss"}, "tagline": "You Know, for Search"}))
       expect(subject.elasticsearch?(url)).to be false
     end
 
-    it "should fail if 'build_flavour' is not present and tagline is correct" do
+    it "should fail if 'build_flavor' is not present and tagline is correct" do
       allow(adapter).to receive(:perform_request)
                                 .with(anything, :get, "/", anything, anything)
                                 .and_return(MockResponse.new(200, {"version": {"number": "7.5.0"}, "tagline": "You Know, for Search"}))
