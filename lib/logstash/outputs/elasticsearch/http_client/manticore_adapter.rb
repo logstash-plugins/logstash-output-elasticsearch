@@ -66,12 +66,16 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
       request_uri = format_url(url, path)
       request_uri_as_string = remove_double_escaping(request_uri.to_s)
-      resp = @manticore.send(method.downcase, request_uri_as_string, params)
-
-      # Manticore returns lazy responses by default
-      # We want to block for our usage, this will wait for the repsonse
-      # to finish
-      resp.call
+      begin
+        resp = @manticore.send(method.downcase, request_uri_as_string, params)
+        # Manticore returns lazy responses by default
+        # We want to block for our usage, this will wait for the response to finish
+        resp.call
+      rescue ::Manticore::Timeout, ::Manticore::SocketException, ::Manticore::ClientProtocolException,
+             ::Manticore::ResolutionFailure, ::Manticore::SocketTimeout => e
+        @logger.debug("Failed to perform request", message: e.message, exception: e.class)
+        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new(e, url)
+      end
 
       # 404s are excluded because they are valid codes in the case of
       # template installation. We might need a better story around this later
@@ -124,8 +128,5 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @manticore.close
     end
 
-    def host_unreachable_exceptions
-      [::Manticore::Timeout,::Manticore::SocketException, ::Manticore::ClientProtocolException, ::Manticore::ResolutionFailure, Manticore::SocketTimeout]
-    end
   end
 end; end; end; end

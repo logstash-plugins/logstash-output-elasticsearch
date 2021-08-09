@@ -12,10 +12,6 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter do
     subject.close
     expect { subject.perform_request(::LogStash::Util::SafeURI.new("http://localhost:9200"), :get, '/') }.to raise_error(::Manticore::ClientStoppedException)
   end
-
-  it "should implement host unreachable exceptions" do
-    expect(subject.host_unreachable_exceptions).to be_a(Array)
-  end
   
   describe "auth" do
     let(:user) { "myuser" }

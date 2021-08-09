@@ -323,9 +323,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def perform_request_to_url(url, method, path, params={}, body=nil)
-      res = @adapter.perform_request(url, method, path, params, body)
-    rescue *@adapter.host_unreachable_exceptions => e
-      raise HostUnreachableError.new(e, url), "Could not reach host #{e.class}: #{e.message}"
+      @adapter.perform_request(url, method, path, params, body)
     end
 
     def normalize_url(uri)
