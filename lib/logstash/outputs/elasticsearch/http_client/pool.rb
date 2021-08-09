@@ -12,6 +12,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         @url = url
         @request_body = request_body
         @response_body = response_body
+
+        super(message)
       end
 
       def message
@@ -24,6 +26,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       def initialize(original_error, url)
         @original_error = original_error
         @url = url
+
+        super(message)
       end
 
       def message
