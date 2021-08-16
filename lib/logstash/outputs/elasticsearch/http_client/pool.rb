@@ -237,26 +237,19 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         begin
           health_check_request(url)
-          if elasticsearch?(url)
-            # If no exception was raised it must have succeeded!
-            logger.warn("Restored connection to ES instance", url: url.sanitized.to_s)
-            # We reconnected to this node, check its ES version
-            es_version = get_es_version(url)
-            @state_mutex.synchronize do
-              meta[:version] = es_version
-              set_last_es_version(es_version, url)
+          if !elasticsearch?(url)
+            raise LogStash::ConfigurationError, "Not a valid Elasticsearch"
+          end
+          # If no exception was raised it must have succeeded!
+          logger.warn("Restored connection to ES instance", url: url.sanitized.to_s)
+          # We reconnected to this node, check its ES version
+          es_version = get_es_version(url)
+          @state_mutex.synchronize do
+            meta[:version] = es_version
+            set_last_es_version(es_version, url)
 
-              alive = @license_checker.appropriate_license?(self, url)
-              meta[:state] = alive ? :alive : :dead
-            end
-          else
-            logger.info("URL doesn't point to Elasticsearch service", url: url.sanitized.to_s )
-            es_version = get_es_version(url)
-            @state_mutex.synchronize do
-              meta[:version] = es_version
-              set_last_es_version(es_version, url)
-              meta[:state] = :dead
-            end
+            alive = @license_checker.appropriate_license?(self, url)
+            meta[:state] = alive ? :alive : :dead
           end
         rescue HostUnreachableError, BadResponseCodeError => e
           logger.warn("Attempted to resurrect connection to dead ES instance, but got an error", url: url.sanitized.to_s, exception: e.class, message: e.message)
