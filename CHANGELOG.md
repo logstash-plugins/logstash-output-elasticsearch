@@ -1,3 +1,6 @@
+## 11.0.3
+ - Fixed SSL handshake hang indefinitely with proxy setup
+
 ## 11.0.2
  - Validate that required functionality in Elasticsearch is available upon initial connection [#1015](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1015)
 
