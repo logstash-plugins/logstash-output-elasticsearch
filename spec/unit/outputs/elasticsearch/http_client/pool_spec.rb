@@ -61,7 +61,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
           expect(adapter).to receive(:perform_request).with(anything, :head, "/", anything, anything) do |url, _, _, _, _|
             expect(url.path).to be_empty
           end
-          subject.healthcheck!
+          expect { subject.healthcheck! }.to raise_error(LogStash::ConfigurationError, "Not a valid Elasticsearch")
         end
       end
 
@@ -72,7 +72,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
           expect(adapter).to receive(:perform_request).with(anything, :head, eq(healthcheck_path), anything, anything) do |url, _, _, _, _|
             expect(url.path).to be_empty
           end
-          subject.healthcheck!
+          expect { subject.healthcheck! }.to raise_error(LogStash::ConfigurationError, "Not a valid Elasticsearch")
         end
       end
     end
@@ -244,8 +244,14 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       ::LogStash::Util::SafeURI.new("http://otherhost:9201")
     ] }
 
+    let(:valid_response) { MockResponse.new(200, {"tagline" => "You Know, for Search",
+                                                          "version" => {
+                                                            "number" => '7.13.0',
+                                                            "build_flavor" => 'default'}
+                                                          }) }
+
     before(:each) do
-      allow(subject).to receive(:perform_request_to_url).and_return(nil)
+      allow(subject).to receive(:perform_request_to_url).and_return(valid_response)
       subject.start
     end
 
