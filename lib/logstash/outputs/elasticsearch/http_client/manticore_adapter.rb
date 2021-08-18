@@ -1,5 +1,4 @@
 require 'manticore'
-require_relative '../../../../manticore/patches/client'
 require 'cgi'
 
 module LogStash; module Outputs; class ElasticSearch; class HttpClient;
