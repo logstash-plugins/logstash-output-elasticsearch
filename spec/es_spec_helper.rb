@@ -20,7 +20,9 @@ module ESHelper
   end
 
   def get_client
-    Elasticsearch::Client.new(:hosts => [get_host_port])
+    Elasticsearch::Client.new(:hosts => [get_host_port]).tap do |client|
+      allow(client).to receive(:verify_elasticsearch).and_return(true) # bypass client side version checking
+    end
   end
 
   def doc_type
