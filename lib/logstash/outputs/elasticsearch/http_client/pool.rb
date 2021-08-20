@@ -211,7 +211,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def start_resurrectionist
       @resurrectionist = Thread.new do
         until_stopped("resurrection", @resurrect_delay) do
-          healthcheck!
+          healthcheck!(false)
         end
       end
     end
@@ -232,13 +232,17 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       perform_request_to_url(url, :head, @healthcheck_path)
     end
 
-    def healthcheck!
+    def healthcheck!(register_phase = true)
       # Try to keep locking granularity low such that we don't affect IO...
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         begin
           health_check_request(url)
-          if !elasticsearch?(url)
-            raise LogStash::ConfigurationError, "Not a valid Elasticsearch"
+
+          # when called from resurrectionist skip the product check done during register phase
+          if register_phase
+            if !elasticsearch?(url)
+              raise LogStash::ConfigurationError, "Not a valid Elasticsearch"
+            end
           end
           # If no exception was raised it must have succeeded!
           logger.warn("Restored connection to ES instance", url: url.sanitized.to_s)
