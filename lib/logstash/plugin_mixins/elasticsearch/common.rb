@@ -128,8 +128,12 @@ module LogStash; module PluginMixins; module ElasticSearch
       client.maximum_seen_major_version
     end
 
+    def alive_urls_count
+      client.alive_urls_count
+    end
+
     def successful_connection?
-      !!maximum_seen_major_version
+      !!maximum_seen_major_version && alive_urls_count > 0
     end
 
     # launch a thread that waits for an initial successful connection to the ES cluster to call the given block
