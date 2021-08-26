@@ -1,5 +1,8 @@
-## 11.0.4
+## 11.0.5
  - Fixed running post-register action when Elasticsearch status change from unhealthy to healthy [#1035](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1035)
+
+## 11.0.4
+ - [DOC] Clarify that `http_compression` applies to _requests_, and remove noise about _response_ decompression [#1000](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1000)
 
 ## 11.0.3
  - Fixed SSL handshake hang indefinitely with proxy setup [#1032](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1032)
