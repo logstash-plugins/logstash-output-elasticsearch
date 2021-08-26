@@ -55,7 +55,7 @@ describe "elasticsearch is down on startup", :integration => true do
     expect(r).to have_hits(2)
   end
 
-  it 'should ingest events when Elasticsearch recovers from license check failure' do
+  it 'should get cluster_uuid when Elasticsearch recovers from license check failure' do
     allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_license).with(instance_of(LogStash::Util::SafeURI)).and_raise(::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new(StandardError.new, "big fail"))
     subject.register
     Thread.new do
@@ -66,5 +66,7 @@ describe "elasticsearch is down on startup", :integration => true do
     @es.indices.refresh
     r = @es.search(index: 'logstash-*')
     expect(r).to have_hits(2)
+    expect(subject.plugin_metadata.get(:cluster_uuid)).not_to be_empty
+    expect(subject.plugin_metadata.get(:cluster_uuid)).not_to be("_na_")
   end
 end

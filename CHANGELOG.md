@@ -1,3 +1,6 @@
+## 11.0.4
+ - Fixed running post-register action when Elasticsearch status change from unhealthy to healthy [#1035](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1035)
+
 ## 11.0.3
  - Fixed SSL handshake hang indefinitely with proxy setup [#1032](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1032)
 
