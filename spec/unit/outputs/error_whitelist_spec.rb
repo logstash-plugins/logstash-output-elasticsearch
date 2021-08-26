@@ -12,6 +12,7 @@ describe "whitelisting error types in expected behavior" do
   before :each do
     allow(subject.logger).to receive(:warn)
     allow(subject).to receive(:maximum_seen_major_version).and_return(0)
+    allow(subject).to receive(:alive_urls_count).and_return(1)
     allow(subject).to receive(:finish_register)
 
     subject.register

@@ -92,6 +92,10 @@ module LogStash; module Outputs; class ElasticSearch;
       @pool.maximum_seen_major_version
     end
 
+    def alive_urls_count
+      @pool.alive_urls_count
+    end
+
     def bulk(actions)
       @action_count ||= 0
       @action_count += actions.size

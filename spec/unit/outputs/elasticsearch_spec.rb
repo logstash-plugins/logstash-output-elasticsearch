@@ -934,6 +934,7 @@ describe LogStash::Outputs::ElasticSearch do
       allow(subject).to receive(:last_es_version).and_return es_version
       # make successful_connection? return true:
       allow(subject).to receive(:maximum_seen_major_version).and_return Integer(es_version.split('.').first)
+      allow(subject).to receive(:alive_urls_count).and_return Integer(1)
       allow(subject).to receive(:stop_after_successful_connection_thread)
     end
 
