@@ -67,6 +67,6 @@ describe "elasticsearch is down on startup", :integration => true do
     r = @es.search(index: 'logstash-*')
     expect(r).to have_hits(2)
     expect(subject.plugin_metadata.get(:cluster_uuid)).not_to be_empty
-    expect(subject.plugin_metadata.get(:cluster_uuid)).not_to be("_na_")
+    expect(subject.plugin_metadata.get(:cluster_uuid)).not_to eq("_na_")
   end if ESHelper.es_version_satisfies?(">=7")
 end
