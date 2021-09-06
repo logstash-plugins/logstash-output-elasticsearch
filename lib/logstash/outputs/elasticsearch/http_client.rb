@@ -300,6 +300,12 @@ module LogStash; module Outputs; class ElasticSearch;
         :socket_timeout => timeout,
         :request_timeout => timeout,
       }
+      if options[:user_agent]
+        adapter_options[:user_agent] = options[:user_agent]
+      else
+        plugin_version = Gem.loaded_specs['logstash-output-elasticsearch'].version
+        adapter_options[:user_agent] = "LS #{LOGSTASH_VERSION}-output #{plugin_version}"
+      end
 
       adapter_options[:proxy] = client_settings[:proxy] if client_settings[:proxy]
 

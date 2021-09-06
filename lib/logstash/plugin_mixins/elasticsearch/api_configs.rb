@@ -157,7 +157,11 @@ module LogStash; module PluginMixins; module ElasticSearch
         :retry_initial_interval => { :validate => :number, :default => 2 },
 
         # Set max interval in seconds between bulk retries.
-        :retry_max_interval => { :validate => :number, :default => 64 }
+        :retry_max_interval => { :validate => :number, :default => 64 },
+
+        # Sets the user-agent header. It can be customized by the user, by default it assumes a value in format of:
+        # LS <LS_version>-output <plugin_version>
+        :user_agent => { :validate => :string },
     }.freeze
 
     def self.included(base)
