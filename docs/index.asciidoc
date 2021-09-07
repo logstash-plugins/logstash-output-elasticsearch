@@ -367,6 +367,7 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-truststore_password>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-upsert>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-user>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-user_agent>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-validate_after_inactivity>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-version>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-version_type>> |<<string,string>>, one of `["internal", "external", "external_gt", "external_gte", "force"]`|No
@@ -1094,6 +1095,16 @@ Create a new document with this parameter as json string if `document_id` doesn'
   * There is no default value for this setting.
 
 Username to authenticate to a secure Elasticsearch cluster
+
+[id="plugins-{type}s-{plugin}-user_agent"]
+===== `user_agent`
+
+* Value type is <<string,string>>
+* Default is `LS <Logstash version>-output <plugin version>`.
+
+Defines the HTTP's `user-agent` header to be used in the comunication with Elasticsearch.
+If not specified has a default value composed of Logstash and plugin's versions, for example: `LS 7.14.2-output 11.6.0`.
+If specified the value provided is used as `user-agent` header's value.
 
 [id="plugins-{type}s-{plugin}-validate_after_inactivity"]
 ===== `validate_after_inactivity`
