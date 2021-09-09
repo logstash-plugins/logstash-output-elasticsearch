@@ -348,7 +348,6 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       it "should contains the default Logstash and plugin version" do
         adapter = client.build_adapter(client.options)
         adapter.perform_request(::LogStash::Util::SafeURI.new("http://localhost:#{webserver.port}"), :get, "/headers_check")
-        plugin_version = Gem.loaded_specs['logstash-output-elasticsearch'].version
 
         request = webserver.wait_receive_request
 
