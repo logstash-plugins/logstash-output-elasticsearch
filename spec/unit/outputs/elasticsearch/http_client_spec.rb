@@ -352,7 +352,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
 
         request = webserver.wait_receive_request
 
-        expect(request.header['user-agent']).to include("LS #{LOGSTASH_VERSION}-output #{plugin_version}")
+        expect(request.header['user-agent']).to include(client.prepare_user_agent)
       end
     end
   end
