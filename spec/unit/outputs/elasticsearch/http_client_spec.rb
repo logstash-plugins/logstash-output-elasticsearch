@@ -337,7 +337,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
   end
 
   describe "#build_adapter" do
-    let(:client) { LogStash::Outputs::ElasticSearch::HttpClient.new(base_options.merge(header_opts)) }
+    let(:client) { LogStash::Outputs::ElasticSearch::HttpClient.new(base_options) }
     let!(:webserver) { StoppableServer.new } # webserver must be started before the call, so no lazy "let"
 
     after :each do
@@ -345,8 +345,6 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     end
 
     context "when don't customize 'user_agent' option then the 'user-agent' header" do
-      let(:header_opts) { {} }
-
       it "should contains the default Logstash and plugin version" do
         adapter = client.build_adapter(client.options)
         adapter.perform_request(::LogStash::Util::SafeURI.new("http://localhost:#{webserver.port}"), :get, "/headers_check")
@@ -355,19 +353,6 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
         request = webserver.wait_receive_request
 
         expect(request.header['user-agent']).to include("LS #{LOGSTASH_VERSION}-output #{plugin_version}")
-      end
-    end
-
-    context "when user defined 'user_agent' option then the 'user-agent' header" do
-      let(:header_opts) { {:user_agent => "my custom agent"} }
-
-      it "should contain the customized version" do
-        adapter = client.build_adapter(client.options)
-        adapter.perform_request(::LogStash::Util::SafeURI.new("http://localhost:#{webserver.port}"), :get, "/headers_check")
-
-        request = webserver.wait_receive_request
-
-        expect(request.header['user-agent']).to include("my custom agent")
       end
     end
   end
