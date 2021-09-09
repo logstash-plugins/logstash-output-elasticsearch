@@ -334,8 +334,8 @@ module LogStash; module Outputs; class ElasticSearch;
       jvm_version = java.lang.System.getProperty('java.version')
 
       plugin_version = Gem.loaded_specs['logstash-output-elasticsearch'].version
-      # example: Logstash/7.14.1 (OS=Linux-5.4.0-84-generic-amd64; JVM=AdoptOpenJDK-11.0.11) Output Elasticsearch/11.0.1
-      "Logstash/#{LOGSTASH_VERSION} (OS=#{os_name}-#{os_version}-#{os_arch}; JVM=#{jvm_vendor}-#{jvm_version}) Output Elasticsearch/#{plugin_version}"
+      # example: Logstash/7.14.1 (OS=Linux-5.4.0-84-generic-amd64; JVM=AdoptOpenJDK-11.0.11) logstash-output-elasticsearch/11.0.1
+      "Logstash/#{LOGSTASH_VERSION} (OS=#{os_name}-#{os_version}-#{os_arch}; JVM=#{jvm_vendor}-#{jvm_version}) logstash-output-elasticsearch/#{plugin_version}"
     end
     
     def build_pool(options)
