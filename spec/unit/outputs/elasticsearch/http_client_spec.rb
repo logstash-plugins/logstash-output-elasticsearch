@@ -303,11 +303,12 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       @t = java.lang.Thread.new(
         proc do
           begin
-            @server = WEBrick::HTTPServer.new :Port => @port, :DocumentRoot => ".",
+            @server = WEBrick::HTTPServer.new :Port => 0, :DocumentRoot => ".",
                      :Logger => Cabin::Channel.get, # silence WEBrick logging
                      :StartCallback => Proc.new {
                            queue.push("started")
                          }
+            @port = @server.config[:Port]
             @server.mount_proc '/headers_check' do |req, res|
               res.body = 'Hello, world from WEBrick mocking server!'
               @first_request = req
