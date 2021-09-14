@@ -295,7 +295,6 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     attr_reader :port
 
     def initialize()
-      @port = rand(65535-1024) + 1025
       queue = Queue.new
       @first_req_waiter = java.util.concurrent.CountDownLatch.new(1)
       @first_request = nil
