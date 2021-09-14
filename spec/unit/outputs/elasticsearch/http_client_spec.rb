@@ -344,14 +344,15 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       webserver.stop
     end
 
-    context "when don't customize 'user_agent' option then the 'user-agent' header" do
-      it "should contains the default Logstash and plugin version" do
+    context "the 'user-agent' header" do
+      it "contains the Logstash environment details" do
         adapter = client.build_adapter(client.options)
         adapter.perform_request(::LogStash::Util::SafeURI.new("http://localhost:#{webserver.port}"), :get, "/headers_check")
 
         request = webserver.wait_receive_request
 
-        expect(request.header['user-agent']).to include(client.prepare_user_agent)
+        transmitted_user_agent = request.header['user-agent'][0]
+        expect(transmitted_user_agent).to match(/Logstash\/\d*\.\d*\.\d* \(OS=.*; JVM=.*\) logstash-filter-elasticsearch\/\d*\.\d*\.\d*/)
       end
     end
   end
