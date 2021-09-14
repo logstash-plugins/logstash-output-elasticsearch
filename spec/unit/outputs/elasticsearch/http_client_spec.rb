@@ -352,7 +352,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
         request = webserver.wait_receive_request
 
         transmitted_user_agent = request.header['user-agent'][0]
-        expect(transmitted_user_agent).to match(/Logstash\/\d*\.\d*\.\d* \(OS=.*; JVM=.*\) logstash-filter-elasticsearch\/\d*\.\d*\.\d*/)
+        expect(transmitted_user_agent).to match(/Logstash\/\d*\.\d*\.\d* \(OS=.*; JVM=.*\) logstash-output-elasticsearch\/\d*\.\d*\.\d*/)
       end
     end
   end
