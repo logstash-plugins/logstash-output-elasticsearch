@@ -4,6 +4,7 @@ require 'logstash/outputs/elasticsearch/http_client/manticore_adapter'
 require 'cgi'
 require 'zlib'
 require 'stringio'
+require 'java'
 
 module LogStash; module Outputs; class ElasticSearch;
   # This is a constant instead of a config option because
@@ -301,6 +302,8 @@ module LogStash; module Outputs; class ElasticSearch;
         :request_timeout => timeout,
       }
 
+      adapter_options[:user_agent] = prepare_user_agent
+
       adapter_options[:proxy] = client_settings[:proxy] if client_settings[:proxy]
 
       adapter_options[:check_connection_timeout] = client_settings[:check_connection_timeout] if client_settings[:check_connection_timeout]
@@ -321,6 +324,18 @@ module LogStash; module Outputs; class ElasticSearch;
 
       adapter_class = ::LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter
       adapter = adapter_class.new(@logger, adapter_options)
+    end
+
+    def prepare_user_agent
+      os_name = java.lang.System.getProperty('os.name')
+      os_version = java.lang.System.getProperty('os.version')
+      os_arch = java.lang.System.getProperty('os.arch')
+      jvm_vendor = java.lang.System.getProperty('java.vendor')
+      jvm_version = java.lang.System.getProperty('java.version')
+
+      plugin_version = Gem.loaded_specs['logstash-output-elasticsearch'].version
+      # example: Logstash/7.14.1 (OS=Linux-5.4.0-84-generic-amd64; JVM=AdoptOpenJDK-11.0.11) logstash-output-elasticsearch/11.0.1
+      "Logstash/#{LOGSTASH_VERSION} (OS=#{os_name}-#{os_version}-#{os_arch}; JVM=#{jvm_vendor}-#{jvm_version}) logstash-output-elasticsearch/#{plugin_version}"
     end
     
     def build_pool(options)

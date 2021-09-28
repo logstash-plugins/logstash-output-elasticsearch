@@ -1,6 +1,8 @@
 require_relative "../../../../spec/spec_helper"
 require "logstash/outputs/elasticsearch/http_client"
 require "cabin"
+require "webrick"
+require "java"
 
 describe LogStash::Outputs::ElasticSearch::HttpClient do
   let(:ssl) { nil }
@@ -284,6 +286,73 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
 
       it "should not start the sniffer" do
         expect(client.pool.sniffing).to be_falsey
+      end
+    end
+  end
+
+  class StoppableServer
+
+    attr_reader :port
+
+    def initialize()
+      queue = Queue.new
+      @first_req_waiter = java.util.concurrent.CountDownLatch.new(1)
+      @first_request = nil
+
+      @t = java.lang.Thread.new(
+        proc do
+          begin
+            @server = WEBrick::HTTPServer.new :Port => 0, :DocumentRoot => ".",
+                     :Logger => Cabin::Channel.get, # silence WEBrick logging
+                     :StartCallback => Proc.new {
+                           queue.push("started")
+                         }
+            @port = @server.config[:Port]
+            @server.mount_proc '/headers_check' do |req, res|
+              res.body = 'Hello, world from WEBrick mocking server!'
+              @first_request = req
+              @first_req_waiter.countDown()
+            end
+
+            @server.start
+          rescue => e
+            puts "Error in webserver thread #{e}"
+            # ignore
+          end
+        end
+      )
+      @t.daemon = true
+      @t.start
+      queue.pop # blocks until the server is up
+    end
+
+    def stop
+      @server.shutdown
+    end
+
+    def wait_receive_request
+      @first_req_waiter.await(2, java.util.concurrent.TimeUnit::SECONDS)
+      @first_request
+    end
+  end
+
+  describe "#build_adapter" do
+    let(:client) { LogStash::Outputs::ElasticSearch::HttpClient.new(base_options) }
+    let!(:webserver) { StoppableServer.new } # webserver must be started before the call, so no lazy "let"
+
+    after :each do
+      webserver.stop
+    end
+
+    context "the 'user-agent' header" do
+      it "contains the Logstash environment details" do
+        adapter = client.build_adapter(client.options)
+        adapter.perform_request(::LogStash::Util::SafeURI.new("http://localhost:#{webserver.port}"), :get, "/headers_check")
+
+        request = webserver.wait_receive_request
+
+        transmitted_user_agent = request.header['user-agent'][0]
+        expect(transmitted_user_agent).to match(/Logstash\/\d*\.\d*\.\d* \(OS=.*; JVM=.*\) logstash-output-elasticsearch\/\d*\.\d*\.\d*/)
       end
     end
   end
