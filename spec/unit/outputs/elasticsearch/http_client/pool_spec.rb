@@ -61,7 +61,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
           expect(adapter).to receive(:perform_request).with(anything, :head, "/", anything, anything) do |url, _, _, _, _|
             expect(url.path).to be_empty
           end
-          expect { subject.healthcheck! }.to raise_error(LogStash::ConfigurationError, "Not a valid Elasticsearch")
+          expect { subject.healthcheck! }.to raise_error(LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch")
         end
       end
 
@@ -72,7 +72,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
           expect(adapter).to receive(:perform_request).with(anything, :head, eq(healthcheck_path), anything, anything) do |url, _, _, _, _|
             expect(url.path).to be_empty
           end
-          expect { subject.healthcheck! }.to raise_error(LogStash::ConfigurationError, "Not a valid Elasticsearch")
+          expect { subject.healthcheck! }.to raise_error(LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch")
         end
       end
     end

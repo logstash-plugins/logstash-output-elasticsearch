@@ -244,7 +244,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           # when called from resurrectionist skip the product check done during register phase
           if register_phase
             if !elasticsearch?(url)
-              raise LogStash::ConfigurationError, "Not a valid Elasticsearch"
+              raise LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch"
             end
           end
           # If no exception was raised it must have succeeded!
