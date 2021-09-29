@@ -297,8 +297,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
     def valid_tagline?(version_info)
       tagline = version_info['tagline']
-      return false if tagline.nil? || tagline != "You Know, for Search"
-      true
+     tagline == "You Know, for Search"
     end
 
     def stop_resurrectionist
