@@ -287,7 +287,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         # case >= 7.14
         lower_headers = response.headers.transform_keys {|key| key.to_s.downcase }
         product_header = lower_headers['x-elastic-product']
-        return false if product_header.nil? || product_header != 'Elasticsearch'
+        return false if product_header != 'Elasticsearch'
       end
       return true
     rescue => e
