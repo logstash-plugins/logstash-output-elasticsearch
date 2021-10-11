@@ -291,7 +291,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
       return true
     rescue => e
-      logger.error("Unable to version version information", url: url.sanitized.to_s, exception: e.class, message: e.message)
+      logger.error("Unable to retrieve Elasticsearch version", url: url.sanitized.to_s, exception: e.class, message: e.message)
       false
     end
 
