@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name            = 'logstash-output-elasticsearch'
-  s.version         = '11.1.0'
+  s.version         = '11.2.0'
 
   s.licenses        = ['apache-2.0']
   s.summary         = "Stores logs in Elasticsearch"
@@ -31,6 +31,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'flores'
   s.add_development_dependency 'cabin', ['~> 0.6']
   s.add_development_dependency 'webrick'
+  s.add_development_dependency 'webmock'
   # Still used in some specs, we should remove this ASAP
   s.add_development_dependency 'elasticsearch'
 end
