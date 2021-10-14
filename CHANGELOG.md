@@ -1,3 +1,6 @@
+## 11.2.1
+ - Fix referencing Gem classes from global lexical scope [#1044](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1044)
+
 ## 11.2.0
  - Added preflight checks on Elasticsearch [#1026](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1026)
 
