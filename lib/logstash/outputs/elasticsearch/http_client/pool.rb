@@ -37,8 +37,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     ROOT_URI_PATH = '/'.freeze
     LICENSE_PATH = '/_license'.freeze
 
-    VERSION_6_TO_7 = Gem::Requirement.new([">= 6.0.0", "< 7.0.0"])
-    VERSION_7_TO_7_14 = Gem::Requirement.new([">= 7.0.0", "< 7.14.0"])
+    VERSION_6_TO_7 = ::Gem::Requirement.new([">= 6.0.0", "< 7.0.0"])
+    VERSION_7_TO_7_14 = ::Gem::Requirement.new([">= 7.0.0", "< 7.14.0"])
 
     DEFAULT_OPTIONS = {
       :healthcheck_path => ROOT_URI_PATH,
@@ -275,8 +275,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       version_info = LogStash::Json.load(response.body)
       return false if version_info['version'].nil?
 
-      version = Gem::Version.new(version_info["version"]['number'])
-      return false if version < Gem::Version.new('6.0.0')
+      version = ::Gem::Version.new(version_info["version"]['number'])
+      return false if version < ::Gem::Version.new('6.0.0')
 
       if VERSION_6_TO_7.satisfied_by?(version)
         return valid_tagline?(version_info)
