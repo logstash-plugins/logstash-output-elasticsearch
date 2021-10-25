@@ -959,7 +959,7 @@ describe LogStash::Outputs::ElasticSearch do
     context 'error raised' do
 
       let(:es_version) { '7.8.0' }
-      let(:options) { super().merge('data_stream' => 'true') }
+      let(:options) { super().merge('data_stream' => 'true', 'ecs_compatibility' => 'v1') }
       let(:latch) { Concurrent::CountDownLatch.new }
 
       before do

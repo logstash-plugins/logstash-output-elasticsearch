@@ -60,9 +60,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
     end
 
     it "warns when configuration is data-stream compliant (LS 7.x)" do
-      expect( subject.logger ).to receive(:warn) do |msg|
-        expect(msg).to include "Configuration is data stream compliant but due backwards compatibility Logstash 7.x"
-      end
+      expect( subject.logger ).to receive(:warn).with(a_string_including "Configuration is data stream compliant but due backwards compatibility Logstash 7.x")
       change_constant :LOGSTASH_VERSION, '7.11.0' do
         expect( subject.data_stream_config? ).to be false
       end
@@ -229,6 +227,28 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
       change_constant :LOGSTASH_VERSION, '8.1.0' do
         expect( subject.data_stream_config? ).to be true
       end
+    end
+
+    context 'with ecs_compatibility disabled' do
+      let(:ecs_compatibility) { :disabled }
+
+      context 'when running on LS 7.x' do
+        around(:each) { |example| change_constant(:LOGSTASH_VERSION, '7.15.1', &example) }
+
+        it "emits a deprecation warning and uses data streams anway" do
+          expect( subject.deprecation_logger ).to receive(:deprecated).with(a_string_including "`data_stream => true` will require the plugin to be run in ECS compatibility mode")
+          expect( subject.data_stream_config? ).to be true
+        end
+      end
+
+      context 'when running on LS 8.x' do
+        around(:each) { |example| change_constant(:LOGSTASH_VERSION, '8.0.0', &example) }
+
+        it "errors helpfully" do
+          expect{ subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, a_string_including("Invalid data stream configuration: `ecs_compatibility => disabled`"))
+        end
+      end
+
     end
 
     context 'non-compatible ES' do
