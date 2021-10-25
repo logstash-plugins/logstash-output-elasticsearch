@@ -110,8 +110,8 @@ module LogStash module Outputs class ElasticSearch
     # @return [Gem::Version] if ES supports DS nil (or raise) otherwise
     def assert_es_version_supports_data_streams
       fail 'no last_es_version' unless last_es_version # assert - should not happen
-      es_version = Gem::Version.create(last_es_version)
-      if es_version < Gem::Version.create(DATA_STREAMS_ORIGIN_ES_VERSION)
+      es_version = ::Gem::Version.create(last_es_version)
+      if es_version < ::Gem::Version.create(DATA_STREAMS_ORIGIN_ES_VERSION)
         @logger.error "Elasticsearch version does not support data streams, Logstash might end up writing to an index", es_version: es_version.version
         # NOTE: when switching to synchronous check from register, this should be a ConfigurationError
         raise LogStash::Error, "A data_stream configuration is only supported since Elasticsearch #{DATA_STREAMS_ORIGIN_ES_VERSION} " +
@@ -124,7 +124,7 @@ module LogStash module Outputs class ElasticSearch
 
     # when data_stream => is either 'auto' or not set
     def data_stream_default(data_stream_params, valid_data_stream_config)
-      ds_default = Gem::Version.create(LOGSTASH_VERSION) >= Gem::Version.create(DATA_STREAMS_ENABLED_BY_DEFAULT_LS_VERSION)
+      ds_default = ::Gem::Version.create(LOGSTASH_VERSION) >= ::Gem::Version.create(DATA_STREAMS_ENABLED_BY_DEFAULT_LS_VERSION)
 
       if ds_default # LS 8.0
         return false unless valid_data_stream_config
