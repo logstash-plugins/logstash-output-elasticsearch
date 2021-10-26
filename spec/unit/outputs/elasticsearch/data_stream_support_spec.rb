@@ -12,7 +12,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
   # We run the plugin in ECS by default, and add test scenarios specifically for it being disabled.
   let(:ecs_compatibility) { :v1 }
   before(:each) do
-    allow(subject).to receive(:ecs_compatibility).and_return(ecs_compatibility)
+    allow_any_instance_of(LogStash::Outputs::ElasticSearch).to receive(:ecs_compatibility).and_return(ecs_compatibility)
   end
 
   let(:do_register) { false }
