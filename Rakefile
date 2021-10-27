@@ -1,7 +1,7 @@
 require "logstash/devutils/rake"
 
 ECS_VERSIONS = {
-    v1: 'v1.5.0'
+    v1: 'v1.12.1'
 }
 
 ECS_LOGSTASH_INDEX_PATTERNS = %w(
