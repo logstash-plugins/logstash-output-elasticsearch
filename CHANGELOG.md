@@ -1,3 +1,6 @@
+## 11.2.2
+ - Update ECS templates from upstream; `ecs_compatiblity => v1` now resolves to templates for ECS v1.12.1 [#1027](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1027)
+
 ## 11.2.1
  - Fix referencing Gem classes from global lexical scope [#1044](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1044)
 
