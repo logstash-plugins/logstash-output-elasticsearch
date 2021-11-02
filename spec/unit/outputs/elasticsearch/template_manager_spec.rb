@@ -27,6 +27,12 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
     end
   end
 
+  context 'when ECS v8 is requested' do
+    it 'resolves' do
+      expect(described_class.default_template_path(7, :v8)).to end_with("/templates/ecs-v8/elasticsearch-7x.json")
+    end
+  end
+
   describe "index template with ilm settings" do
     let(:plugin_settings) { {"manage_template" => true, "template_overwrite" => true} }
     let(:plugin) { LogStash::Outputs::ElasticSearch.new(plugin_settings) }

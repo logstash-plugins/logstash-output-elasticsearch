@@ -2,6 +2,10 @@ require "logstash/devutils/rake"
 
 ECS_VERSIONS = {
     v1: 'v1.10.0', # WARNING: v1.11 breaks 6.x (see: https://github.com/elastic/ecs/issues/1649)
+
+    # PRERELEASE: 8.0@{2021-11-02T20:09:42Z}
+    # when pinning to released tag, remove BETA warning.
+    v8: 'b3dace43afb0dce743605cdd4cc067a3a6b8131c',
 }
 
 ECS_LOGSTASH_INDEX_PATTERNS = %w(
@@ -12,6 +16,9 @@ task :'vendor-ecs-schemata' do
   download_ecs_schema(:v1, 6)
   download_ecs_schema(:v1, 7)
   download_ecs_schema(:v1, 8, 7) { |template| transform_for_es8!(template) }
+
+  download_ecs_schema(:v8, 7)
+  download_ecs_schema(:v8, 8, 7) { |template| transform_for_es8!(template) }
 end
 task :vendor => :'vendor-ecs-schemata'
 
