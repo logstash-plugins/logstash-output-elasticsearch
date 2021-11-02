@@ -11,6 +11,8 @@ RUN rm -f $es_path/config/scripts
 COPY --chown=elasticsearch:elasticsearch spec/fixtures/test_certs/* $es_path/config/test_certs/
 COPY --chown=elasticsearch:elasticsearch .ci/elasticsearch-run.sh $es_path/
 
+RUN if [ "$SECURE_INTEGRATION" != "true" ] ; then echo "xpack.security.enabled: false" >> $es_yml; fi
+
 RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then echo "xpack.security.http.ssl.enabled: $SECURE_INTEGRATION" >> $es_yml; fi
 RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then echo "xpack.security.http.ssl.key: $es_path/config/test_certs/test.key" >> $es_yml; fi
 RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then echo "xpack.security.http.ssl.certificate: $es_path/config/test_certs/test.crt" >> $es_yml; fi
