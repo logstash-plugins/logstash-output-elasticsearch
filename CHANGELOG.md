@@ -1,3 +1,8 @@
+## 11.3.0
+ - Adds ECS templates [#1048](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1048)
+   - Adds templates for ECS v1 for Elasticsearch 8.x
+   - Adds templates for BETA preview of ECS v8 for both Elasticsearch 7.x and 8.x
+
 ## 11.2.3
  - Downgrade ECS templates, pinning to v1.10.0 of upstream; fixes an issue where ECS templates cannot be installed in Elasticsearch 6.x or 7.1-7.2, since the generated templates include fields of `type: flattened` that was introduced in Elasticsearch 7.3
 
