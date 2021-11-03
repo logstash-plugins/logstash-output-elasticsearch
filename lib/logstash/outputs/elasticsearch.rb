@@ -102,7 +102,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   include(LogStash::Outputs::ElasticSearch::Ilm)
 
   # ecs_compatibility option, provided by Logstash core or the support adapter.
-  include(LogStash::PluginMixins::ECSCompatibilitySupport)
+  include(LogStash::PluginMixins::ECSCompatibilitySupport(:disabled, :v1, :v8))
 
   # Generic/API config options that any document indexer output needs
   include(LogStash::PluginMixins::ElasticSearch::APIConfigs)
@@ -300,6 +300,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     @bulk_request_metrics = metric.namespace(:bulk_requests)
     @document_level_metrics = metric.namespace(:documents)
+
+    if ecs_compatibility == :v8
+      @logger.warn("Elasticsearch Output configured with `ecs_compatibility => v8`, which resolved to an UNRELEASED preview of version 8.0.0 of the Elastic Common Schema. " +
+                   "Once ECS v8 and an updated release of this plugin are publicly available, you will need to update this plugin to resolve this warning.")
+    end
   end
 
   # @override post-register when ES connection established
