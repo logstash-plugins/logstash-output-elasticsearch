@@ -502,7 +502,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       @default_index = "logstash-%{+yyyy.MM.dd}"
       @default_ilm_rollover_alias = "logstash"
       @default_template_name = 'logstash'
-    when :v1
+    when :v1, :v8
       @default_index = "ecs-logstash-%{+yyyy.MM.dd}"
       @default_ilm_rollover_alias = "ecs-logstash"
       @default_template_name = 'ecs-logstash'

@@ -4,6 +4,8 @@ require "flores/random"
 require 'concurrent/atomic/count_down_latch'
 require "logstash/outputs/elasticsearch"
 
+require 'logstash/plugin_mixins/ecs_compatibility_support/spec_helper'
+
 describe LogStash::Outputs::ElasticSearch do
   subject(:elasticsearch_output_instance) { described_class.new(options) }
   let(:options) { {} }
@@ -918,6 +920,25 @@ describe LogStash::Outputs::ElasticSearch do
 
       it "should fail" do
         expect { subject.register }.to raise_error LogStash::ConfigurationError, /Multiple authentication options are specified/
+      end
+    end
+  end
+
+  describe 'ECS Compatibility Support', :ecs_compatibility_support do
+    [
+      :disabled,
+      :v1,
+      :v8,
+    ].each do |ecs_compatibility|
+      context "When initialized with `ecs_compatibility => #{ecs_compatibility}`" do
+        let(:options) { Hash.new }
+        subject(:output) { described_class.new(options.merge("ecs_compatibility" => "#{ecs_compatibility}")) }
+        context 'when registered' do
+          before(:each) { output.register }
+          it 'has the correct effective ECS compatibility setting' do
+            expect(output.ecs_compatibility).to eq(ecs_compatibility)
+          end
+        end
       end
     end
   end
