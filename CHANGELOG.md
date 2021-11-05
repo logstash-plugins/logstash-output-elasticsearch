@@ -1,3 +1,8 @@
+## 11.3.1
+ - ECS-related fixes [#1046](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1046)
+   - Data Streams requirement on ECS is properly enforced when running on Logstash 8, and warned about when running on Logstash 7.
+   - ECS Compatibility v8 can now be selected
+
 ## 11.3.0
  - Adds ECS templates [#1048](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1048)
    - Adds templates for ECS v1 for Elasticsearch 8.x

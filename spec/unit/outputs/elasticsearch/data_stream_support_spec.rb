@@ -4,8 +4,16 @@ require "logstash/outputs/elasticsearch/data_stream_support"
 describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
   subject { LogStash::Outputs::ElasticSearch.new(options) }
+
   let(:options) { { 'hosts' => [ 'localhost:12345' ] } }
   let(:es_version) { '7.10.1' }
+
+  # All data-streams features require that the plugin be run in a non-disabled ECS compatibility mode.
+  # We run the plugin in ECS by default, and add test scenarios specifically for it being disabled.
+  let(:ecs_compatibility) { :v1 }
+  before(:each) do
+    allow_any_instance_of(LogStash::Outputs::ElasticSearch).to receive(:ecs_compatibility).and_return(ecs_compatibility)
+  end
 
   let(:do_register) { false }
   let(:stub_plugin_register!) do
@@ -52,9 +60,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
     end
 
     it "warns when configuration is data-stream compliant (LS 7.x)" do
-      expect( subject.logger ).to receive(:warn) do |msg|
-        expect(msg).to include "Configuration is data stream compliant but due backwards compatibility Logstash 7.x"
-      end
+      expect( subject.logger ).to receive(:warn).with(a_string_including "Configuration is data stream compliant but due backwards compatibility Logstash 7.x")
       change_constant :LOGSTASH_VERSION, '7.11.0' do
         expect( subject.data_stream_config? ).to be false
       end
@@ -63,6 +69,25 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
     it "defaults to using data-streams on LS 8.0" do
       change_constant :LOGSTASH_VERSION, '8.0.0' do
         expect( subject.data_stream_config? ).to be true
+      end
+    end
+
+    context 'ecs_compatibility disabled' do
+      let(:ecs_compatibility) { :disabled }
+
+      {
+        '7.x (pre-DS)' => '7.9.0',
+        '7.x (with DS)' => '7.11.0',
+        '8.0' => '8.0.0',
+        '8.x' => '8.1.2',
+      }.each do |ls_version_desc, ls_version|
+        context "on LS #{ls_version_desc}" do
+          around(:each) { |example| change_constant(:LOGSTASH_VERSION, ls_version, &example) }
+          it "does not use data-streams" do
+            expect( subject.logger ).to receive(:debug).with(a_string_including "ecs_compatibility is not enabled")
+            expect( subject.data_stream_config? ).to be false
+          end
+        end
       end
     end
 
@@ -95,6 +120,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
     before { allow(subject).to receive(:last_es_version).and_return(es_version) }
 
     it "does not use data-streams on LS 7.x" do
+      expect( subject.logger ).to receive(:warn).with(a_string_including "Logstash 7.x will not assume writing to a data-stream")
       change_constant :LOGSTASH_VERSION, '7.10.0' do
         expect( subject.data_stream_config? ).to be false
       end
@@ -197,10 +223,32 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
       end
     end
 
-    it "does use data-streams on LS 8.0" do
+    it "does use data-streams on LS 8.x" do
       change_constant :LOGSTASH_VERSION, '8.1.0' do
         expect( subject.data_stream_config? ).to be true
       end
+    end
+
+    context 'with ecs_compatibility disabled' do
+      let(:ecs_compatibility) { :disabled }
+
+      context 'when running on LS 7.x' do
+        around(:each) { |example| change_constant(:LOGSTASH_VERSION, '7.15.1', &example) }
+
+        it "emits a deprecation warning and uses data streams anway" do
+          expect( subject.deprecation_logger ).to receive(:deprecated).with(a_string_including "`data_stream => true` will require the plugin to be run in ECS compatibility mode")
+          expect( subject.data_stream_config? ).to be true
+        end
+      end
+
+      context 'when running on LS 8.x' do
+        around(:each) { |example| change_constant(:LOGSTASH_VERSION, '8.0.0', &example) }
+
+        it "errors helpfully" do
+          expect{ subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, a_string_including("Invalid data stream configuration: `ecs_compatibility => disabled`"))
+        end
+      end
+
     end
 
     context 'non-compatible ES' do

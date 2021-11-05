@@ -94,6 +94,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   require "logstash/outputs/elasticsearch/ilm"
   require "logstash/outputs/elasticsearch/data_stream_support"
   require 'logstash/plugin_mixins/ecs_compatibility_support'
+  require 'logstash/plugin_mixins/deprecation_logger_support'
 
   # Protocol agnostic methods
   include(LogStash::PluginMixins::ElasticSearch::Common)
@@ -103,6 +104,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # ecs_compatibility option, provided by Logstash core or the support adapter.
   include(LogStash::PluginMixins::ECSCompatibilitySupport(:disabled, :v1, :v8))
+
+  # deprecation logger adapter for older Logstashes
+  include(LogStash::PluginMixins::DeprecationLoggerSupport)
 
   # Generic/API config options that any document indexer output needs
   include(LogStash::PluginMixins::ElasticSearch::APIConfigs)
@@ -498,7 +502,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       @default_index = "logstash-%{+yyyy.MM.dd}"
       @default_ilm_rollover_alias = "logstash"
       @default_template_name = 'logstash'
-    when :v1
+    when :v1, :v8
       @default_index = "ecs-logstash-%{+yyyy.MM.dd}"
       @default_ilm_rollover_alias = "ecs-logstash"
       @default_template_name = 'ecs-logstash'

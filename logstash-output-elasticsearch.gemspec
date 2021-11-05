@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name            = 'logstash-output-elasticsearch'
-  s.version         = '11.3.0'
+  s.version         = '11.3.1'
 
   s.licenses        = ['apache-2.0']
   s.summary         = "Stores logs in Elasticsearch"
@@ -25,6 +25,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'stud', ['>= 0.0.17', '~> 0.0']
   s.add_runtime_dependency "logstash-core-plugin-api", ">= 1.60", "<= 2.99"
   s.add_runtime_dependency 'logstash-mixin-ecs_compatibility_support', '~>1.0'
+  s.add_runtime_dependency 'logstash-mixin-deprecation_logger_support', '~>1.0'
 
   s.add_development_dependency 'logstash-codec-plain'
   s.add_development_dependency 'logstash-devutils'
