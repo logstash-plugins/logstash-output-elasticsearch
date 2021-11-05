@@ -112,6 +112,7 @@ module LogStash module Outputs class ElasticSearch
           true
         when 'data_stream'
           value.to_s == 'true'
+        when 'ecs_compatibility' then true # reqiuired for LS <= 6.x
         else
           name.start_with?('data_stream_') ||
               shared_params.include?(name) ||
