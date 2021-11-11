@@ -9,10 +9,10 @@
    - Adds templates for BETA preview of ECS v8 for both Elasticsearch 7.x and 8.x
 
 ## 11.2.3
- - Downgrade ECS templates, pinning to v1.10.0 of upstream; fixes an issue where ECS templates cannot be installed in Elasticsearch 6.x or 7.1-7.2, since the generated templates include fields of `type: flattened` that was introduced in Elasticsearch 7.3
+ - Downgrade ECS templates, pinning to v1.10.0 of upstream; fixes an issue where ECS templates cannot be installed in Elasticsearch 6.x or 7.1-7.2, since the generated templates include fields of `type: flattened` that was introduced in Elasticsearch 7.3. [#1049](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1049)
 
 ## 11.2.2
- - Update ECS templates from upstream; `ecs_compatiblity => v1` now resolves to templates for ECS v1.12.1 [#1027](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1027)
+ - Update ECS templates from upstream; `ecs_compatiblity => v1` now resolves to templates for ECS v1.12.1 [#1047](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1047). Fixes [#1027](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1027)
 
 ## 11.2.1
  - Fix referencing Gem classes from global lexical scope [#1044](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1044)
