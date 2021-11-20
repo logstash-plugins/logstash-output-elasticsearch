@@ -117,12 +117,8 @@ output {
 
 ==== Writing to different indices: best practices
 
-[NOTE]
-================================================================================
-You cannot use dynamic variable substitution when `ilm_enabled` is `true` and
-when using `ilm_rollover_alias`.
-
-================================================================================
+NOTE: You cannot use dynamic variable substitution when `ilm_enabled` is `true` 
+and when using `ilm_rollover_alias`.
 
 If you're sending events to the same Elasticsearch cluster, but you're targeting different indices you can:
 
