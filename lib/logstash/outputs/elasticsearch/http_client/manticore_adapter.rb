@@ -126,9 +126,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
       parsed_path_and_query = java.net.URI.new(path_and_query)
 
-      query = request_uri.query
-      parsed_query = parsed_path_and_query.query
-
       new_query_parts = [request_uri.query, parsed_path_and_query.query].select do |part|
         part && !part.empty? # Skip empty nil and ""
       end
