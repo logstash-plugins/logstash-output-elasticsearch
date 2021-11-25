@@ -72,20 +72,21 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         # We want to block for our usage, this will wait for the response to finish
         resp.call
       rescue ::Manticore::ManticoreException => e
-        handle_error(e, url)
+        handle_request_error(e, request_uri_as_string)
       end
 
       # 404s are excluded because they are valid codes in the case of
       # template installation. We might need a better story around this later
       # but for our current purposes this is correct
-      if resp.code < 200 || resp.code > 299 && resp.code != 404
-        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(resp.code, request_uri, body, resp.body)
+      code = resp.code
+      if code < 200 || code > 299 && code != 404
+        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(code, request_uri, body, resp.body)
       end
 
       resp
     end
 
-    def handle_error(e, url)
+    def handle_request_error(e, url)
       details = { message: e.message, exception: e.class }
       details[:cause] = e.cause if e.respond_to?(:cause)
       details[:backtrace] = e.backtrace if @logger.debug?

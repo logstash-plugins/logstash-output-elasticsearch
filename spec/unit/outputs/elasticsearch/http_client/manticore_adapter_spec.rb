@@ -10,8 +10,13 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter do
 
   it "should raise an exception if requests are issued after close" do
     subject.close
-    expect { subject.perform_request(::LogStash::Util::SafeURI.new("http://localhost:9200"), :get, '/') }.to raise_error(::Manticore::ClientStoppedException)
-  end
+    begin
+      subject.perform_request(::LogStash::Util::SafeURI.new("http://localhost:9200"), :get, '/')
+      fail 'expected to raise a HostUnreachableError'
+    rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError => e
+      expect( e.original_error ).to be_a ::Manticore::ClientStoppedException
+    end
+  end\
   
   describe "auth" do
     let(:user) { "myuser" }
