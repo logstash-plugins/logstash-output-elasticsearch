@@ -7,9 +7,9 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
   class ManticoreAdapter
     attr_reader :manticore, :logger
 
-    def initialize(logger, options={})
+    def initialize(logger, options)
       @logger = logger
-      options = options.clone || {}
+      options = options.dup
       options[:ssl] = options[:ssl] || {}
 
       # We manage our own retries directly, so let's disable them here
