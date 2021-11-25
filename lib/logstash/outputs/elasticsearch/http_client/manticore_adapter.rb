@@ -72,8 +72,9 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         # We want to block for our usage, this will wait for the response to finish
         resp.call
       rescue ::Manticore::Timeout, ::Manticore::SocketException, ::Manticore::ClientProtocolException,
-             ::Manticore::ResolutionFailure, ::Manticore::SocketTimeout => e
-        @logger.debug("Failed to perform request", message: e.message, exception: e.class)
+             ::Manticore::ResolutionFailure,
+             ::Manticore::UnknownException => e
+        @logger.info("Failed to perform request", message: e.message, exception: e.class, cause: e.respond_to?(:cause) && e.cause)
         raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new(e, url)
       end
 
