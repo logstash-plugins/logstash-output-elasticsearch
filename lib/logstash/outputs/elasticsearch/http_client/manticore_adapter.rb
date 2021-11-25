@@ -71,11 +71,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         # Manticore returns lazy responses by default
         # We want to block for our usage, this will wait for the response to finish
         resp.call
-      rescue ::Manticore::Timeout, ::Manticore::SocketException, ::Manticore::ClientProtocolException,
-             ::Manticore::ResolutionFailure,
-             ::Manticore::UnknownException => e
-        @logger.info("Failed to perform request", message: e.message, exception: e.class, cause: e.respond_to?(:cause) && e.cause)
-        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new(e, url)
+      rescue ::Manticore::ManticoreException => e
+        handle_error(e, url)
       end
 
       # 404s are excluded because they are valid codes in the case of
@@ -86,6 +83,34 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
 
       resp
+    end
+
+    def handle_error(e, url)
+      details = { message: e.message, exception: e.class }
+      details[:cause] = e.cause if e.respond_to?(:cause)
+      details[:backtrace] = e.backtrace if @logger.debug?
+
+      level = case e
+      when ::Manticore::Timeout
+        :debug
+      when ::Manticore::UnknownException
+        :warn
+      else
+        :info
+      end
+
+      @logger.send level, "Failed to perform request", details
+      log_java_exception(details[:cause], :debug) if details[:cause] && @logger.debug?
+
+      raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new(e, url)
+    end
+
+    def log_java_exception(e, level = :debug)
+      return unless e.is_a?(java.lang.Exception)
+      # @logger.name using the same convention as LS does
+      logger = self.class.name.gsub('::', '.').downcase
+      logger = org.apache.logging.log4j.LogManager.getLogger(logger)
+      logger.send(level, '', e) # logger.error('', e) - prints nested causes
     end
 
     # Returned urls from this method should be checked for double escaping.
