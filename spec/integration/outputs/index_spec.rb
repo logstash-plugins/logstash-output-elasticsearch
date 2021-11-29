@@ -156,7 +156,7 @@ describe "indexing" do
         "cacert" => cacert,
         "index" => index
       }
-    end
+    end 
 
     let(:curl_opts) { "-u #{user}:#{password}" }
 
@@ -218,6 +218,29 @@ describe "indexing" do
 
         include_examples("an indexer", true)
       end
+
+      context 'with enforced TLSv1.3 protocol' do
+        let(:config) { super().merge 'ssl_enabled_protocols' => [ 'TLSv1.3' ] }
+
+        it_behaves_like("an indexer", true)
+      end
+
+      context 'with enforced TLSv1.2 protocol (while ES only enabled TLSv1.3)' do
+        let(:config) { super().merge 'ssl_enabled_protocols' => [ 'TLSv1.2' ] }
+
+        it "does not ship events" do
+          subject.multi_receive(events)
+
+          http_client.post("#{es_url}/_refresh").call
+
+          response = http_client.get("#{index_url}/_count?q=*")
+          result = LogStash::Json.load(response.body)
+          cur_count = result["count"]
+          expect(cur_count).to eq(0) # ES output keeps re-trying but ends up with a
+          # [Manticore::ClientProtocolException] Received fatal alert: protocol_version
+        end
+
+      end if ENV['ES_SSL_SUPPORTED_PROTOCOLS'] == 'TLSv1.3'
 
     end
 
