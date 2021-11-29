@@ -25,6 +25,7 @@ RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then \
       fi \
     fi
 RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then echo "xpack.security.http.ssl.certificate_authorities: [ '$es_path/config/test_certs/ca.crt' ]" >> $es_yml; fi
+RUN if [ "$SECURE_INTEGRATION" = "true" ] && [ ! -z "$ES_SSL_SUPPORTED_PROTOCOLS" ] ; then echo "xpack.security.http.ssl.supported_protocols: ${ES_SSL_SUPPORTED_PROTOCOLS}" >> $es_yml; fi
 
 RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then $es_path/bin/elasticsearch-users useradd simpleuser -p abc123 -r superuser; fi
 RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then $es_path/bin/elasticsearch-users useradd 'f@ncyuser' -p 'ab%12#' -r superuser; fi
