@@ -66,6 +66,8 @@ module LogStash; module PluginMixins; module ElasticSearch
         # Set the keystore password
         :keystore_password => { :validate => :password },
 
+        :ssl_enabled_protocols => { :validate => :string, :default => ['TLSv1.2', 'TLSv1.3'], :list => true },
+
         # This setting asks Elasticsearch for the list of all cluster nodes and adds them to the hosts list.
         # Note: This will return ALL nodes with HTTP enabled (including master nodes!). If you use
         # this with master nodes, you probably want to disable HTTP on them by setting
