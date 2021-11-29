@@ -33,7 +33,7 @@ describe "SSL option" do
     
     it "should pass the flag to the ES client" do
       expect(::Manticore::Client).to receive(:new) do |args|
-        expect(args[:ssl]).to eq(:enabled => true, :verify => :disable)
+        expect(args[:ssl]).to match hash_including(:enabled => true, :verify => :disable)
       end.and_return(manticore_double)
       
       subject.register
