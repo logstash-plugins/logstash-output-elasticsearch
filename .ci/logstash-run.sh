@@ -1,4 +1,7 @@
 #!/bin/bash
+
+env
+
 set -ex
 
 export PATH=$BUILD_DIR/gradle/bin:$PATH
