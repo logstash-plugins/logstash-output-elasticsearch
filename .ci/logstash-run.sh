@@ -14,12 +14,12 @@ fi
 
 wait_for_es() {
   count=120
-  while ! curl -vik $ES_URL >/dev/null && [[ $count -ne 0 ]]; do
+  while ! curl --tlsv1.2 --tls-max 1.3 -vik $ES_URL >/dev/null && [[ $count -ne 0 ]]; do
     count=$(( $count - 1 ))
     [[ $count -eq 0 ]] && exit 1
     sleep 1
   done
-  echo $(curl -s $ES_URL | python -c "import sys, json; print(json.load(sys.stdin)['version']['number'])")
+  echo $(curl --tlsv1.2 --tls-max 1.3 -s $ES_URL | python -c "import sys, json; print(json.load(sys.stdin)['version']['number'])")
 }
 
 if [[ "$INTEGRATION" != "true" ]]; then
