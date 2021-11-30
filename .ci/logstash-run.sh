@@ -14,7 +14,7 @@ fi
 
 wait_for_es() {
   count=120
-  while ! curl -s $ES_URL >/dev/null && [[ $count -ne 0 ]]; do
+  while ! curl -vik $ES_URL >/dev/null && [[ $count -ne 0 ]]; do
     count=$(( $count - 1 ))
     [[ $count -eq 0 ]] && exit 1
     sleep 1
