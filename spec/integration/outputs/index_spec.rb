@@ -74,9 +74,11 @@ describe "indexing" do
     end
   end
 
+  let(:initial_events) { [] }
+
   before do
     subject.register
-    subject.multi_receive([])
+    subject.multi_receive(initial_events) if initial_events
   end
 
   after do
@@ -232,8 +234,11 @@ describe "indexing" do
       context 'with enforced TLSv1.2 protocol (while ES only enabled TLSv1.3)' do
         let(:config) { super().merge 'ssl_enabled_protocols' => [ 'TLSv1.2' ] }
 
+        let(:initial_events) { nil }
+
         it "does not ship events" do
-          subject.multi_receive(events)
+          Thread.start { subject.multi_receive(events) } # we'll be stuck in a retry loop
+          sleep 2.5
 
           http_client.post("#{es_url}/_refresh").call
 
