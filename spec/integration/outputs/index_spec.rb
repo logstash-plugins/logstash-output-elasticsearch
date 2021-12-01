@@ -76,6 +76,7 @@ describe "indexing" do
 
   before do
     subject.register
+    subject.multi_receive([])
   end
 
   after do
