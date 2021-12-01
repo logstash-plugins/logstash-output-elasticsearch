@@ -1,3 +1,7 @@
+## 11.3.2
+ - Refactor: review manticore error handling/logging [#1029](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1029)
+   - Java causes on connection related exceptions will now be extra logged when plugin is logging at debug level
+
 ## 11.3.1
  - ECS-related fixes [#1046](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1046)
    - Data Streams requirement on ECS is properly enforced when running on Logstash 8, and warned about when running on Logstash 7.
