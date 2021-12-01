@@ -237,6 +237,7 @@ describe "indexing" do
         let(:initial_events) { nil }
 
         it "does not ship events" do
+          http_client.put(index_url).call # make sure index exists
           Thread.start { subject.multi_receive(events) } # we'll be stuck in a retry loop
           sleep 2.5
 
