@@ -13,7 +13,6 @@ services:
         - SECURE_INTEGRATION=${SECURE_INTEGRATION:-false}
         - ES_SSL_KEY_INVALID=${ES_SSL_KEY_INVALID:-false}
         - ES_SSL_SUPPORTED_PROTOCOLS=$ES_SSL_SUPPORTED_PROTOCOLS
-        - LOG_LEVEL=debug
 
   elasticsearch:
     build:
