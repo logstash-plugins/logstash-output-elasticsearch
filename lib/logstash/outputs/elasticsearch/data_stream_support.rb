@@ -18,7 +18,7 @@ module LogStash module Outputs class ElasticSearch
       # Defaults to `false` in Logstash 7.x and `auto` starting in Logstash 8.0.
       base.config :data_stream, :validate => ['true', 'false', 'auto']
 
-      base.config :data_stream_type, :validate => ['logs', 'metrics', 'synthetics'], :default => 'logs'
+      base.config :data_stream_type, :validate => ['logs', 'metrics', 'synthetics', 'traces'], :default => 'logs'
       base.config :data_stream_dataset, :validate => :dataset_identifier, :default => 'generic'
       base.config :data_stream_namespace, :validate => :namespace_identifier, :default => 'default'
 
