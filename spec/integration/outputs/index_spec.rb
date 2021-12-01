@@ -76,9 +76,12 @@ describe "indexing" do
 
   before do
     subject.register
-    subject.multi_receive([])
   end
-  
+
+  after do
+    subject.do_close
+  end
+
   shared_examples "an indexer" do |secure|
     it "ships events" do
       subject.multi_receive(events)
@@ -146,10 +149,10 @@ describe "indexing" do
     let(:user) { "simpleuser" }
     let(:password) { "abc123" }
     let(:cacert) { "spec/fixtures/test_certs/ca.crt" }
-    let(:es_url) {"https://elasticsearch:9200"}
+    let(:es_url) { "https://#{get_host_port}" }
     let(:config) do
       {
-        "hosts" => ["elasticsearch:9200"],
+        "hosts" => [ get_host_port ],
         "user" => user,
         "password" => password,
         "ssl" => true,
