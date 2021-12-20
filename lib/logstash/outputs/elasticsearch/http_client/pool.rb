@@ -8,12 +8,12 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       attr_reader :url, :response_code, :request_body, :response_body
 
       def initialize(response_code, url, request_body, response_body)
+        super(message)
+
         @response_code = response_code
         @url = url
         @request_body = request_body
         @response_body = response_body
-
-        super(message)
       end
 
       def message
@@ -24,10 +24,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       attr_reader :original_error, :url
 
       def initialize(original_error, url)
+        super(message)
+
         @original_error = original_error
         @url = url
-
-        super(message)
       end
 
       def message
