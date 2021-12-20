@@ -72,7 +72,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         # We want to block for our usage, this will wait for the response to finish
         resp.call
       rescue ::Manticore::ManticoreException => e
-        handle_request_error(e, request_uri_as_string)
+        log_request_error(e)
+        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new(e, request_uri_as_string)
       end
 
       # 404s are excluded because they are valid codes in the case of
@@ -86,7 +87,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       resp
     end
 
-    def handle_request_error(e, url)
+    def log_request_error(e)
       details = { message: e.message, exception: e.class }
       details[:cause] = e.cause if e.respond_to?(:cause)
       details[:backtrace] = e.backtrace if @logger.debug?
@@ -102,8 +103,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
       @logger.send level, "Failed to perform request", details
       log_java_exception(details[:cause], :debug) if details[:cause] && @logger.debug?
-
-      raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new(e, url)
     end
 
     def log_java_exception(e, level = :debug)
