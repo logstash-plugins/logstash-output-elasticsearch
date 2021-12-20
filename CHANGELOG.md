@@ -1,5 +1,5 @@
 ## 11.3.2
- - Refactor: review manticore error handling/logging [#1029](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1029)
+ - Refactor: review manticore error handling/logging, logging originating cause in case of connection related error when debug level is enabled [#1029](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1029)
    - Java causes on connection related exceptions will now be extra logged when plugin is logging at debug level
 
 ## 11.3.1
