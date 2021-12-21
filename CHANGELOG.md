@@ -1,3 +1,6 @@
+## 11.3.2
+ - [DOC] Add `v8` to supported values for ecs_compatiblity defaults [#1059](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1059)
+
 ## 11.3.1
  - ECS-related fixes [#1046](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1046)
    - Data Streams requirement on ECS is properly enforced when running on Logstash 8, and warned about when running on Logstash 7.
