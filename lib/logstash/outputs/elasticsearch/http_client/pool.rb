@@ -8,7 +8,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       attr_reader :url, :response_code, :request_body, :response_body
 
       def initialize(response_code, url, request_body, response_body)
-        super(message)
+        super("Got response code '#{response_code}' contacting Elasticsearch at URL '#{url}'")
 
         @response_code = response_code
         @url = url
@@ -16,23 +16,17 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         @response_body = response_body
       end
 
-      def message
-        "Got response code '#{response_code}' contacting Elasticsearch at URL '#{@url}'"
-      end
     end
     class HostUnreachableError < Error;
       attr_reader :original_error, :url
 
       def initialize(original_error, url)
-        super(message)
+        super("Elasticsearch Unreachable: [#{url}][#{original_error.class}] #{original_error.message}")
 
         @original_error = original_error
         @url = url
       end
 
-      def message
-        "Elasticsearch Unreachable: [#{@url}][#{original_error.class}] #{original_error.message}"
-      end
     end
 
     attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :healthcheck_path, :sniffing_path, :bulk_path
