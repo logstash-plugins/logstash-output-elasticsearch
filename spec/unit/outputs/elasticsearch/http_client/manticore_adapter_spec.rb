@@ -16,7 +16,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter do
     rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError => e
       expect( e.original_error ).to be_a ::Manticore::ClientStoppedException
     end
-  end\
+  end
   
   describe "auth" do
     let(:user) { "myuser" }
