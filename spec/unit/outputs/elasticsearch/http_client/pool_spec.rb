@@ -4,7 +4,7 @@ require 'cabin'
 
 describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:logger) { Cabin::Channel.get }
-  let(:adapter) { LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter.new(logger) }
+  let(:adapter) { LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter.new(logger, {}) }
   let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
   let(:options) { {:resurrect_delay => 2, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
   let(:es_node_versions) { [ "0.0.0" ] }

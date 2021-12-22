@@ -8,27 +8,25 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       attr_reader :url, :response_code, :request_body, :response_body
 
       def initialize(response_code, url, request_body, response_body)
+        super("Got response code '#{response_code}' contacting Elasticsearch at URL '#{url}'")
+
         @response_code = response_code
         @url = url
         @request_body = request_body
         @response_body = response_body
       end
 
-      def message
-        "Got response code '#{response_code}' contacting Elasticsearch at URL '#{@url}'"
-      end
     end
     class HostUnreachableError < Error;
       attr_reader :original_error, :url
 
       def initialize(original_error, url)
+        super("Elasticsearch Unreachable: [#{url}][#{original_error.class}] #{original_error.message}")
+
         @original_error = original_error
         @url = url
       end
 
-      def message
-        "Elasticsearch Unreachable: [#{@url}][#{original_error.class}] #{original_error.message}"
-      end
     end
 
     attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :healthcheck_path, :sniffing_path, :bulk_path
@@ -323,9 +321,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def perform_request_to_url(url, method, path, params={}, body=nil)
-      res = @adapter.perform_request(url, method, path, params, body)
-    rescue *@adapter.host_unreachable_exceptions => e
-      raise HostUnreachableError.new(e, url), "Could not reach host #{e.class}: #{e.message}"
+      @adapter.perform_request(url, method, path, params, body)
     end
 
     def normalize_url(uri)

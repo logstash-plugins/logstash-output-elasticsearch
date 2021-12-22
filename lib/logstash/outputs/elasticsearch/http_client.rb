@@ -322,8 +322,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
       adapter_options[:headers] = client_settings[:headers] if client_settings[:headers]
 
-      adapter_class = ::LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter
-      adapter = adapter_class.new(@logger, adapter_options)
+      ::LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter.new(@logger, adapter_options)
     end
 
     def prepare_user_agent
