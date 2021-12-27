@@ -33,7 +33,9 @@ describe "elasticsearch is down on startup", :integration => true do
   end
 
   it 'should ingest events when Elasticsearch recovers before documents are sent' do
-    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_raise(::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new(StandardError.new, "big fail"))
+    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_raise(
+        ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new StandardError.new("TEST: before docs are sent"), 'http://test.es/'
+    )
     subject.register
     allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_return(ESHelper.es_version)
     subject.multi_receive([event1, event2])
@@ -43,7 +45,9 @@ describe "elasticsearch is down on startup", :integration => true do
   end
 
   it 'should ingest events when Elasticsearch recovers after documents are sent' do
-    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_raise(::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new(StandardError.new, "big fail"))
+    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_raise(
+        ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new StandardError.new("TEST: after docs are sent"), 'http://test.es/'
+    )
     subject.register
     Thread.new do
       sleep 4
@@ -56,11 +60,13 @@ describe "elasticsearch is down on startup", :integration => true do
   end
 
   it 'should get cluster_uuid when Elasticsearch recovers from license check failure' do
-    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_license).with(instance_of(LogStash::Util::SafeURI)).and_raise(::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new(StandardError.new, "big fail"))
+    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_license).and_raise(
+        ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new StandardError.new("TEST: docs are sent"), 'http://test.es/_license'
+    )
     subject.register
     Thread.new do
       sleep 4
-      allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_license).with(instance_of(LogStash::Util::SafeURI)).and_call_original
+      allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_license).and_call_original
     end
     subject.multi_receive([event1, event2])
     @es.indices.refresh
