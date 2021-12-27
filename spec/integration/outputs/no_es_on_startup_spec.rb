@@ -12,13 +12,13 @@ describe "elasticsearch is down on startup", :integration => true do
                                            "template_overwrite" => true,
                                            "hosts" => get_host_port(),
                                            "retry_max_interval" => 64,
-                                           "retry_initial_interval" => 2
+                                           "retry_initial_interval" => 2,
+                                           'ecs_compatibility' => 'disabled'
                                        })
   }
 
   before :each do
     # Delete all templates first.
-    require "elasticsearch"
     allow(Stud).to receive(:stoppable_sleep)
 
     # Clean ES of data before we start.
