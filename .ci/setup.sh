@@ -1,5 +1,5 @@
 if [ $(command -v apt-get) ]; then
-    apt-get install -y git
+    sudo apt-get install -y git
 else
-    yum install -y git
+    sudo yum install -y git
 fi
