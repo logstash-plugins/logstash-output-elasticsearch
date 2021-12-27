@@ -158,9 +158,21 @@ describe "indexing" do
     end
     it_behaves_like("an indexer", true)
 
-    context "when ca cert not set and verify is disabled" do
+    context "when ca cert not set and verification is disabled" do
       let(:config) do
-        super().tap { |config| config.delete('cacert') }.merge 'ssl_certificate_verification' => false
+        super().tap { |config| config.delete('cacert') }.merge('ssl_certificate_verification' => false)
+      end
+
+      include_examples("an indexer", true)
+    end
+
+    context "when only keystore is set and verification is disabled" do
+      let(:config) do
+        super().tap { |config| config.delete('cacert') }.merge(
+            'ssl_certificate_verification' => false,
+            'keystore' => 'spec/fixtures/test_certs/test.p12',
+            'keystore_password' => '1234567890'
+        )
       end
 
       include_examples("an indexer", true)
