@@ -132,7 +132,7 @@ describe "indexing" do
   describe "a secured indexer", :secure_integration => true do
     let(:user) { "simpleuser" }
     let(:password) { "abc123" }
-    let(:cacert) { "spec/fixtures/test_certs/test.crt" }
+    let(:cacert) { "spec/fixtures/test_certs/ca/ca.crt" }
     let(:es_url) {"https://elasticsearch:9200"}
     let(:config) do
       {
@@ -140,7 +140,7 @@ describe "indexing" do
         "user" => user,
         "password" => password,
         "ssl" => true,
-        "cacert" => "spec/fixtures/test_certs/test.crt",
+        "cacert" => cacert,
         "index" => index
       }
     end
