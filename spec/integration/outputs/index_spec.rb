@@ -157,7 +157,15 @@ describe "indexing" do
       }
     end
     it_behaves_like("an indexer", true)
-    
+
+    context "when ca cert not set and verify is disabled" do
+      let(:config) do
+        super().tap { |config| config.delete('cacert') }.merge 'ssl_certificate_verification' => false
+      end
+
+      include_examples("an indexer", true)
+    end
+
     describe "with a password requiring escaping" do
       let(:user) { "f@ncyuser" }
       let(:password) { "ab%12#" }
