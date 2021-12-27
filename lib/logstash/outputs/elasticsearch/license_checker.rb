@@ -22,6 +22,9 @@ module LogStash; module Outputs; class ElasticSearch
         warn_invalid_license(url, license)
         true
       end
+    rescue => e
+      @logger.error("Unable to get license information", url: url.sanitized.to_s, exception: e.class, message: e.message)
+      nil
     end
 
     NO_LICENSE = {}.freeze
