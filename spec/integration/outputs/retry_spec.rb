@@ -45,7 +45,8 @@ describe "failures in bulk class expected behavior", :integration => true do
       "template_overwrite" => true,
       "hosts" => get_host_port(),
       "retry_max_interval" => 64,
-      "retry_initial_interval" => 2
+      "retry_initial_interval" => 2,
+      "ecs_compatibility" => "disabled", # specs are tightly tied to non-ECS defaults
     }
     next LogStash::Outputs::ElasticSearch.new(settings)
   end

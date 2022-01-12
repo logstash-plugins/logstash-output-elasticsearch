@@ -6,7 +6,8 @@ describe "Ingest pipeline execution behavior", :integration => true do
     settings = {
       "hosts" => "#{get_host_port()}",
       "pipeline" => "apache-logs",
-      "data_stream" => 'false'
+      "data_stream" => 'false',
+      "ecs_compatibility" => "disabled", # specs are tightly tied to non-ECS defaults
     }
     next LogStash::Outputs::ElasticSearch.new(settings)
   end
