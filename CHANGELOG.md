@@ -1,3 +1,8 @@
+## 11.4.0
+ - Updates ECS templates [#1062](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1062)
+   - Updates v1 templates to 1.12.1 for use with Elasticsearch 7.x and 8.x
+   - Updates BETA preview of ECS v8 templates for Elasticsearch 7.x and 8.x
+
 ## 11.3.3
  - Feat: add support for 'traces' data stream type [#1057](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1057)
 
