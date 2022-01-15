@@ -94,5 +94,32 @@ describe "Versioned indexing", :integration => true do
         expect(r2["_source"]["message"]).to eq('foo')
       end
     end
+
+    describe "use metadata" do
+      let(:settings) do
+        {
+          "index" => "logstash-index",
+          "hosts" => get_host_port(),
+          "use_metadata" => true,
+        }
+      end
+
+      it "should use @metadata._id for document_id" do
+        id = "new_doc_id_1"
+        subject.multi_receive([LogStash::Event.new("@metadata" => { "_id" => id }, "message" => "foo")])
+        r = es.get(:index => "logstash-index", :type => doc_type, :id => id, :refresh => true)
+        expect(r["_id"]).to eq(id)
+        expect(r["_source"]["message"]).to eq("foo")
+      end
+      it "should use @metadata._index for index" do
+        id = "new_doc_id_2"
+        new_index = "logstash-index-new"
+        subject.multi_receive([LogStash::Event.new("@metadata" => { "_id" => id, "_index" => new_index }, "message" => "foo")])
+        r = es.get(:index => new_index, :type => doc_type, :id => id, :refresh => true)
+        expect(r["_id"]).to eq(id)
+        expect(r["_index"]).to eq(new_index)
+        expect(r["_source"]["message"]).to eq("foo")
+      end
+    end
   end
 end

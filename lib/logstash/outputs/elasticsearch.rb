@@ -255,6 +255,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # ILM policy to use, if undefined the default policy will be used.
   config :ilm_policy, :validate => :string, :default => DEFAULT_POLICY
 
+  # ILM policy to use, if undefined the default policy will be used.
+  config :use_metadata, :validate => :boolean, :default => false
+
   attr_reader :client
   attr_reader :default_index
   attr_reader :default_ilm_rollover_alias
@@ -435,6 +438,14 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       #        pipeline => "%{[@metadata][pipeline]}"
       #      }
       params[:pipeline] = value unless value.empty?
+    end
+
+    if @use_metadata
+      params[:_id] = event.get("[@metadata][_id]") || params[:_id]
+      event_index = event.get("[@metadata][_index]")
+      params[:_index] = event.sprintf(event_index) if event_index && !event_index.empty?
+      event_pipeline = event.get("[@metadata][pipeline]")
+      params[:pipeline] = event.sprintf(event_pipeline) if event_pipeline && !event_pipeline.empty?
     end
 
     params

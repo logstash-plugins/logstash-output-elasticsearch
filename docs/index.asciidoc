@@ -363,6 +363,7 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-truststore_password>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-upsert>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-user>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-use_metadata>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-validate_after_inactivity>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-version>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-version_type>> |<<string,string>>, one of `["internal", "external", "external_gt", "external_gte", "force"]`|No
@@ -1090,6 +1091,28 @@ Create a new document with this parameter as json string if `document_id` doesn'
   * There is no default value for this setting.
 
 Username to authenticate to a secure Elasticsearch cluster
+
+[id="plugins-{type}s-{plugin}-use_metadata"]
+===== `use_metadata`
+
+  * Value type is <<boolean,boolean>>
+  * Default value is `false`
+
+Use and preference output parameters defined in the document metadata. The <<plugins-{type}s-{plugin}-index>> (`@metadata._index`), <<plugins-{type}s-{plugin}-document_id>> (`@metadata._id_`), and <<plugins-{type}s-{plugin}-pipeline>> (`@metadata.pipeline`) can be set by their respective `@metadata` fields.
+
+E.g. to index a document to index `myindex` with id `myid` with the ingest pipeline `mypipeline`:
+
+[source,json]
+-----
+{
+  "message": "foo",
+  "@metadata": {
+    "_index": "myindex",
+    "_id": "myid",
+    "pipeline": "mypipeline"
+  }
+}
+-----
 
 [id="plugins-{type}s-{plugin}-validate_after_inactivity"]
 ===== `validate_after_inactivity`

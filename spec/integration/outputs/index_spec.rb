@@ -46,7 +46,7 @@ describe "TARGET_BULK_BYTES", :integration => true do
 end
 
 describe "indexing" do
-  let(:event) { LogStash::Event.new("message" => "Hello World!", "type" => type) }
+  let(:event) { LogStash::Event.new("message" => "Hello World!", "type" => type, "@metadata" => { "_id" => "test-id", "_index" => "test-index", "pipeline" => "test-pipeline" }) }
   let(:index) { 10.times.collect { rand(10).to_s }.join("") }
   let(:type) { ESHelper.es_version_satisfies?("< 7") ? "doc" : "_doc" }
   let(:event_count) { 1 + rand(2) }
