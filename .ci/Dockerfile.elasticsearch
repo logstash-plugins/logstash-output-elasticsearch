@@ -17,18 +17,13 @@ RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then echo "xpack.security.http.ssl.e
 RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then \
       if [ "$ES_SSL_KEY_INVALID" = "true" ] ; then \
         echo "xpack.security.http.ssl.key: $es_path/config/test_certs/test_invalid.key" >> $es_yml; \
-      else \
-        echo "xpack.security.http.ssl.key: $es_path/config/test_certs/test.key" >> $es_yml; \
-      fi \
-    fi
-RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then \
-      if [ "$ES_SSL_KEY_INVALID" = "true" ] ; then \
         echo "xpack.security.http.ssl.certificate: $es_path/config/test_certs/test_invalid.crt" >> $es_yml; \
       else \
+        echo "xpack.security.http.ssl.key: $es_path/config/test_certs/test.key" >> $es_yml; \
         echo "xpack.security.http.ssl.certificate: $es_path/config/test_certs/test.crt" >> $es_yml; \
       fi \
     fi
-RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then echo "xpack.security.http.ssl.certificate_authorities: [ '$es_path/config/test_certs/ca/ca.crt' ]" >> $es_yml; fi
+RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then echo "xpack.security.http.ssl.certificate_authorities: [ '$es_path/config/test_certs/ca.crt' ]" >> $es_yml; fi
 
 RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then $es_path/bin/elasticsearch-users useradd simpleuser -p abc123 -r superuser; fi
 RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then $es_path/bin/elasticsearch-users useradd 'f@ncyuser' -p 'ab%12#' -r superuser; fi
