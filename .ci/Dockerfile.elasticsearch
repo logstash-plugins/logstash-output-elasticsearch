@@ -5,6 +5,7 @@ ARG plugin_path=/usr/share/plugins/plugin
 ARG es_path=/usr/share/elasticsearch
 ARG es_yml=$es_path/config/elasticsearch.yml
 ARG SECURE_INTEGRATION
+ARG ES_SSL_KEY_INVALID
 
 RUN rm -f $es_path/config/scripts
 
