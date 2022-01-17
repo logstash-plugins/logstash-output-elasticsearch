@@ -223,6 +223,9 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def get_license(url)
       response = perform_request_to_url(url, :get, LICENSE_PATH)
       LogStash::Json.load(response.body)
+    rescue => e
+      logger.error("Unable to get license information", url: url.sanitized.to_s, exception: e.class, message: e.message)
+      {}
     end
 
     def health_check_request(url)
