@@ -156,58 +156,54 @@ describe "indexing" do
         }
       }
     end
-    it_behaves_like("an indexer", true)
 
-    context "when ca cert not set and verification is disabled" do
-      let(:config) do
-        super().tap { |config| config.delete('cacert') }.merge('ssl_certificate_verification' => false)
+    if ENV['ES_SSL_KEY_INVALID'] == 'true' # test_invalid.crt has SAN: DNS:localhost, IP Address:127.0.0.1
+
+      context "when ca cert not set and verification is disabled" do
+        let(:config) do
+          super().tap { |config| config.delete('cacert') }.merge('ssl_certificate_verification' => false)
+        end
+
+        include_examples("an indexer", true)
       end
 
-      include_examples("an indexer", true)
-    end
+      context "when keystore is set and verification is disabled" do
+        let(:config) do
+          super().tap { |config| config.delete('cacert') }.merge(
+              'ssl_certificate_verification' => false,
+              'keystore' => 'spec/fixtures/test_certs/test.p12',
+              'keystore_password' => '1234567890'
+          )
+        end
 
-    context "when keystore is set and verification is disabled" do
-      let(:config) do
-        super().tap { |config| config.delete('cacert') }.merge(
-            'ssl_certificate_verification' => false,
-            'keystore' => 'spec/fixtures/test_certs/test.p12',
-            'keystore_password' => '1234567890'
-        )
+        include_examples("an indexer", true)
       end
 
-      include_examples("an indexer", true)
-    end
+    else
 
-    context "when CN name invalid and verification is disabled" do
-      let(:config) do
-        super().tap { |config| config.delete('cacert') }.merge(
-            'ssl_certificate_verification' => false,
-            'keystore' => 'spec/fixtures/test_certs/test_invalid.p12',
-            'keystore_password' => '1234567890'
-        )
+      it_behaves_like("an indexer", true)
+
+      describe "with a password requiring escaping" do
+        let(:user) { "f@ncyuser" }
+        let(:password) { "ab%12#" }
+
+        include_examples("an indexer", true)
       end
 
-      include_examples("an indexer", true)
+      describe "with a user/password requiring escaping in the URL" do
+        let(:config) do
+          {
+              "hosts" => ["https://#{CGI.escape(user)}:#{CGI.escape(password)}@elasticsearch:9200"],
+              "ssl" => true,
+              "cacert" => "spec/fixtures/test_certs/test.crt",
+              "index" => index
+          }
+        end
+
+        include_examples("an indexer", true)
+      end
+
     end
 
-    describe "with a password requiring escaping" do
-      let(:user) { "f@ncyuser" }
-      let(:password) { "ab%12#" }
-      
-      include_examples("an indexer", true)
-    end
-    
-    describe "with a user/password requiring escaping in the URL" do
-      let(:config) do
-        {
-          "hosts" => ["https://#{CGI.escape(user)}:#{CGI.escape(password)}@elasticsearch:9200"],
-          "ssl" => true,
-          "cacert" => "spec/fixtures/test_certs/test.crt",
-          "index" => index
-        }
-      end
-      
-      include_examples("an indexer", true)
-    end
   end
 end
