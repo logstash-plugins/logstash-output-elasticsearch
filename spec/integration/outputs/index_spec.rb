@@ -171,7 +171,7 @@ describe "indexing" do
 
       context "when keystore is set and verification is disabled" do
         let(:config) do
-          super().tap { |config| config.delete('cacert') }.merge(
+          super().merge(
               'ssl_certificate_verification' => false,
               'keystore' => 'spec/fixtures/test_certs/test.p12',
               'keystore_password' => '1234567890'
