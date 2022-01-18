@@ -14,4 +14,3 @@ if RUBY_VERSION == "1.9.3"
   gem 'rake', '12.2.1'
 end
 
-gem 'manticore', github: 'cheald/manticore'
