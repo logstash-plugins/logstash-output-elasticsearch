@@ -166,6 +166,7 @@ describe "indexing" do
         end
 
         # NOTE: still won't work as we need to be able to build a valid trust chain
+        # Manticore (HttpClient) allows skipping of TrustManager's checkServerTrusted but not checkClientTrusted
         # include_examples("an indexer", true)
       end
 
