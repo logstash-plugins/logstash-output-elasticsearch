@@ -138,7 +138,7 @@ module LogStash; module Outputs; class ElasticSearch;
                        "** WARNING ** You have enabled encryption but DISABLED certificate verification.",
                        "** WARNING ** To make sure your data is secure change :ssl_certificate_verification to true"
                      ].join("\n")
-        ssl_options[:verify] = false
+        ssl_options[:verify] = :disable # false accepts self-signed but still validates hostname
       end
       { ssl: ssl_options }
     end
