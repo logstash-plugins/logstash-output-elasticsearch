@@ -46,7 +46,8 @@ describe "TARGET_BULK_BYTES", :integration => true do
 end
 
 describe "indexing" do
-  let(:event) { LogStash::Event.new("message" => "Hello World!", "type" => type) }
+  let(:message) { "Hello from #{__FILE__}" }
+  let(:event) { LogStash::Event.new("message" => message, "type" => type) }
   let(:index) { 10.times.collect { rand(10).to_s }.join("") }
   let(:type) { ESHelper.es_version_satisfies?("< 7") ? "doc" : "_doc" }
   let(:event_count) { 1 + rand(2) }
@@ -86,7 +87,8 @@ describe "indexing" do
 
       result = curl_and_get_json_response "#{index_url}/_search?q=*&size=1000"
       result["hits"]["hits"].each do |doc|
-        pp doc
+        expect(doc["_source"]["message"]).to eq(message)
+
         if ESHelper.es_version_satisfies?("< 8")
           expect(doc["_type"]).to eq(type)
         else
