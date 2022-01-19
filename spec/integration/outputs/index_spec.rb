@@ -55,14 +55,12 @@ describe "indexing" do
   subject { LogStash::Outputs::ElasticSearch.new(config) }
   
   let(:es_url) { "http://#{get_host_port}" }
-  let(:index_url) {"#{es_url}/#{index}"}
-  let(:http_client_options) { {} }
-  # let(:http_client) do
-  #   Manticore::Client.new(http_client_options)
-  # end
+  let(:index_url) { "#{es_url}/#{index}" }
+
+  let(:curl_opts) { nil }
 
   def curl_and_get_json_response(url, method: :get); require 'open3'
-    stdout, status = Open3.capture2("curl -X #{method.to_s.upcase} -k #{url}")
+    stdout, status = Open3.capture2("curl #{curl_opts} -X #{method.to_s.upcase} -k #{url}")
 
     if status.success?
       LogStash::Json.load(stdout)
@@ -152,18 +150,8 @@ describe "indexing" do
         "index" => index
       }
     end
-    let(:http_client_options) do
-      {
-        :auth => {
-          :user => user,
-          :password => password
-        }, 
-        :ssl => {
-          :enabled => true,
-          :ca_file => cacert
-        }
-      }
-    end
+
+    let(:curl_opts) { "-u #{user}:#{password}" }
 
     if ENV['ES_SSL_KEY_INVALID'] == 'true' # test_invalid.crt has SAN: DNS:localhost
       # javax.net.ssl.SSLPeerUnverifiedException: Host name 'elasticsearch' does not match the certificate subject ...
