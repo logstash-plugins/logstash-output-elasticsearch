@@ -1,3 +1,8 @@
+## 11.4.1
+ - Feat: upgrade manticore (http-client) library [#1063](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1063)
+   - the underlying changes include latest HttpClient (4.5.13)
+   - resolves an old issue with `ssl_certificate_verification => false` still doing some verification logic
+
 ## 11.4.0
  - Updates ECS templates [#1062](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1062)
    - Updates v1 templates to 1.12.1 for use with Elasticsearch 7.x and 8.x
