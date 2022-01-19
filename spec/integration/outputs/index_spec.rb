@@ -179,6 +179,18 @@ describe "indexing" do
         include_examples("an indexer", true)
       end
 
+      context "when keystore has self-signed cert and verification is disabled" do
+        let(:config) do
+          super().tap { |config| config.delete('cacert') }.merge(
+              'ssl_certificate_verification' => false,
+              'keystore' => 'spec/fixtures/test_certs/test_self_signed.p12',
+              'keystore_password' => '1234567890'
+          )
+        end
+
+        include_examples("an indexer", true)
+      end
+
     else
 
       it_behaves_like("an indexer", true)
