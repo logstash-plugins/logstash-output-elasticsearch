@@ -86,6 +86,7 @@ describe "indexing" do
 
       result = curl_and_get_json_response "#{index_url}/_search?q=*&size=1000"
       result["hits"]["hits"].each do |doc|
+        pp doc
         if ESHelper.es_version_satisfies?("< 8")
           expect(doc["_type"]).to eq(type)
         else
