@@ -8,9 +8,10 @@ services:
       args:
         - ELASTIC_STACK_VERSION=$ELASTIC_STACK_VERSION
     environment:
+        - ELASTIC_STACK_VERSION=$ELASTIC_STACK_VERSION
         - INTEGRATION=${INTEGRATION:-false}
         - SECURE_INTEGRATION=${SECURE_INTEGRATION:-false}
-        - ELASTIC_STACK_VERSION=$ELASTIC_STACK_VERSION
+        - ES_SSL_KEY_INVALID=${ES_SSL_KEY_INVALID:-false}
 
   elasticsearch:
     build:
@@ -20,6 +21,7 @@ services:
         - ELASTIC_STACK_VERSION=$ELASTIC_STACK_VERSION
         - INTEGRATION=${INTEGRATION:-false}
         - SECURE_INTEGRATION=${SECURE_INTEGRATION:-false}
+        - ES_SSL_KEY_INVALID=${ES_SSL_KEY_INVALID:-false}
     command: /usr/share/elasticsearch/elasticsearch-run.sh
     tty: true
     ports:
