@@ -159,14 +159,14 @@ describe "indexing" do
     if ENV['ES_SSL_KEY_INVALID'] == 'true' # test_invalid.crt has SAN: DNS:localhost
       # javax.net.ssl.SSLPeerUnverifiedException: Host name 'elasticsearch' does not match the certificate subject ...
 
-      context "when ca cert not set and verification is disabled" do
+      context "when no keystore nor ca cert set and verification is disabled" do
         let(:config) do
           super().tap { |config| config.delete('cacert') }.merge('ssl_certificate_verification' => false)
         end
 
         # NOTE: still won't work as we need to be able to build a valid trust chain
         # Manticore (HttpClient) allows skipping of TrustManager's checkServerTrusted but not checkClientTrusted
-        # include_examples("an indexer", true)
+        include_examples("an indexer", true)
       end
 
       context "when keystore is set and verification is disabled" do
