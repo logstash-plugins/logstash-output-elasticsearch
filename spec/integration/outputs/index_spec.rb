@@ -237,14 +237,13 @@ describe "indexing" do
         let(:initial_events) { nil }
 
         it "does not ship events" do
-          http_client.put(index_url).call # make sure index exists
+          curl_and_get_json_response index_url, method: :put # make sure index exists
           Thread.start { subject.multi_receive(events) } # we'll be stuck in a retry loop
           sleep 2.5
 
-          http_client.post("#{es_url}/_refresh").call
+          curl_and_get_json_response "#{es_url}/_refresh", method: :post
 
-          response = http_client.get("#{index_url}/_count?q=*")
-          result = LogStash::Json.load(response.body)
+          result = curl_and_get_json_response "#{index_url}/_count?q=*"
           cur_count = result["count"]
           expect(cur_count).to eq(0) # ES output keeps re-trying but ends up with a
           # [Manticore::ClientProtocolException] Received fatal alert: protocol_version
