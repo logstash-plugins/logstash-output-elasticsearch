@@ -203,6 +203,8 @@ describe "indexing" do
 
     else
 
+      let(:curl_opts) { "#{super()} --tlsv1.2 --tls-max 1.3" }
+
       it_behaves_like("an indexer", true)
 
       describe "with a password requiring escaping" do
