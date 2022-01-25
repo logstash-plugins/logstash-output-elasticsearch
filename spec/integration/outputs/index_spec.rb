@@ -228,13 +228,13 @@ describe "indexing" do
       end
 
       context 'with enforced TLSv1.3 protocol' do
-        let(:config) { super().merge 'ssl_enabled_protocols' => [ 'TLSv1.3' ] }
+        let(:config) { super().merge 'ssl_supported_protocols' => [ 'TLSv1.3' ] }
 
         it_behaves_like("an indexer", true)
       end
 
       context 'with enforced TLSv1.2 protocol (while ES only enabled TLSv1.3)' do
-        let(:config) { super().merge 'ssl_enabled_protocols' => [ 'TLSv1.2' ] }
+        let(:config) { super().merge 'ssl_supported_protocols' => [ 'TLSv1.2' ] }
 
         let(:initial_events) { nil }
 
