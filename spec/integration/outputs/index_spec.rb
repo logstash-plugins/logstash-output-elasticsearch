@@ -62,7 +62,7 @@ describe "indexing" do
 
   def curl_and_get_json_response(url, method: :get); require 'open3'
     begin
-      stdout, status = Open3.capture2("curl #{curl_opts} -X #{method.to_s.upcase} -k #{url}")
+      stdout, status = Open3.capture2("curl -s --show-error #{curl_opts} -X #{method.to_s.upcase} -k #{url}")
     rescue Errno::ENOENT
       fail "curl not available, make sure curl binary is installed and available on $PATH"
     end
