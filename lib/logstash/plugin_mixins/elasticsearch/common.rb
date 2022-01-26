@@ -23,10 +23,12 @@ module LogStash; module PluginMixins; module ElasticSearch
       # because they must be executed prior to building the client and logstash
       # monitoring and management rely on directly calling build_client
       # see https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/934#pullrequestreview-396203307
-      validate_authentication
       fill_hosts_from_cloud_id
+      validate_authentication
+
       setup_hosts
 
+      params['ssl'] = effectively_ssl? unless params.include?('ssl')
       params["metric"] = metric
       if @proxy.eql?('')
         @logger.warn "Supplied proxy setting (proxy => '') has no effect"
@@ -44,7 +46,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         raise LogStash::ConfigurationError, 'Multiple authentication options are specified, please only use one of user/password, cloud_auth or api_key'
       end
 
-      if @api_key && @api_key.value && @ssl   != true
+      if @api_key && @api_key.value && !effectively_ssl?
         raise(LogStash::ConfigurationError, "Using api_key authentication requires SSL/TLS secured communication using the `ssl => true` option")
       end
 
@@ -62,6 +64,15 @@ module LogStash; module PluginMixins; module ElasticSearch
         @logger.info("No 'host' set in elasticsearch output. Defaulting to localhost")
         @hosts.replace(["localhost"])
       end
+    end
+
+    def effectively_ssl?
+      return @ssl unless @ssl.nil?
+
+      hosts = Array(@hosts)
+      return nil if hosts.nil? || hosts.empty?
+
+      hosts.all? { |host| host && host.scheme == "https" }
     end
 
     def hosts_default?(hosts)

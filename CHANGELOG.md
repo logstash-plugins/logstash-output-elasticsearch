@@ -1,3 +1,6 @@
+## 11.5.0
+ - When using an `api_key` along with either `cloud_id` or https `hosts`, you no longer need to also specify `ssl => true` [#1065]()https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1065]
+
 ## 11.4.1
  - Feat: upgrade manticore (http-client) library [#1063](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1063)
    - the underlying changes include latest HttpClient (4.5.13)
