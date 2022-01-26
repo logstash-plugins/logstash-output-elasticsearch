@@ -61,16 +61,24 @@ describe "indexing" do
   let(:curl_opts) { nil }
 
   def curl_and_get_json_response(url, method: :get); require 'open3'
+    cmd = "curl -s -v --show-error #{curl_opts} -X #{method.to_s.upcase} -k #{url}"
     begin
-      stdout, status = Open3.capture2("curl -s --show-error #{curl_opts} -X #{method.to_s.upcase} -k #{url}")
+      out, err, status = Open3.capture3(cmd)
     rescue Errno::ENOENT
       fail "curl not available, make sure curl binary is installed and available on $PATH"
     end
 
     if status.success?
-      LogStash::Json.load(stdout)
+      http_status = err.match(/< HTTP\/1.1 (.*?)/)[1] || '0' # < HTTP/1.1 200 OK\r\n
+      if http_status.strip[0].to_i > 2
+        warn out
+        fail "#{cmd.inspect} unexpected response: #{http_status}\n\n#{err}"
+      end
+
+      LogStash::Json.load(out)
     else
-      fail "curl failed: #{status}\n  #{stdout}"
+      warn out
+      fail "#{cmd.inspect} process failed: #{status}\n\n#{err}"
     end
   end
 
