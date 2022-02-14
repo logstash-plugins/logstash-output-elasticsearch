@@ -7,9 +7,9 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
   class ManticoreAdapter
     attr_reader :manticore, :logger
 
-    def initialize(logger, options={})
+    def initialize(logger, options)
       @logger = logger
-      options = options.clone || {}
+      options = options.dup
       options[:ssl] = options[:ssl] || {}
 
       # We manage our own retries directly, so let's disable them here
@@ -66,21 +66,51 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
       request_uri = format_url(url, path)
       request_uri_as_string = remove_double_escaping(request_uri.to_s)
-      resp = @manticore.send(method.downcase, request_uri_as_string, params)
-
-      # Manticore returns lazy responses by default
-      # We want to block for our usage, this will wait for the repsonse
-      # to finish
-      resp.call
+      begin
+        resp = @manticore.send(method.downcase, request_uri_as_string, params)
+        # Manticore returns lazy responses by default
+        # We want to block for our usage, this will wait for the response to finish
+        resp.call
+      rescue ::Manticore::ManticoreException => e
+        log_request_error(e)
+        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new(e, request_uri_as_string)
+      end
 
       # 404s are excluded because they are valid codes in the case of
       # template installation. We might need a better story around this later
       # but for our current purposes this is correct
-      if resp.code < 200 || resp.code > 299 && resp.code != 404
-        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(resp.code, request_uri, body, resp.body)
+      code = resp.code
+      if code < 200 || code > 299 && code != 404
+        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(code, request_uri, body, resp.body)
       end
 
       resp
+    end
+
+    def log_request_error(e)
+      details = { message: e.message, exception: e.class }
+      details[:cause] = e.cause if e.respond_to?(:cause)
+      details[:backtrace] = e.backtrace if @logger.debug?
+
+      level = case e
+      when ::Manticore::Timeout
+        :debug
+      when ::Manticore::UnknownException
+        :warn
+      else
+        :info
+      end
+
+      @logger.send level, "Failed to perform request", details
+      log_java_exception(details[:cause], :debug) if details[:cause] && @logger.debug?
+    end
+
+    def log_java_exception(e, level = :debug)
+      return unless e.is_a?(java.lang.Exception)
+      # @logger.name using the same convention as LS does
+      logger = self.class.name.gsub('::', '.').downcase
+      logger = org.apache.logging.log4j.LogManager.getLogger(logger)
+      logger.send(level, '', e) # logger.error('', e) - prints nested causes
     end
 
     # Returned urls from this method should be checked for double escaping.
@@ -95,9 +125,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       return request_uri.to_s if path_and_query.nil?
 
       parsed_path_and_query = java.net.URI.new(path_and_query)
-
-      query = request_uri.query
-      parsed_query = parsed_path_and_query.query
 
       new_query_parts = [request_uri.query, parsed_path_and_query.query].select do |part|
         part && !part.empty? # Skip empty nil and ""
@@ -124,8 +151,5 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @manticore.close
     end
 
-    def host_unreachable_exceptions
-      [::Manticore::Timeout,::Manticore::SocketException, ::Manticore::ClientProtocolException, ::Manticore::ResolutionFailure, Manticore::SocketTimeout]
-    end
   end
 end; end; end; end

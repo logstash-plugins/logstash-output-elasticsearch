@@ -236,7 +236,8 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
   let (:settings) {
     {
         "ilm_enabled" => ilm_enabled,
-        "hosts" => "#{get_host_port()}"
+        "hosts" => "#{get_host_port()}",
+        "ecs_compatibility" => "disabled", # specs are tightly tied to non-ECS defaults
     }
   }
   let (:small_max_doc_policy) { max_docs_policy(3) }
