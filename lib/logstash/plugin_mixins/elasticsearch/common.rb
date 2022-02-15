@@ -70,7 +70,7 @@ module LogStash; module PluginMixins; module ElasticSearch
       return @ssl unless @ssl.nil?
 
       hosts = Array(@hosts)
-      return nil if hosts.nil? || hosts.empty?
+      return false if hosts.nil? || hosts.empty?
 
       hosts.all? { |host| host && host.scheme == "https" }
     end

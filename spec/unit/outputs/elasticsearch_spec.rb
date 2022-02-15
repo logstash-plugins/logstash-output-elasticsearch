@@ -931,9 +931,36 @@ describe LogStash::Outputs::ElasticSearch do
     end
 
     context "when set" do
-      let(:options) { { "ssl" => true, "api_key" => ::LogStash::Util::Password.new(api_key) } }
+      let(:options) { { "api_key" => ::LogStash::Util::Password.new(api_key) } }
 
-      it_behaves_like 'secure api-key authenticated client'
+      context "with ssl => true" do
+        let(:options) { super().merge("ssl" => true) }
+        it_behaves_like 'secure api-key authenticated client'
+      end
+
+      context "with ssl => false" do
+        let(:options) { super().merge("ssl" => "false") }
+
+        let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
+        it "should raise a configuration error" do
+          expect { subject.register }.to raise_error LogStash::ConfigurationError, /requires SSL\/TLS/
+        end
+      end
+
+      context "without ssl specified" do
+        context "with an https host" do
+          let(:options) { super().merge("hosts" => ["https://some.host.com"]) }
+          it_behaves_like 'secure api-key authenticated client'
+        end
+        context "with an http host`" do
+          let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
+          let(:options) { { "hosts" => ["http://some.host.com"], "api_key" => api_key } }
+
+          it "should raise a configuration error" do
+            expect { subject.register }.to raise_error LogStash::ConfigurationError, /requires SSL\/TLS/
+          end
+        end
+      end
     end
 
     context "when not set" do
