@@ -197,7 +197,7 @@ re-indexed to Elasticsearch. If the DLQ is not enabled, and a mapping error
 happens, the problem is logged as a warning, and the event is dropped. See
 <<dead-letter-queues>> for more information about processing events in the DLQ.
 The list of error codes accepted for DLQ could be customized with <<plugins-{type}s-{plugin}-dlq_custom_codes>>
-but should be done only in motivated cases.
+but should be used only in motivated cases.
 
 [id="plugins-{type}s-{plugin}-ilm"]
 ==== Index Lifecycle Management
@@ -527,7 +527,8 @@ Currently, only `logs`, `metrics`, `synthetics` and `traces` are supported.
 * Value type is <<number,number>>
 * Default value is `[]`.
 
-List extra HTTP's error codes that are considered valid to move the events into the dead letter queue.
+List HTTP's error codes that are considered valid to move the events into the dead letter queue.
+This list is an addition to the ordinary error codes considered for this feature, 400 and 404.
 It's considered a configuration error to re-use the same predefined codes for success, DLQ or conflict.
 The option accepts a list of natural numbers corresponding to HTTP errors codes.
 
