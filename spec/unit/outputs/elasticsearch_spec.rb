@@ -269,7 +269,7 @@ describe LogStash::Outputs::ElasticSearch do
           expect{ subject.register }.to raise_error(LogStash::ConfigurationError, /dlq_custom_codes contains error codes already/)
         end
       end
-    end
+    end if LOGSTASH_VERSION > '7.0'
 
     describe "#multi_receive" do
       let(:events) { [double("one"), double("two"), double("three")] }
