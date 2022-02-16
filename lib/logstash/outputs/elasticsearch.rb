@@ -255,6 +255,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # ILM policy to use, if undefined the default policy will be used.
   config :ilm_policy, :validate => :string, :default => DEFAULT_POLICY
 
+  # List extra HTTP's error codes that are considered valid to move the events into the dead letter queue.
+  # It's considered a configuration error to re-use the same predefined codes for success, DLQ or conflict.
+  # The option accepts a list of natural numbers corresponding to HTTP errors codes.
   config :dlq_custom_codes, :validate => :number, :list => true, :default => []
 
   attr_reader :client
