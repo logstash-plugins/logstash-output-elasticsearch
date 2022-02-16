@@ -255,6 +255,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # ILM policy to use, if undefined the default policy will be used.
   config :ilm_policy, :validate => :string, :default => DEFAULT_POLICY
 
+  config :dlq_custom_codes, :validate => :number, :list => true, :default => []
+
   attr_reader :client
   attr_reader :default_index
   attr_reader :default_ilm_rollover_alias
@@ -292,6 +294,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
     @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
+
+    if dlq_enabled?
+      check_dlq_custom_codes
+    end
 
     if data_stream_config?
       @event_mapper = -> (e) { data_stream_event_action_tuple(e) }
@@ -530,5 +536,16 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     return if valid_actions.include?(@action)
 
     raise LogStash::ConfigurationError, "Action '#{@action}' is invalid! Pick one of #{valid_actions} or use a sprintf style statement"
+  end
+
+  def check_dlq_custom_codes
+    intersection = dlq_custom_codes & DOC_DLQ_CODES
+    raise LogStash::ConfigurationError, "dlq_custom_codes contains error codes already used: #{intersection}" unless intersection.empty?
+
+    intersection = dlq_custom_codes & DOC_SUCCESS_CODES
+    raise LogStash::ConfigurationError, "dlq_custom_codes contains error codes already defined as success: #{intersection}" unless intersection.empty?
+
+    intersection = dlq_custom_codes & [DOC_CONFLICT_CODE]
+    raise LogStash::ConfigurationError, "dlq_custom_codes contains error codes already defined as conflict: #{intersection}" unless intersection.empty?
   end
 end

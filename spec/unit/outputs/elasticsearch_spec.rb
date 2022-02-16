@@ -260,6 +260,17 @@ describe LogStash::Outputs::ElasticSearch do
       end
     end
 
+    describe "when 'dlq_custom_codes' contains" do
+      let(:options) { super().merge('dlq_custom_codes' => [404]) }
+      let(:do_register) { false }
+
+      context "already defined codes" do
+        it "should raise a configuration error" do
+          expect{ subject.register }.to raise_error(LogStash::ConfigurationError, /dlq_custom_codes contains error codes already/)
+        end
+      end
+    end
+
     describe "#multi_receive" do
       let(:events) { [double("one"), double("two"), double("three")] }
       let(:events_tuples) { [double("one t"), double("two t"), double("three t")] }
@@ -807,7 +818,7 @@ describe LogStash::Outputs::ElasticSearch do
       end
     end
 
-    context 'with response status 400' do
+    context 'with error response status' do
 
       let(:options) { super().merge 'document_id' => '%{foo}' }
 
@@ -815,11 +826,13 @@ describe LogStash::Outputs::ElasticSearch do
 
       let(:dlq_writer) { subject.instance_variable_get(:@dlq_writer) }
 
+      let(:error_code) { 400 }
+
       let(:bulk_response) do
         {
             "took"=>1, "ingest_took"=>11, "errors"=>true, "items"=>
             [{
-                 "index"=>{"_index"=>"bar", "_type"=>"_doc", "_id"=>'bar', "status"=>400,
+                 "index"=>{"_index"=>"bar", "_type"=>"_doc", "_id"=>'bar', "status" => error_code,
                            "error"=>{"type" => "illegal_argument_exception", "reason" => "TEST" }
                   }
             }]
@@ -830,21 +843,34 @@ describe LogStash::Outputs::ElasticSearch do
         allow(subject.client).to receive(:bulk_send).and_return(bulk_response)
       end
 
-      it "should write event to DLQ" do
-        expect(dlq_writer).to receive(:write).and_wrap_original do |method, *args|
-          expect( args.size ).to eql 2
+      shared_examples "should write event to DLQ" do
+        it "should write event to DLQ" do
+          expect(dlq_writer).to receive(:write).and_wrap_original do |method, *args|
+            expect( args.size ).to eql 2
 
-          event, reason = *args
-          expect( event ).to be_a LogStash::Event
-          expect( event ).to be events.first
-          expect( reason ).to start_with 'Could not index event to Elasticsearch. status: 400, action: ["index"'
-          expect( reason ).to match /_id=>"bar".*"foo"=>"bar".*response:.*"reason"=>"TEST"/
+            event, reason = *args
+            expect( event ).to be_a LogStash::Event
+            expect( event ).to be events.first
+            expect( reason ).to start_with "Could not index event to Elasticsearch. status: #{error_code}, action: [\"index\""
+            expect( reason ).to match /_id=>"bar".*"foo"=>"bar".*response:.*"reason"=>"TEST"/
 
-          method.call(*args) # won't hurt to call LogStash::Util::DummyDeadLetterQueueWriter
-        end.once
+            method.call(*args) # won't hurt to call LogStash::Util::DummyDeadLetterQueueWriter
+          end.once
 
-        event_action_tuples = subject.map_events(events)
-        subject.send(:submit, event_action_tuples)
+          event_action_tuples = subject.map_events(events)
+          subject.send(:submit, event_action_tuples)
+        end
+      end
+
+      context "is one of the predefined codes" do
+        include_examples "should write event to DLQ"
+      end
+
+      context "when user customized dlq_custom_codes option" do
+        let(:error_code) { 403 }
+        let(:options) { super().merge 'dlq_custom_codes' => [error_code] }
+
+        include_examples "should write event to DLQ"
       end
 
     end if LOGSTASH_VERSION > '7.0'
