@@ -1,3 +1,6 @@
+## Unreleased
+ - Feature: deprecates the `failure_type_logging_whitelist` configuration option, renaming it `log_silenced_errors` [#n](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/n)
+
 ## 11.6.0
  - Added support for `ca_trusted_fingerprint` when run on Logstash 8.3+ [#1074](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1074)
 

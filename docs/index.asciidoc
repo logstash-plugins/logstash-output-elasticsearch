@@ -332,6 +332,7 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-index>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-keystore>> |a valid filesystem path|No
 | <<plugins-{type}s-{plugin}-keystore_password>> |<<password,password>>|No
+| <<plugins-{type}s-{plugin}-log_silenced_errors>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-manage_template>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-parameters>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-parent>> |<<string,string>>|No
@@ -584,9 +585,7 @@ of this setting affects the _default_ values of:
   * Value type is <<array,array>>
   * Default value is `[]`
 
-Set the Elasticsearch errors in the whitelist that you don't want to log.
-A useful example is when you want to skip all 409 errors
-which are `document_already_exists_exception`.
+NOTE: Deprecated, refer to <<plugins-{type}s-{plugin}-log_silenced_errors>>.
 
 [id="plugins-{type}s-{plugin}-custom_headers"]
 ===== `custom_headers`
@@ -761,6 +760,25 @@ It can be either .jks or .p12
   * There is no default value for this setting.
 
 Set the keystore password
+
+[id="plugins-{type}s-{plugin}-log_silenced_errors"]
+===== `log_silenced_errors`
+
+* Value type is <<array,array>>
+* Default value is `[]`
+
+Defines the list of Elasticsearch errors that you don't want to log.
+A useful example is when you want to skip all 409 errors
+which are `document_already_exists_exception`.
+
+[source,ruby]
+    output {
+      elasticsearch {
+        log_silenced_errors => ["document_already_exists_exception"]
+      }
+    }
+
+NOTE: Deprecates <<plugins-{type}s-{plugin}-failure_type_logging_whitelist>>.
 
 [id="plugins-{type}s-{plugin}-manage_template"]
 ===== `manage_template`

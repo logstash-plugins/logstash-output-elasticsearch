@@ -284,7 +284,7 @@ module LogStash; module PluginMixins; module ElasticSearch
     end
 
     def log_failure_type?(failure)
-      !failure_type_logging_whitelist.include?(failure["type"])
+      !log_silenced_errors.include?(failure["type"])
     end
 
     # Rescue retryable errors during bulk submission
