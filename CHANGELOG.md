@@ -1,6 +1,9 @@
 ## 11.5.0
  - Feat: add ssl_supported_protocols option [#1055](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1055)
 
+## 11.4.2
+ - [DOC] Add `v8` to supported values for ecs_compatiblity defaults [#1059](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1059)
+
 ## 11.4.1
  - Feat: upgrade manticore (http-client) library [#1063](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1063)
    - the underlying changes include latest HttpClient (4.5.13)

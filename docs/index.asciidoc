@@ -555,7 +555,7 @@ If you don't set a value for this option:
 * Value type is <<string,string>>
 * Supported values are:
 ** `disabled`: does not provide ECS-compatible templates
-** `v1`: provides defaults that are compatible with v1 of the Elastic Common Schema
+** `v1`,`v8`: Elastic Common Schema-compliant behavior
 * Default value depends on which version of Logstash is running:
 ** When Logstash provides a `pipeline.ecs_compatibility` setting, its value is used as the default
 ** Otherwise, the default value is `disabled`.
