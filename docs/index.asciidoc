@@ -1009,10 +1009,12 @@ https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
 ===== `ssl_supported_protocols`
 
   * Value type is <<string,string>>
-  * Default value is `['TLSv1.3', 'TLSv1.2']`
+  * Allowed values are: `TLSv1.1`, `TLSv1.2`, 'TLSv1.3'
+  * There is no default value for this setting.
 
 List of allowed SSL/TLS versions to use when establishing a connection to the Elasticsearch cluster.
-The setting is a list of allowed protocol versions, for example `TLSv1.1`, `TLSv1.2`, `TLSv1.3`.
+The default depends on the JDK being used and with up-to-date Logstash/Java is usually `['TLSv1.2', 'TLSv1.3']`.
+When using Java 8 `TLSv1.3` is only supported since **8u262** (AdoptOpenJDK).
 
 [id="plugins-{type}s-{plugin}-template"]
 ===== `template`
@@ -1028,8 +1030,8 @@ If not set, the included template will be used.
 
   * Value type is <<string,string>>
   * Default value depends on whether <<plugins-{type}s-{plugin}-ecs_compatibility>> is enabled:
-  ** ECS Compatibility disabled: `logstash`
-  ** ECS Compatibility enabled: `ecs-logstash`
+    ** ECS Compatibility disabled: `logstash`
+    ** ECS Compatibility enabled: `ecs-logstash`
 
 
 This configuration option defines how the template is named inside Elasticsearch.
