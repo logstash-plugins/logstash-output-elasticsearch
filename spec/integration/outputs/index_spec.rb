@@ -220,7 +220,7 @@ describe "indexing" do
 
     else
 
-      let(:curl_opts) { "#{super()} --tlsv1.2 --tls-max 1.3" }
+      let(:curl_opts) { "#{super()} --tlsv1.2 --tls-max 1.3 -u #{es_admin}:#{es_admin_pass}" } # due ES 8.x we need user/password
 
       it_behaves_like("an indexer", true)
 
