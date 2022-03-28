@@ -60,6 +60,9 @@ describe "indexing" do
 
   let(:curl_opts) { nil }
 
+  let(:es_admin) { 'admin' } # default user added in ES -> 8.x requires auth credentials for /_refresh etc
+  let(:es_admin_pass) { 'elastic' }
+
   def curl_and_get_json_response(url, method: :get); require 'open3'
     cmd = "curl -s -v --show-error #{curl_opts} -X #{method.to_s.upcase} -k #{url}"
     begin

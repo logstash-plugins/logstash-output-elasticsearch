@@ -30,5 +30,6 @@ RUN if [ "$SECURE_INTEGRATION" = "true" ] && [ ! -z "$ES_SSL_SUPPORTED_PROTOCOLS
 
 RUN cat $es_yml
 
+RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then $es_path/bin/elasticsearch-users useradd admin -p elastic -r superuser; fi
 RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then $es_path/bin/elasticsearch-users useradd simpleuser -p abc123 -r superuser; fi
 RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then $es_path/bin/elasticsearch-users useradd 'f@ncyuser' -p 'ab%12#' -r superuser; fi
