@@ -72,10 +72,16 @@ describe "indexing" do
     end
 
     if status.success?
-      http_status = err.match(/< HTTP\/1.1 (.*?)/)[1] || '0' # < HTTP/1.1 200 OK\r\n
+      http_status = err.match(/< HTTP\/1.1 (\d+)/)[1] || '0' # < HTTP/1.1 200 OK\r\n
+
       if http_status.strip[0].to_i > 2
-        warn out
-        fail "#{cmd.inspect} unexpected response: #{http_status}\n\n#{err}"
+        error = (LogStash::Json.load(out)['error']) rescue nil
+        if error
+          fail "#{cmd.inspect} received an error: #{http_status}\n\n#{error.inspect}"
+        else
+          warn out
+          fail "#{cmd.inspect} unexpected response: #{http_status}\n\n#{err}"
+        end
       end
 
       LogStash::Json.load(out)
