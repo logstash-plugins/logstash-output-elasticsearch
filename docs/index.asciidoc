@@ -1009,12 +1009,18 @@ https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
 ===== `ssl_supported_protocols`
 
   * Value type is <<string,string>>
-  * Allowed values are: `TLSv1.1`, `TLSv1.2`, 'TLSv1.3'
-  * There is no default value for this setting.
+  * Allowed values are: `'TLSv1.1'`, `'TLSv1.2'`, `'TLSv1.3'`
+  * Default depends on the JDK being used. With up-to-date Logstash, the default is `['TLSv1.2', 'TLSv1.3']`.
+    `'TLSv1.1'` is not considered secure and is only provided for legacy applications.
 
 List of allowed SSL/TLS versions to use when establishing a connection to the Elasticsearch cluster.
-The default depends on the JDK being used and with up-to-date Logstash/Java is usually `['TLSv1.2', 'TLSv1.3']`.
-When using Java 8 `TLSv1.3` is only supported since **8u262** (AdoptOpenJDK).
+
+For Java 8 `'TLSv1.3'` is supported  only since **8u262** (AdoptOpenJDK), but requires that you set the
+`LS_JAVA_OPTS="-Djdk.tls.client.protocols=TLSv1.3"` system property in Logstash.
+
+NOTE: If you configure the plugin to use `'TLSv1.1'` on any recent JVM, such as the one packaged with Logstash,
+the protocol is disabled by default and needs to be enabled manually by changing `jdk.tls.disabledAlgorithms` in
+the *$JDK_HOME/conf/security/java.security* configuration file. That is, `TLSv1.1` needs to be removed from the list.
 
 [id="plugins-{type}s-{plugin}-template"]
 ===== `template`
