@@ -283,11 +283,11 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def client_settings
-      @options[:client_settings] || {}
+      @_client_settings ||= @options[:client_settings] || {}
     end
 
     def ssl_options
-      client_settings.fetch(:ssl, {})
+      @_ssl_options ||= client_settings.fetch(:ssl, {})
     end
 
     def http_compression

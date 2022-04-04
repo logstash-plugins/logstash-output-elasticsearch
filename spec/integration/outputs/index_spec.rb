@@ -60,25 +60,48 @@ describe "indexing" do
 
   let(:curl_opts) { nil }
 
+  let(:es_admin) { 'admin' } # default user added in ES -> 8.x requires auth credentials for /_refresh etc
+  let(:es_admin_pass) { 'elastic' }
+
   def curl_and_get_json_response(url, method: :get); require 'open3'
+    cmd = "curl -s -v --show-error #{curl_opts} -X #{method.to_s.upcase} -k #{url}"
     begin
-      stdout, status = Open3.capture2("curl #{curl_opts} -X #{method.to_s.upcase} -k #{url}")
+      out, err, status = Open3.capture3(cmd)
     rescue Errno::ENOENT
       fail "curl not available, make sure curl binary is installed and available on $PATH"
     end
 
     if status.success?
-      LogStash::Json.load(stdout)
+      http_status = err.match(/< HTTP\/1.1 (\d+)/)[1] || '0' # < HTTP/1.1 200 OK\r\n
+
+      if http_status.strip[0].to_i > 2
+        error = (LogStash::Json.load(out)['error']) rescue nil
+        if error
+          fail "#{cmd.inspect} received an error: #{http_status}\n\n#{error.inspect}"
+        else
+          warn out
+          fail "#{cmd.inspect} unexpected response: #{http_status}\n\n#{err}"
+        end
+      end
+
+      LogStash::Json.load(out)
     else
-      fail "curl failed: #{status}\n  #{stdout}"
+      warn out
+      fail "#{cmd.inspect} process failed: #{status}\n\n#{err}"
     end
   end
 
+  let(:initial_events) { [] }
+
   before do
     subject.register
-    subject.multi_receive([])
+    subject.multi_receive(initial_events) if initial_events
   end
-  
+
+  after do
+    subject.do_close
+  end
+
   shared_examples "an indexer" do |secure|
     it "ships events" do
       subject.multi_receive(events)
@@ -146,17 +169,17 @@ describe "indexing" do
     let(:user) { "simpleuser" }
     let(:password) { "abc123" }
     let(:cacert) { "spec/fixtures/test_certs/ca.crt" }
-    let(:es_url) {"https://elasticsearch:9200"}
+    let(:es_url) { "https://#{get_host_port}" }
     let(:config) do
       {
-        "hosts" => ["elasticsearch:9200"],
+        "hosts" => [ get_host_port ],
         "user" => user,
         "password" => password,
         "ssl" => true,
         "cacert" => cacert,
         "index" => index
       }
-    end
+    end 
 
     let(:curl_opts) { "-u #{user}:#{password}" }
 
@@ -197,6 +220,8 @@ describe "indexing" do
 
     else
 
+      let(:curl_opts) { "#{super()} --tlsv1.2 --tls-max 1.3 -u #{es_admin}:#{es_admin_pass}" } # due ES 8.x we need user/password
+
       it_behaves_like("an indexer", true)
 
       describe "with a password requiring escaping" do
@@ -218,6 +243,32 @@ describe "indexing" do
 
         include_examples("an indexer", true)
       end
+
+      context 'with enforced TLSv1.3 protocol' do
+        let(:config) { super().merge 'ssl_supported_protocols' => [ 'TLSv1.3' ] }
+
+        it_behaves_like("an indexer", true)
+      end
+
+      context 'with enforced TLSv1.2 protocol (while ES only enabled TLSv1.3)' do
+        let(:config) { super().merge 'ssl_supported_protocols' => [ 'TLSv1.2' ] }
+
+        let(:initial_events) { nil }
+
+        it "does not ship events" do
+          curl_and_get_json_response index_url, method: :put # make sure index exists
+          Thread.start { subject.multi_receive(events) } # we'll be stuck in a retry loop
+          sleep 2.5
+
+          curl_and_get_json_response "#{es_url}/_refresh", method: :post
+
+          result = curl_and_get_json_response "#{index_url}/_count?q=*"
+          cur_count = result["count"]
+          expect(cur_count).to eq(0) # ES output keeps re-trying but ends up with a
+          # [Manticore::ClientProtocolException] Received fatal alert: protocol_version
+        end
+
+      end if ENV['ES_SSL_SUPPORTED_PROTOCOLS'] == 'TLSv1.3'
 
     end
 
