@@ -733,8 +733,7 @@ Indexes may not contain uppercase characters.
 For weekly indexes ISO 8601 format is recommended, eg. logstash-%{+xxxx.ww}.
 Logstash uses
 http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html[Joda
-formats] for the index pattern from event timestamp.
-
+formats] and the `@timestamp` field of each event is being used as source for the date.
 
 [id="plugins-{type}s-{plugin}-keystore"]
 ===== `keystore`
