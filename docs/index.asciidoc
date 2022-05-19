@@ -991,7 +991,6 @@ do not use full URL here, only paths, e.g. "/sniff/_nodes/http"
 Enable SSL/TLS secured communication to Elasticsearch cluster.
 Leaving this unspecified will use whatever scheme is specified in the URLs listed in <<plugins-{type}s-{plugin}-hosts>> or extracted from the <<plugins-{type}s-{plugin}-cloud_id>>.
 If no explicit protocol is specified plain HTTP will be used.
-If SSL is explicitly disabled here the plugin will refuse to start if an HTTPS URL is given in 'hosts'
 
 [id="plugins-{type}s-{plugin}-ssl_certificate_verification"]
 ===== `ssl_certificate_verification`
