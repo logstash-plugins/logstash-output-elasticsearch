@@ -27,6 +27,11 @@ module LogStash; module PluginMixins; module ElasticSearch
       fill_hosts_from_cloud_id
       setup_hosts
 
+      # inject the TrustStrategy from CATrustedFingerprintSupport
+      if trust_strategy_for_ca_trusted_fingerprint
+        params["ssl_trust_strategy"] = trust_strategy_for_ca_trusted_fingerprint
+      end
+
       params["metric"] = metric
       if @proxy.eql?('')
         @logger.warn "Supplied proxy setting (proxy => '') has no effect"

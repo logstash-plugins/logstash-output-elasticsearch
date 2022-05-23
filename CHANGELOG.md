@@ -1,3 +1,6 @@
+## 11.6.0
+ - Added support for `ca_trusted_fingerprint` when run on Logstash 8.3+ [#1074](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1074)
+
 ## 11.5.0
  - Feat: add ssl_supported_protocols option [#1055](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1055)
 

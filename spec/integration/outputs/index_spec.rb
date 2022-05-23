@@ -294,6 +294,27 @@ describe "indexing" do
         it_behaves_like("PKIX path failure")
       end
 
+      if Gem::Version.new(LOGSTASH_VERSION) >= Gem::Version.new("8.3.0")
+        context "with `ca_trusted_fingerprint` instead of `cacert`" do
+          let(:config) do
+            super().tap do |c|
+              c.delete("cacert")
+              c.update("ca_trusted_fingerprint" => ca_trusted_fingerprint)
+            end
+          end
+          let(:ca_trusted_fingerprint) { File.read("spec/fixtures/test_certs/test.der.sha256").chomp }
+
+
+          it_behaves_like("an indexer", true)
+
+          context 'with an invalid `ca_trusted_fingerprint`' do
+            let(:ca_trusted_fingerprint) { super().reverse }
+
+            it_behaves_like("PKIX path failure")
+          end
+        end
+      end
+
       context 'with enforced TLSv1.3 protocol' do
         let(:config) { super().merge 'ssl_supported_protocols' => [ 'TLSv1.3' ] }
 
