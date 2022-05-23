@@ -165,7 +165,7 @@ module LogStash; module PluginMixins; module ElasticSearch
 
       sleep_interval = @retry_initial_interval
 
-      while submit_actions && submit_actions.length > 0
+      while submit_actions && submit_actions.size > 0
 
         # We retry with whatever is didn't succeed
         begin

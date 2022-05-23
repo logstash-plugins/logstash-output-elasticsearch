@@ -93,8 +93,10 @@ describe "indexing" do
 
   let(:initial_events) { [] }
 
+  let(:do_register) { true }
+
   before do
-    subject.register
+    subject.register if do_register
     subject.multi_receive(initial_events) if initial_events
   end
 
@@ -103,6 +105,18 @@ describe "indexing" do
   end
 
   shared_examples "an indexer" do |secure|
+    before(:each) do
+      host_unreachable_error_class = LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError
+      allow(host_unreachable_error_class).to receive(:new).with(any_args).and_wrap_original do |m, original, url|
+        if original.message.include?("PKIX path building failed")
+          $stderr.puts "Client not connecting due to PKIX path building failure; " +
+                         "shutting plugin down to prevent infinite retries"
+          subject.close # premature shutdown to prevent infinite retry
+        end
+        m.call(original, url)
+      end
+    end
+
     it "ships events" do
       subject.multi_receive(events)
 
@@ -141,6 +155,32 @@ describe "indexing" do
         with(anything, anything, expected_manticore_opts).at_least(:once).
         and_call_original
       subject.multi_receive(events)
+    end
+  end
+
+  shared_examples "PKIX path failure" do
+    let(:do_register) { false }
+    let(:host_unreachable_error_class) { LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError }
+
+    before(:each) do
+      limit_execution
+    end
+
+    let(:limit_execution) do
+      Thread.new { sleep 5; subject.close }
+    end
+
+    it 'fails to establish TLS' do
+      allow(host_unreachable_error_class).to receive(:new).with(any_args).and_call_original.at_least(:once)
+
+      subject.register
+      limit_execution.join
+
+      sleep 1
+
+      expect(host_unreachable_error_class).to have_received(:new).at_least(:once) do |original, url|
+        expect(original.message).to include("PKIX path building failed")
+      end
     end
   end
 
@@ -242,6 +282,16 @@ describe "indexing" do
         end
 
         include_examples("an indexer", true)
+      end
+
+      context "without providing `cacert`" do
+        let(:config) do
+          super().tap do |c|
+            c.delete("cacert")
+          end
+        end
+
+        it_behaves_like("PKIX path failure")
       end
 
       context 'with enforced TLSv1.3 protocol' do
