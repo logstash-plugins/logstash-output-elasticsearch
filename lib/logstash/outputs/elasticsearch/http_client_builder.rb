@@ -139,6 +139,8 @@ module LogStash; module Outputs; class ElasticSearch;
         ssl_options[:verify] = :disable # false accepts self-signed but still validates hostname
       end
 
+      ssl_options[:trust_strategy] = params["ssl_trust_strategy"] if params.include?("ssl_trust_strategy")
+
       protocols = params['ssl_supported_protocols']
       ssl_options[:protocols] = protocols if protocols && protocols.any?
 

@@ -27,6 +27,11 @@ module LogStash; module PluginMixins; module ElasticSearch
       fill_hosts_from_cloud_id
       setup_hosts
 
+      # inject the TrustStrategy from CATrustedFingerprintSupport
+      if trust_strategy_for_ca_trusted_fingerprint
+        params["ssl_trust_strategy"] = trust_strategy_for_ca_trusted_fingerprint
+      end
+
       params["metric"] = metric
       if @proxy.eql?('')
         @logger.warn "Supplied proxy setting (proxy => '') has no effect"
@@ -165,7 +170,7 @@ module LogStash; module PluginMixins; module ElasticSearch
 
       sleep_interval = @retry_initial_interval
 
-      while submit_actions && submit_actions.length > 0
+      while submit_actions && submit_actions.size > 0
 
         # We retry with whatever is didn't succeed
         begin

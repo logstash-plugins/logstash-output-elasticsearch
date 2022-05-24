@@ -1,3 +1,6 @@
+
+require 'logstash/plugin_mixins/ca_trusted_fingerprint_support'
+
 module LogStash; module PluginMixins; module ElasticSearch
   module APIConfigs
 
@@ -51,6 +54,9 @@ module LogStash; module PluginMixins; module ElasticSearch
 
         # The .cer or .pem file to validate the server's certificate
         :cacert => { :validate => :path },
+
+        # One or more hex-encoded SHA256 fingerprints to trust as Certificate Authorities
+        :ca_trusted_fingerprint => LogStash::PluginMixins::CATrustedFingerprintSupport,
 
         # The JKS truststore to validate the server's certificate.
         # Use either `:truststore` or `:cacert`
@@ -163,7 +169,13 @@ module LogStash; module PluginMixins; module ElasticSearch
     }.freeze
 
     def self.included(base)
-      CONFIG_PARAMS.each { |name, opts| base.config(name, opts) }
+      CONFIG_PARAMS.each do |name, opts|
+        if opts.kind_of?(Module)
+          base.include(opts)
+        else
+          base.config(name, opts)
+        end
+      end
     end
   end
 end; end; end
