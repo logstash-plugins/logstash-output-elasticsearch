@@ -65,7 +65,7 @@ module LogStash; module PluginMixins; module ElasticSearch
       @hosts = Array(@hosts)
       if @hosts.empty?
         @logger.info("No 'host' set in elasticsearch output. Defaulting to localhost")
-        @hosts.replace(["localhost"])
+        @hosts.replace(["http://localhost:9200"])
       end
     end
 
