@@ -409,7 +409,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def template_endpoint
-      maximum_seen_major_version < 8 ? '_template' : '_index_template'
+      maximum_seen_major_version < 8 ? '_index_template' : '_template'
     end
 
     # ILM methods
