@@ -45,12 +45,33 @@ describe "whitelisting error types in expected behavior" do
     end
   end
 
-  describe "when failure logging is disabled for docuemnt exists error" do
+  describe "when failure logging is disabled for document exists error" do
     let(:settings) { super().merge("failure_type_logging_whitelist" => ["document_already_exists_exception"]) }
 
-    it "should log a failure on the action" do
+    it "should not log a failure on the action" do
       expect(subject.logger).not_to have_received(:warn).with("Failed action", anything)
     end
   end
 
+  describe "index_not_found_exception can be filtered too" do
+    let(:settings) { super().merge("failure_type_logging_whitelist" => ["index_not_found_exception"]) }
+
+    allow(subject.client).to receive(:bulk).and_return(
+      {
+        "errors" => true,
+        "items" => [{
+          "create" => {
+            "status" => 404,
+            "error" => {
+              "type" => "index_not_found_exception",
+              "reason" => "no such index [test_index] and [action.auto_create_index] contains [-*] which forbids automatic creation of the index"
+            }
+          }
+        }]
+      })
+
+    it "should not log a failure on the action" do
+      expect(subject.logger).not_to have_received(:warn).with("Failed action", anything)
+    end
+  end
 end
