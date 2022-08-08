@@ -103,15 +103,22 @@ module LogStash; module Outputs; class ElasticSearch;
 
       return if actions.empty?
 
+      bulk_responses = []
       bulk_actions = actions.collect do |action, args, source|
         args, source = update_action_builder(args, source) if action == 'update'
+
+        unless ElasticSearch::VALID_HTTP_ACTIONS.include?(action)
+          logger.warn("Bulk request rejected because of unsupported action: ", :action => action)
+          bulk_responses << emulate_batch_error_response([[{action => args}, source].compact], 400, "unsupported action")
+          next nil
+        end
 
         if source && action != 'delete'
           next [ { action => args }, source ]
         else
           next { action => args }
         end
-      end
+      end.compact
 
       body_stream = StringIO.new
       if http_compression
@@ -120,7 +127,6 @@ module LogStash; module Outputs; class ElasticSearch;
       else
         stream_writer = body_stream
       end
-      bulk_responses = []
       batch_actions = []
       bulk_actions.each_with_index do |action, index|
         as_json = action.is_a?(Array) ?
@@ -143,12 +149,14 @@ module LogStash; module Outputs; class ElasticSearch;
         batch_actions << action
       end
       stream_writer.close if http_compression
-      logger.debug("Sending final bulk request for batch.",
-                   :action_count => batch_actions.size,
-                   :payload_size => stream_writer.pos,
-                   :content_length => body_stream.size,
-                   :batch_offset => (actions.size - batch_actions.size))
-      bulk_responses << bulk_send(body_stream, batch_actions) if body_stream.size > 0
+      if body_stream.size > 0
+        logger.debug("Sending final bulk request for batch.",
+                     :action_count => batch_actions.size,
+                     :payload_size => stream_writer.pos,
+                     :content_length => body_stream.size,
+                     :batch_offset => (actions.size - batch_actions.size))
+        bulk_responses << bulk_send(body_stream, batch_actions)
+      end
       body_stream.close if !http_compression
       join_bulk_responses(bulk_responses)
     end

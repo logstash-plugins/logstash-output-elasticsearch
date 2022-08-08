@@ -266,6 +266,18 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
             end
           end
         end
+
+        context "with partial unsupported action" do
+          let(:actions) { [
+            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> "hello"}],
+            ["unsupported_action", {:_id=>nil, :_index=>"logstash"}, {"message"=> "world!"}],
+          ]}
+          it "executes one bulk_send operation" do
+            allow(subject).to receive(:join_bulk_responses)
+            expect(subject).to receive(:bulk_send).once
+            s = subject.send(:bulk, actions)
+          end
+        end
        end
      end
   end
