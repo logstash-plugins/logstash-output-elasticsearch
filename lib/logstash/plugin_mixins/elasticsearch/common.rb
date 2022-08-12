@@ -11,6 +11,7 @@ module LogStash; module PluginMixins; module ElasticSearch
     DOC_DLQ_CODES = [400, 404]
     DOC_SUCCESS_CODES = [200, 201]
     DOC_CONFLICT_CODE = 409
+    DOC_UNSUPPORTED_ACTION = 422
 
     # Perform some ES options validations and Build the HttpClient.
     # Note that this methods may sets the @user, @password, @hosts and @client ivars as a side effect.
@@ -253,13 +254,13 @@ module LogStash; module PluginMixins; module ElasticSearch
       end
 
       actions_to_retry = []
+      unsupported_actions = []
       responses.each_with_index do |response,idx|
         action_type, action_props = response.first
 
         status = action_props["status"]
         error  = action_props["error"]
         action = actions[idx]
-        action_params = action[1]
 
         # Retry logic: If it is success, we move on. If it is a failure, we have 3 paths:
         # - For 409, we log and drop. there is nothing we can do
@@ -276,12 +277,19 @@ module LogStash; module PluginMixins; module ElasticSearch
           handle_dlq_response("Could not index event to Elasticsearch.", action, status, response)
           @document_level_metrics.increment(:non_retryable_failures)
           next
+        elsif DOC_UNSUPPORTED_ACTION == status
+          unsupported_actions << action
+          next
         else
           # only log what the user whitelisted
           @document_level_metrics.increment(:retryable_failures)
           @logger.info "Retrying failed action", status: status, action: action, error: error if log_failure_type?(error)
           actions_to_retry << action
         end
+      end
+
+      if unsupported_actions.size > 0
+        @logger.warn("Bulk requests rejected before sending to Elasticsearch because of unsupported action, ", size: unsupported_actions.size)
       end
 
       actions_to_retry

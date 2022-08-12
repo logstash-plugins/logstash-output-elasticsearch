@@ -103,22 +103,24 @@ module LogStash; module Outputs; class ElasticSearch;
 
       return if actions.empty?
 
-      bulk_responses = []
+      unsupported_action_indexes = []
+      index = 0
+
       bulk_actions = actions.collect do |action, args, source|
         args, source = update_action_builder(args, source) if action == 'update'
 
+        # do not filter out the action, we have a logic in common.rb -> submit() to match action index with response index
         unless ElasticSearch::VALID_HTTP_ACTIONS.include?(action)
-          logger.warn("Bulk request rejected because of unsupported action: ", :action => action)
-          bulk_responses << emulate_batch_error_response([[{action => args}, source].compact], 400, "unsupported action")
-          next nil
+          unsupported_action_indexes << index
         end
+        index = index + 1
 
         if source && action != 'delete'
           next [ { action => args }, source ]
         else
           next { action => args }
         end
-      end.compact
+      end
 
       body_stream = StringIO.new
       if http_compression
@@ -127,8 +129,15 @@ module LogStash; module Outputs; class ElasticSearch;
       else
         stream_writer = body_stream
       end
+
+      bulk_responses = []
       batch_actions = []
       bulk_actions.each_with_index do |action, index|
+        if unsupported_action_indexes.include?(index)
+          bulk_responses << emulate_batch_error_response([action], 422, "unsupported action")
+          next
+        end
+
         as_json = action.is_a?(Array) ?
                     action.map {|line| LogStash::Json.dump(line)}.join("\n") :
                     LogStash::Json.dump(action)
@@ -148,7 +157,9 @@ module LogStash; module Outputs; class ElasticSearch;
         stream_writer.write(as_json)
         batch_actions << action
       end
+
       stream_writer.close if http_compression
+
       if body_stream.size > 0
         logger.debug("Sending final bulk request for batch.",
                      :action_count => batch_actions.size,

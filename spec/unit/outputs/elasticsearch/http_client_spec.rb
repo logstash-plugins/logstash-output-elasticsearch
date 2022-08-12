@@ -274,8 +274,12 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
           ]}
           it "executes one bulk_send operation" do
             allow(subject).to receive(:join_bulk_responses)
-            expect(subject).to receive(:bulk_send).once
-            s = subject.send(:bulk, actions)
+            expect(subject).to receive(:bulk_send).once do |body_stream, batch_actions|
+              action, source = batch_actions.first
+              action_type, input_args, source = actions[0]
+              expect(action["index"]).to match(input_args)
+            end
+            subject.send(:bulk, actions)
           end
         end
        end
