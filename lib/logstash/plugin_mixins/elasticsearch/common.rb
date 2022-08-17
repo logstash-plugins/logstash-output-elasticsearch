@@ -11,7 +11,6 @@ module LogStash; module PluginMixins; module ElasticSearch
     DOC_DLQ_CODES = [400, 404]
     DOC_SUCCESS_CODES = [200, 201]
     DOC_CONFLICT_CODE = 409
-    DOC_UNSUPPORTED_ACTION = 422
 
     # Perform some ES options validations and Build the HttpClient.
     # Note that this methods may sets the @user, @password, @hosts and @client ivars as a side effect.
@@ -167,8 +166,8 @@ module LogStash; module PluginMixins; module ElasticSearch
 
     def retrying_submit(actions)
       # Initially we submit the full list of actions
-      submit_actions = actions
-
+      # filter out invalid ES unsupported actions
+      submit_actions = filter_unsupported_actions(actions)
       sleep_interval = @retry_initial_interval
 
       while submit_actions && submit_actions.size > 0
@@ -190,6 +189,26 @@ module LogStash; module PluginMixins; module ElasticSearch
         # If we're retrying the action sleep for the recommended interval
         # Double the interval for the next time through to achieve exponential backoff
         sleep_interval = sleep_for_interval(sleep_interval)
+      end
+    end
+
+    # we shouldn't unsupported actions to ES
+    # method filters out unsupported actions by warning, writes event to DQL if enabled
+    # @returns valid actions
+    def filter_unsupported_actions(actions)
+      return if actions.empty? || actions.size < 1
+      grouped_actions = actions.group_by { |action, arg, source | LogStash::Outputs::ElasticSearch::VALID_HTTP_ACTIONS.include?(action) }
+      unless grouped_actions[false].nil?
+        @logger.warn("Number of requests filtered out before sending to Elasticsearch because of unsupported action, ", size: grouped_actions[false].size)
+        write_unsupported_events_to_dql(grouped_actions[false])
+      end
+      grouped_actions[true].nil? ? [] : grouped_actions[true]
+    end
+
+    def write_unsupported_events_to_dql(actions)
+      return if @dlq_writer.nil?
+      actions.each do |action|
+        @dlq_writer.write(action.event, "Unsupported event.")
       end
     end
 
@@ -254,7 +273,6 @@ module LogStash; module PluginMixins; module ElasticSearch
       end
 
       actions_to_retry = []
-      unsupported_actions = []
       responses.each_with_index do |response,idx|
         action_type, action_props = response.first
 
@@ -277,19 +295,12 @@ module LogStash; module PluginMixins; module ElasticSearch
           handle_dlq_response("Could not index event to Elasticsearch.", action, status, response)
           @document_level_metrics.increment(:non_retryable_failures)
           next
-        elsif DOC_UNSUPPORTED_ACTION == status
-          unsupported_actions << action
-          next
         else
           # only log what the user whitelisted
           @document_level_metrics.increment(:retryable_failures)
           @logger.info "Retrying failed action", status: status, action: action, error: error if log_failure_type?(error)
           actions_to_retry << action
         end
-      end
-
-      if unsupported_actions.size > 0
-        @logger.warn("Bulk requests rejected before sending to Elasticsearch because of unsupported action, ", size: unsupported_actions.size)
       end
 
       actions_to_retry
