@@ -165,11 +165,11 @@ module LogStash; module PluginMixins; module ElasticSearch
     end
 
     def retrying_submit(actions)
-      # Initially we submit the full list of actions
-      # filter out invalid ES unsupported actions
+      # filter out unsupported ES actions
       submit_actions = filter_unsupported_actions(actions)
       sleep_interval = @retry_initial_interval
 
+      # Initially we submit the full list of valid actions
       while submit_actions && submit_actions.size > 0
 
         # We retry with whatever is didn't succeed
@@ -196,7 +196,7 @@ module LogStash; module PluginMixins; module ElasticSearch
     # method filters out unsupported actions by warning, writes event to DQL if enabled
     # @returns valid actions
     def filter_unsupported_actions(actions)
-      return if actions.empty? || actions.size < 1
+      return if actions.nil? || actions.size < 1
       grouped_actions = actions.group_by { |action, arg, source | LogStash::Outputs::ElasticSearch::VALID_HTTP_ACTIONS.include?(action) }
       unless grouped_actions[false].nil?
         @logger.warn("Number of requests filtered out before sending to Elasticsearch because of unsupported action, ", size: grouped_actions[false].size)

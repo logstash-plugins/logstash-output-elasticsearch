@@ -151,7 +151,7 @@ module LogStash; module Outputs; class ElasticSearch;
                    :payload_size => stream_writer.pos,
                    :content_length => body_stream.size,
                    :batch_offset => (actions.size - batch_actions.size))
-      bulk_responses << bulk_send(body_stream, batch_actions)
+      bulk_responses << bulk_send(body_stream, batch_actions) if body_stream.size > 0
 
       body_stream.close if !http_compression
       join_bulk_responses(bulk_responses)
