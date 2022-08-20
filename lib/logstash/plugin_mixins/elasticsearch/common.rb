@@ -198,7 +198,7 @@ module LogStash; module PluginMixins; module ElasticSearch
     def filter_unsupported_actions(actions)
       return if actions.nil? || actions.size < 1
       supported_actions, unsupported_actions = actions.partition { |action, _, _| LogStash::Outputs::ElasticSearch::VALID_HTTP_ACTIONS.include?(action) }
-      unless unsupported_actions.nil? && unsupported_actions.size == 0
+      if !unsupported_actions.nil? && unsupported_actions.size > 0
         handle_dlq_or_drop(unsupported_actions)
         @logger.warn("Number of requests filtered out before sending to Elasticsearch because of unsupported action, ", size: actions.size)
       end
