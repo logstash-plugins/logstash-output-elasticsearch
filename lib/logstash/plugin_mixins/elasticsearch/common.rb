@@ -192,22 +192,23 @@ module LogStash; module PluginMixins; module ElasticSearch
       end
     end
 
-    # we shouldn't unsupported actions to ES
+    # we shouldn't send unsupported actions to ES
     # method filters out unsupported actions by warning, writes event to DQL if enabled
     # @returns valid actions
     def filter_unsupported_actions(actions)
       return if actions.nil? || actions.size < 1
-      grouped_actions = actions.group_by { |action, arg, source | LogStash::Outputs::ElasticSearch::VALID_HTTP_ACTIONS.include?(action) }
-      unless grouped_actions[false].nil?
-        @logger.warn("Number of requests filtered out before sending to Elasticsearch because of unsupported action, ", size: grouped_actions[false].size)
-        write_unsupported_events_to_dql(grouped_actions[false])
+      supported_actions, unsupported_actions = actions.partition { |action, _, _| LogStash::Outputs::ElasticSearch::VALID_HTTP_ACTIONS.include?(action) }
+      unless unsupported_actions.nil? && unsupported_actions.size == 0
+        handle_dlq_or_drop(unsupported_actions)
+        @logger.warn("Number of requests filtered out before sending to Elasticsearch because of unsupported action, ", size: actions.size)
       end
-      grouped_actions[true].nil? ? [] : grouped_actions[true]
+      supported_actions
     end
 
-    def write_unsupported_events_to_dql(actions)
+    def handle_dlq_or_drop(unsupported_actions)
       return if @dlq_writer.nil?
-      actions.each do |action|
+
+      unsupported_actions.each do |action|
         @dlq_writer.write(action.event, "Unsupported event.")
       end
     end
