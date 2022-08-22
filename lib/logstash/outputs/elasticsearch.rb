@@ -9,6 +9,7 @@ require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
 require "uri" # for escaping user input
 require "forwardable"
+require "set"
 
 # .Compatibility Note
 # [NOTE]
@@ -300,6 +301,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     if dlq_enabled?
       check_dlq_custom_codes
+      @dlq_codes = dlq_custom_codes.to_set
+      @dlq_codes.merge(DOC_DLQ_CODES)
     else
       raise LogStash::ConfigurationError, "DLQ feature (dlq_custom_codes) is configured while DLQ is not enabled" unless dlq_custom_codes.empty?
     end

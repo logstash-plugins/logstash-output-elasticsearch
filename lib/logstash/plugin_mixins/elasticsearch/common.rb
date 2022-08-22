@@ -268,7 +268,7 @@ module LogStash; module PluginMixins; module ElasticSearch
           @document_level_metrics.increment(:non_retryable_failures)
           @logger.warn "Failed action", status: status, action: action, response: response if log_failure_type?(error)
           next
-        elsif DOC_DLQ_CODES.include?(status) || dlq_custom_codes.include?(status)
+        elsif @dlq_codes.include?(status)
           handle_dlq_status("Could not index event to Elasticsearch.", action, status, response)
           @document_level_metrics.increment(:non_retryable_failures)
           next
