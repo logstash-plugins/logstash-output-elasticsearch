@@ -543,12 +543,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   def check_dlq_custom_codes
     intersection = dlq_custom_codes & DOC_DLQ_CODES
-    raise LogStash::ConfigurationError, "dlq_custom_codes contains error codes already used: #{intersection}" unless intersection.empty?
+    raise LogStash::ConfigurationError, "#{intersection} are already defined as standard DLQ error codes" unless intersection.empty?
 
     intersection = dlq_custom_codes & DOC_SUCCESS_CODES
-    raise LogStash::ConfigurationError, "dlq_custom_codes contains error codes already defined as success: #{intersection}" unless intersection.empty?
+    raise LogStash::ConfigurationError, "#{intersection} are success codes which cannot be redefined in dlq_custom_codes" unless intersection.empty?
 
     intersection = dlq_custom_codes & [DOC_CONFLICT_CODE]
-    raise LogStash::ConfigurationError, "dlq_custom_codes contains error codes already defined as conflict: #{intersection}" unless intersection.empty?
+    raise LogStash::ConfigurationError, "#{intersection} are error codes already defined as conflict which cannot be redefined in dlq_custom_codes" unless intersection.empty?
   end
 end

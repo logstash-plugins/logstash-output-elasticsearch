@@ -260,13 +260,13 @@ describe LogStash::Outputs::ElasticSearch do
       end
     end
 
-    describe "when 'dlq_custom_codes' contains" do
+    describe "when 'dlq_custom_codes'" do
       let(:options) { super().merge('dlq_custom_codes' => [404]) }
       let(:do_register) { false }
 
-      context "already defined codes" do
+      context "contains already defined codes" do
         it "should raise a configuration error" do
-          expect{ subject.register }.to raise_error(LogStash::ConfigurationError, /dlq_custom_codes contains error codes already/)
+          expect{ subject.register }.to raise_error(LogStash::ConfigurationError, /are already defined as standard DLQ error codes/)
         end
       end
     end if LOGSTASH_VERSION > '7.0'
