@@ -269,6 +269,13 @@ describe LogStash::Outputs::ElasticSearch do
           expect{ subject.register }.to raise_error(LogStash::ConfigurationError, /are already defined as standard DLQ error codes/)
         end
       end
+
+      context "is configured but DLQ is not enabled" do
+        it "raise a configuration error" do
+          allow(subject).to receive(:dlq_enabled?).and_return(false)
+          expect{ subject.register }.to raise_error(LogStash::ConfigurationError, /configured while DLQ is not enabled/)
+        end
+      end
     end if LOGSTASH_VERSION > '7.0'
 
     describe "#multi_receive" do

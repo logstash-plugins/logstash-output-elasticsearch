@@ -300,6 +300,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     if dlq_enabled?
       check_dlq_custom_codes
+    else
+      raise LogStash::ConfigurationError, "DLQ feature (dlq_custom_codes) is configured while DLQ is not enabled" unless dlq_custom_codes.empty?
     end
 
     if data_stream_config?
