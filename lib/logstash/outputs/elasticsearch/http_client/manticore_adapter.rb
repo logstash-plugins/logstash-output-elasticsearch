@@ -88,7 +88,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def log_request_error(e)
-      details = { message: e.message, exception: e.class }
+      details = { exception: e.class }
       details[:cause] = e.cause if e.respond_to?(:cause)
       details[:backtrace] = e.backtrace if @logger.debug?
 
@@ -101,7 +101,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         :info
       end
 
-      @logger.send level, "Failed to perform request", details
+      @logger.send level, "Failed to perform request: #{e.message}", details
       log_java_exception(details[:cause], :debug) if details[:cause] && @logger.debug?
     end
 
