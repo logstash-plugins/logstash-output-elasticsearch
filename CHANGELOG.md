@@ -1,3 +1,6 @@
+## 11.6.1
+ - Fixed issue where exceptions logged by the Manticore adapter could be passed both a `message` and a context map including a `message`, resulting in log events that could not be reasonably be parsed when formatted with Log4j2's JSONLayout
+
 ## 11.6.0
  - Added support for `ca_trusted_fingerprint` when run on Logstash 8.3+ [#1074](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1074)
 
