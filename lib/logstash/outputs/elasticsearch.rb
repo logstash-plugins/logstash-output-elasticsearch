@@ -299,10 +299,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
     @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
 
+    @dlq_codes = DOC_DLQ_CODES.to_set
+
     if dlq_enabled?
       check_dlq_custom_codes
-      @dlq_codes = dlq_custom_codes.to_set
-      @dlq_codes.merge(DOC_DLQ_CODES)
+      @dlq_codes.merge(dlq_custom_codes)
     else
       raise LogStash::ConfigurationError, "DLQ feature (dlq_custom_codes) is configured while DLQ is not enabled" unless dlq_custom_codes.empty?
     end
