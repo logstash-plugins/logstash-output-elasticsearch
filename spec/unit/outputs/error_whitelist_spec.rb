@@ -46,7 +46,7 @@ describe "whitelisting error types in expected behavior" do
   end
 
   describe "when failure logging is disabled for document exists error" do
-    let(:settings) { super().merge("log_silenced_errors" => ["document_already_exists_exception"]) }
+    let(:settings) { super().merge("silence_errors_in_log" => ["document_already_exists_exception"]) }
 
     it "should log a failure on the action" do
       expect(subject.logger).not_to have_received(:warn).with("Failed action", anything)
