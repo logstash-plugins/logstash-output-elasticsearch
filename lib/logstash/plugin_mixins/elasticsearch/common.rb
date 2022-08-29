@@ -166,7 +166,7 @@ module LogStash; module PluginMixins; module ElasticSearch
 
     def retrying_submit(actions)
       # filter out unsupported ES actions
-      submit_actions = filter_unsupported_actions(actions)
+      submit_actions = reject_unsupported_actions(actions)
       sleep_interval = @retry_initial_interval
 
       # Initially we submit the full list of valid actions
@@ -192,24 +192,23 @@ module LogStash; module PluginMixins; module ElasticSearch
       end
     end
 
-    # we shouldn't send unsupported actions to ES
-    # method filters out unsupported actions by warning, writes event to DQL if enabled
+    # Do not send unsupported actions to ES
+    # method rejects unsupported actions before sending to ES, warns and writes event to DQL if enabled
     # @returns valid actions
-    def filter_unsupported_actions(actions)
-      return if actions.nil? || actions.size < 1
+    def reject_unsupported_actions(actions)
       supported_actions, unsupported_actions = actions.partition { |action, _, _| LogStash::Outputs::ElasticSearch::VALID_HTTP_ACTIONS.include?(action) }
-      if !unsupported_actions.nil? && unsupported_actions.size > 0
-        handle_dlq_or_drop(unsupported_actions)
-        @logger.warn("Number of requests filtered out before sending to Elasticsearch because of unsupported action, ", size: actions.size)
-      end
+      dlq_or_drop_unsupported_actions(unsupported_actions) if unsupported_actions.any?
       supported_actions
     end
 
-    def handle_dlq_or_drop(unsupported_actions)
-      return if @dlq_writer.nil?
-
+    def dlq_or_drop_unsupported_actions(unsupported_actions)
       unsupported_actions.each do |action|
-        @dlq_writer.write(action.event, "Unsupported event.")
+        if @dlq_writer
+          @dlq_writer.write(action.event, "Unsupported action.")
+        else
+          @document_level_metrics.increment(:non_retryable_failures)
+          @logger.warn("Could not index event to Elasticsearch because its action is not supported.", action: action)
+        end
       end
     end
 
