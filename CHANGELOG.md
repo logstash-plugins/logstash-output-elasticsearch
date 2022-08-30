@@ -1,4 +1,4 @@
-## Unreleased
+## 11.6.1
  - Feature: deprecates the `failure_type_logging_whitelist` configuration option, renaming it `silence_errors_in_log` [#1068](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1068)
 
 ## 11.6.0
