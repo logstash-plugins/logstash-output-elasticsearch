@@ -12,7 +12,8 @@ describe "Unsupported actions testing...", :integration => true do
       "template_overwrite" => true,
       "hosts" => get_host_port(),
       "action" => "%{action_field}",
-      "id" => "%{doc_id}"
+      "document_id" => "%{doc_id}",
+      "ecs_compatibility" => "disabled"
     }
     LogStash::Outputs::ElasticSearch.new(settings.merge!(options))
   end
@@ -29,17 +30,23 @@ describe "Unsupported actions testing...", :integration => true do
       :index => INDEX,
       :type => doc_type,
       :id => "2",
-      :body => { :message => 'Test', :counter => 1 }
+      :body => { :message => 'Test to doc indexing', :counter => 1 }
+    )
+    @es.index(
+      :index => INDEX,
+      :type => doc_type,
+      :id => "3",
+      :body => { :message => 'Test to doc deletion', :counter => 2 }
     )
     @es.indices.refresh
   end
 
   context "multiple actions include unsupported action" do
     let(:events) {[
-      LogStash::Event.new("action_field" => "index", "id" => 1, "message"=> "hello"),
-      LogStash::Event.new("action_field" => "update", "id" => 2, "message"=> "hi"),
-      LogStash::Event.new("action_field" => "delete", "id" => 3, "message"=> "bye"),
-      LogStash::Event.new("action_field" => "unsupported_action", "id" => 4, "message"=> "world!")
+      LogStash::Event.new("action_field" => "index", "doc_id" => 1, "message"=> "hello"),
+      LogStash::Event.new("action_field" => "update", "doc_id" => 2, "message"=> "hi"),
+      LogStash::Event.new("action_field" => "delete", "doc_id" => 3),
+      LogStash::Event.new("action_field" => "unsupported_action", "doc_id" => 4, "message"=> "world!")
     ]}
 
     it "should reject unsupported doc" do
@@ -49,10 +56,10 @@ describe "Unsupported actions testing...", :integration => true do
       events.each do | event |
         action = event.get("action_field")
         if action.eql?("index") || action.eql?("update")
-          response = @es.get(:index => INDEX, :type => doc_type, :id => event.get("id"), :refresh => true)
+          response = @es.get(:index => INDEX, :type => doc_type, :id => event.get("doc_id"), :refresh => true)
           expect(response['_source']['message']).to eq(event.get("message"))
         else
-          expect {@es.get(:index => INDEX, :type => doc_type, :id => event.get("id"), :refresh => true)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+          expect {@es.get(:index => INDEX, :type => doc_type, :id => event.get("doc_id"), :refresh => true)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
         end
       end
     end
