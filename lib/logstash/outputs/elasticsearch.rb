@@ -362,11 +362,32 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Receive an array of events and immediately attempt to index them (no buffering)
   def multi_receive(events)
     wait_for_successful_connection if @after_successful_connection_done
-    retrying_submit map_events(events)
+    events_mapped = safe_interpolation_map_events(events)
+    retrying_submit(events_mapped.successful_events)
+    unless events_mapped.failed_events.empty?
+      @logger.error("Can't map some events, needs to be handled by DLQ #{events_mapped.failed_events}, TODO route to DLQ")
+    end
   end
 
+  MapEventsResult = Struct.new(:successful_events, :failed_events)
+
+  private
+  def safe_interpolation_map_events(events)
+    successful_events = [] # list of LogStash::Outputs::ElasticSearch::EventActionTuple
+    failed_events = [] # list of LogStash::Event
+    events.each do |evt|
+       begin
+        successful_events << @event_mapper.call(evt)
+       rescue IndexInterpolationError, e
+         failed_events << evt
+       end
+    end
+    MapEventsResult.new(successful_events, failed_events)
+  end
+
+  public
   def map_events(events)
-    events.map(&@event_mapper)
+    safe_interpolation_map_events(events).successful_events
   end
 
   def wait_for_successful_connection
@@ -441,12 +462,24 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   end
 
+  class IndexInterpolationError < ArgumentError
+    attr_reader :bad_formatted_index
+
+    def initialize(bad_formatted_index)
+      super("Badly formatted index, after interpolation still contains placeholder: [#{bad_formatted_index}]")
+
+      @bad_formatted_index = bad_formatted_index
+    end
+  end
+
   # @return Hash (initial) parameters for given event
   # @private shared event params factory between index and data_stream mode
   def common_event_params(event)
+    sprintf_index = @event_target.call(event)
+    raise IndexInterpolationError, sprintf_index if sprintf_index.match(/%{.*?}/)
     params = {
         :_id => @document_id ? event.sprintf(@document_id) : nil,
-        :_index => @event_target.call(event),
+         :_index => sprintf_index,
         routing_field_name => @routing ? event.sprintf(@routing) : nil
     }
 
