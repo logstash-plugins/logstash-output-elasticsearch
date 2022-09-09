@@ -162,34 +162,6 @@ describe "indexing" do
   let(:es_admin) { 'admin' } # default user added in ES -> 8.x requires auth credentials for /_refresh etc
   let(:es_admin_pass) { 'elastic' }
 
-#   def curl_and_get_json_response(url, method: :get); require 'open3'
-#     cmd = "curl -s -v --show-error #{curl_opts} -X #{method.to_s.upcase} -k #{url}"
-#     begin
-#       out, err, status = Open3.capture3(cmd)
-#     rescue Errno::ENOENT
-#       fail "curl not available, make sure curl binary is installed and available on $PATH"
-#     end
-#
-#     if status.success?
-#       http_status = err.match(/< HTTP\/1.1 (\d+)/)[1] || '0' # < HTTP/1.1 200 OK\r\n
-#
-#       if http_status.strip[0].to_i > 2
-#         error = (LogStash::Json.load(out)['error']) rescue nil
-#         if error
-#           fail "#{cmd.inspect} received an error: #{http_status}\n\n#{error.inspect}"
-#         else
-#           warn out
-#           fail "#{cmd.inspect} unexpected response: #{http_status}\n\n#{err}"
-#         end
-#       end
-#
-#       LogStash::Json.load(out)
-#     else
-#       warn out
-#       fail "#{cmd.inspect} process failed: #{status}\n\n#{err}"
-#     end
-#   end
-
   let(:initial_events) { [] }
 
   let(:do_register) { true }

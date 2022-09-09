@@ -479,7 +479,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     raise IndexInterpolationError, sprintf_index if sprintf_index.match(/%{.*?}/)
     params = {
         :_id => @document_id ? event.sprintf(@document_id) : nil,
-         :_index => sprintf_index,
+        :_index => sprintf_index,
         routing_field_name => @routing ? event.sprintf(@routing) : nil
     }
 
