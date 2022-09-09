@@ -857,6 +857,7 @@ describe LogStash::Outputs::ElasticSearch do
 
     context 'when @dlq_writer is nil' do
       before { subject.instance_variable_set '@dlq_writer', nil }
+      let(:action) { LogStash::Outputs::ElasticSearch::EventActionTuple.new(:action, :params, LogStash::Event.new("foo" => "bar")) }
 
       context 'resorting to previous behaviour of logging the error' do
         context 'getting an invalid_index_name_exception' do
