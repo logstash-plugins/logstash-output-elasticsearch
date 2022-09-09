@@ -53,14 +53,22 @@ describe "Unsupported actions testing...", :integration => true do
       subject = get_es_output
       subject.register
       subject.multi_receive(events)
-      events.each do | event |
+
+      index_or_update = proc do |event|
         action = event.get("action_field")
-        if action.eql?("index") || action.eql?("update")
-          response = @es.get(:index => INDEX, :type => doc_type, :id => event.get("doc_id"), :refresh => true)
-          expect(response['_source']['message']).to eq(event.get("message"))
-        else
-          expect {@es.get(:index => INDEX, :type => doc_type, :id => event.get("doc_id"), :refresh => true)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
-        end
+        action.eql?("index") || action.eql?("update")
+      end
+
+      indexed_events = events.filter { |event| index_or_update.call(event) }
+      rejected_events = events.filter { |event| !index_or_update.call(event) }
+
+      indexed_events.each do |event|
+        response = @es.get(:index => INDEX, :type => doc_type, :id => event.get("doc_id"), :refresh => true)
+        expect(response['_source']['message']).to eq(event.get("message"))
+      end
+
+      rejected_events.each do |event|
+        expect {@es.get(:index => INDEX, :type => doc_type, :id => event.get("doc_id"), :refresh => true)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
       end
     end
   end
