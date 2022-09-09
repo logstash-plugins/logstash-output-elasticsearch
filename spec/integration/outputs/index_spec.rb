@@ -46,7 +46,7 @@ describe "TARGET_BULK_BYTES", :integration => true do
   end
 end
 
-def curl_and_get_json_response(url, method: :get); require 'open3'
+def curl_and_get_json_response(url, method: :get, retrieve_err_payload: false); require 'open3'
   cmd = "curl -s -v --show-error #{curl_opts} -X #{method.to_s.upcase} -k #{url}"
   begin
     out, err, status = Open3.capture3(cmd)
@@ -54,17 +54,17 @@ def curl_and_get_json_response(url, method: :get); require 'open3'
     fail "curl not available, make sure curl binary is installed and available on $PATH"
   end
 
-  puts "DNADBG>>> out: #{out}"
-  puts "DNADBG>>> err: #{err}"
-  puts "DNADBG>>> status: #{status}"
-
   if status.success?
     http_status = err.match(/< HTTP\/1.1 (\d+)/)[1] || '0' # < HTTP/1.1 200 OK\r\n
 
     if http_status.strip[0].to_i > 2
       error = (LogStash::Json.load(out)['error']) rescue nil
       if error
-        fail "#{cmd.inspect} received an error: #{http_status}\n\n#{error.inspect}"
+        if retrieve_err_payload
+          return error
+        else
+          fail "#{cmd.inspect} received an error: #{http_status}\n\n#{error.inspect}"
+        end
       else
         warn out
         fail "#{cmd.inspect} unexpected response: #{http_status}\n\n#{err}"
@@ -78,21 +78,7 @@ def curl_and_get_json_response(url, method: :get); require 'open3'
   end
 end
 
-# DBG
-# def curl_and_get_response(url, method: :get); require 'open3'
-#   cmd = "curl -s -v --show-error #{curl_opts} -X #{method.to_s.upcase} -k #{url}"
-#   begin
-#     out, err, status = Open3.capture3(cmd)
-#   rescue Errno::ENOENT
-#     fail "curl not available, make sure curl binary is installed and available on $PATH"
-#   end
-#   puts "DNADBG>>> out: #{out}"
-#   puts "DNADBG>>> err: #{err}"
-#   puts "DNADBG>>> status: #{status}"
-# end
-# DBG
-
-describe "indexing andsel", :integration => true do
+describe "indexing with sprintf resolution", :integration => true do
   let(:message) { "Hello from #{__FILE__}" }
   let(:event) { LogStash::Event.new("message" => message, "type" => type) }
   let (:index) { "%{[index_name]}_dynamic" }
@@ -132,36 +118,28 @@ describe "indexing andsel", :integration => true do
     subject.do_close
   end
 
-  context "with sprintf" do
-    let(:event) { LogStash::Event.new("message" => message, "type" => type, "index_name" => "test") }
+  let(:event) { LogStash::Event.new("message" => message, "type" => type, "index_name" => "test") }
 
-    it "should index successfully when field is resolved" do
-      expected_index_name = "test_dynamic"
+  it "should index successfully when field is resolved" do
+    expected_index_name = "test_dynamic"
+    subject.multi_receive(events)
+
+#     curl_and_get_json_response "#{es_url}/_refresh", method: :post
+
+    result = curl_and_get_json_response "#{es_url}/#{expected_index_name}"
+
+    expect(result[expected_index_name]).not_to be(nil)
+  end
+
+  context "when dynamic field doesn't resolve the index_name" do
+    let(:event) { LogStash::Event.new("message" => message, "type" => type) }
+
+    it "should doesn't create an index name with unresolved placeholders" do
       subject.multi_receive(events)
 
-#        curl_and_get_response "#{es_url}/_cat/indices"
-
-#       curl_and_get_json_response "#{es_url}/_refresh", method: :post
-
-      result = curl_and_get_json_response "#{es_url}/#{expected_index_name}"
-
-      expect(result[expected_index_name]).not_to be(nil)
-    end
-
-    context "when dynamic field doesn't resolve the index_name" do
-      let(:event) { LogStash::Event.new("message" => message, "type" => type) }
-
-      it "should index successfully" do
-#         expected_index_name = "test_dynamic"
-        subject.multi_receive(events)
-#         result = curl_and_get_json_response "#{es_url}/#{expected_index_name}"
-#
-#         expect(result[expected_index_name]).to be(nil)
-
-        escaped_index_name = CGI.escape("%{[index_name]}_dynamic")
-        result = curl_and_get_json_response "#{es_url}/#{escaped_index_name}"
-        expect(result["%{[index_name]}_dynamic"]).to be(nil)
-      end
+      escaped_index_name = CGI.escape("%{[index_name]}_dynamic")
+      result = curl_and_get_json_response "#{es_url}/#{escaped_index_name}", retrieve_err_payload: true
+      expect(result["root_cause"].first()["type"]).to eq("index_not_found_exception")
     end
   end
 end
