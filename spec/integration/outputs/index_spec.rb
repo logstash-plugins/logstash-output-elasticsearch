@@ -133,8 +133,11 @@ describe "indexing with sprintf resolution", :integration => true do
 
   context "when dynamic field doesn't resolve the index_name" do
     let(:event) { LogStash::Event.new("message" => message, "type" => type) }
+    let(:dlq_writer) { double('DLQ writer') }
+    before { subject.instance_variable_set('@dlq_writer', dlq_writer) }
 
     it "should doesn't create an index name with unresolved placeholders" do
+      expect(dlq_writer).to receive(:write).once.with(event, /Could not resolve dynamic index/)
       subject.multi_receive(events)
 
       escaped_index_name = CGI.escape("%{[index_name]}_dynamic")

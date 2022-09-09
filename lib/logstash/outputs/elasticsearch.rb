@@ -365,7 +365,18 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     events_mapped = safe_interpolation_map_events(events)
     retrying_submit(events_mapped.successful_events)
     unless events_mapped.failed_events.empty?
-      @logger.error("Can't map some events, needs to be handled by DLQ #{events_mapped.failed_events}, TODO route to DLQ")
+      @logger.error("Can't map some events, needs to be handled by DLQ #{events_mapped.failed_events}")
+      send_failed_resolutions_to_dlq(events_mapped.failed_events)
+    end
+  end
+
+  # @param: Arrays of EventActionTuple
+  private
+  def send_failed_resolutions_to_dlq(failed_action_tuples)
+    failed_action_tuples.each do |action|
+      status = nil
+      response = {}
+      handle_dlq_status("Could not resolve dynamic index", action, status, response)
     end
   end
 
@@ -375,11 +386,13 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def safe_interpolation_map_events(events)
     successful_events = [] # list of LogStash::Outputs::ElasticSearch::EventActionTuple
     failed_events = [] # list of LogStash::Event
-    events.each do |evt|
+    events.each do |event|
        begin
-        successful_events << @event_mapper.call(evt)
+        successful_events << @event_mapper.call(event)
        rescue IndexInterpolationError, e
-         failed_events << evt
+         action = event.sprintf(@action || 'index')
+         event_action_tuple = EventActionTuple.new(action, [], event)
+         failed_events << event_action_tuple
        end
     end
     MapEventsResult.new(successful_events, failed_events)
