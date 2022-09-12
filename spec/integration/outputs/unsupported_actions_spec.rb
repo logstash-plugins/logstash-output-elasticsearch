@@ -59,8 +59,8 @@ describe "Unsupported actions testing...", :integration => true do
         action.eql?("index") || action.eql?("update")
       end
 
-      indexed_events = events.filter { |event| index_or_update.call(event) }
-      rejected_events = events.filter { |event| !index_or_update.call(event) }
+      indexed_events = events.select { |event| index_or_update.call(event) }
+      rejected_events = events.select { |event| !index_or_update.call(event) }
 
       indexed_events.each do |event|
         response = @es.get(:index => INDEX, :type => doc_type, :id => event.get("doc_id"), :refresh => true)

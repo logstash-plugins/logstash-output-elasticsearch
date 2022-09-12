@@ -165,7 +165,7 @@ module LogStash; module PluginMixins; module ElasticSearch
     end
 
     def retrying_submit(actions)
-      # filter out unsupported ES actions
+      # reject unsupported ES actions and keep only valid actions to send to ES
       submit_actions = reject_unsupported_actions(actions)
       sleep_interval = @retry_initial_interval
 
