@@ -99,10 +99,14 @@ module LogStash; module PluginMixins; module ElasticSearch
         # a timeout occurs, the request will be retried.
         :timeout => { :validate => :number, :default => 60 },
 
-        # Set the Elasticsearch errors in the whitelist that you don't want to log.
+        # Deprecated, refer to `silence_errors_in_log`.
+        :failure_type_logging_whitelist => { :validate => :array, :default => [] },
+
+        # Defines the list of Elasticsearch errors that you don't want to log.
         # A useful example is when you want to skip all 409 errors
         # which are `document_already_exists_exception`.
-        :failure_type_logging_whitelist => { :validate => :array, :default => [] },
+        # Deprecates `failure_type_logging_whitelist`.
+        :silence_errors_in_log => { :validate => :array, :default => [] },
 
         # While the output tries to reuse connections efficiently we have a maximum.
         # This sets the maximum number of open connections the output will create.

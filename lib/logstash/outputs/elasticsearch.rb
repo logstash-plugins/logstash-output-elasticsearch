@@ -272,6 +272,14 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   def register
+    if !failure_type_logging_whitelist.empty?
+      log_message = "'failure_type_logging_whitelist' is deprecated and in a future version of Elasticsearch " +
+        "output plugin will be removed, please use 'silence_errors_in_log' instead."
+      @deprecation_logger.deprecated log_message
+      @logger.warn log_message
+      @silence_errors_in_log = silence_errors_in_log | failure_type_logging_whitelist
+    end
+
     @after_successful_connection_done = Concurrent::AtomicBoolean.new(false)
     @stopping = Concurrent::AtomicBoolean.new(false)
 

@@ -335,6 +335,7 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-index>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-keystore>> |a valid filesystem path|No
 | <<plugins-{type}s-{plugin}-keystore_password>> |<<password,password>>|No
+| <<plugins-{type}s-{plugin}-silence_errors_in_log>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-manage_template>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-parameters>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-parent>> |<<string,string>>|No
@@ -598,9 +599,7 @@ of this setting affects the _default_ values of:
   * Value type is <<array,array>>
   * Default value is `[]`
 
-Set the Elasticsearch errors in the whitelist that you don't want to log.
-A useful example is when you want to skip all 409 errors
-which are `document_already_exists_exception`.
+NOTE: Deprecated, refer to <<plugins-{type}s-{plugin}-silence_errors_in_log>>.
 
 [id="plugins-{type}s-{plugin}-custom_headers"]
 ===== `custom_headers`
@@ -975,6 +974,25 @@ Set variable name passed to script (scripted update)
   * Default value is `false`
 
 if enabled, script is in charge of creating non-existent document (scripted update)
+
+[id="plugins-{type}s-{plugin}-silence_errors_in_log"]
+===== `silence_errors_in_log`
+
+* Value type is <<array,array>>
+* Default value is `[]`
+
+Defines the list of Elasticsearch errors that you don't want to log.
+A useful example is when you want to skip all 409 errors
+which are `document_already_exists_exception`.
+
+[source,ruby]
+    output {
+      elasticsearch {
+        silence_errors_in_log => ["document_already_exists_exception"]
+      }
+    }
+
+NOTE: Deprecates <<plugins-{type}s-{plugin}-failure_type_logging_whitelist>>.
 
 [id="plugins-{type}s-{plugin}-sniffing"]
 ===== `sniffing`
