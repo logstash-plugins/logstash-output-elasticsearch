@@ -1,3 +1,6 @@
+## 11.8.0
+ - Feature: Adds a new `dlq_custom_codes` option to customize DLQ codes [#1067](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1067)
+ 
 ## 11.7.0
  - Feature: deprecates the `failure_type_logging_whitelist` configuration option, renaming it `silence_errors_in_log` [#1068](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1068)
 

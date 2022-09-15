@@ -9,6 +9,7 @@ require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
 require "uri" # for escaping user input
 require "forwardable"
+require "set"
 
 # .Compatibility Note
 # [NOTE]
@@ -255,6 +256,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # ILM policy to use, if undefined the default policy will be used.
   config :ilm_policy, :validate => :string, :default => DEFAULT_POLICY
 
+  # List extra HTTP's error codes that are considered valid to move the events into the dead letter queue.
+  # It's considered a configuration error to re-use the same predefined codes for success, DLQ or conflict.
+  # The option accepts a list of natural numbers corresponding to HTTP errors codes.
+  config :dlq_custom_codes, :validate => :number, :list => true, :default => []
+
   attr_reader :client
   attr_reader :default_index
   attr_reader :default_ilm_rollover_alias
@@ -300,6 +306,15 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
     @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
+
+    @dlq_codes = DOC_DLQ_CODES.to_set
+
+    if dlq_enabled?
+      check_dlq_custom_codes
+      @dlq_codes.merge(dlq_custom_codes)
+    else
+      raise LogStash::ConfigurationError, "DLQ feature (dlq_custom_codes) is configured while DLQ is not enabled" unless dlq_custom_codes.empty?
+    end
 
     if data_stream_config?
       @event_mapper = -> (e) { data_stream_event_action_tuple(e) }
@@ -538,5 +553,16 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     return if valid_actions.include?(@action)
 
     raise LogStash::ConfigurationError, "Action '#{@action}' is invalid! Pick one of #{valid_actions} or use a sprintf style statement"
+  end
+
+  def check_dlq_custom_codes
+    intersection = dlq_custom_codes & DOC_DLQ_CODES
+    raise LogStash::ConfigurationError, "#{intersection} are already defined as standard DLQ error codes" unless intersection.empty?
+
+    intersection = dlq_custom_codes & DOC_SUCCESS_CODES
+    raise LogStash::ConfigurationError, "#{intersection} are success codes which cannot be redefined in dlq_custom_codes" unless intersection.empty?
+
+    intersection = dlq_custom_codes & [DOC_CONFLICT_CODE]
+    raise LogStash::ConfigurationError, "#{intersection} are error codes already defined as conflict which cannot be redefined in dlq_custom_codes" unless intersection.empty?
   end
 end

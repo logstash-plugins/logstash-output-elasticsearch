@@ -196,6 +196,8 @@ processed at a later time. Often times, the offending field can be removed and
 re-indexed to Elasticsearch. If the DLQ is not enabled, and a mapping error
 happens, the problem is logged as a warning, and the event is dropped. See
 <<dead-letter-queues>> for more information about processing events in the DLQ.
+The list of error codes accepted for DLQ could be customized with <<plugins-{type}s-{plugin}-dlq_custom_codes>>
+but should be used only in motivated cases.
 
 [id="plugins-{type}s-{plugin}-ilm"]
 ==== Index Lifecycle Management
@@ -317,6 +319,7 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-data_stream_namespace>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-data_stream_sync_fields>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-data_stream_type>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-dlq_custom_codes>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-doc_as_upsert>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-document_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-document_type>> |<<string,string>>|No
@@ -518,6 +521,17 @@ overwritten with a warning.
 
 The data stream type used to construct the data stream at index time.
 Currently, only `logs`, `metrics`, `synthetics` and `traces` are supported.
+
+[id="plugins-{type}s-{plugin}-dlq_custom_codes"]
+===== `dlq_custom_codes`
+
+* Value type is <<number,number>>
+* Default value is `[]`.
+
+List single-action error codes from Elasticsearch's Bulk API that are considered valid to move the events into the dead letter queue.
+This list is an addition to the ordinary error codes considered for this feature, 400 and 404.
+It's considered a configuration error to re-use the same predefined codes for success, DLQ or conflict.
+The option accepts a list of natural numbers corresponding to HTTP errors codes.
 
 [id="plugins-{type}s-{plugin}-doc_as_upsert"]
 ===== `doc_as_upsert`
