@@ -1,3 +1,6 @@
+## 11.9.0
+ - Feature: force unresolved dynamic index names to be sent into DLQ. This feature could be explicitly disabled using `dlq_on_failed_indexname_interpolation` setting [#1084](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1084)
+
 ## 11.8.0
  - Feature: Adds a new `dlq_custom_codes` option to customize DLQ codes [#1067](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1067)
  
