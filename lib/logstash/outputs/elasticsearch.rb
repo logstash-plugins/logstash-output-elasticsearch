@@ -261,6 +261,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # The option accepts a list of natural numbers corresponding to HTTP errors codes.
   config :dlq_custom_codes, :validate => :number, :list => true, :default => []
 
+  # if enabled, failed index name interpolation events go into dead letter queue.
+  config :dlq_on_failed_indexname_interpolation, :validate => :boolean, :default => true
+
   attr_reader :client
   attr_reader :default_index
   attr_reader :default_ilm_rollover_alias
@@ -487,7 +490,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # @private shared event params factory between index and data_stream mode
   def common_event_params(event)
     sprintf_index = @event_target.call(event)
-    raise IndexInterpolationError, sprintf_index if sprintf_index.match(/%{.*?}/)
+    raise IndexInterpolationError, sprintf_index if sprintf_index.match(/%{.*?}/) && dlq_on_failed_indexname_interpolation
     params = {
         :_id => @document_id ? event.sprintf(@document_id) : nil,
         :_index => sprintf_index,
