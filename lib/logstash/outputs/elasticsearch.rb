@@ -374,9 +374,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   private
   def send_failed_resolutions_to_dlq(failed_action_tuples)
     failed_action_tuples.each do |action|
-      status = nil
-      response = {}
-      handle_dlq_status("Could not resolve dynamic index", action, status, response)
+#       status = nil
+#       response = {}
+#       handle_dlq_status("Could not resolve dynamic index", action, status, response)
+      handle_dlq_status(action, "warn", "Could not resolve dynamic index")
     end
   end
 
