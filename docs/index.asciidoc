@@ -320,6 +320,7 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-data_stream_sync_fields>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-data_stream_type>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-dlq_custom_codes>> |<<number,number>>|No
+| <<plugins-{type}s-{plugin}-dlq_on_failed_indexname_interpolation>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-doc_as_upsert>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-document_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-document_type>> |<<string,string>>|No
@@ -532,6 +533,14 @@ List single-action error codes from Elasticsearch's Bulk API that are considered
 This list is an addition to the ordinary error codes considered for this feature, 400 and 404.
 It's considered a configuration error to re-use the same predefined codes for success, DLQ or conflict.
 The option accepts a list of natural numbers corresponding to HTTP errors codes.
+
+[id="plugins-{type}s-{plugin}-dlq_on_failed_indexname_interpolation"]
+===== `dlq_on_failed_indexname_interpolation`
+
+* Value type is <<boolean,boolean>>
+* Default value is `true`.
+
+If enabled, failed index name interpolation events go into dead letter queue.
 
 [id="plugins-{type}s-{plugin}-doc_as_upsert"]
 ===== `doc_as_upsert`

@@ -1,5 +1,6 @@
 require_relative "../../../spec/es_spec_helper"
 require "logstash/outputs/elasticsearch"
+require 'cgi'
 
 describe "TARGET_BULK_BYTES", :integration => true do
   let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
@@ -45,6 +46,107 @@ describe "TARGET_BULK_BYTES", :integration => true do
   end
 end
 
+def curl_and_get_json_response(url, method: :get, retrieve_err_payload: false); require 'open3'
+  cmd = "curl -s -v --show-error #{curl_opts} -X #{method.to_s.upcase} -k #{url}"
+  begin
+    out, err, status = Open3.capture3(cmd)
+  rescue Errno::ENOENT
+    fail "curl not available, make sure curl binary is installed and available on $PATH"
+  end
+
+  if status.success?
+    http_status = err.match(/< HTTP\/1.1 (\d+)/)[1] || '0' # < HTTP/1.1 200 OK\r\n
+
+    if http_status.strip[0].to_i > 2
+      error = (LogStash::Json.load(out)['error']) rescue nil
+      if error
+        if retrieve_err_payload
+          return error
+        else
+          fail "#{cmd.inspect} received an error: #{http_status}\n\n#{error.inspect}"
+        end
+      else
+        warn out
+        fail "#{cmd.inspect} unexpected response: #{http_status}\n\n#{err}"
+      end
+    end
+
+    LogStash::Json.load(out)
+  else
+    warn out
+    fail "#{cmd.inspect} process failed: #{status}\n\n#{err}"
+  end
+end
+
+describe "indexing with sprintf resolution", :integration => true do
+  let(:message) { "Hello from #{__FILE__}" }
+  let(:event) { LogStash::Event.new("message" => message, "type" => type) }
+  let (:index) { "%{[index_name]}_dynamic" }
+  let(:type) { ESHelper.es_version_satisfies?("< 7") ? "doc" : "_doc" }
+  let(:event_count) { 1 }
+  let(:user) { "simpleuser" }
+  let(:password) { "abc123" }
+  let(:config) do
+    {
+      "hosts" => [ get_host_port ],
+      "user" => user,
+      "password" => password,
+      "index" => index
+    }
+  end
+  let(:events) { event_count.times.map { event }.to_a }
+  subject { LogStash::Outputs::ElasticSearch.new(config) }
+
+  let(:es_url) { "http://#{get_host_port}" }
+  let(:index_url) { "#{es_url}/#{index}" }
+
+  let(:curl_opts) { nil }
+
+  let(:es_admin) { 'admin' } # default user added in ES -> 8.x requires auth credentials for /_refresh etc
+  let(:es_admin_pass) { 'elastic' }
+
+  let(:initial_events) { [] }
+
+  let(:do_register) { true }
+
+  before do
+    subject.register if do_register
+    subject.multi_receive(initial_events) if initial_events
+  end
+
+  after do
+    subject.do_close
+  end
+
+  let(:event) { LogStash::Event.new("message" => message, "type" => type, "index_name" => "test") }
+
+  it "should index successfully when field is resolved" do
+    expected_index_name = "test_dynamic"
+    subject.multi_receive(events)
+
+#     curl_and_get_json_response "#{es_url}/_refresh", method: :post
+
+    result = curl_and_get_json_response "#{es_url}/#{expected_index_name}"
+
+    expect(result[expected_index_name]).not_to be(nil)
+  end
+
+  context "when dynamic field doesn't resolve the index_name" do
+    let(:event) { LogStash::Event.new("message" => message, "type" => type) }
+    let(:dlq_writer) { double('DLQ writer') }
+    before { subject.instance_variable_set('@dlq_writer', dlq_writer) }
+
+    it "should doesn't create an index name with unresolved placeholders" do
+      expect(dlq_writer).to receive(:write).once.with(event, /Could not resolve dynamic index/)
+      subject.multi_receive(events)
+
+      escaped_index_name = CGI.escape("%{[index_name]}_dynamic")
+      result = curl_and_get_json_response "#{es_url}/#{escaped_index_name}", retrieve_err_payload: true
+      expect(result["root_cause"].first()["type"]).to eq("index_not_found_exception")
+    end
+  end
+end
+
 describe "indexing" do
   let(:message) { "Hello from #{__FILE__}" }
   let(:event) { LogStash::Event.new("message" => message, "type" => type) }
@@ -62,34 +164,6 @@ describe "indexing" do
 
   let(:es_admin) { 'admin' } # default user added in ES -> 8.x requires auth credentials for /_refresh etc
   let(:es_admin_pass) { 'elastic' }
-
-  def curl_and_get_json_response(url, method: :get); require 'open3'
-    cmd = "curl -s -v --show-error #{curl_opts} -X #{method.to_s.upcase} -k #{url}"
-    begin
-      out, err, status = Open3.capture3(cmd)
-    rescue Errno::ENOENT
-      fail "curl not available, make sure curl binary is installed and available on $PATH"
-    end
-
-    if status.success?
-      http_status = err.match(/< HTTP\/1.1 (\d+)/)[1] || '0' # < HTTP/1.1 200 OK\r\n
-
-      if http_status.strip[0].to_i > 2
-        error = (LogStash::Json.load(out)['error']) rescue nil
-        if error
-          fail "#{cmd.inspect} received an error: #{http_status}\n\n#{error.inspect}"
-        else
-          warn out
-          fail "#{cmd.inspect} unexpected response: #{http_status}\n\n#{err}"
-        end
-      end
-
-      LogStash::Json.load(out)
-    else
-      warn out
-      fail "#{cmd.inspect} process failed: #{status}\n\n#{err}"
-    end
-  end
 
   let(:initial_events) { [] }
 

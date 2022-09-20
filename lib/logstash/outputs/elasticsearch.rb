@@ -261,6 +261,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # The option accepts a list of natural numbers corresponding to HTTP errors codes.
   config :dlq_custom_codes, :validate => :number, :list => true, :default => []
 
+  # if enabled, failed index name interpolation events go into dead letter queue.
+  config :dlq_on_failed_indexname_interpolation, :validate => :boolean, :default => true
+
   attr_reader :client
   attr_reader :default_index
   attr_reader :default_ilm_rollover_alias
@@ -362,11 +365,43 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Receive an array of events and immediately attempt to index them (no buffering)
   def multi_receive(events)
     wait_for_successful_connection if @after_successful_connection_done
-    retrying_submit map_events(events)
+    events_mapped = safe_interpolation_map_events(events)
+    retrying_submit(events_mapped.successful_events)
+    unless events_mapped.failed_events.empty?
+      @logger.error("Can't map some events, needs to be handled by DLQ #{events_mapped.failed_events}")
+      send_failed_resolutions_to_dlq(events_mapped.failed_events)
+    end
   end
 
+  # @param: Arrays of EventActionTuple
+  private
+  def send_failed_resolutions_to_dlq(failed_action_tuples)
+    failed_action_tuples.each do |action|
+      handle_dlq_status(action, "warn", "Could not resolve dynamic index")
+    end
+  end
+
+  MapEventsResult = Struct.new(:successful_events, :failed_events)
+
+  private
+  def safe_interpolation_map_events(events)
+    successful_events = [] # list of LogStash::Outputs::ElasticSearch::EventActionTuple
+    failed_events = [] # list of LogStash::Event
+    events.each do |event|
+       begin
+        successful_events << @event_mapper.call(event)
+       rescue IndexInterpolationError, e
+         action = event.sprintf(@action || 'index')
+         event_action_tuple = EventActionTuple.new(action, [], event)
+         failed_events << event_action_tuple
+       end
+    end
+    MapEventsResult.new(successful_events, failed_events)
+  end
+
+  public
   def map_events(events)
-    events.map(&@event_mapper)
+    safe_interpolation_map_events(events).successful_events
   end
 
   def wait_for_successful_connection
@@ -441,12 +476,24 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   end
 
+  class IndexInterpolationError < ArgumentError
+    attr_reader :bad_formatted_index
+
+    def initialize(bad_formatted_index)
+      super("Badly formatted index, after interpolation still contains placeholder: [#{bad_formatted_index}]")
+
+      @bad_formatted_index = bad_formatted_index
+    end
+  end
+
   # @return Hash (initial) parameters for given event
   # @private shared event params factory between index and data_stream mode
   def common_event_params(event)
+    sprintf_index = @event_target.call(event)
+    raise IndexInterpolationError, sprintf_index if sprintf_index.match(/%{.*?}/) && dlq_on_failed_indexname_interpolation
     params = {
         :_id => @document_id ? event.sprintf(@document_id) : nil,
-        :_index => @event_target.call(event),
+        :_index => sprintf_index,
         routing_field_name => @routing ? event.sprintf(@routing) : nil
     }
 
