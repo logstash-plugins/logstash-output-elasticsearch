@@ -372,29 +372,33 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     end
   end
 
-  # @param: Arrays of EventActionTuple with error messages
+  # @param: Arrays of FailedEventMapping
   private
   def handle_event_mapping_errors(event_mapping_errors)
-    event_mapping_errors.each do |action, message|
-      detail_message = message + ", " + action.to_s
-      handle_dlq_status(action.event, :warn, detail_message)
-      @document_level_metrics.increment(:non_retryable_failures) unless @dlq_writer
+    # if DQL is enabled, log the events to provide issue insights to users.
+    if @dlq_writer
+      @logger.warn("Events could not be indexed and routing to DLQ, count: #{event_mapping_errors.size}")
     end
+
+    event_mapping_errors.each do |event_mapping_error|
+      detailed_message = "#{event_mapping_error.message}; event: `#{event_mapping_error.event.to_hash_with_metadata}`"
+      handle_dlq_status(event_mapping_error.event, :warn, detailed_message)
+    end
+    @document_level_metrics.increment(:non_retryable_failures, event_mapping_errors.size)
   end
 
   MapEventsResult = Struct.new(:successful_events, :event_mapping_errors)
+  FailedEventMapping = Struct.new(:event, :message)
 
   private
   def safe_interpolation_map_events(events)
     successful_events = [] # list of LogStash::Outputs::ElasticSearch::EventActionTuple
-    event_mapping_errors = [] # list of LogStash::Outputs::ElasticSearch::EventActionTuple with error messages
+    event_mapping_errors = [] # list of FailedEventMapping
     events.each do |event|
       begin
         successful_events << @event_mapper.call(event)
       rescue EventMappingError => ie
-        action = event.sprintf(@action || 'index')
-        event_action_tuple = EventActionTuple.new(action, [], event)
-        event_mapping_errors << [event_action_tuple, ie.message]
+        event_mapping_errors << FailedEventMapping.new(event, ie.message)
        end
     end
     MapEventsResult.new(successful_events, event_mapping_errors)

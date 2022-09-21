@@ -398,6 +398,9 @@ describe LogStash::Outputs::ElasticSearch do
           event_result.successful_events.each do |action, _|
             expect(action).to_not eql("unsupported_action")
           end
+          event_result.event_mapping_errors.each do |event_mapping_error|
+            expect(event_mapping_error.message).to eql("Elasticsearch doesn't support [unsupported_action] action")
+          end
         end
       end
 
@@ -413,6 +416,9 @@ describe LogStash::Outputs::ElasticSearch do
           expect(event_result.successful_events.size).to be == 3
           event_result.successful_events.each do |action, _|
             expect(action).to_not eql("unsupported_action")
+          end
+          event_result.event_mapping_errors.each do |event_mapping_error|
+            expect(event_mapping_error.message).to eql("Elasticsearch doesn't support [unsupported_action] action")
           end
         end
       end
@@ -430,6 +436,9 @@ describe LogStash::Outputs::ElasticSearch do
           event_result.successful_events.each do |action, _|
             expect(action).to_not eql("unsupported_action")
           end
+          event_result.event_mapping_errors.each do |event_mapping_error|
+            expect(event_mapping_error.message).to include "Elasticsearch doesn't support"
+          end
         end
       end
 
@@ -443,7 +452,10 @@ describe LogStash::Outputs::ElasticSearch do
         it "rejects unsupported actions" do
           event_result = subject.send(:safe_interpolation_map_events, events)
           expect(event_result.successful_events.size).to be == 2
-          # expect(logger_stub).to have_received(:warn).with(a_string_including "Could not index event to Elasticsearch because its action is not supported.")
+          expect(event_result.event_mapping_errors.size).to be == 2
+          event_result.event_mapping_errors.each do |event_mapping_error|
+            expect(event_mapping_error.message).to include "Elasticsearch doesn't support"
+          end
         end
       end
 
@@ -457,7 +469,9 @@ describe LogStash::Outputs::ElasticSearch do
         it "rejects unsupported action" do
           event_result = subject.send(:safe_interpolation_map_events, events)
           expect(event_result.successful_events.size).to be == 3
-          # expect(logger_stub).to have_received(:warn).with(a_string_including "Could not index event to Elasticsearch because its action is not supported.")
+          event_result.event_mapping_errors.each do |event_mapping_error|
+            expect(event_mapping_error.message).to eql("Elasticsearch doesn't support [unsupported_action3] action")
+          end
         end
       end
     end
