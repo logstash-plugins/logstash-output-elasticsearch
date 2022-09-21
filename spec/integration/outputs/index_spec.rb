@@ -137,7 +137,7 @@ describe "indexing with sprintf resolution", :integration => true do
     before { subject.instance_variable_set('@dlq_writer', dlq_writer) }
 
     it "should doesn't create an index name with unresolved placeholders" do
-      expect(dlq_writer).to receive(:write).once.with(event, /Could not resolve dynamic index/)
+      expect(dlq_writer).to receive(:write).once.with(event, a_string_including("Badly formatted index, after interpolation still contains placeholder"))
       subject.multi_receive(events)
 
       escaped_index_name = CGI.escape("%{[index_name]}_dynamic")

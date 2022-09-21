@@ -3,8 +3,8 @@ require "base64"
 require "flores/random"
 require 'concurrent/atomic/count_down_latch'
 require "logstash/outputs/elasticsearch"
-
 require 'logstash/plugin_mixins/ecs_compatibility_support/spec_helper'
+require 'rspec/collection_matchers'
 
 describe LogStash::Outputs::ElasticSearch do
   subject(:elasticsearch_output_instance) { described_class.new(options) }
@@ -347,7 +347,7 @@ describe LogStash::Outputs::ElasticSearch do
                               }
                     },
                     # NOTE: this is an artificial success (usually everything fails with a 500) but even if some doc where
-                    # to succeed due the unexpected reponse items we can not clearly identify which actions to retry ...
+                    # to succeed due the unexpected response items we can not clearly identify which actions to retry ...
                     {"index"=>{"_index"=>"bar2", "_type"=>"_doc", "_id"=>nil, "status"=>201}},
                     {"index"=>{"_index"=>"bar2", "_type"=>"_doc", "_id"=>nil, "status"=>500,
                                "error"=>{"type" => "illegal_state_exception",
@@ -379,6 +379,104 @@ describe LogStash::Outputs::ElasticSearch do
                                                        hash_including(:message => 'Sent 2 documents but Elasticsearch returned 3 responses (likely a bug with _bulk endpoint)'))
 
         subject.multi_receive(events)
+      end
+    end
+
+    context "unsupported actions" do
+      let(:options) { super().merge("index" => "logstash", "action" => "%{action_field}") }
+
+      context "with multiple valid actions with one trailing invalid action" do
+        let(:events) {[
+          LogStash::Event.new("action_field" => "index", "id" => 1, "message"=> "hello"),
+          LogStash::Event.new("action_field" => "index", "id" => 2, "message"=> "hi"),
+          LogStash::Event.new("action_field" => "index", "id" => 3, "message"=> "bye"),
+          LogStash::Event.new("action_field" => "unsupported_action", "id" => 4, "message"=> "world!")
+        ]}
+        it "rejects unsupported actions" do
+          event_result = subject.send(:safe_interpolation_map_events, events)
+          expect(event_result.successful_events).to have_exactly(3).items
+          event_result.successful_events.each do |action, _|
+            expect(action).to_not eql("unsupported_action")
+          end
+          expect(event_result.event_mapping_errors).to have_exactly(1).items
+          event_result.event_mapping_errors.each do |event_mapping_error|
+            expect(event_mapping_error.message).to eql("Elasticsearch doesn't support [unsupported_action] action")
+          end
+        end
+      end
+
+      context "with one leading invalid action followed by multiple valid actions" do
+        let(:events) {[
+          LogStash::Event.new("action_field" => "unsupported_action", "id" => 1, "message"=> "world!"),
+          LogStash::Event.new("action_field" => "index", "id" => 2, "message"=> "hello"),
+          LogStash::Event.new("action_field" => "index", "id" => 3, "message"=> "hi"),
+          LogStash::Event.new("action_field" => "index", "id" => 4, "message"=> "bye")
+        ]}
+        it "rejects unsupported actions" do
+          event_result = subject.send(:safe_interpolation_map_events, events)
+          expect(event_result.successful_events).to have_exactly(3).items
+          event_result.successful_events.each do |action, _|
+            expect(action).to_not eql("unsupported_action")
+          end
+          expect(event_result.event_mapping_errors).to have_exactly(1).items
+          event_result.event_mapping_errors.each do |event_mapping_error|
+            expect(event_mapping_error.message).to eql("Elasticsearch doesn't support [unsupported_action] action")
+          end
+        end
+      end
+
+      context "with batch of multiple invalid actions and no valid actions" do
+        let(:events) {[
+          LogStash::Event.new("action_field" => "unsupported_action1", "id" => 1, "message"=> "world!"),
+          LogStash::Event.new("action_field" => "unsupported_action2", "id" => 2, "message"=> "hello"),
+          LogStash::Event.new("action_field" => "unsupported_action3", "id" => 3, "message"=> "hi"),
+          LogStash::Event.new("action_field" => "unsupported_action4", "id" => 4, "message"=> "bye")
+        ]}
+        it "rejects unsupported actions" do
+          event_result = subject.send(:safe_interpolation_map_events, events)
+          expect(event_result.successful_events).to have(:no).items
+          event_result.successful_events.each do |action, _|
+            expect(action).to_not eql("unsupported_action")
+          end
+          expect(event_result.event_mapping_errors).to have_exactly(4).items
+          event_result.event_mapping_errors.each do |event_mapping_error|
+            expect(event_mapping_error.message).to include "Elasticsearch doesn't support"
+          end
+        end
+      end
+
+      context "with batch of intermixed valid and invalid actions" do
+        let(:events) {[
+          LogStash::Event.new("action_field" => "index", "id" => 1, "message"=> "world!"),
+          LogStash::Event.new("action_field" => "unsupported_action2", "id" => 2, "message"=> "hello"),
+          LogStash::Event.new("action_field" => "unsupported_action3", "id" => 3, "message"=> "hi"),
+          LogStash::Event.new("action_field" => "index", "id" => 4, "message"=> "bye")
+        ]}
+        it "rejects unsupported actions" do
+          event_result = subject.send(:safe_interpolation_map_events, events)
+          expect(event_result.successful_events).to have_exactly(2).items
+          expect(event_result.event_mapping_errors).to have_exactly(2).items
+          event_result.event_mapping_errors.each do |event_mapping_error|
+            expect(event_mapping_error.message).to include "Elasticsearch doesn't support"
+          end
+        end
+      end
+
+      context "with batch of exactly one action that is invalid" do
+        let(:events) {[
+          LogStash::Event.new("action_field" => "index", "id" => 1, "message"=> "world!"),
+          LogStash::Event.new("action_field" => "index", "id" => 2, "message"=> "hello"),
+          LogStash::Event.new("action_field" => "unsupported_action3", "id" => 3, "message"=> "hi"),
+          LogStash::Event.new("action_field" => "index", "id" => 4, "message"=> "bye")
+        ]}
+        it "rejects unsupported action" do
+          event_result = subject.send(:safe_interpolation_map_events, events)
+          expect(event_result.successful_events).to have_exactly(3).items
+          expect(event_result.event_mapping_errors).to have_exactly(1).items
+          event_result.event_mapping_errors.each do |event_mapping_error|
+            expect(event_mapping_error.message).to eql("Elasticsearch doesn't support [unsupported_action3] action")
+          end
+        end
       end
     end
   end
@@ -772,6 +870,7 @@ describe LogStash::Outputs::ElasticSearch do
 
     context 'when @dlq_writer is nil' do
       before { subject.instance_variable_set '@dlq_writer', nil }
+      let(:action) { LogStash::Outputs::ElasticSearch::EventActionTuple.new(:action, :params, LogStash::Event.new("foo" => "bar")) }
 
       context 'resorting to previous behaviour of logging the error' do
         context 'getting an invalid_index_name_exception' do

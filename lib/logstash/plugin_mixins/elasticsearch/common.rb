@@ -214,13 +214,13 @@ module LogStash; module PluginMixins; module ElasticSearch
       
       log_level = dig_value(response, 'index', 'error', 'type') == 'invalid_index_name_exception' ? :error : :warn
       
-      handle_dlq_status(action, log_level, detailed_message)
+      handle_dlq_status(action.event, log_level, detailed_message)
     end
 
-    def handle_dlq_status(action, log_level, message)
+    def handle_dlq_status(event, log_level, message)
       # To support bwc, we check if DLQ exists. otherwise we log and drop event (previous behavior)
       if @dlq_writer
-        @dlq_writer.write(action.event, "#{message}")
+        @dlq_writer.write(event, "#{message}")
       else
         @logger.send log_level, message
       end
@@ -259,7 +259,6 @@ module LogStash; module PluginMixins; module ElasticSearch
         status = action_props["status"]
         error  = action_props["error"]
         action = actions[idx]
-        action_params = action[1]
 
         # Retry logic: If it is success, we move on. If it is a failure, we have 3 paths:
         # - For 409, we log and drop. there is nothing we can do

@@ -395,7 +395,7 @@ The Elasticsearch action to perform. Valid actions are:
   document if not already present. See the `doc_as_upsert` option. NOTE: This does not work and is not supported
   in Elasticsearch 1.x. Please upgrade to ES 2.x or greater to use this feature with Logstash!
 - A sprintf style string to change the action based on the content of the event. The value `%{[foo]}`
-  would use the foo field for the action
+  would use the foo field for the action. If resolved action is not in [`index`, `delete`, `create`, `update`], the event will not be sent to {es}, and instead either will be sent to the pipeline's <<dead-letter-queues,dead letter queue (DLQ)>> if it is enabled, or will be logged and dropped.
 
 For more details on actions, check out the {ref}/docs-bulk.html[Elasticsearch bulk API documentation].
 
