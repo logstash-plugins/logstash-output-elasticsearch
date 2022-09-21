@@ -1,5 +1,8 @@
-## 11.10.0
- - Feature: reject unsupported events before sending bulk request to Elasticsearch. [#1080](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1080)
+## 11.9.1
+ - Fixes a possible infinite-retry-loop that could occur when this plugin is configured with an `action` whose value contains a [sprintf-style placeholder][] that fails to be resolved for an individual event. Events in this state will be routed to the pipeline's [dead letter queue][DLQ] if it is available, or will be logged-and-dropped so that the remaining events in the batch can be processed [#1080](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1080)
+ 
+[sprintf-style placeholder]: https://www.elastic.co/guide/en/logstash/current/event-dependent-configuration.html#sprintf
+[DLQ]: https://www.elastic.co/guide/en/logstash/current/dead-letter-queues.html
 
 ## 11.9.0
  - Feature: force unresolved dynamic index names to be sent into DLQ. This feature could be explicitly disabled using `dlq_on_failed_indexname_interpolation` setting [#1084](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1084)
