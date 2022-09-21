@@ -3,8 +3,8 @@ require "base64"
 require "flores/random"
 require 'concurrent/atomic/count_down_latch'
 require "logstash/outputs/elasticsearch"
-
 require 'logstash/plugin_mixins/ecs_compatibility_support/spec_helper'
+require 'rspec/collection_matchers'
 
 describe LogStash::Outputs::ElasticSearch do
   subject(:elasticsearch_output_instance) { described_class.new(options) }
@@ -394,10 +394,11 @@ describe LogStash::Outputs::ElasticSearch do
         ]}
         it "rejects unsupported actions" do
           event_result = subject.send(:safe_interpolation_map_events, events)
-          expect(event_result.successful_events.size).to be == 3
+          expect(event_result.successful_events).to have_exactly(3).items
           event_result.successful_events.each do |action, _|
             expect(action).to_not eql("unsupported_action")
           end
+          expect(event_result.event_mapping_errors).to have_exactly(1).items
           event_result.event_mapping_errors.each do |event_mapping_error|
             expect(event_mapping_error.message).to eql("Elasticsearch doesn't support [unsupported_action] action")
           end
@@ -413,10 +414,11 @@ describe LogStash::Outputs::ElasticSearch do
         ]}
         it "rejects unsupported actions" do
           event_result = subject.send(:safe_interpolation_map_events, events)
-          expect(event_result.successful_events.size).to be == 3
+          expect(event_result.successful_events).to have_exactly(3).items
           event_result.successful_events.each do |action, _|
             expect(action).to_not eql("unsupported_action")
           end
+          expect(event_result.event_mapping_errors).to have_exactly(1).items
           event_result.event_mapping_errors.each do |event_mapping_error|
             expect(event_mapping_error.message).to eql("Elasticsearch doesn't support [unsupported_action] action")
           end
@@ -432,10 +434,11 @@ describe LogStash::Outputs::ElasticSearch do
         ]}
         it "rejects unsupported actions" do
           event_result = subject.send(:safe_interpolation_map_events, events)
-          expect(event_result.successful_events.size).to be == 0
+          expect(event_result.successful_events).to have(:no).items
           event_result.successful_events.each do |action, _|
             expect(action).to_not eql("unsupported_action")
           end
+          expect(event_result.event_mapping_errors).to have_exactly(4).items
           event_result.event_mapping_errors.each do |event_mapping_error|
             expect(event_mapping_error.message).to include "Elasticsearch doesn't support"
           end
@@ -451,8 +454,8 @@ describe LogStash::Outputs::ElasticSearch do
         ]}
         it "rejects unsupported actions" do
           event_result = subject.send(:safe_interpolation_map_events, events)
-          expect(event_result.successful_events.size).to be == 2
-          expect(event_result.event_mapping_errors.size).to be == 2
+          expect(event_result.successful_events).to have_exactly(2).items
+          expect(event_result.event_mapping_errors).to have_exactly(2).items
           event_result.event_mapping_errors.each do |event_mapping_error|
             expect(event_mapping_error.message).to include "Elasticsearch doesn't support"
           end
@@ -468,7 +471,8 @@ describe LogStash::Outputs::ElasticSearch do
         ]}
         it "rejects unsupported action" do
           event_result = subject.send(:safe_interpolation_map_events, events)
-          expect(event_result.successful_events.size).to be == 3
+          expect(event_result.successful_events).to have_exactly(3).items
+          expect(event_result.event_mapping_errors).to have_exactly(1).items
           event_result.event_mapping_errors.each do |event_mapping_error|
             expect(event_mapping_error.message).to eql("Elasticsearch doesn't support [unsupported_action3] action")
           end
