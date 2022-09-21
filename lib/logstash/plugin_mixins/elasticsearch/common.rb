@@ -165,11 +165,11 @@ module LogStash; module PluginMixins; module ElasticSearch
     end
 
     def retrying_submit(actions)
-      # reject unsupported ES actions and keep only valid actions to send to ES
-      submit_actions = reject_unsupported_actions(actions)
+      # Initially we submit the full list of actions
+      submit_actions = actions
+
       sleep_interval = @retry_initial_interval
 
-      # Initially we submit the full list of valid actions
       while submit_actions && submit_actions.size > 0
 
         # We retry with whatever is didn't succeed
@@ -189,26 +189,6 @@ module LogStash; module PluginMixins; module ElasticSearch
         # If we're retrying the action sleep for the recommended interval
         # Double the interval for the next time through to achieve exponential backoff
         sleep_interval = sleep_for_interval(sleep_interval)
-      end
-    end
-
-    # Do not send unsupported actions to ES
-    # method rejects unsupported actions before sending to ES, warns and writes event to DQL if enabled
-    # @returns valid actions
-    def reject_unsupported_actions(actions)
-      supported_actions, unsupported_actions = actions.partition { |action, _, _| LogStash::Outputs::ElasticSearch::VALID_HTTP_ACTIONS.include?(action) }
-      dlq_or_drop_unsupported_actions(unsupported_actions) if unsupported_actions.any?
-      supported_actions
-    end
-
-    def dlq_or_drop_unsupported_actions(unsupported_actions)
-      unsupported_actions.each do |action|
-        if @dlq_writer
-          @dlq_writer.write(action.event, "Unsupported action.")
-        else
-          @document_level_metrics.increment(:non_retryable_failures)
-          @logger.warn("Could not index event to Elasticsearch because its action is not supported.", action: action)
-        end
       end
     end
 
@@ -234,13 +214,13 @@ module LogStash; module PluginMixins; module ElasticSearch
       
       log_level = dig_value(response, 'index', 'error', 'type') == 'invalid_index_name_exception' ? :error : :warn
       
-      handle_dlq_status(action, log_level, detailed_message)
+      handle_dlq_status(action.event, log_level, detailed_message)
     end
 
-    def handle_dlq_status(action, log_level, message)
+    def handle_dlq_status(event, log_level, message)
       # To support bwc, we check if DLQ exists. otherwise we log and drop event (previous behavior)
       if @dlq_writer
-        @dlq_writer.write(action.event, "#{message}")
+        @dlq_writer.write(event, "#{message}")
       else
         @logger.send log_level, message
       end

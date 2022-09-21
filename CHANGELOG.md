@@ -1,3 +1,6 @@
+## 11.10.0
+ - Feature: reject unsupported events before sending bulk request to Elasticsearch. [#1080](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1080)
+
 ## 11.9.0
  - Feature: force unresolved dynamic index names to be sent into DLQ. This feature could be explicitly disabled using `dlq_on_failed_indexname_interpolation` setting [#1084](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1084)
 

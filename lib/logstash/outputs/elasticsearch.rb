@@ -367,36 +367,37 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     wait_for_successful_connection if @after_successful_connection_done
     events_mapped = safe_interpolation_map_events(events)
     retrying_submit(events_mapped.successful_events)
-    unless events_mapped.failed_events.empty?
-      @logger.error("Can't map some events, needs to be handled by DLQ #{events_mapped.failed_events}")
-      send_failed_resolutions_to_dlq(events_mapped.failed_events)
+    unless events_mapped.event_mapping_errors.empty?
+      handle_event_mapping_errors(events_mapped.event_mapping_errors)
     end
   end
 
-  # @param: Arrays of EventActionTuple
+  # @param: Arrays of EventActionTuple with error messages
   private
-  def send_failed_resolutions_to_dlq(failed_action_tuples)
-    failed_action_tuples.each do |action|
-      handle_dlq_status(action, "warn", "Could not resolve dynamic index")
+  def handle_event_mapping_errors(event_mapping_errors)
+    event_mapping_errors.each do |action, message|
+      detail_message = message + ", " + action.to_s
+      handle_dlq_status(action.event, :warn, detail_message)
+      @document_level_metrics.increment(:non_retryable_failures) unless @dlq_writer
     end
   end
 
-  MapEventsResult = Struct.new(:successful_events, :failed_events)
+  MapEventsResult = Struct.new(:successful_events, :event_mapping_errors)
 
   private
   def safe_interpolation_map_events(events)
     successful_events = [] # list of LogStash::Outputs::ElasticSearch::EventActionTuple
-    failed_events = [] # list of LogStash::Event
+    event_mapping_errors = [] # list of LogStash::Outputs::ElasticSearch::EventActionTuple with error messages
     events.each do |event|
-       begin
+      begin
         successful_events << @event_mapper.call(event)
-       rescue IndexInterpolationError, e
-         action = event.sprintf(@action || 'index')
-         event_action_tuple = EventActionTuple.new(action, [], event)
-         failed_events << event_action_tuple
+      rescue EventMappingError => ie
+        action = event.sprintf(@action || 'index')
+        event_action_tuple = EventActionTuple.new(action, [], event)
+        event_mapping_errors << [event_action_tuple, ie.message]
        end
     end
-    MapEventsResult.new(successful_events, failed_events)
+    MapEventsResult.new(successful_events, event_mapping_errors)
   end
 
   public
@@ -449,6 +450,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     end
 
     action = event.sprintf(@action || 'index')
+    raise UnsupportedActionError, action unless VALID_HTTP_ACTIONS.include?(action)
 
     if action == 'update'
       params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
@@ -476,13 +478,21 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   end
 
-  class IndexInterpolationError < ArgumentError
-    attr_reader :bad_formatted_index
+  class EventMappingError < ArgumentError
+    def initialize(msg = nil)
+      super
+    end
+  end
 
+  class IndexInterpolationError < EventMappingError
     def initialize(bad_formatted_index)
       super("Badly formatted index, after interpolation still contains placeholder: [#{bad_formatted_index}]")
+    end
+  end
 
-      @bad_formatted_index = bad_formatted_index
+  class UnsupportedActionError < EventMappingError
+    def initialize(bad_action)
+      super("Elasticsearch doesn't support [#{bad_action}] action")
     end
   end
 

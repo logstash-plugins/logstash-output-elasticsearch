@@ -393,10 +393,9 @@ describe LogStash::Outputs::ElasticSearch do
           LogStash::Event.new("action_field" => "unsupported_action", "id" => 4, "message"=> "world!")
         ]}
         it "rejects unsupported actions" do
-          event_action_tuples = subject.map_events(events)
-          valid_actions = subject.reject_unsupported_actions(event_action_tuples)
-          expect(valid_actions.size).to be == 3
-          valid_actions.each do |action, _|
+          event_result = subject.send(:safe_interpolation_map_events, events)
+          expect(event_result.successful_events.size).to be == 3
+          event_result.successful_events.each do |action, _|
             expect(action).to_not eql("unsupported_action")
           end
         end
@@ -410,10 +409,9 @@ describe LogStash::Outputs::ElasticSearch do
           LogStash::Event.new("action_field" => "index", "id" => 4, "message"=> "bye")
         ]}
         it "rejects unsupported actions" do
-          event_action_tuples = elasticsearch_output_instance.map_events(events)
-          valid_actions = elasticsearch_output_instance.reject_unsupported_actions(event_action_tuples)
-          expect(valid_actions.size).to be == 3
-          valid_actions.each do |action, _|
+          event_result = subject.send(:safe_interpolation_map_events, events)
+          expect(event_result.successful_events.size).to be == 3
+          event_result.successful_events.each do |action, _|
             expect(action).to_not eql("unsupported_action")
           end
         end
@@ -427,10 +425,9 @@ describe LogStash::Outputs::ElasticSearch do
           LogStash::Event.new("action_field" => "unsupported_action4", "id" => 4, "message"=> "bye")
         ]}
         it "rejects unsupported actions" do
-          event_action_tuples = elasticsearch_output_instance.map_events(events)
-          valid_actions = elasticsearch_output_instance.reject_unsupported_actions(event_action_tuples)
-          expect(valid_actions.size).to be == 0
-          valid_actions.each do |action, _|
+          event_result = subject.send(:safe_interpolation_map_events, events)
+          expect(event_result.successful_events.size).to be == 0
+          event_result.successful_events.each do |action, _|
             expect(action).to_not eql("unsupported_action")
           end
         end
@@ -444,9 +441,8 @@ describe LogStash::Outputs::ElasticSearch do
           LogStash::Event.new("action_field" => "index", "id" => 4, "message"=> "bye")
         ]}
         it "rejects unsupported actions" do
-          event_action_tuples = elasticsearch_output_instance.map_events(events)
-          valid_actions = elasticsearch_output_instance.reject_unsupported_actions(event_action_tuples)
-          expect(valid_actions.size).to be == 2
+          event_result = subject.send(:safe_interpolation_map_events, events)
+          expect(event_result.successful_events.size).to be == 2
           # expect(logger_stub).to have_received(:warn).with(a_string_including "Could not index event to Elasticsearch because its action is not supported.")
         end
       end
@@ -459,9 +455,8 @@ describe LogStash::Outputs::ElasticSearch do
           LogStash::Event.new("action_field" => "index", "id" => 4, "message"=> "bye")
         ]}
         it "rejects unsupported action" do
-          event_action_tuples = elasticsearch_output_instance.map_events(events)
-          valid_actions = elasticsearch_output_instance.reject_unsupported_actions(event_action_tuples)
-          expect(valid_actions.size).to be == 3
+          event_result = subject.send(:safe_interpolation_map_events, events)
+          expect(event_result.successful_events.size).to be == 3
           # expect(logger_stub).to have_received(:warn).with(a_string_including "Could not index event to Elasticsearch because its action is not supported.")
         end
       end
