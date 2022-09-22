@@ -1,5 +1,5 @@
 ## 11.9.2
-  - Fix broken link to Logstash Reference  [#1085](https://api.github.com/repos/logstash-plugins/logstash-output-elasticsearch/pulls/1085)
+  - Fix broken link to Logstash Reference [#1085](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1085)
 
 ## 11.9.1
  - Fixes a possible infinite-retry-loop that could occur when this plugin is configured with an `action` whose value contains a [sprintf-style placeholder][] that fails to be resolved for an individual event. Events in this state will be routed to the pipeline's [dead letter queue][DLQ] if it is available, or will be logged-and-dropped so that the remaining events in the batch can be processed [#1080](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1080)
