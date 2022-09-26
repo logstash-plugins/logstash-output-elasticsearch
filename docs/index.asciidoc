@@ -523,8 +523,8 @@ should reference only data or client nodes in Elasticsearch.
 Any special characters present in the URLs here MUST be URL escaped! This means
 `#` should be put in as `%23` for instance.
 
-When using Logstash 7.9+, this setting supports defining an environment variable
-`hosts => '${S}'` with multiple {logstash-ref}/plugin-concepts.html#space-delimited-uris-in-list-params[whitespace-delimited URIs]:
+This option can accept an environment variable containing one or more hostnames separated by whitespace.
+Strings separated by whitespace are treated as separate entries.
 
 Examples:
 
