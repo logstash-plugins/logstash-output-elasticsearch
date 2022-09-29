@@ -255,6 +255,14 @@ overwritten as the settings `index.lifecycle.name` and
 NOTE: If the index property is supplied in the output definition, it will be overwritten by the rollover alias.
 
 
+[id="plugins-{type}s-{plugin}-index-template"]
+==== Index Template
+
+The {ref}/index-templates.html[composable index templates] introduced in Elasticsearch 7.8.
+Logstash uses {ref}/indices-put-template.html[_index_template] to create index template for {es} 8.x and
+uses {ref}/indices-templates-v1.html[_template] to create legacy template for {es} 7.x.
+Make sure the format of template is compatible to corresponding {es} version.
+
 ==== Batch Sizes
 
 This plugin attempts to send batches of events to the {ref}/docs-bulk.html[{es}
