@@ -1,5 +1,5 @@
 ## 11.9.3
-  - [DOC] Add index template restriction
+  - [DOC] Add index template restriction [#1089](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1089)
 
 ## 11.9.2
   - Fix broken link to Logstash Reference [#1085](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1085)
