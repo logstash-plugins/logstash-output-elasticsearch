@@ -1,8 +1,11 @@
+## 11.10.0
+ - Feature: expose `dlq_routed` document metric to track the documents routed into DLQ [#1090](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1090)
+
 ## 11.9.3
  - DOC: clarify that `http_compression` option only affects _requests_; compressed _responses_ have always been read independent of this setting [#1030 ](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1030)
 
 ## 11.9.2
-  - Fix broken link to Logstash Reference [#1085](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1085)
+ - Fix broken link to Logstash Reference [#1085](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1085)
 
 ## 11.9.1
  - Fixes a possible infinite-retry-loop that could occur when this plugin is configured with an `action` whose value contains a [sprintf-style placeholder][] that fails to be resolved for an individual event. Events in this state will be routed to the pipeline's [dead letter queue][DLQ] if it is available, or will be logged-and-dropped so that the remaining events in the batch can be processed [#1080](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1080)
