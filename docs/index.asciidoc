@@ -396,7 +396,8 @@ The Elasticsearch action to perform. Valid actions are:
   in Elasticsearch 1.x. Please upgrade to ES 2.x or greater to use this feature with Logstash!
 - A sprintf style string to change the action based on the content of the event. The value `%{[foo]}`
   would use the foo field for the action. 
-  If resolved action is not in [`index`, `delete`, `create`, `update`], the event will not be sent to {es}, and will instead either be sent to the pipeline's {logstash-ref}/dead-letter-queues.html[dead-letter-queues] if it is enabled, or will be logged and dropped.
+  If resolved action is not in [`index`, `delete`, `create`, `update`], the event will not be sent to {es}.
+  Instead the event will be sent to the pipeline's {logstash-ref}/dead-letter-queues.html[dead-letter-queue (DLQ)] (if enabled), or it will be logged and dropped.
 
 For more details on actions, check out the {ref}/docs-bulk.html[Elasticsearch bulk API documentation].
 
