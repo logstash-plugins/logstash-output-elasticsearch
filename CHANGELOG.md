@@ -1,5 +1,83 @@
-## 11.0.3
+## 11.9.3
  - DOC: clarify that `http_compression` option only affects _requests_; compressed _responses_ have always been read independent of this setting.
+
+## 11.9.2
+  - Fix broken link to Logstash Reference [#1085](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1085)
+
+## 11.9.1
+ - Fixes a possible infinite-retry-loop that could occur when this plugin is configured with an `action` whose value contains a [sprintf-style placeholder][] that fails to be resolved for an individual event. Events in this state will be routed to the pipeline's [dead letter queue][DLQ] if it is available, or will be logged-and-dropped so that the remaining events in the batch can be processed [#1080](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1080)
+ 
+[sprintf-style placeholder]: https://www.elastic.co/guide/en/logstash/current/event-dependent-configuration.html#sprintf
+[DLQ]: https://www.elastic.co/guide/en/logstash/current/dead-letter-queues.html
+
+## 11.9.0
+ - Feature: force unresolved dynamic index names to be sent into DLQ. This feature could be explicitly disabled using `dlq_on_failed_indexname_interpolation` setting [#1084](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1084)
+
+## 11.8.0
+ - Feature: Adds a new `dlq_custom_codes` option to customize DLQ codes [#1067](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1067)
+ 
+## 11.7.0
+ - Feature: deprecates the `failure_type_logging_whitelist` configuration option, renaming it `silence_errors_in_log` [#1068](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1068)
+
+## 11.6.0
+ - Added support for `ca_trusted_fingerprint` when run on Logstash 8.3+ [#1074](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1074)
+
+## 11.5.0
+ - Feat: add ssl_supported_protocols option [#1055](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1055)
+
+## 11.4.2
+ - [DOC] Add `v8` to supported values for ecs_compatiblity defaults [#1059](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1059)
+
+## 11.4.1
+ - Feat: upgrade manticore (http-client) library [#1063](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1063)
+   - the underlying changes include latest HttpClient (4.5.13)
+   - resolves an old issue with `ssl_certificate_verification => false` still doing some verification logic
+
+## 11.4.0
+ - Updates ECS templates [#1062](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1062)
+   - Updates v1 templates to 1.12.1 for use with Elasticsearch 7.x and 8.x
+   - Updates BETA preview of ECS v8 templates for Elasticsearch 7.x and 8.x
+
+## 11.3.3
+ - Feat: add support for 'traces' data stream type [#1057](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1057)
+
+## 11.3.2
+ - Refactor: review manticore error handling/logging, logging originating cause in case of connection related error when debug level is enabled [#1029](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1029)
+   - Java causes on connection related exceptions will now be extra logged when plugin is logging at debug level
+
+## 11.3.1
+ - ECS-related fixes [#1046](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1046)
+   - Data Streams requirement on ECS is properly enforced when running on Logstash 8, and warned about when running on Logstash 7.
+   - ECS Compatibility v8 can now be selected
+
+## 11.3.0
+ - Adds ECS templates [#1048](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1048)
+   - Adds templates for ECS v1 for Elasticsearch 8.x
+   - Adds templates for BETA preview of ECS v8 for both Elasticsearch 7.x and 8.x
+
+## 11.2.3
+ - Downgrade ECS templates, pinning to v1.10.0 of upstream; fixes an issue where ECS templates cannot be installed in Elasticsearch 6.x or 7.1-7.2, since the generated templates include fields of `type: flattened` that was introduced in Elasticsearch 7.3. [#1049](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1049)
+
+## 11.2.2
+ - Update ECS templates from upstream; `ecs_compatiblity => v1` now resolves to templates for ECS v1.12.1 [#1047](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1047). Fixes [#1027](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1027)
+
+## 11.2.1
+ - Fix referencing Gem classes from global lexical scope [#1044](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1044)
+
+## 11.2.0
+ - Added preflight checks on Elasticsearch [#1026](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1026)
+
+## 11.1.0
+ - Feat: add `user-agent` header passed to the Elasticsearch HTTP connection [#1038](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1038)
+
+## 11.0.5
+ - Fixed running post-register action when Elasticsearch status change from unhealthy to healthy [#1035](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1035)
+
+## 11.0.4
+ - [DOC] Clarify that `http_compression` applies to _requests_, and remove noise about _response_ decompression [#1000](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1000)
+
+## 11.0.3
+ - Fixed SSL handshake hang indefinitely with proxy setup [#1032](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1032)
 
 ## 11.0.2
  - Validate that required functionality in Elasticsearch is available upon initial connection [#1015](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1015)

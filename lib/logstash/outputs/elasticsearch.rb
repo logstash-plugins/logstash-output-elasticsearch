@@ -9,6 +9,7 @@ require "socket" # for Socket.gethostname
 require "thread" # for safe queueing
 require "uri" # for escaping user input
 require "forwardable"
+require "set"
 
 # .Compatibility Note
 # [NOTE]
@@ -94,6 +95,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   require "logstash/outputs/elasticsearch/ilm"
   require "logstash/outputs/elasticsearch/data_stream_support"
   require 'logstash/plugin_mixins/ecs_compatibility_support'
+  require 'logstash/plugin_mixins/deprecation_logger_support'
 
   # Protocol agnostic methods
   include(LogStash::PluginMixins::ElasticSearch::Common)
@@ -102,7 +104,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   include(LogStash::Outputs::ElasticSearch::Ilm)
 
   # ecs_compatibility option, provided by Logstash core or the support adapter.
-  include(LogStash::PluginMixins::ECSCompatibilitySupport)
+  include(LogStash::PluginMixins::ECSCompatibilitySupport(:disabled, :v1, :v8))
+
+  # deprecation logger adapter for older Logstashes
+  include(LogStash::PluginMixins::DeprecationLoggerSupport)
 
   # Generic/API config options that any document indexer output needs
   include(LogStash::PluginMixins::ElasticSearch::APIConfigs)
@@ -251,6 +256,14 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # ILM policy to use, if undefined the default policy will be used.
   config :ilm_policy, :validate => :string, :default => DEFAULT_POLICY
 
+  # List extra HTTP's error codes that are considered valid to move the events into the dead letter queue.
+  # It's considered a configuration error to re-use the same predefined codes for success, DLQ or conflict.
+  # The option accepts a list of natural numbers corresponding to HTTP errors codes.
+  config :dlq_custom_codes, :validate => :number, :list => true, :default => []
+
+  # if enabled, failed index name interpolation events go into dead letter queue.
+  config :dlq_on_failed_indexname_interpolation, :validate => :boolean, :default => true
+
   attr_reader :client
   attr_reader :default_index
   attr_reader :default_ilm_rollover_alias
@@ -262,6 +275,14 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   def register
+    if !failure_type_logging_whitelist.empty?
+      log_message = "'failure_type_logging_whitelist' is deprecated and in a future version of Elasticsearch " +
+        "output plugin will be removed, please use 'silence_errors_in_log' instead."
+      @deprecation_logger.deprecated log_message
+      @logger.warn log_message
+      @silence_errors_in_log = silence_errors_in_log | failure_type_logging_whitelist
+    end
+
     @after_successful_connection_done = Concurrent::AtomicBoolean.new(false)
     @stopping = Concurrent::AtomicBoolean.new(false)
 
@@ -289,6 +310,15 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
     @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
 
+    @dlq_codes = DOC_DLQ_CODES.to_set
+
+    if dlq_enabled?
+      check_dlq_custom_codes
+      @dlq_codes.merge(dlq_custom_codes)
+    else
+      raise LogStash::ConfigurationError, "DLQ feature (dlq_custom_codes) is configured while DLQ is not enabled" unless dlq_custom_codes.empty?
+    end
+
     if data_stream_config?
       @event_mapper = -> (e) { data_stream_event_action_tuple(e) }
       @event_target = -> (e) { data_stream_name(e) }
@@ -300,6 +330,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     @bulk_request_metrics = metric.namespace(:bulk_requests)
     @document_level_metrics = metric.namespace(:documents)
+
+    if ecs_compatibility == :v8
+      @logger.warn("Elasticsearch Output configured with `ecs_compatibility => v8`, which resolved to an UNRELEASED preview of version 8.0.0 of the Elastic Common Schema. " +
+                   "Once ECS v8 and an updated release of this plugin are publicly available, you will need to update this plugin to resolve this warning.")
+    end
   end
 
   # @override post-register when ES connection established
@@ -330,11 +365,48 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # Receive an array of events and immediately attempt to index them (no buffering)
   def multi_receive(events)
     wait_for_successful_connection if @after_successful_connection_done
-    retrying_submit map_events(events)
+    events_mapped = safe_interpolation_map_events(events)
+    retrying_submit(events_mapped.successful_events)
+    unless events_mapped.event_mapping_errors.empty?
+      handle_event_mapping_errors(events_mapped.event_mapping_errors)
+    end
   end
 
+  # @param: Arrays of FailedEventMapping
+  private
+  def handle_event_mapping_errors(event_mapping_errors)
+    # if DQL is enabled, log the events to provide issue insights to users.
+    if @dlq_writer
+      @logger.warn("Events could not be indexed and routing to DLQ, count: #{event_mapping_errors.size}")
+    end
+
+    event_mapping_errors.each do |event_mapping_error|
+      detailed_message = "#{event_mapping_error.message}; event: `#{event_mapping_error.event.to_hash_with_metadata}`"
+      handle_dlq_status(event_mapping_error.event, :warn, detailed_message)
+    end
+    @document_level_metrics.increment(:non_retryable_failures, event_mapping_errors.size)
+  end
+
+  MapEventsResult = Struct.new(:successful_events, :event_mapping_errors)
+  FailedEventMapping = Struct.new(:event, :message)
+
+  private
+  def safe_interpolation_map_events(events)
+    successful_events = [] # list of LogStash::Outputs::ElasticSearch::EventActionTuple
+    event_mapping_errors = [] # list of FailedEventMapping
+    events.each do |event|
+      begin
+        successful_events << @event_mapper.call(event)
+      rescue EventMappingError => ie
+        event_mapping_errors << FailedEventMapping.new(event, ie.message)
+       end
+    end
+    MapEventsResult.new(successful_events, event_mapping_errors)
+  end
+
+  public
   def map_events(events)
-    events.map(&@event_mapper)
+    safe_interpolation_map_events(events).successful_events
   end
 
   def wait_for_successful_connection
@@ -382,6 +454,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     end
 
     action = event.sprintf(@action || 'index')
+    raise UnsupportedActionError, action unless VALID_HTTP_ACTIONS.include?(action)
 
     if action == 'update'
       params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
@@ -409,12 +482,32 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   end
 
+  class EventMappingError < ArgumentError
+    def initialize(msg = nil)
+      super
+    end
+  end
+
+  class IndexInterpolationError < EventMappingError
+    def initialize(bad_formatted_index)
+      super("Badly formatted index, after interpolation still contains placeholder: [#{bad_formatted_index}]")
+    end
+  end
+
+  class UnsupportedActionError < EventMappingError
+    def initialize(bad_action)
+      super("Elasticsearch doesn't support [#{bad_action}] action")
+    end
+  end
+
   # @return Hash (initial) parameters for given event
   # @private shared event params factory between index and data_stream mode
   def common_event_params(event)
+    sprintf_index = @event_target.call(event)
+    raise IndexInterpolationError, sprintf_index if sprintf_index.match(/%{.*?}/) && dlq_on_failed_indexname_interpolation
     params = {
         :_id => @document_id ? event.sprintf(@document_id) : nil,
-        :_index => @event_target.call(event),
+        :_index => sprintf_index,
         routing_field_name => @routing ? event.sprintf(@routing) : nil
     }
 
@@ -493,7 +586,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       @default_index = "logstash-%{+yyyy.MM.dd}"
       @default_ilm_rollover_alias = "logstash"
       @default_template_name = 'logstash'
-    when :v1
+    when :v1, :v8
       @default_index = "ecs-logstash-%{+yyyy.MM.dd}"
       @default_ilm_rollover_alias = "ecs-logstash"
       @default_template_name = 'ecs-logstash'
@@ -521,5 +614,16 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     return if valid_actions.include?(@action)
 
     raise LogStash::ConfigurationError, "Action '#{@action}' is invalid! Pick one of #{valid_actions} or use a sprintf style statement"
+  end
+
+  def check_dlq_custom_codes
+    intersection = dlq_custom_codes & DOC_DLQ_CODES
+    raise LogStash::ConfigurationError, "#{intersection} are already defined as standard DLQ error codes" unless intersection.empty?
+
+    intersection = dlq_custom_codes & DOC_SUCCESS_CODES
+    raise LogStash::ConfigurationError, "#{intersection} are success codes which cannot be redefined in dlq_custom_codes" unless intersection.empty?
+
+    intersection = dlq_custom_codes & [DOC_CONFLICT_CODE]
+    raise LogStash::ConfigurationError, "#{intersection} are error codes already defined as conflict which cannot be redefined in dlq_custom_codes" unless intersection.empty?
   end
 end

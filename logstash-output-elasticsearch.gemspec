@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name            = 'logstash-output-elasticsearch'
-  s.version         = '11.0.3'
+  s.version         = '11.9.3'
 
   s.licenses        = ['apache-2.0']
   s.summary         = "Stores logs in Elasticsearch"
@@ -21,15 +21,20 @@ Gem::Specification.new do |s|
   # Special flag to let us know this is actually a logstash plugin
   s.metadata = { "logstash_plugin" => "true", "logstash_group" => "output" }
 
-  s.add_runtime_dependency "manticore", '>= 0.5.4', '< 1.0.0'
+  s.add_runtime_dependency "manticore", '>= 0.8.0', '< 1.0.0'
   s.add_runtime_dependency 'stud', ['>= 0.0.17', '~> 0.0']
   s.add_runtime_dependency "logstash-core-plugin-api", ">= 1.60", "<= 2.99"
   s.add_runtime_dependency 'logstash-mixin-ecs_compatibility_support', '~>1.0'
+  s.add_runtime_dependency 'logstash-mixin-deprecation_logger_support', '~>1.0'
+  s.add_runtime_dependency 'logstash-mixin-ca_trusted_fingerprint_support', '~>1.0'
 
   s.add_development_dependency 'logstash-codec-plain'
   s.add_development_dependency 'logstash-devutils'
   s.add_development_dependency 'flores'
   s.add_development_dependency 'cabin', ['~> 0.6']
+  s.add_development_dependency 'webrick'
+  s.add_development_dependency 'webmock'
+  s.add_development_dependency 'rspec-collection_matchers'
   # Still used in some specs, we should remove this ASAP
   s.add_development_dependency 'elasticsearch'
 end

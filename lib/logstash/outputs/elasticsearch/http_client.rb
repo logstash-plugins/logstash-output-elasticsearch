@@ -4,6 +4,7 @@ require 'logstash/outputs/elasticsearch/http_client/manticore_adapter'
 require 'cgi'
 require 'zlib'
 require 'stringio'
+require 'java'
 
 module LogStash; module Outputs; class ElasticSearch;
   # This is a constant instead of a config option because
@@ -92,6 +93,10 @@ module LogStash; module Outputs; class ElasticSearch;
       @pool.maximum_seen_major_version
     end
 
+    def alive_urls_count
+      @pool.alive_urls_count
+    end
+
     def bulk(actions)
       @action_count ||= 0
       @action_count += actions.size
@@ -115,6 +120,7 @@ module LogStash; module Outputs; class ElasticSearch;
       else
         stream_writer = body_stream
       end
+
       bulk_responses = []
       batch_actions = []
       bulk_actions.each_with_index do |action, index|
@@ -137,13 +143,16 @@ module LogStash; module Outputs; class ElasticSearch;
         stream_writer.write(as_json)
         batch_actions << action
       end
+
       stream_writer.close if http_compression
+
       logger.debug("Sending final bulk request for batch.",
                    :action_count => batch_actions.size,
                    :payload_size => stream_writer.pos,
                    :content_length => body_stream.size,
                    :batch_offset => (actions.size - batch_actions.size))
       bulk_responses << bulk_send(body_stream, batch_actions) if body_stream.size > 0
+
       body_stream.close if !http_compression
       join_bulk_responses(bulk_responses)
     end
@@ -278,11 +287,11 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def client_settings
-      @options[:client_settings] || {}
+      @_client_settings ||= @options[:client_settings] || {}
     end
 
     def ssl_options
-      client_settings.fetch(:ssl, {})
+      @_ssl_options ||= client_settings.fetch(:ssl, {})
     end
 
     def http_compression
@@ -296,6 +305,8 @@ module LogStash; module Outputs; class ElasticSearch;
         :socket_timeout => timeout,
         :request_timeout => timeout,
       }
+
+      adapter_options[:user_agent] = prepare_user_agent
 
       adapter_options[:proxy] = client_settings[:proxy] if client_settings[:proxy]
 
@@ -315,8 +326,19 @@ module LogStash; module Outputs; class ElasticSearch;
 
       adapter_options[:headers] = client_settings[:headers] if client_settings[:headers]
 
-      adapter_class = ::LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter
-      adapter = adapter_class.new(@logger, adapter_options)
+      ::LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter.new(@logger, adapter_options)
+    end
+
+    def prepare_user_agent
+      os_name = java.lang.System.getProperty('os.name')
+      os_version = java.lang.System.getProperty('os.version')
+      os_arch = java.lang.System.getProperty('os.arch')
+      jvm_vendor = java.lang.System.getProperty('java.vendor')
+      jvm_version = java.lang.System.getProperty('java.version')
+
+      plugin_version = Gem.loaded_specs['logstash-output-elasticsearch'].version
+      # example: Logstash/7.14.1 (OS=Linux-5.4.0-84-generic-amd64; JVM=AdoptOpenJDK-11.0.11) logstash-output-elasticsearch/11.0.1
+      "Logstash/#{LOGSTASH_VERSION} (OS=#{os_name}-#{os_version}-#{os_arch}; JVM=#{jvm_vendor}-#{jvm_version}) logstash-output-elasticsearch/#{plugin_version}"
     end
     
     def build_pool(options)

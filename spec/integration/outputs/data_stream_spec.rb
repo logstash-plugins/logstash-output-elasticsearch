@@ -12,6 +12,13 @@ describe "data streams", :integration => true do
 
   subject { LogStash::Outputs::ElasticSearch.new(options) }
 
+  # All data-streams features require that the plugin be run in a non-disabled ECS compatibility mode.
+  # We run the plugin in ECS by default, and add test scenarios specifically for it being disabled.
+  let(:ecs_compatibility) { :v1 }
+  before(:each) do
+    allow( subject ).to receive(:ecs_compatibility).and_return(ecs_compatibility)
+  end
+
   before :each do
     @es = get_client
     @es.delete_by_query(index: ".ds-#{ds_name}-*", expand_wildcards: :all, body: { query: { match_all: {} } }) rescue nil

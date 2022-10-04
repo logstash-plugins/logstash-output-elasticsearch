@@ -1,3 +1,6 @@
+
+require 'logstash/plugin_mixins/ca_trusted_fingerprint_support'
+
 module LogStash; module PluginMixins; module ElasticSearch
   module APIConfigs
 
@@ -52,6 +55,9 @@ module LogStash; module PluginMixins; module ElasticSearch
         # The .cer or .pem file to validate the server's certificate
         :cacert => { :validate => :path },
 
+        # One or more hex-encoded SHA256 fingerprints to trust as Certificate Authorities
+        :ca_trusted_fingerprint => LogStash::PluginMixins::CATrustedFingerprintSupport,
+
         # The JKS truststore to validate the server's certificate.
         # Use either `:truststore` or `:cacert`
         :truststore => { :validate => :path },
@@ -65,6 +71,8 @@ module LogStash; module PluginMixins; module ElasticSearch
 
         # Set the keystore password
         :keystore_password => { :validate => :password },
+
+        :ssl_supported_protocols => { :validate => ['TLSv1.1', 'TLSv1.2', 'TLSv1.3'], :default => [], :list => true },
 
         # This setting asks Elasticsearch for the list of all cluster nodes and adds them to the hosts list.
         # Note: This will return ALL nodes with HTTP enabled (including master nodes!). If you use
@@ -91,10 +99,14 @@ module LogStash; module PluginMixins; module ElasticSearch
         # a timeout occurs, the request will be retried.
         :timeout => { :validate => :number, :default => 60 },
 
-        # Set the Elasticsearch errors in the whitelist that you don't want to log.
+        # Deprecated, refer to `silence_errors_in_log`.
+        :failure_type_logging_whitelist => { :validate => :array, :default => [] },
+
+        # Defines the list of Elasticsearch errors that you don't want to log.
         # A useful example is when you want to skip all 409 errors
         # which are `document_already_exists_exception`.
-        :failure_type_logging_whitelist => { :validate => :array, :default => [] },
+        # Deprecates `failure_type_logging_whitelist`.
+        :silence_errors_in_log => { :validate => :array, :default => [] },
 
         # While the output tries to reuse connections efficiently we have a maximum.
         # This sets the maximum number of open connections the output will create.
@@ -161,7 +173,13 @@ module LogStash; module PluginMixins; module ElasticSearch
     }.freeze
 
     def self.included(base)
-      CONFIG_PARAMS.each { |name, opts| base.config(name, opts) }
+      CONFIG_PARAMS.each do |name, opts|
+        if opts.kind_of?(Module)
+          base.include(opts)
+        else
+          base.config(name, opts)
+        end
+      end
     end
   end
 end; end; end

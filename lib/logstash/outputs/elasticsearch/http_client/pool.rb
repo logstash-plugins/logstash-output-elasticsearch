@@ -8,27 +8,25 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       attr_reader :url, :response_code, :request_body, :response_body
 
       def initialize(response_code, url, request_body, response_body)
+        super("Got response code '#{response_code}' contacting Elasticsearch at URL '#{url}'")
+
         @response_code = response_code
         @url = url
         @request_body = request_body
         @response_body = response_body
       end
 
-      def message
-        "Got response code '#{response_code}' contacting Elasticsearch at URL '#{@url}'"
-      end
     end
     class HostUnreachableError < Error;
       attr_reader :original_error, :url
 
       def initialize(original_error, url)
+        super("Elasticsearch Unreachable: [#{url}][#{original_error.class}] #{original_error.message}")
+
         @original_error = original_error
         @url = url
       end
 
-      def message
-        "Elasticsearch Unreachable: [#{@url}][#{original_error.class}] #{original_error.message}"
-      end
     end
 
     attr_reader :logger, :adapter, :sniffing, :sniffer_delay, :resurrect_delay, :healthcheck_path, :sniffing_path, :bulk_path
@@ -36,6 +34,9 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
     ROOT_URI_PATH = '/'.freeze
     LICENSE_PATH = '/_license'.freeze
+
+    VERSION_6_TO_7 = ::Gem::Requirement.new([">= 6.0.0", "< 7.0.0"])
+    VERSION_7_TO_7_14 = ::Gem::Requirement.new([">= 7.0.0", "< 7.14.0"])
 
     DEFAULT_OPTIONS = {
       :healthcheck_path => ROOT_URI_PATH,
@@ -211,7 +212,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def start_resurrectionist
       @resurrectionist = Thread.new do
         until_stopped("resurrection", @resurrect_delay) do
-          healthcheck!
+          healthcheck!(false)
         end
       end
     end
@@ -232,11 +233,18 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       perform_request_to_url(url, :head, @healthcheck_path)
     end
 
-    def healthcheck!
+    def healthcheck!(register_phase = true)
       # Try to keep locking granularity low such that we don't affect IO...
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         begin
           health_check_request(url)
+
+          # when called from resurrectionist skip the product check done during register phase
+          if register_phase
+            if !elasticsearch?(url)
+              raise LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch"
+            end
+          end
           # If no exception was raised it must have succeeded!
           logger.warn("Restored connection to ES instance", url: url.sanitized.to_s)
           # We reconnected to this node, check its ES version
@@ -252,6 +260,42 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           logger.warn("Attempted to resurrect connection to dead ES instance, but got an error", url: url.sanitized.to_s, exception: e.class, message: e.message)
         end
       end
+    end
+
+    def elasticsearch?(url)
+      begin
+        response = perform_request_to_url(url, :get, ROOT_URI_PATH)
+      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        return false if response.code == 401 || response.code == 403
+        raise e
+      end
+
+      version_info = LogStash::Json.load(response.body)
+      return false if version_info['version'].nil?
+
+      version = ::Gem::Version.new(version_info["version"]['number'])
+      return false if version < ::Gem::Version.new('6.0.0')
+
+      if VERSION_6_TO_7.satisfied_by?(version)
+        return valid_tagline?(version_info)
+      elsif VERSION_7_TO_7_14.satisfied_by?(version)
+        build_flavor = version_info["version"]['build_flavor']
+        return false if build_flavor.nil? || build_flavor != 'default' || !valid_tagline?(version_info)
+      else
+        # case >= 7.14
+        lower_headers = response.headers.transform_keys {|key| key.to_s.downcase }
+        product_header = lower_headers['x-elastic-product']
+        return false if product_header != 'Elasticsearch'
+      end
+      return true
+    rescue => e
+      logger.error("Unable to retrieve Elasticsearch version", url: url.sanitized.to_s, exception: e.class, message: e.message)
+      false
+    end
+
+    def valid_tagline?(version_info)
+      tagline = version_info['tagline']
+      tagline == "You Know, for Search"
     end
 
     def stop_resurrectionist
@@ -277,9 +321,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def perform_request_to_url(url, method, path, params={}, body=nil)
-      res = @adapter.perform_request(url, method, path, params, body)
-    rescue *@adapter.host_unreachable_exceptions => e
-      raise HostUnreachableError.new(e, url), "Could not reach host #{e.class}: #{e.message}"
+      @adapter.perform_request(url, method, path, params, body)
     end
 
     def normalize_url(uri)

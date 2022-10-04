@@ -12,6 +12,7 @@ describe "whitelisting error types in expected behavior" do
   before :each do
     allow(subject.logger).to receive(:warn)
     allow(subject).to receive(:maximum_seen_major_version).and_return(0)
+    allow(subject).to receive(:alive_urls_count).and_return(1)
     allow(subject).to receive(:finish_register)
 
     subject.register
@@ -44,8 +45,8 @@ describe "whitelisting error types in expected behavior" do
     end
   end
 
-  describe "when failure logging is disabled for docuemnt exists error" do
-    let(:settings) { super().merge("failure_type_logging_whitelist" => ["document_already_exists_exception"]) }
+  describe "when failure logging is disabled for document exists error" do
+    let(:settings) { super().merge("silence_errors_in_log" => ["document_already_exists_exception"]) }
 
     it "should log a failure on the action" do
       expect(subject.logger).not_to have_received(:warn).with("Failed action", anything)

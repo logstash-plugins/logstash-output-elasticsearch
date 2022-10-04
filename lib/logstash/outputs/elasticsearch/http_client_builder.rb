@@ -132,14 +132,18 @@ module LogStash; module Outputs; class ElasticSearch;
         ssl_options[:keystore] = keystore
         ssl_options[:keystore_password] = keystore_password.value if keystore_password
       end
+
       if !params["ssl_certificate_verification"]
-        logger.warn [
-                       "** WARNING ** Detected UNSAFE options in elasticsearch output configuration!",
-                       "** WARNING ** You have enabled encryption but DISABLED certificate verification.",
-                       "** WARNING ** To make sure your data is secure change :ssl_certificate_verification to true"
-                     ].join("\n")
-        ssl_options[:verify] = false
+        logger.warn "You have enabled encryption but DISABLED certificate verification, " +
+                    "to make sure your data is secure remove `ssl_certificate_verification => false`"
+        ssl_options[:verify] = :disable # false accepts self-signed but still validates hostname
       end
+
+      ssl_options[:trust_strategy] = params["ssl_trust_strategy"] if params.include?("ssl_trust_strategy")
+
+      protocols = params['ssl_supported_protocols']
+      ssl_options[:protocols] = protocols if protocols && protocols.any?
+
       { ssl: ssl_options }
     end
 

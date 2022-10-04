@@ -20,7 +20,9 @@ module ESHelper
   end
 
   def get_client
-    Elasticsearch::Client.new(:hosts => [get_host_port])
+    Elasticsearch::Client.new(:hosts => [get_host_port]).tap do |client|
+      allow(client).to receive(:verify_elasticsearch).and_return(true) # bypass client side version checking
+    end
   end
 
   def doc_type
@@ -57,7 +59,11 @@ module ESHelper
   end
 
   def self.es_version
-    RSpec.configuration.filter[:es_version] || ENV['ES_VERSION'] || ENV['ELASTIC_STACK_VERSION']
+    [
+      nilify(RSpec.configuration.filter[:es_version]),
+      nilify(ENV['ES_VERSION']),
+      nilify(ENV['ELASTIC_STACK_VERSION']),
+    ].compact.first
   end
 
   RSpec::Matchers.define :have_hits do |expected|
@@ -78,7 +84,7 @@ module ESHelper
   end
 
   def self.es_version_satisfies?(*requirement)
-    es_version = RSpec.configuration.filter[:es_version] || ENV['ES_VERSION'] || ENV['ELASTIC_STACK_VERSION']
+    es_version = nilify(RSpec.configuration.filter[:es_version]) || nilify(ENV['ES_VERSION']) || nilify(ENV['ELASTIC_STACK_VERSION'])
     if es_version.nil?
       puts "Info: ES_VERSION, ELASTIC_STACK_VERSION or 'es_version' tag wasn't set. Returning false to all `es_version_satisfies?` call."
       return false
@@ -87,6 +93,15 @@ module ESHelper
     Gem::Requirement.new(requirement).satisfied_by?(es_release_version)
   end
 
+  private
+  def self.nilify(str)
+    if str.nil?
+      return str
+    end
+    str.empty? ? nil : str
+  end
+
+  public
   def clean(client)
     client.indices.delete_template(:name => "*")
     client.indices.delete_index_template(:name => "logstash*") rescue nil
