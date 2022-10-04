@@ -1,3 +1,6 @@
+## 11.9.3
+ - DOC: clarify that `http_compression` option only affects _requests_; compressed _responses_ have always been read independent of this setting [#1030 ](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1030)
+
 ## 11.9.2
   - Fix broken link to Logstash Reference [#1085](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1085)
 

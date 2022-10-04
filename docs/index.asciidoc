@@ -276,11 +276,10 @@ not reevaluate its DNS value while the keepalive is in effect.
 
 ==== HTTP Compression
 
-This plugin supports request compression, and handles compressed responses
-from Elasticsearch.
+This plugin always reads compressed responses from {es}.
+It _can be configured_ to send compressed bulk requests to {es}.
 
-To enable request compression, use the <<plugins-{type}s-{plugin}-http_compression>>
-setting on this plugin.
+If you are concerned about bandwidth, you can enable <<plugins-{type}s-{plugin}-http_compression>> to trade a small amount of CPU capacity for a significant reduction in network IO.
 
 ==== Authentication
 
