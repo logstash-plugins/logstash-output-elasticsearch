@@ -77,12 +77,12 @@ module LogStash; module Outputs; class ElasticSearch;
       }
     end
 
-    def template_install(name, template, force=false)
-      if template_exists?(name) && !force
+    def template_install(template_endpoint, name, template, force=false)
+      if template_exists?(template_endpoint, name) && !force
         @logger.debug("Found existing Elasticsearch template, skipping template management", name: name)
         return
       end
-      template_put(name, template)
+      template_put(template_endpoint, name, template)
     end
 
     def last_es_version
@@ -402,18 +402,14 @@ module LogStash; module Outputs; class ElasticSearch;
       response.code >= 200 && response.code <= 299
     end
 
-    def template_exists?(name)
+    def template_exists?(template_endpoint, name)
       exists?("/#{template_endpoint}/#{name}")
     end
 
-    def template_put(name, template)
+    def template_put(template_endpoint, name, template)
       path = "#{template_endpoint}/#{name}"
       logger.info("Installing Elasticsearch template", name: name)
       @pool.put(path, nil, LogStash::Json.dump(template))
-    end
-
-    def template_endpoint
-      maximum_seen_major_version < 8 ? '_template' : '_index_template'
     end
 
     # ILM methods
