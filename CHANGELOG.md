@@ -1,5 +1,5 @@
 ## 11.9.4
- - Add legacy template API support for elasticsearch 8.x
+ - Add legacy template API support for Elasticsearch 8 [#1092](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1092)
 
 ## 11.9.3
  - DOC: clarify that `http_compression` option only affects _requests_; compressed _responses_ have always been read independent of this setting [#1030 ](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1030)
