@@ -362,6 +362,7 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-ssl_certificate_verification>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-ssl_supported_protocols>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-template>> |a valid filesystem path|No
+| <<plugins-{type}s-{plugin}-template_legacy>> |<<string,string>>, one of `["true", "false", "auto"]`|No
 | <<plugins-{type}s-{plugin}-template_name>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-template_overwrite>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-timeout>> |<<number,number>>|No
@@ -1081,6 +1082,22 @@ the *$JDK_HOME/conf/security/java.security* configuration file. That is, `TLSv1.
 
 You can set the path to your own template here, if you so desire.
 If not set, the included template will be used.
+
+[id="plugins-{type}s-{plugin}-template_legacy"]
+===== `template_legacy`
+
+  * Value can be any of: `true`, `false`, `auto`
+  * Default value is `auto`
+
+The default setting of `auto` will use
+{ref}/index-templates.html[index template API] to create index template, if the
+Elasticsearch cluster is running Elasticsearch version `8.0.0` or higher,
+and use {ref}/indices-templates-v1.html[legacy template API] otherwise.
+
+Setting this flag to `true` will use legacy template API to create index template.
+Setting this flag to `false` will use index template API to create index template.
+
+NOTE: The format of template needs to match with the corresponding Elasticsearch version.
 
 [id="plugins-{type}s-{plugin}-template_name"]
 ===== `template_name`
