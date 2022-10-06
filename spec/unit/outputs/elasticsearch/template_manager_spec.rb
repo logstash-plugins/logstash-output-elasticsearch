@@ -98,5 +98,18 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
         end
       end
     end
+
+    describe "template_legacy => 'false'" do
+      let(:plugin_settings) { {"manage_template" => true, "template_legacy" => 'false'} }
+      let(:plugin) { LogStash::Outputs::ElasticSearch.new(plugin_settings) }
+
+      describe "in version 8+" do
+        it "should use legacy template API" do
+          expect(plugin).to receive(:maximum_seen_major_version).never
+          endpoint = described_class.template_endpoint(plugin)
+          expect(endpoint).to be_equal(LogStash::Outputs::ElasticSearch::TemplateManager:: INDEX_TEMPLATE_ENDPOINT)
+        end
+      end
+    end
   end
 end
