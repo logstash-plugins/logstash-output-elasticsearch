@@ -362,7 +362,7 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-ssl_certificate_verification>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-ssl_supported_protocols>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-template>> |a valid filesystem path|No
-| <<plugins-{type}s-{plugin}-template_api>> |<<string,string>>, one of `["true", "false", "auto"]`|No
+| <<plugins-{type}s-{plugin}-template_api>> |<<string,string>>, one of `["auto", "legacy", "composable"]`|No
 | <<plugins-{type}s-{plugin}-template_name>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-template_overwrite>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-timeout>> |<<number,number>>|No
