@@ -340,6 +340,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       @logger.warn("Elasticsearch Output configured with `ecs_compatibility => v8`, which resolved to an UNRELEASED preview of version 8.0.0 of the Elastic Common Schema. " +
                    "Once ECS v8 and an updated release of this plugin are publicly available, you will need to update this plugin to resolve this warning.")
     end
+
+    if @client.maximum_seen_major_version < 8 && @template_api == 'auto'
+      @logger.warn("Elasticsearch Output configured with `template_api => auto` uses legacy template API to manage index template for Elasticsearch 7 or below. " +
+                     "Legacy template API will be removed in Elasticsearch 9. It is recommended to set `template_api => legacy` before any upgrade " +
+                     "and please consider to migrate to composable index templates.")
+    end
   end
 
   # @override post-register when ES connection established
