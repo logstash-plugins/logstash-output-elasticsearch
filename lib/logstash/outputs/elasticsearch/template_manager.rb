@@ -68,9 +68,9 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def self.template_endpoint(plugin)
-      if plugin.template_legacy == 'auto'
+      if plugin.template_api == 'auto'
         plugin.maximum_seen_major_version < 8 ? LEGACY_TEMPLATE_ENDPOINT : INDEX_TEMPLATE_ENDPOINT
-      elsif plugin.template_legacy.to_s == 'true'
+      elsif plugin.template_api.to_s == 'legacy'
         LEGACY_TEMPLATE_ENDPOINT
       else
         INDEX_TEMPLATE_ENDPOINT

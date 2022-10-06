@@ -1,4 +1,4 @@
-## 11.9.4
+## 11.10.0
  - Add legacy template API support for Elasticsearch 8 [#1092](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1092)
 
 ## 11.9.3

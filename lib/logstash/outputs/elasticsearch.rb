@@ -187,8 +187,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Flag for enabling legacy template api for Elasticsearch 8
   # Default auto will use index template api for Elasticsearch 8 and use legacy api for 7
-  # Set to true to use legacy template api
-  config :template_legacy, :validate => [true, false, 'true', 'false', 'auto'], :default => 'auto'
+  # Set to legacy to use legacy template api
+  config :template_api, :validate => ['auto', 'legacy', 'composable'], :default => 'auto'
 
   # The version to use for indexing. Use sprintf syntax like `%{my_version}` to use a field value here.
   # See https://www.elastic.co/blog/elasticsearch-versioning-support.

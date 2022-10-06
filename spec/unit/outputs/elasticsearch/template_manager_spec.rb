@@ -65,8 +65,8 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
   end
 
   describe "template endpoint" do
-    describe "template_legacy => 'auto'" do
-      let(:plugin_settings) { {"manage_template" => true, "template_legacy" => 'auto'} }
+    describe "template_api => 'auto'" do
+      let(:plugin_settings) { {"manage_template" => true, "template_api" => 'auto'} }
       let(:plugin) { LogStash::Outputs::ElasticSearch.new(plugin_settings) }
 
       describe "in version 8+" do
@@ -86,8 +86,8 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
       end
     end
 
-    describe "template_legacy => 'true'" do
-      let(:plugin_settings) { {"manage_template" => true, "template_legacy" => 'true'} }
+    describe "template_api => 'legacy'" do
+      let(:plugin_settings) { {"manage_template" => true, "template_api" => 'legacy'} }
       let(:plugin) { LogStash::Outputs::ElasticSearch.new(plugin_settings) }
 
       describe "in version 8+" do
@@ -99,8 +99,8 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
       end
     end
 
-    describe "template_legacy => 'false'" do
-      let(:plugin_settings) { {"manage_template" => true, "template_legacy" => 'false'} }
+    describe "template_api => 'composable'" do
+      let(:plugin_settings) { {"manage_template" => true, "template_api" => 'composable'} }
       let(:plugin) { LogStash::Outputs::ElasticSearch.new(plugin_settings) }
 
       describe "in version 8+" do
