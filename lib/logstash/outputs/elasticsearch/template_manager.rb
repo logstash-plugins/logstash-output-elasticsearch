@@ -6,6 +6,13 @@ module LogStash; module Outputs; class ElasticSearch
     # To be mixed into the elasticsearch plugin base
     def self.install_template(plugin)
       return unless plugin.manage_template
+
+      if plugin.maximum_seen_major_version < 8 && plugin.template_api == 'auto'
+        plugin.logger.warn("Elasticsearch Output configured with `template_api => auto` uses legacy template API to manage index template for Elasticsearch 7 or below. " +
+                             "Legacy template API will be removed in Elasticsearch 9. It is recommended to set `template_api => legacy` before any upgrade " +
+                             "and please consider to migrate to composable index templates.")
+      end
+
       if plugin.template
         plugin.logger.info("Using mapping template from", :path => plugin.template)
         template = read_template_file(plugin.template)
