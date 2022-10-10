@@ -58,7 +58,7 @@ describe "metrics", :integration => true do
     end
 
     it "increases number of successful and non retryable documents" do
-      expect(document_level_metrics).to receive(:increment).with(:non_retryable_failures).once
+      expect(document_level_metrics).to receive(:increment).with(:dlq_routed).once
       expect(document_level_metrics).to receive(:increment).with(:successes).once
       subject.multi_receive(bulk)
     end

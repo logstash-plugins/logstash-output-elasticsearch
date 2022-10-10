@@ -273,7 +273,7 @@ module LogStash; module PluginMixins; module ElasticSearch
           next
         elsif @dlq_codes.include?(status)
           handle_dlq_response("Could not index event to Elasticsearch.", action, status, response)
-          @document_level_metrics.increment(:non_retryable_failures)
+          @document_level_metrics.increment(:dlq_routed)
           next
         else
           # only log what the user whitelisted
