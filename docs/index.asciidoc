@@ -1097,7 +1097,7 @@ and use {ref}/indices-templates-v1.html[legacy template API] otherwise.
 Setting this flag to `legacy` will use legacy template API to create index template.
 Setting this flag to `composable` will use index template API to create index template.
 
-NOTE: The format of template needs to match with the corresponding Elasticsearch version.
+NOTE: The format of template provided to <<plugins-{type}s-{plugin}-template>> needs to match the template API being used.
 
 [id="plugins-{type}s-{plugin}-template_name"]
 ===== `template_name`
