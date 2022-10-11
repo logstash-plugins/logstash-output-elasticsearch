@@ -8,9 +8,11 @@ module LogStash; module Outputs; class ElasticSearch
       return unless plugin.manage_template
 
       if plugin.maximum_seen_major_version < 8 && plugin.template_api == 'auto'
-        plugin.logger.warn("Elasticsearch Output configured with `template_api => auto` uses legacy template API to manage index template for Elasticsearch 7 or below. " +
-                             "Legacy template API will be removed in Elasticsearch 9. It is recommended to set `template_api => legacy` before any upgrade " +
-                             "and please consider to migrate to composable index templates.")
+        plugin.logger.warn("`template_api => auto` resolved to `legacy` since we are connected to " + "Elasticsearch #{plugin.maximum_seen_major_version}, " +
+                           "but will resolve to `composable` the first time it connects to Elasticsearch 8+. " +
+                           "We recommend either setting `template_api => legacy` to continue providing legacy-style templates, " +
+                           "or migrating your template to the composable style and setting `template_api => composable`. " +
+                           "The legacy template API is slated for removal in Elasticsearch 9.")
       end
 
       if plugin.template
