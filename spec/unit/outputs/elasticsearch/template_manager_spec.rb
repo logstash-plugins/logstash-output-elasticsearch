@@ -63,4 +63,53 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
       end
     end
   end
+
+  describe "template endpoint" do
+    describe "template_api => 'auto'" do
+      let(:plugin_settings) { {"manage_template" => true, "template_api" => 'auto'} }
+      let(:plugin) { LogStash::Outputs::ElasticSearch.new(plugin_settings) }
+
+      describe "in version 8+" do
+        it "should use index template API" do
+          expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(8)
+          endpoint = described_class.template_endpoint(plugin)
+          expect(endpoint).to be_equal(LogStash::Outputs::ElasticSearch::TemplateManager::INDEX_TEMPLATE_ENDPOINT)
+        end
+      end
+
+      describe "in version < 8" do
+        it "should use legacy template API" do
+          expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(7)
+          endpoint = described_class.template_endpoint(plugin)
+          expect(endpoint).to be_equal(LogStash::Outputs::ElasticSearch::TemplateManager::LEGACY_TEMPLATE_ENDPOINT)
+        end
+      end
+    end
+
+    describe "template_api => 'legacy'" do
+      let(:plugin_settings) { {"manage_template" => true, "template_api" => 'legacy'} }
+      let(:plugin) { LogStash::Outputs::ElasticSearch.new(plugin_settings) }
+
+      describe "in version 8+" do
+        it "should use legacy template API" do
+          expect(plugin).to receive(:maximum_seen_major_version).never
+          endpoint = described_class.template_endpoint(plugin)
+          expect(endpoint).to be_equal(LogStash::Outputs::ElasticSearch::TemplateManager::LEGACY_TEMPLATE_ENDPOINT)
+        end
+      end
+    end
+
+    describe "template_api => 'composable'" do
+      let(:plugin_settings) { {"manage_template" => true, "template_api" => 'composable'} }
+      let(:plugin) { LogStash::Outputs::ElasticSearch.new(plugin_settings) }
+
+      describe "in version 8+" do
+        it "should use legacy template API" do
+          expect(plugin).to receive(:maximum_seen_major_version).never
+          endpoint = described_class.template_endpoint(plugin)
+          expect(endpoint).to be_equal(LogStash::Outputs::ElasticSearch::TemplateManager:: INDEX_TEMPLATE_ENDPOINT)
+        end
+      end
+    end
+  end
 end
