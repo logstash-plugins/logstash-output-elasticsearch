@@ -17,12 +17,17 @@ describe LogStash::Outputs::ElasticSearch do
     allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:start)
   end
 
+  let(:spy_http_client_builder!) do
+    allow(described_class::HttpClientBuilder).to receive(:build).with(any_args).and_call_original
+  end
+
   let(:after_successful_connection_thread_mock) do
     double('after_successful_connection_thread', value: true)
   end
 
   before(:each) do
     if do_register
+      spy_http_client_builder!
       stub_http_client_pool!
 
       allow(subject).to receive(:finish_register) # stub-out thread completion (to avoid error log entries)
@@ -1003,18 +1008,52 @@ describe LogStash::Outputs::ElasticSearch do
     let(:api_key) { "some_id:some_api_key" }
     let(:base64_api_key) { "ApiKey c29tZV9pZDpzb21lX2FwaV9rZXk=" }
 
-    context "when set without ssl" do
+    shared_examples 'secure api-key authenticated client' do
+      let(:do_register) { true }
+
+      it 'adds the appropriate Authorization header to the manticore client' do
+        expect(manticore_options[:headers]).to eq({ "Authorization" => base64_api_key })
+      end
+      it 'is provides ssl=>true to the http client builder' do; aggregate_failures do
+        expect(described_class::HttpClientBuilder).to have_received(:build).with(anything, anything, hash_including('ssl'=>true))
+      end; end
+    end
+
+    context "when set without ssl => true" do
       let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
       let(:options) { { "api_key" => api_key } }
 
       it "should raise a configuration error" do
         expect { subject.register }.to raise_error LogStash::ConfigurationError, /requires SSL\/TLS/
       end
+
+      context 'with cloud_id' do
+        let(:sample_cloud_id) { 'sample:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlvJGFjMzFlYmI5MDI0MTc3MzE1NzA0M2MzNGZkMjZmZDQ2OjkyNDMkYTRjMDYyMzBlNDhjOGZjZTdiZTg4YTA3NGEzYmIzZTA6OTI0NA==' }
+        let(:options) { super().merge('cloud_id' => sample_cloud_id) }
+
+        it_behaves_like 'secure api-key authenticated client'
+      end
     end
 
-    context "when set without ssl but with a https host" do
+    context "when set without ssl specified but with an https host" do
       let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
       let(:options) { { "hosts" => ["https://some.host.com"], "api_key" => api_key } }
+
+      it_behaves_like 'secure api-key authenticated client'
+    end
+
+    context "when set without ssl specified but with an http host`" do
+      let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
+      let(:options) { { "hosts" => ["http://some.host.com"], "api_key" => api_key } }
+
+      it "should raise a configuration error" do
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /requires SSL\/TLS/
+      end
+    end
+
+    context "when set with `ssl => false`" do
+      let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
+      let(:options) { { "ssl" => "false", "api_key" => api_key } }
 
       it "should raise a configuration error" do
         expect { subject.register }.to raise_error LogStash::ConfigurationError, /requires SSL\/TLS/
@@ -1022,10 +1061,35 @@ describe LogStash::Outputs::ElasticSearch do
     end
 
     context "when set" do
-      let(:options) { { "ssl" => true, "api_key" =>  ::LogStash::Util::Password.new(api_key) } }
+      let(:options) { { "api_key" => ::LogStash::Util::Password.new(api_key) } }
 
-      it "should use the custom headers in the adapter options" do
-        expect(manticore_options[:headers]).to eq({ "Authorization" => base64_api_key })
+      context "with ssl => true" do
+        let(:options) { super().merge("ssl" => true) }
+        it_behaves_like 'secure api-key authenticated client'
+      end
+
+      context "with ssl => false" do
+        let(:options) { super().merge("ssl" => "false") }
+
+        let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
+        it "should raise a configuration error" do
+          expect { subject.register }.to raise_error LogStash::ConfigurationError, /requires SSL\/TLS/
+        end
+      end
+
+      context "without ssl specified" do
+        context "with an https host" do
+          let(:options) { super().merge("hosts" => ["https://some.host.com"]) }
+          it_behaves_like 'secure api-key authenticated client'
+        end
+        context "with an http host`" do
+          let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
+          let(:options) { { "hosts" => ["http://some.host.com"], "api_key" => api_key } }
+
+          it "should raise a configuration error" do
+            expect { subject.register }.to raise_error LogStash::ConfigurationError, /requires SSL\/TLS/
+          end
+        end
       end
     end
 

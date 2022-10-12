@@ -23,9 +23,13 @@ module LogStash; module PluginMixins; module ElasticSearch
       # because they must be executed prior to building the client and logstash
       # monitoring and management rely on directly calling build_client
       # see https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/934#pullrequestreview-396203307
-      validate_authentication
       fill_hosts_from_cloud_id
+      validate_authentication
+
       setup_hosts
+
+
+      params['ssl'] = effectively_ssl? unless params.include?('ssl')
 
       # inject the TrustStrategy from CATrustedFingerprintSupport
       if trust_strategy_for_ca_trusted_fingerprint
@@ -49,7 +53,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         raise LogStash::ConfigurationError, 'Multiple authentication options are specified, please only use one of user/password, cloud_auth or api_key'
       end
 
-      if @api_key && @api_key.value && @ssl   != true
+      if @api_key && @api_key.value && !effectively_ssl?
         raise(LogStash::ConfigurationError, "Using api_key authentication requires SSL/TLS secured communication using the `ssl => true` option")
       end
 
@@ -67,6 +71,15 @@ module LogStash; module PluginMixins; module ElasticSearch
         @logger.info("No 'host' set in elasticsearch output. Defaulting to localhost")
         @hosts.replace(["localhost"])
       end
+    end
+
+    def effectively_ssl?
+      return @ssl unless @ssl.nil?
+
+      hosts = Array(@hosts)
+      return false if hosts.nil? || hosts.empty?
+
+      hosts.all? { |host| host && host.scheme == "https" }
     end
 
     def hosts_default?(hosts)
@@ -208,12 +221,12 @@ module LogStash; module PluginMixins; module ElasticSearch
 
     def handle_dlq_response(message, action, status, response)
       _, action_params = action.event, [action[0], action[1], action[2]]
-      
+
       # TODO: Change this to send a map with { :status => status, :action => action } in the future
       detailed_message = "#{message} status: #{status}, action: #{action_params}, response: #{response}"
-      
+
       log_level = dig_value(response, 'index', 'error', 'type') == 'invalid_index_name_exception' ? :error : :warn
-      
+
       handle_dlq_status(action.event, log_level, detailed_message)
     end
 
