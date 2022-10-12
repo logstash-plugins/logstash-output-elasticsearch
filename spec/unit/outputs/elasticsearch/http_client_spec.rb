@@ -266,6 +266,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
             end
           end
         end
+
        end
      end
   end

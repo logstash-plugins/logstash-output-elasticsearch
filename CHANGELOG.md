@@ -1,5 +1,32 @@
-## 11.6.0
+## 11.11.0
  - When using an `api_key` along with either `cloud_id` or https `hosts`, you no longer need to also specify `ssl => true` [#1065](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1065)
+
+## 11.10.0
+ - Feature: expose `dlq_routed` document metric to track the documents routed into DLQ [#1090](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1090)
+
+## 11.9.3
+ - DOC: clarify that `http_compression` option only affects _requests_; compressed _responses_ have always been read independent of this setting [#1030 ](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1030)
+
+## 11.9.2
+ - Fix broken link to Logstash Reference [#1085](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1085)
+
+## 11.9.1
+ - Fixes a possible infinite-retry-loop that could occur when this plugin is configured with an `action` whose value contains a [sprintf-style placeholder][] that fails to be resolved for an individual event. Events in this state will be routed to the pipeline's [dead letter queue][DLQ] if it is available, or will be logged-and-dropped so that the remaining events in the batch can be processed [#1080](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1080)
+ 
+[sprintf-style placeholder]: https://www.elastic.co/guide/en/logstash/current/event-dependent-configuration.html#sprintf
+[DLQ]: https://www.elastic.co/guide/en/logstash/current/dead-letter-queues.html
+
+## 11.9.0
+ - Feature: force unresolved dynamic index names to be sent into DLQ. This feature could be explicitly disabled using `dlq_on_failed_indexname_interpolation` setting [#1084](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1084)
+
+## 11.8.0
+ - Feature: Adds a new `dlq_custom_codes` option to customize DLQ codes [#1067](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1067)
+ 
+## 11.7.0
+ - Feature: deprecates the `failure_type_logging_whitelist` configuration option, renaming it `silence_errors_in_log` [#1068](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1068)
+
+## 11.6.0
+ - Added support for `ca_trusted_fingerprint` when run on Logstash 8.3+ [#1074](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1074)
 
 ## 11.5.0
  - Feat: add ssl_supported_protocols option [#1055](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1055)

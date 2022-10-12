@@ -120,6 +120,7 @@ module LogStash; module Outputs; class ElasticSearch;
       else
         stream_writer = body_stream
       end
+
       bulk_responses = []
       batch_actions = []
       bulk_actions.each_with_index do |action, index|
@@ -142,13 +143,16 @@ module LogStash; module Outputs; class ElasticSearch;
         stream_writer.write(as_json)
         batch_actions << action
       end
+
       stream_writer.close if http_compression
+
       logger.debug("Sending final bulk request for batch.",
                    :action_count => batch_actions.size,
                    :payload_size => stream_writer.pos,
                    :content_length => body_stream.size,
                    :batch_offset => (actions.size - batch_actions.size))
       bulk_responses << bulk_send(body_stream, batch_actions) if body_stream.size > 0
+
       body_stream.close if !http_compression
       join_bulk_responses(bulk_responses)
     end

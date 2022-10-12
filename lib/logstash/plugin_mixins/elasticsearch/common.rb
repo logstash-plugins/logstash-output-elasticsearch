@@ -28,7 +28,14 @@ module LogStash; module PluginMixins; module ElasticSearch
 
       setup_hosts
 
+
       params['ssl'] = effectively_ssl? unless params.include?('ssl')
+
+      # inject the TrustStrategy from CATrustedFingerprintSupport
+      if trust_strategy_for_ca_trusted_fingerprint
+        params["ssl_trust_strategy"] = trust_strategy_for_ca_trusted_fingerprint
+      end
+
       params["metric"] = metric
       if @proxy.eql?('')
         @logger.warn "Supplied proxy setting (proxy => '') has no effect"
@@ -176,7 +183,7 @@ module LogStash; module PluginMixins; module ElasticSearch
 
       sleep_interval = @retry_initial_interval
 
-      while submit_actions && submit_actions.length > 0
+      while submit_actions && submit_actions.size > 0
 
         # We retry with whatever is didn't succeed
         begin
@@ -212,19 +219,23 @@ module LogStash; module PluginMixins; module ElasticSearch
       doubled > @retry_max_interval ? @retry_max_interval : doubled
     end
 
-    def handle_dlq_status(message, action, status, response)
+    def handle_dlq_response(message, action, status, response)
+      _, action_params = action.event, [action[0], action[1], action[2]]
+
+      # TODO: Change this to send a map with { :status => status, :action => action } in the future
+      detailed_message = "#{message} status: #{status}, action: #{action_params}, response: #{response}"
+
+      log_level = dig_value(response, 'index', 'error', 'type') == 'invalid_index_name_exception' ? :error : :warn
+
+      handle_dlq_status(action.event, log_level, detailed_message)
+    end
+
+    def handle_dlq_status(event, log_level, message)
       # To support bwc, we check if DLQ exists. otherwise we log and drop event (previous behavior)
       if @dlq_writer
-        event, action = action.event, [action[0], action[1], action[2]]
-        # TODO: Change this to send a map with { :status => status, :action => action } in the future
-        @dlq_writer.write(event, "#{message} status: #{status}, action: #{action}, response: #{response}")
+        @dlq_writer.write(event, "#{message}")
       else
-        if dig_value(response, 'index', 'error', 'type') == 'invalid_index_name_exception'
-          level = :error
-        else
-          level = :warn
-        end
-        @logger.send level, message, status: status, action: action, response: response
+        @logger.send log_level, message
       end
     end
 
@@ -261,7 +272,6 @@ module LogStash; module PluginMixins; module ElasticSearch
         status = action_props["status"]
         error  = action_props["error"]
         action = actions[idx]
-        action_params = action[1]
 
         # Retry logic: If it is success, we move on. If it is a failure, we have 3 paths:
         # - For 409, we log and drop. there is nothing we can do
@@ -274,9 +284,9 @@ module LogStash; module PluginMixins; module ElasticSearch
           @document_level_metrics.increment(:non_retryable_failures)
           @logger.warn "Failed action", status: status, action: action, response: response if log_failure_type?(error)
           next
-        elsif DOC_DLQ_CODES.include?(status)
-          handle_dlq_status("Could not index event to Elasticsearch.", action, status, response)
-          @document_level_metrics.increment(:non_retryable_failures)
+        elsif @dlq_codes.include?(status)
+          handle_dlq_response("Could not index event to Elasticsearch.", action, status, response)
+          @document_level_metrics.increment(:dlq_routed)
           next
         else
           # only log what the user whitelisted
@@ -290,7 +300,7 @@ module LogStash; module PluginMixins; module ElasticSearch
     end
 
     def log_failure_type?(failure)
-      !failure_type_logging_whitelist.include?(failure["type"])
+      !silence_errors_in_log.include?(failure["type"])
     end
 
     # Rescue retryable errors during bulk submission

@@ -3,8 +3,8 @@ require "base64"
 require "flores/random"
 require 'concurrent/atomic/count_down_latch'
 require "logstash/outputs/elasticsearch"
-
 require 'logstash/plugin_mixins/ecs_compatibility_support/spec_helper'
+require 'rspec/collection_matchers'
 
 describe LogStash::Outputs::ElasticSearch do
   subject(:elasticsearch_output_instance) { described_class.new(options) }
@@ -265,6 +265,24 @@ describe LogStash::Outputs::ElasticSearch do
       end
     end
 
+    describe "when 'dlq_custom_codes'" do
+      let(:options) { super().merge('dlq_custom_codes' => [404]) }
+      let(:do_register) { false }
+
+      context "contains already defined codes" do
+        it "should raise a configuration error" do
+          expect{ subject.register }.to raise_error(LogStash::ConfigurationError, /are already defined as standard DLQ error codes/)
+        end
+      end
+
+      context "is configured but DLQ is not enabled" do
+        it "raise a configuration error" do
+          allow(subject).to receive(:dlq_enabled?).and_return(false)
+          expect{ subject.register }.to raise_error(LogStash::ConfigurationError, /configured while DLQ is not enabled/)
+        end
+      end
+    end if LOGSTASH_VERSION > '7.0'
+
     describe "#multi_receive" do
       let(:events) { [double("one"), double("two"), double("three")] }
       let(:events_tuples) { [double("one t"), double("two t"), double("three t")] }
@@ -334,7 +352,7 @@ describe LogStash::Outputs::ElasticSearch do
                               }
                     },
                     # NOTE: this is an artificial success (usually everything fails with a 500) but even if some doc where
-                    # to succeed due the unexpected reponse items we can not clearly identify which actions to retry ...
+                    # to succeed due the unexpected response items we can not clearly identify which actions to retry ...
                     {"index"=>{"_index"=>"bar2", "_type"=>"_doc", "_id"=>nil, "status"=>201}},
                     {"index"=>{"_index"=>"bar2", "_type"=>"_doc", "_id"=>nil, "status"=>500,
                                "error"=>{"type" => "illegal_state_exception",
@@ -366,6 +384,104 @@ describe LogStash::Outputs::ElasticSearch do
                                                        hash_including(:message => 'Sent 2 documents but Elasticsearch returned 3 responses (likely a bug with _bulk endpoint)'))
 
         subject.multi_receive(events)
+      end
+    end
+
+    context "unsupported actions" do
+      let(:options) { super().merge("index" => "logstash", "action" => "%{action_field}") }
+
+      context "with multiple valid actions with one trailing invalid action" do
+        let(:events) {[
+          LogStash::Event.new("action_field" => "index", "id" => 1, "message"=> "hello"),
+          LogStash::Event.new("action_field" => "index", "id" => 2, "message"=> "hi"),
+          LogStash::Event.new("action_field" => "index", "id" => 3, "message"=> "bye"),
+          LogStash::Event.new("action_field" => "unsupported_action", "id" => 4, "message"=> "world!")
+        ]}
+        it "rejects unsupported actions" do
+          event_result = subject.send(:safe_interpolation_map_events, events)
+          expect(event_result.successful_events).to have_exactly(3).items
+          event_result.successful_events.each do |action, _|
+            expect(action).to_not eql("unsupported_action")
+          end
+          expect(event_result.event_mapping_errors).to have_exactly(1).items
+          event_result.event_mapping_errors.each do |event_mapping_error|
+            expect(event_mapping_error.message).to eql("Elasticsearch doesn't support [unsupported_action] action")
+          end
+        end
+      end
+
+      context "with one leading invalid action followed by multiple valid actions" do
+        let(:events) {[
+          LogStash::Event.new("action_field" => "unsupported_action", "id" => 1, "message"=> "world!"),
+          LogStash::Event.new("action_field" => "index", "id" => 2, "message"=> "hello"),
+          LogStash::Event.new("action_field" => "index", "id" => 3, "message"=> "hi"),
+          LogStash::Event.new("action_field" => "index", "id" => 4, "message"=> "bye")
+        ]}
+        it "rejects unsupported actions" do
+          event_result = subject.send(:safe_interpolation_map_events, events)
+          expect(event_result.successful_events).to have_exactly(3).items
+          event_result.successful_events.each do |action, _|
+            expect(action).to_not eql("unsupported_action")
+          end
+          expect(event_result.event_mapping_errors).to have_exactly(1).items
+          event_result.event_mapping_errors.each do |event_mapping_error|
+            expect(event_mapping_error.message).to eql("Elasticsearch doesn't support [unsupported_action] action")
+          end
+        end
+      end
+
+      context "with batch of multiple invalid actions and no valid actions" do
+        let(:events) {[
+          LogStash::Event.new("action_field" => "unsupported_action1", "id" => 1, "message"=> "world!"),
+          LogStash::Event.new("action_field" => "unsupported_action2", "id" => 2, "message"=> "hello"),
+          LogStash::Event.new("action_field" => "unsupported_action3", "id" => 3, "message"=> "hi"),
+          LogStash::Event.new("action_field" => "unsupported_action4", "id" => 4, "message"=> "bye")
+        ]}
+        it "rejects unsupported actions" do
+          event_result = subject.send(:safe_interpolation_map_events, events)
+          expect(event_result.successful_events).to have(:no).items
+          event_result.successful_events.each do |action, _|
+            expect(action).to_not eql("unsupported_action")
+          end
+          expect(event_result.event_mapping_errors).to have_exactly(4).items
+          event_result.event_mapping_errors.each do |event_mapping_error|
+            expect(event_mapping_error.message).to include "Elasticsearch doesn't support"
+          end
+        end
+      end
+
+      context "with batch of intermixed valid and invalid actions" do
+        let(:events) {[
+          LogStash::Event.new("action_field" => "index", "id" => 1, "message"=> "world!"),
+          LogStash::Event.new("action_field" => "unsupported_action2", "id" => 2, "message"=> "hello"),
+          LogStash::Event.new("action_field" => "unsupported_action3", "id" => 3, "message"=> "hi"),
+          LogStash::Event.new("action_field" => "index", "id" => 4, "message"=> "bye")
+        ]}
+        it "rejects unsupported actions" do
+          event_result = subject.send(:safe_interpolation_map_events, events)
+          expect(event_result.successful_events).to have_exactly(2).items
+          expect(event_result.event_mapping_errors).to have_exactly(2).items
+          event_result.event_mapping_errors.each do |event_mapping_error|
+            expect(event_mapping_error.message).to include "Elasticsearch doesn't support"
+          end
+        end
+      end
+
+      context "with batch of exactly one action that is invalid" do
+        let(:events) {[
+          LogStash::Event.new("action_field" => "index", "id" => 1, "message"=> "world!"),
+          LogStash::Event.new("action_field" => "index", "id" => 2, "message"=> "hello"),
+          LogStash::Event.new("action_field" => "unsupported_action3", "id" => 3, "message"=> "hi"),
+          LogStash::Event.new("action_field" => "index", "id" => 4, "message"=> "bye")
+        ]}
+        it "rejects unsupported action" do
+          event_result = subject.send(:safe_interpolation_map_events, events)
+          expect(event_result.successful_events).to have_exactly(3).items
+          expect(event_result.event_mapping_errors).to have_exactly(1).items
+          event_result.event_mapping_errors.each do |event_mapping_error|
+            expect(event_mapping_error.message).to eql("Elasticsearch doesn't support [unsupported_action3] action")
+          end
+        end
       end
     end
   end
@@ -755,17 +871,18 @@ describe LogStash::Outputs::ElasticSearch do
 
   context 'handling elasticsearch document-level status meant for the DLQ' do
     let(:options) { { "manage_template" => false } }
+    let(:action) { LogStash::Outputs::ElasticSearch::EventActionTuple.new(:action, :params, LogStash::Event.new("foo" => "bar")) }
 
     context 'when @dlq_writer is nil' do
       before { subject.instance_variable_set '@dlq_writer', nil }
+      let(:action) { LogStash::Outputs::ElasticSearch::EventActionTuple.new(:action, :params, LogStash::Event.new("foo" => "bar")) }
 
       context 'resorting to previous behaviour of logging the error' do
         context 'getting an invalid_index_name_exception' do
           it 'should log at ERROR level' do
             subject.instance_variable_set(:@logger, double("logger").as_null_object)
             mock_response = { 'index' => { 'error' => { 'type' => 'invalid_index_name_exception' } } }
-            subject.handle_dlq_status("Could not index event to Elasticsearch.",
-              [:action, :params, :event], :some_status, mock_response)
+            subject.handle_dlq_response("Could not index event to Elasticsearch.", action, :some_status, mock_response)
           end
         end
 
@@ -773,10 +890,9 @@ describe LogStash::Outputs::ElasticSearch do
           it 'should log at WARN level' do
             logger = double("logger").as_null_object
             subject.instance_variable_set(:@logger, logger)
-            expect(logger).to receive(:warn).with(/Could not index/, hash_including(:status, :action, :response))
+            expect(logger).to receive(:warn).with(a_string_including "Could not index event to Elasticsearch. status: some_status, action: [:action, :params, {")
             mock_response = { 'index' => { 'error' => { 'type' => 'illegal_argument_exception' } } }
-            subject.handle_dlq_status("Could not index event to Elasticsearch.",
-              [:action, :params, :event], :some_status, mock_response)
+            subject.handle_dlq_response("Could not index event to Elasticsearch.", action, :some_status, mock_response)
           end
         end
 
@@ -784,11 +900,10 @@ describe LogStash::Outputs::ElasticSearch do
           it 'should not fail, but just log a warning' do
             logger = double("logger").as_null_object
             subject.instance_variable_set(:@logger, logger)
-            expect(logger).to receive(:warn).with(/Could not index/, hash_including(:status, :action, :response))
+            expect(logger).to receive(:warn).with(a_string_including "Could not index event to Elasticsearch. status: some_status, action: [:action, :params, {")
             mock_response = { 'index' => {} }
             expect do
-              subject.handle_dlq_status("Could not index event to Elasticsearch.",
-                [:action, :params, :event], :some_status, mock_response)
+              subject.handle_dlq_response("Could not index event to Elasticsearch.", action, :some_status, mock_response)
             end.to_not raise_error
           end
         end
@@ -808,11 +923,11 @@ describe LogStash::Outputs::ElasticSearch do
         expect(dlq_writer).to receive(:write).once.with(event, /Could not index/)
         mock_response = { 'index' => { 'error' => { 'type' => 'illegal_argument_exception' } } }
         action = LogStash::Outputs::ElasticSearch::EventActionTuple.new(:action, :params, event)
-        subject.handle_dlq_status("Could not index event to Elasticsearch.", action, 404, mock_response)
+        subject.handle_dlq_response("Could not index event to Elasticsearch.", action, 404, mock_response)
       end
     end
 
-    context 'with response status 400' do
+    context 'with error response status' do
 
       let(:options) { super().merge 'document_id' => '%{foo}' }
 
@@ -820,11 +935,13 @@ describe LogStash::Outputs::ElasticSearch do
 
       let(:dlq_writer) { subject.instance_variable_get(:@dlq_writer) }
 
+      let(:error_code) { 400 }
+
       let(:bulk_response) do
         {
             "took"=>1, "ingest_took"=>11, "errors"=>true, "items"=>
             [{
-                 "index"=>{"_index"=>"bar", "_type"=>"_doc", "_id"=>'bar', "status"=>400,
+                 "index"=>{"_index"=>"bar", "_type"=>"_doc", "_id"=>'bar', "status" => error_code,
                            "error"=>{"type" => "illegal_argument_exception", "reason" => "TEST" }
                   }
             }]
@@ -835,21 +952,34 @@ describe LogStash::Outputs::ElasticSearch do
         allow(subject.client).to receive(:bulk_send).and_return(bulk_response)
       end
 
-      it "should write event to DLQ" do
-        expect(dlq_writer).to receive(:write).and_wrap_original do |method, *args|
-          expect( args.size ).to eql 2
+      shared_examples "should write event to DLQ" do
+        it "should write event to DLQ" do
+          expect(dlq_writer).to receive(:write).and_wrap_original do |method, *args|
+            expect( args.size ).to eql 2
 
-          event, reason = *args
-          expect( event ).to be_a LogStash::Event
-          expect( event ).to be events.first
-          expect( reason ).to start_with 'Could not index event to Elasticsearch. status: 400, action: ["index"'
-          expect( reason ).to match /_id=>"bar".*"foo"=>"bar".*response:.*"reason"=>"TEST"/
+            event, reason = *args
+            expect( event ).to be_a LogStash::Event
+            expect( event ).to be events.first
+            expect( reason ).to start_with "Could not index event to Elasticsearch. status: #{error_code}, action: [\"index\""
+            expect( reason ).to match /_id=>"bar".*"foo"=>"bar".*response:.*"reason"=>"TEST"/
 
-          method.call(*args) # won't hurt to call LogStash::Util::DummyDeadLetterQueueWriter
-        end.once
+            method.call(*args) # won't hurt to call LogStash::Util::DummyDeadLetterQueueWriter
+          end.once
 
-        event_action_tuples = subject.map_events(events)
-        subject.send(:submit, event_action_tuples)
+          event_action_tuples = subject.map_events(events)
+          subject.send(:submit, event_action_tuples)
+        end
+      end
+
+      context "is one of the predefined codes" do
+        include_examples "should write event to DLQ"
+      end
+
+      context "when user customized dlq_custom_codes option" do
+        let(:error_code) { 403 }
+        let(:options) { super().merge 'dlq_custom_codes' => [error_code] }
+
+        include_examples "should write event to DLQ"
       end
 
     end if LOGSTASH_VERSION > '7.0'
