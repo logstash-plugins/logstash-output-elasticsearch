@@ -1,3 +1,6 @@
+## 11.12.1
+ - Log bulk request response body on error, not just when debug logging is enabled [#1096](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1096)
+
 ## 11.12.0
  - Add legacy template API support for Elasticsearch 8 [#1092](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1092)
 
