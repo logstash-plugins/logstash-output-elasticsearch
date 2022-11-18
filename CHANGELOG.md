@@ -5,7 +5,7 @@
  - Add legacy template API support for Elasticsearch 8 [#1092](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1092)
 
 ## 11.11.0
- - When using an `api_key` along with either `cloud_id` or https `hosts`, you no longer need to also specify `ssl => true` [#1065](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1065)
+ - When using an `api_key` along with either `cloud_id` or https `hosts`, you no longer need to also specify `ssl => true`[#1066](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1066). Fixes [#935](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/935) and [#1065](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1065)
 
 ## 11.10.0
  - Feature: expose `dlq_routed` document metric to track the documents routed into DLQ [#1090](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1090)
