@@ -26,7 +26,7 @@ wait_for_es() {
 }
 
 if [[ "$INTEGRATION" != "true" ]]; then
-  bundle exec jruby -rbundler/setup -S rspec -fd spec/unit -t ~integration -t ~secure_integration
+  bundle exec rspec --format=documentation spec/unit -t ~integration -t ~secure_integration
 else
 
   if [[ "$SECURE_INTEGRATION" == "true" ]]; then
