@@ -26,7 +26,7 @@ wait_for_es() {
 }
 
 if [[ "$INTEGRATION" != "true" ]]; then
-  bundle exec rspec --format=documentation spec/unit -t ~integration -t ~secure_integration
+  bundle exec rspec --format=documentation spec/unit --tag ~integration --tag ~secure_integration
 else
 
   if [[ "$SECURE_INTEGRATION" == "true" ]]; then
