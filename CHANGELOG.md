@@ -1,5 +1,5 @@
 ## 11.12.2
- - Fixes the broken apache http client link [#1101](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1101)
+ - [Doc] Fixes the broken apache http client link [#1101](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1101)
 
 ## 11.12.1
  - Log bulk request response body on error, not just when debug logging is enabled [#1096](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1096)
