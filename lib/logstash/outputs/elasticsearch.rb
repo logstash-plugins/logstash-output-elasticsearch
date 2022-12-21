@@ -386,8 +386,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     end
 
     event_mapping_errors.each do |event_mapping_error|
-      detailed_message = "#{event_mapping_error.message}; event: `#{event_mapping_error.event.to_hash_with_metadata}`"
-      handle_dlq_status(event_mapping_error.event, :warn, detailed_message)
+      handle_dlq_status(event_mapping_error.event, :warn, event_mapping_error.message, event_mapping_error.event.to_hash_with_metadata) { |message, args| "#{message}; event: `#{args}`" }
     end
     @document_level_metrics.increment(:non_retryable_failures, event_mapping_errors.size)
   end
