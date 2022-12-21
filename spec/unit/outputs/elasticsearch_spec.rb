@@ -1121,41 +1121,63 @@ describe LogStash::Outputs::ElasticSearch do
   end if LOGSTASH_VERSION > '6.0'
 
   context 'handling elasticsearch document-level status meant for the DLQ' do
+    let(:es_api_action) { "CUSTOM_ACTION" }
+    let(:es_api_params) { Hash['_index' => 'MY_INDEX'] }
+
     let(:options) { { "manage_template" => false, "data_stream" => 'false' } }
-    let(:action) { LogStash::Outputs::ElasticSearch::EventActionTuple.new(:action, :params, LogStash::Event.new("foo" => "bar")) }
+    let(:action) { LogStash::Outputs::ElasticSearch::EventActionTuple.new(es_api_action, es_api_params, LogStash::Event.new("foo" => "bar")) }
+
+    let(:logger) { double('logger').as_null_object }
+    before(:each) { subject.instance_variable_set(:@logger, logger) }
 
     context 'when @dlq_writer is nil' do
       before { subject.instance_variable_set '@dlq_writer', nil }
-      let(:action) { LogStash::Outputs::ElasticSearch::EventActionTuple.new(:action, :params, LogStash::Event.new("foo" => "bar")) }
 
       context 'resorting to previous behaviour of logging the error' do
         context 'getting an invalid_index_name_exception' do
           it 'should log at ERROR level' do
-            subject.instance_variable_set(:@logger, double("logger").as_null_object)
+            # logger = double("logger").as_null_object
+            # subject.instance_variable_set(:@logger, logger)
+
             mock_response = { 'index' => { 'error' => { 'type' => 'invalid_index_name_exception' } } }
             subject.handle_dlq_response("Could not index event to Elasticsearch.", action, :some_status, mock_response)
+
+            expect(logger).to have_received(:error).with(a_string_including("Could not index event to Elasticsearch"),
+                                                         a_hash_including(:status => :some_status,
+                                                                          :action => [es_api_action, es_api_params, action.event.to_hash],
+                                                                          :response => mock_response))
           end
         end
 
         context 'when getting any other exception' do
           it 'should log at WARN level' do
-            logger = double("logger").as_null_object
-            subject.instance_variable_set(:@logger, logger)
-            expect(logger).to receive(:warn).with(a_string_including "Could not index event to Elasticsearch. status: some_status, action: [:action, :params, {")
+            # logger = double("logger").as_null_object
+            # subject.instance_variable_set(:@logger, logger)
+
             mock_response = { 'index' => { 'error' => { 'type' => 'illegal_argument_exception' } } }
             subject.handle_dlq_response("Could not index event to Elasticsearch.", action, :some_status, mock_response)
+
+            expect(logger).to have_received(:warn).with(a_string_including("Could not index event to Elasticsearch"),
+                                                        a_hash_including(:status => :some_status,
+                                                                         :action => [es_api_action, es_api_params, action.event.to_hash],
+                                                                         :response => mock_response))
           end
         end
 
         context 'when the response does not include [error]' do
           it 'should not fail, but just log a warning' do
-            logger = double("logger").as_null_object
-            subject.instance_variable_set(:@logger, logger)
-            expect(logger).to receive(:warn).with(a_string_including "Could not index event to Elasticsearch. status: some_status, action: [:action, :params, {")
+            # logger = double("logger").as_null_object
+            # subject.instance_variable_set(:@logger, logger)
+
             mock_response = { 'index' => {} }
             expect do
               subject.handle_dlq_response("Could not index event to Elasticsearch.", action, :some_status, mock_response)
             end.to_not raise_error
+
+            expect(logger).to have_received(:warn).with(a_string_including("Could not index event to Elasticsearch"),
+                                                        a_hash_including(:status => :some_status,
+                                                                         :action => [es_api_action, es_api_params, action.event.to_hash],
+                                                                         :response => mock_response))
           end
         end
       end
@@ -1175,6 +1197,8 @@ describe LogStash::Outputs::ElasticSearch do
         mock_response = { 'index' => { 'error' => { 'type' => 'illegal_argument_exception' } } }
         action = LogStash::Outputs::ElasticSearch::EventActionTuple.new(:action, :params, event)
         subject.handle_dlq_response("Could not index event to Elasticsearch.", action, 404, mock_response)
+
+        expect(logger).to_not have_received(:warn).with(a_string_including("Could not index event to Elasticsearch"))
       end
     end
 

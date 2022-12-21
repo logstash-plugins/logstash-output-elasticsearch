@@ -1,3 +1,6 @@
+## 11.15.2
+ - Restores DLQ logging behavior from 11.8.x to include the action-tuple as structured [#1105](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1105)
+
 ## 11.15.1
  - Move async finish_register to bottom of register to avoid race condition [#1125](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1125)
 

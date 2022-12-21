@@ -23,7 +23,9 @@ describe "index template expected behavior", :integration => true do
 
     elasticsearch_client.indices.delete_template(:name => '*')
     # This can fail if there are no indexes, ignore failure.
-    elasticsearch_client.indices.delete(:index => '*') rescue nil
+    elasticsearch_client.indices.delete(:index => '*') rescue puts("DELETE INDICES ERROR: #{$!}")
+    # Since we are pinned to ES client 7.x, we need to delete data streams the hard way...
+    elasticsearch_client.perform_request("DELETE", "/_data_stream/*") rescue puts("DELETE DATA STREAMS ERROR: #{$!}")
   end
 
   context 'with ecs_compatibility => disabled' do
