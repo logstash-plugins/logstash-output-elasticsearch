@@ -1,3 +1,6 @@
+## Unreleased
+  - DOC: fixes link to Apache HTTP client. [#n](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/n)
+
 ## 11.12.1
  - Log bulk request response body on error, not just when debug logging is enabled [#1096](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1096)
 
