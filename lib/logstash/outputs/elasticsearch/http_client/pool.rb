@@ -257,7 +257,11 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
             meta[:state] = alive ? :alive : :dead
           end
         rescue HostUnreachableError, BadResponseCodeError => e
-          logger.warn("Attempted to resurrect connection to dead ES instance, but got an error", url: url.sanitized.to_s, exception: e.class, message: e.message)
+          logger.warn("Attempted to resurrect connection to dead ES instance, but got an error", url: url.sanitized.to_s, exception: e.class, message: e.message, backtrace: e.backtrace)
+          if e.class == BadResponseCodeError && e.response_code == 401 && register_phase
+            # During register_phase a bad credentials error must forbid to continue
+            raise LogStash::ConfigurationError, "Could not connect to Elasticsearch due to bad credentials"
+          end
         end
       end
     end
