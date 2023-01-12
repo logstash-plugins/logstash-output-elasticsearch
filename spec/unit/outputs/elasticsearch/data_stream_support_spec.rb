@@ -84,7 +84,8 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
         context "on LS #{ls_version_desc}" do
           around(:each) { |example| change_constant(:LOGSTASH_VERSION, ls_version, &example) }
           it "does not use data-streams" do
-            expect( subject.logger ).to receive(:debug).with(a_string_including "ecs_compatibility is not enabled")
+            expect( subject.logger ).to receive(:info).with(a_string_including "ecs_compatibility is not enabled")
+            expect( subject.logger ).to receive(:info).with(a_string_including "Data streams auto configuration (`data_stream => auto` or unset) resolved to `false`")
             expect( subject.data_stream_config? ).to be false
           end
         end
@@ -161,7 +162,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
     it "does not default to data-streams" do
       expect( subject.logger ).to receive(:error) do |msg|
-        expect(msg).to include "Ambiguous configuration; data stream settings are present, but data streams are not enabled"
+        expect(msg).to include "Ambiguous configuration; data stream settings must not be present when data streams are disabled"
       end
       change_constant :LOGSTASH_VERSION, '7.10.2' do
         expect { subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, /Ambiguous configuration/i)
@@ -173,8 +174,8 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
       let(:options) { super().merge('data_stream' => 'false') }
 
       it "raises a configuration error (due ds specific settings)" do
-        expect( subject.logger ).to receive(:error).with(/Ambiguous configuration; data stream settings must not be present when data streams is disabled/,
-                                                         {"data_stream_auto_routing"=>"false", "data_stream_dataset"=>"test"})
+        expect( subject.logger ).to receive(:error).with(/Ambiguous configuration; data stream settings must not be present when data streams are disabled/,
+                                                          {"data_stream_auto_routing"=>"false", "data_stream_dataset"=>"test"})
         change_constant :LOGSTASH_VERSION, '7.10.2' do
           expect { subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, /Ambiguous configuration/i)
         end

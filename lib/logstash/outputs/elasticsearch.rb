@@ -300,6 +300,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     # to build_client down to the Pool class.
     @client = build_client(LicenseChecker.new(@logger))
 
+    # Avoids race conditions in the @data_stream_config initialization (invoking check_data_stream_config! twice).
+    # It's being concurrently invoked by this register method and by the finish_register on the @after_successful_connection_thread
+    data_stream_enabled = data_stream_config?
+
     @after_successful_connection_thread = after_successful_connection do
       begin
         finish_register
@@ -324,7 +328,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       raise LogStash::ConfigurationError, "DLQ feature (dlq_custom_codes) is configured while DLQ is not enabled" unless dlq_custom_codes.empty?
     end
 
-    if data_stream_config?
+    if data_stream_enabled
       @event_mapper = -> (e) { data_stream_event_action_tuple(e) }
       @event_target = -> (e) { data_stream_name(e) }
       @index = "#{data_stream_type}-#{data_stream_dataset}-#{data_stream_namespace}".freeze # default name
