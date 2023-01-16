@@ -44,7 +44,7 @@ module LogStash module Outputs class ElasticSearch
       "#{type}-#{dataset}-#{namespace}"
     end
 
-    DATA_STREAMS_REQUIRES_ECS_LS_VERSION = '8.0.0'
+    DATA_STREAMS_AND_ECS_ENABLED_BY_DEFAULT_LS_VERSION = '8.0.0'
 
     # @param params the user configuration for the ES output
     # @note LS initialized configuration (with filled defaults) won't detect as data-stream
@@ -77,12 +77,12 @@ module LogStash module Outputs class ElasticSearch
       end
 
       if ecs_compatibility == :disabled
-        if ::Gem::Version.create(LOGSTASH_VERSION) < ::Gem::Version.create(DATA_STREAMS_REQUIRES_ECS_LS_VERSION)
-          @deprecation_logger.deprecated "In a future release of Logstash, the Elasticsearch output plugin's `data_stream => true` will require the plugin to be run in ECS compatibility mode. " + ENABLING_ECS_GUIDANCE
-        else
+        if ecs_compatibility_required?
           @logger.error "Invalid data stream configuration; `ecs_compatibility` must not be `disabled`. " + ENABLING_ECS_GUIDANCE
           raise LogStash::ConfigurationError, "Invalid data stream configuration: `ecs_compatibility => disabled`"
         end
+
+        @deprecation_logger.deprecated "In a future release of Logstash, the Elasticsearch output plugin's `data_stream => true` will require the plugin to be run in ECS compatibility mode. " + ENABLING_ECS_GUIDANCE
       end
     end
 
@@ -155,8 +155,6 @@ module LogStash module Outputs class ElasticSearch
       es_version # return truthy
     end
 
-    DATA_STREAMS_ENABLED_BY_DEFAULT_LS_VERSION = '8.0.0'
-
     # when data_stream => is either 'auto' or not set
     def data_stream_default(params)
       if ecs_compatibility == :disabled
@@ -166,8 +164,7 @@ module LogStash module Outputs class ElasticSearch
 
       invalid_data_stream_params = invalid_data_stream_params(params)
 
-      ds_default = ::Gem::Version.create(LOGSTASH_VERSION) >= ::Gem::Version.create(DATA_STREAMS_ENABLED_BY_DEFAULT_LS_VERSION)
-      if ds_default # LS 8.0
+      if data_stream_and_ecs_enabled_by_default?
         if invalid_data_stream_params.any?
           @logger.info("Not eligible for data streams because config contains one or more settings that are not compatible with data streams: #{invalid_data_stream_params.inspect}")
           return false
@@ -183,6 +180,14 @@ module LogStash module Outputs class ElasticSearch
                      "(set `data_stream => true/false` to disable this warning)"
       end
       false
+    end
+
+    def ecs_compatibility_required?
+      data_stream_and_ecs_enabled_by_default?
+    end
+
+    def data_stream_and_ecs_enabled_by_default?
+      ::Gem::Version.create(LOGSTASH_VERSION) >= ::Gem::Version.create(DATA_STREAMS_AND_ECS_ENABLED_BY_DEFAULT_LS_VERSION)
     end
 
     # an {event_action_tuple} replacement when a data-stream configuration is detected
