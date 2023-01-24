@@ -606,6 +606,26 @@ describe LogStash::Outputs::ElasticSearch do
     end
   end
 
+  describe "the manage_template option" do
+    context "with data stream enabled" do
+      let(:options) { {"data_stream" => "true", "data_stream_type" => "logs" } }
+      let(:do_register) { true }
+
+      it "should default to false" do
+        expect(subject).to have_attributes(manage_template: false)
+      end
+    end
+
+    context "with data stream disabled" do
+      let(:options) { {"data_stream" => "false", "index" => "logs" } }
+      let(:do_register) { true }
+
+      it "should default to true" do
+        expect(subject).to have_attributes(manage_template: true)
+      end
+    end
+  end
+
   describe "SSL end to end" do
     let(:do_register) { false } # skip the register in the global before block, as is called here.
 
@@ -870,7 +890,7 @@ describe LogStash::Outputs::ElasticSearch do
   end if LOGSTASH_VERSION > '6.0'
 
   context 'handling elasticsearch document-level status meant for the DLQ' do
-    let(:options) { { "manage_template" => false } }
+    let(:options) { { "manage_template" => false, "data_stream" => 'false' } }
     let(:action) { LogStash::Outputs::ElasticSearch::EventActionTuple.new(:action, :params, LogStash::Event.new("foo" => "bar")) }
 
     context 'when @dlq_writer is nil' do
@@ -1140,7 +1160,7 @@ describe LogStash::Outputs::ElasticSearch do
   describe "post-register ES setup" do
     let(:do_register) { false }
     let(:es_version) { '7.10.0' } # DS default on LS 8.x
-    let(:options) { { 'hosts' => '127.0.0.1:9999' } }
+    let(:options) { { 'hosts' => '127.0.0.1:9999', 'data_stream' => 'false' } }
     let(:logger) { subject.logger }
 
     before do

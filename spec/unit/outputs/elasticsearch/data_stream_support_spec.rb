@@ -152,6 +152,42 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
   end
 
+  context 'ds value-dependent configuration' do
+    # Valid settings values
+    let(:options) { super().merge(
+      'action' => 'create',
+      'routing' => 'any',
+      'pipeline' => 'any',
+      'manage_template' => "false",
+      'data_stream' => 'true')
+    }
+
+    context 'with valid values' do
+      let(:options) { super().merge(
+        'data_stream_type' => 'logs',
+        'data_stream_dataset' => 'any',
+        'data_stream_namespace' => 'any',
+        'data_stream_sync_fields' => true,
+        'data_stream_auto_routing' => true)
+      }
+
+      it 'should enable data-streams by default' do
+        expect ( subject.data_stream_config? ).to be true
+      end
+    end
+
+    context 'with invalid values' do
+      let(:options) { super().merge(
+        'action' => 'index',
+        'manage_template' => 'true')
+      }
+
+      it 'should raise a configuration error' do
+        expect { subject.data_stream_config? }.to raise_error(LogStash::ConfigurationError, 'Invalid data stream configuration: ["action", "manage_template"]')
+      end
+    end
+  end
+
   context "default (non data-stream) configuration (on 7.x)" do
 
     let(:options) do

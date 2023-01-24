@@ -118,7 +118,6 @@ module LogStash module Outputs class ElasticSearch
       params.reject do |name, value|
         # NOTE: intentionally do not support explicit DS configuration like:
         # - `index => ...` identifier provided by data_stream_xxx settings
-        # - `manage_template => false` implied by not setting the parameter
         case name
         when 'action'
           value == 'create'
@@ -126,6 +125,8 @@ module LogStash module Outputs class ElasticSearch
           true
         when 'data_stream'
           value.to_s == 'true'
+        when 'manage_template'
+          value.to_s == 'false'
         when 'ecs_compatibility' then true # required for LS <= 6.x
         else
           name.start_with?('data_stream_') ||
