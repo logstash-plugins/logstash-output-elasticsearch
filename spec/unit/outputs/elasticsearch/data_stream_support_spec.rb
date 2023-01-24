@@ -158,7 +158,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
       'action' => 'create',
       'routing' => 'any',
       'pipeline' => 'any',
-      'manage_template' => "false",
+      'manage_template' => 'false',
       'data_stream' => 'true')
     }
 
@@ -172,7 +172,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
       }
 
       it 'should enable data-streams by default' do
-        expect ( subject.data_stream_config? ).to be true
+        expect( subject.data_stream_config? ).to be_truthy
       end
     end
 
