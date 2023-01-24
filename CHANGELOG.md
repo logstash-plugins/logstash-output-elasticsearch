@@ -3,9 +3,9 @@
     -  Added the `manage_template => false` as a valid data stream option
 
 ## 11.12.3
-- Changed the log messages for data stream checks [#1109](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1109)
-    - Added more details about incompatible data streams supplied configurations
-    - Changed the data stream auto-configuration log levels from `debug` to `info`
+ - Changed the log messages for data stream checks [#1109](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1109)
+   - Added more details about incompatible data streams supplied configurations
+   - Changed the data stream auto-configuration log levels from `debug` to `info`
 
 ## 11.12.2
  - [Doc] Fixes the broken apache http client link [#1101](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1101)
