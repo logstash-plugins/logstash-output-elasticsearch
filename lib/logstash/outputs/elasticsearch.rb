@@ -158,7 +158,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # control over template creation, (e.g. creating indices dynamically based on
   # field names) you should set `manage_template` to false and use the REST
   # API to apply your templates manually.
-  config :manage_template, :validate => :boolean # :default => true unless data_stream_config?
+  #
+  # Default value is `true` for non-time series data, and `false` for data streams.
+  config :manage_template, :validate => :boolean
 
   # This configuration option defines how the template is named inside Elasticsearch.
   # Note that if you have used the template management features and subsequently

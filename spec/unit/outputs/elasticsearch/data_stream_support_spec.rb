@@ -153,17 +153,13 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
   end
 
   context 'ds value-dependent configuration' do
-    # Valid settings values
-    let(:options) { super().merge(
-      'action' => 'create',
-      'routing' => 'any',
-      'pipeline' => 'any',
-      'manage_template' => 'false',
-      'data_stream' => 'true')
-    }
-
     context 'with valid values' do
       let(:options) { super().merge(
+        'action' => 'create',
+        'routing' => 'any',
+        'pipeline' => 'any',
+        'manage_template' => 'false',
+        'data_stream' => 'true',
         'data_stream_type' => 'logs',
         'data_stream_dataset' => 'any',
         'data_stream_namespace' => 'any',
@@ -178,6 +174,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
     context 'with invalid values' do
       let(:options) { super().merge(
+        'data_stream' => 'true',
         'action' => 'index',
         'manage_template' => 'true')
       }
