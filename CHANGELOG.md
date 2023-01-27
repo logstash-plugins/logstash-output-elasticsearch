@@ -1,4 +1,4 @@
-## 11.12.4
+## Unreleased
  - Changed the `manage_template` default value to `false` when data streams is enabled [#1111](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1111)
    - Added the `manage_template => false` as a valid data stream option
 
