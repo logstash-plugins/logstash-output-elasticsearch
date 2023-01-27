@@ -158,6 +158,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # control over template creation, (e.g. creating indices dynamically based on
   # field names) you should set `manage_template` to false and use the REST
   # API to apply your templates manually.
+  #
+  # Default value is `true` unless data streams is enabled
   config :manage_template, :validate => :boolean, :default => true
 
   # This configuration option defines how the template is named inside Elasticsearch.
@@ -303,6 +305,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     # Avoids race conditions in the @data_stream_config initialization (invoking check_data_stream_config! twice).
     # It's being concurrently invoked by this register method and by the finish_register on the @after_successful_connection_thread
     data_stream_enabled = data_stream_config?
+
+    setup_template_manager_defaults(data_stream_enabled)
 
     @after_successful_connection_thread = after_successful_connection do
       begin
@@ -606,6 +610,13 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @index ||= default_index
     @ilm_rollover_alias ||= default_ilm_rollover_alias
     @template_name ||= default_template_name
+  end
+
+  def setup_template_manager_defaults(data_stream_enabled)
+    if original_params["manage_template"].nil? && data_stream_enabled
+      logger.debug("Disabling template management since data streams are enabled")
+      @manage_template = false
+    end
   end
 
   # To be overidden by the -java version

@@ -790,7 +790,7 @@ Set the keystore password
 ===== `manage_template`
 
   * Value type is <<boolean,boolean>>
-  * Default value is `true`
+  * Default value is `true` for non-time series data, and `false` for data streams.
 
 From Logstash 1.3 onwards, a template is applied to Elasticsearch during
 Logstash's startup if one with the name <<plugins-{type}s-{plugin}-template_name>>
