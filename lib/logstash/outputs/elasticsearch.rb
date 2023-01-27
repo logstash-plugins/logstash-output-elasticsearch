@@ -159,8 +159,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # field names) you should set `manage_template` to false and use the REST
   # API to apply your templates manually.
   #
-  # Default value is `true` for non-time series data, and `false` for data streams.
-  config :manage_template, :validate => :boolean
+  # Default value is `true` unless data streams is enabled
+  config :manage_template, :validate => :boolean, :default => true
 
   # This configuration option defines how the template is named inside Elasticsearch.
   # Note that if you have used the template management features and subsequently
@@ -613,8 +613,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
 
   def setup_template_manager_defaults(data_stream_enabled)
-    if @manage_template.nil? # not set
-      @manage_template = !data_stream_enabled
+    if original_params["manage_template"].nil? && data_stream_enabled
+      logger.debug("Disabling template management since data streams are enabled")
+      @manage_template = false
     end
   end
 
