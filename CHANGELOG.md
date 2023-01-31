@@ -1,4 +1,5 @@
-## Unreleased
+## 11.13.0
+ - Add support for `pipeline` to be decode from `[@metadata][target_ingest_pipeline]`
  - Changed the `manage_template` default value to `false` when data streams is enabled [#1111](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1111)
    - Added the `manage_template => false` as a valid data stream option
 
