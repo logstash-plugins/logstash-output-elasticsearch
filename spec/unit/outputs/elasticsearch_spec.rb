@@ -587,7 +587,6 @@ describe LogStash::Outputs::ElasticSearch do
 
     context "with a sprintf and set pipeline" do
       let(:options) { {"pipeline" => "%{pipeline}" } }
-
       let(:event) { LogStash::Event.new("pipeline" => "my-ingest-pipeline") }
 
       it "should interpolate the pipeline value and set it" do
@@ -597,8 +596,49 @@ describe LogStash::Outputs::ElasticSearch do
 
     context "with a sprintf and empty pipeline" do
       let(:options) { {"pipeline" => "%{pipeline}" } }
-
       let(:event) { LogStash::Event.new("pipeline" => "") }
+
+      it "should interpolate the pipeline value but not set it because it is empty" do
+        expect(subject.send(:event_action_tuple, event)[1]).not_to include(:pipeline)
+      end
+    end
+
+    context "with both pipeline and target_ingest_pipeline" do
+      let(:options) { {"pipeline" => "%{pipeline}" } }
+      let(:event) { LogStash::Event.new({"pipeline" => "my-ingest-pipeline", "[@metadata][target_ingest_pipeline]" => "meta-ingest-pipeline"}) }
+
+      it "should interpolate the pipeline value and set it" do
+        expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "my-ingest-pipeline")
+      end
+    end
+
+    context "with empty pipeline and target_ingest_pipeline" do
+      let(:options) { {"pipeline" => "%{pipeline}" } }
+      let(:event) { LogStash::Event.new({"pipeline" => "", "[@metadata][target_ingest_pipeline]" => "meta-ingest-pipeline"}) }
+
+      it "should interpolate the pipeline value but not set it because pipeline is empty" do
+        expect(subject.send(:event_action_tuple, event)[1]).not_to include(:pipeline)
+      end
+    end
+
+    context "with target_ingest_pipeline" do
+      let(:event) { LogStash::Event.new({"pipeline" => "", "@metadata" => {"target_ingest_pipeline" => "meta-ingest-pipeline"}}) }
+
+      it "should interpolate the target_ingest_pipeline value and set it" do
+        expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "meta-ingest-pipeline")
+      end
+    end
+
+    context "with empty target_ingest_pipeline" do
+      let(:event) { LogStash::Event.new({"pipeline" => "", "@metadata" => {"host" => "elastic"}}) }
+
+      it "should not set pipeline" do
+        expect(subject.send(:event_action_tuple, event)[1]).not_to include(:pipeline)
+      end
+    end
+
+    context "with empty pipeline and empty target_ingest_pipeline" do
+      let(:event) { LogStash::Event.new }
 
       it "should interpolate the pipeline value but not set it because it is empty" do
         expect(subject.send(:event_action_tuple, event)[1]).not_to include(:pipeline)

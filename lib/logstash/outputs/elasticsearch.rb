@@ -516,17 +516,20 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         routing_field_name => @routing ? event.sprintf(@routing) : nil
     }
 
-    if @pipeline
-      value = event.sprintf(@pipeline)
-      # convention: empty string equates to not using a pipeline
-      # this is useful when using a field reference in the pipeline setting, e.g.
-      #      elasticsearch {
-      #        pipeline => "%{[@metadata][pipeline]}"
-      #      }
-      params[:pipeline] = value unless value.empty?
-    end
+    target_pipeline = resolve_pipeline(event)
+    # convention: empty string equates to not using a pipeline
+    # this is useful when using a field reference in the pipeline setting, e.g.
+    #      elasticsearch {
+    #        pipeline => "%{[@metadata][pipeline]}"
+    #      }
+    params[:pipeline] = target_pipeline unless (target_pipeline.nil? || target_pipeline.empty?)
 
     params
+  end
+
+  def resolve_pipeline(event)
+    pipeline_template = @pipeline || event.get("[@metadata][target_ingest_pipeline]")&.to_s
+    pipeline_template && event.sprintf(pipeline_template)
   end
 
   @@plugins = Gem::Specification.find_all{|spec| spec.name =~ /logstash-output-elasticsearch-/ }
