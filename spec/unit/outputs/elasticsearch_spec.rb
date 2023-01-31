@@ -587,6 +587,7 @@ describe LogStash::Outputs::ElasticSearch do
 
     context "with a sprintf and set pipeline" do
       let(:options) { {"pipeline" => "%{pipeline}" } }
+
       let(:event) { LogStash::Event.new("pipeline" => "my-ingest-pipeline") }
 
       it "should interpolate the pipeline value and set it" do
@@ -596,6 +597,7 @@ describe LogStash::Outputs::ElasticSearch do
 
     context "with a sprintf and empty pipeline" do
       let(:options) { {"pipeline" => "%{pipeline}" } }
+
       let(:event) { LogStash::Event.new("pipeline" => "") }
 
       it "should interpolate the pipeline value but not set it because it is empty" do
