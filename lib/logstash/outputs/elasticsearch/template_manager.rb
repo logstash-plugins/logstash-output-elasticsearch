@@ -54,6 +54,8 @@ module LogStash; module Outputs; class ElasticSearch
         plugin.logger.info("Overwriting index lifecycle name and rollover alias as ILM is enabled")
       end
       settings.update({ 'index.lifecycle.name' => plugin.ilm_policy, 'index.lifecycle.rollover_alias' => plugin.ilm_rollover_alias})
+    rescue Exception => e
+      fail("Failed to apply ILM settings to template: #{e.message}")
     end
 
     def self.template_settings(plugin, template)
