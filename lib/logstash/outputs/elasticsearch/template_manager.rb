@@ -44,7 +44,7 @@ module LogStash; module Outputs; class ElasticSearch
     def self.add_ilm_settings_to_template(plugin, template)
       # Overwrite any index patterns, and use the rollover alias. Use 'index_patterns' rather than 'template' for pattern
       # definition - remove any existing definition of 'template'
-      template.delete('template') if template.include?('template') if plugin.maximum_seen_major_version < 8
+      template.delete('template') if template_endpoint(plugin) == LEGACY_TEMPLATE_ENDPOINT
       template['index_patterns'] = "#{plugin.ilm_rollover_alias}-*"
       settings = template_settings(plugin, template)
       if settings && (settings['index.lifecycle.name'] || settings['index.lifecycle.rollover_alias'])
@@ -54,7 +54,12 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def self.template_settings(plugin, template)
-      plugin.maximum_seen_major_version < 8 ? template['settings']: template['template']['settings']
+      if template_endpoint(plugin) == LEGACY_TEMPLATE_ENDPOINT
+        return template['settings'] ||= {}
+      end
+
+      template['template'] ||= {}
+      template['template']['settings'] ||= {}
     end
 
     # Template name - if template_name set, use it
