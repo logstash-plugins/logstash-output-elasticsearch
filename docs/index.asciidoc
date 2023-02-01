@@ -1077,6 +1077,7 @@ the *$JDK_HOME/conf/security/java.security* configuration file. That is, `TLSv1.
 
   * Value type is <<path,path>>
   * There is no default value for this setting.
+  * When a `template` is provided, you may also configure <<plugins-{type}s-{plugin}-template_api>> as a hint about the format of the provided template.
 
 You can set the path to your own template here, if you so desire.
 If not set, the included template will be used.
@@ -1084,18 +1085,14 @@ If not set, the included template will be used.
 [id="plugins-{type}s-{plugin}-template_api"]
 ===== `template_api`
 
-  * Value can be any of: `auto`, `legacy`, `composable`
-  * Default value is `auto`
+  * Value can be any of:
+  ** `composable`: maps to composable {ref}/index-templates.html[index template API]
+  ** `legacy`: maps to the {ref}/indices-templates-v1.html[legacy template API]
+  * The default value is determined based on which version of Elasticsearch we are connected to:
+  ** for {es} 7.x or older, the default is `legacy`
+  ** for {es} 8.0+, the default is `composable`
 
-The default setting of `auto` will use
-{ref}/index-templates.html[index template API] to create index template, if the
-Elasticsearch cluster is running Elasticsearch version `8.0.0` or higher,
-and use {ref}/indices-templates-v1.html[legacy template API] otherwise.
-
-Setting this flag to `legacy` will use legacy template API to create index template.
-Setting this flag to `composable` will use index template API to create index template.
-
-NOTE: The format of template provided to <<plugins-{type}s-{plugin}-template>> needs to match the template API being used.
+This is a hint for the format of the provided <<plugins-{type}s-{plugin}-template>>.
 
 [id="plugins-{type}s-{plugin}-template_name"]
 ===== `template_name`

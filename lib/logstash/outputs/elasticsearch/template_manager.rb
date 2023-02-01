@@ -7,15 +7,15 @@ module LogStash; module Outputs; class ElasticSearch
     def self.install_template(plugin)
       return unless plugin.manage_template
 
-      if plugin.maximum_seen_major_version < 8 && plugin.template_api == 'auto'
-        plugin.logger.warn("`template_api => auto` resolved to `legacy` since we are connected to " + "Elasticsearch #{plugin.maximum_seen_major_version}, " +
-                           "but will resolve to `composable` the first time it connects to Elasticsearch 8+. " +
-                           "We recommend either setting `template_api => legacy` to continue providing legacy-style templates, " +
-                           "or migrating your template to the composable style and setting `template_api => composable`. " +
-                           "The legacy template API is slated for removal in Elasticsearch 9.")
-      end
-
       if plugin.template
+        if plugin.maximum_seen_major_version < 8 && plugin.template_api == 'auto'
+          plugin.logger.warn("`template_api => auto` resolved to `legacy` since we are connected to " + "Elasticsearch #{plugin.maximum_seen_major_version}, " +
+                               "but will resolve to `composable` the first time it connects to Elasticsearch 8+. " +
+                               "We recommend either setting `template_api => legacy` to continue providing legacy-style templates, " +
+                               "or migrating your template to the composable style and setting `template_api => composable`. " +
+                               "The legacy template API is slated for removal in Elasticsearch 9.")
+        end
+
         plugin.logger.info("Using mapping template from", :path => plugin.template)
         template = read_template_file(plugin.template)
       else
@@ -82,12 +82,11 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def self.template_endpoint(plugin)
-      if plugin.template_api == 'auto'
-        plugin.maximum_seen_major_version < 8 ? LEGACY_TEMPLATE_ENDPOINT : INDEX_TEMPLATE_ENDPOINT
-      elsif plugin.template_api.to_s == 'legacy'
-        LEGACY_TEMPLATE_ENDPOINT
+      case plugin.template_api.to_s
+      when 'composable' then INDEX_TEMPLATE_ENDPOINT
+      when 'legacy'     then LEGACY_TEMPLATE_ENDPOINT
       else
-        INDEX_TEMPLATE_ENDPOINT
+        plugin.maximum_seen_major_version < 8 ? LEGACY_TEMPLATE_ENDPOINT : INDEX_TEMPLATE_ENDPOINT
       end
     end
 
