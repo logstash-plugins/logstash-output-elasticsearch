@@ -42,6 +42,9 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def self.add_ilm_settings_to_template(plugin, template)
+      if plugin.template
+        plugin.deprecation_logger.deprecated("Injecting Index Lifecycle Management configuration into a provided `template` is deprecated, and support will be removed in a future version. Please add the configuration directly to your template.")
+      end
       # Overwrite any index patterns, and use the rollover alias. Use 'index_patterns' rather than 'template' for pattern
       # definition - remove any existing definition of 'template'
       template.delete('template') if template_endpoint(plugin) == LEGACY_TEMPLATE_ENDPOINT

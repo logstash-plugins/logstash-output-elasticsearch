@@ -1082,6 +1082,9 @@ the *$JDK_HOME/conf/security/java.security* configuration file. That is, `TLSv1.
 You can set the path to your own template here, if you so desire.
 If not set, the included template will be used.
 
+WARNING: Injecting ILM configuration into a custom `template` is deprecated.
+         If you are providing your own template, your ILM configuration should be a part of the template you provide.
+
 [id="plugins-{type}s-{plugin}-template_api"]
 ===== `template_api`
 
