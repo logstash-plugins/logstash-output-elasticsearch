@@ -279,6 +279,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def initialize(*params)
     super
     setup_ecs_compatibility_related_defaults
+
+    raise LogStash::ConfigurationError("`template_api` is not allowed unless a `template` is also provided") if original_params.include?('template_api') && !original_params.include?('template')
   end
 
   def register
