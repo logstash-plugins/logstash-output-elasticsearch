@@ -73,6 +73,7 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
         let(:template_api) { "composable" }
 
         it 'resolves composable index template API compatible setting' do
+          expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(8) # required to log
           template = {}
           described_class.resolve_template_settings(plugin, template)
           expect(template["template"]["settings"]).not_to eq(nil)
@@ -83,6 +84,7 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
         let(:template_api) { "legacy" }
 
         it 'resolves legacy index template API compatible setting' do
+          expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(7) # required to log
           template = {}
           described_class.resolve_template_settings(plugin, template)
           expect(template["settings"]).not_to eq(nil)
