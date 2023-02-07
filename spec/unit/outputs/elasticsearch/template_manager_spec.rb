@@ -1,4 +1,4 @@
-require "logstash/devutils/rspec/spec_helper"
+require_relative "../../../../spec/spec_helper"
 require "logstash/outputs/elasticsearch/template_manager"
 
 describe LogStash::Outputs::ElasticSearch::TemplateManager do
@@ -33,33 +33,85 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
     end
   end
 
-  describe "index template with ilm settings" do
+  context "index template with ilm settings" do
     let(:plugin_settings) { {"manage_template" => true, "template_overwrite" => true} }
     let(:plugin) { LogStash::Outputs::ElasticSearch.new(plugin_settings) }
 
-    describe "in version 8+" do
-      let(:file_path) { described_class.default_template_path(8) }
-      let(:template) { described_class.read_template_file(file_path)}
+    describe "with custom template" do
 
-      it "should update settings" do
-        expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(8)
-        described_class.add_ilm_settings_to_template(plugin, template)
-        expect(template['template']['settings']['index.lifecycle.name']).not_to eq(nil)
-        expect(template['template']['settings']['index.lifecycle.rollover_alias']).not_to eq(nil)
-        expect(template.include?('settings')).to be_falsey
+      describe "in version 8+" do
+        let(:file_path) { described_class.default_template_path(8) }
+        let(:template) { described_class.read_template_file(file_path)}
+
+        it "should update settings" do
+          expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(8)
+          described_class.add_ilm_settings_to_template(plugin, template)
+          expect(template['template']['settings']['index.lifecycle.name']).not_to eq(nil)
+          expect(template['template']['settings']['index.lifecycle.rollover_alias']).not_to eq(nil)
+          expect(template.include?('settings')).to be_falsey
+        end
+      end
+
+      describe "in version < 8" do
+        let(:file_path) { described_class.default_template_path(7) }
+        let(:template) { described_class.read_template_file(file_path)}
+
+        it "should update settings" do
+          expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(7)
+          described_class.add_ilm_settings_to_template(plugin, template)
+          expect(template['settings']['index.lifecycle.name']).not_to eq(nil)
+          expect(template['settings']['index.lifecycle.rollover_alias']).not_to eq(nil)
+          expect(template.include?('template')).to be_falsey
+        end
       end
     end
 
-    describe "in version < 8" do
-      let(:file_path) { described_class.default_template_path(7) }
-      let(:template) { described_class.read_template_file(file_path)}
+    context "resolve template setting" do
+      let(:plugin_settings) { super().merge({"template_api" => template_api}) }
 
-      it "should update settings" do
-        expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(7)
-        described_class.add_ilm_settings_to_template(plugin, template)
-        expect(template['settings']['index.lifecycle.name']).not_to eq(nil)
-        expect(template['settings']['index.lifecycle.rollover_alias']).not_to eq(nil)
-        expect(template.include?('template')).to be_falsey
+      describe "with composable template API" do
+        let(:template_api) { "composable" }
+
+        it 'resolves composable index template API compatible setting' do
+          expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(8) # required to log
+          template = {}
+          described_class.resolve_template_settings(plugin, template)
+          expect(template["template"]["settings"]).not_to eq(nil)
+        end
+      end
+
+      describe "with legacy template API" do
+        let(:template_api) { "legacy" }
+
+        it 'resolves legacy index template API compatible setting' do
+          expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(7) # required to log
+          template = {}
+          described_class.resolve_template_settings(plugin, template)
+          expect(template["settings"]).not_to eq(nil)
+        end
+      end
+
+      describe "with `template_api => 'auto'`" do
+        let(:template_api) { "auto" }
+
+        describe "with ES < 8 versions" do
+
+          it 'resolves legacy index template API compatible setting' do
+            expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(7)
+            template = {}
+            described_class.resolve_template_settings(plugin, template)
+            expect(template["settings"]).not_to eq(nil)
+          end
+        end
+
+        describe "with ES >= 8 versions" do
+          it 'resolves composable index template API compatible setting' do
+            expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(8)
+            template = {}
+            described_class.resolve_template_settings(plugin, template)
+            expect(template["template"]["settings"]).not_to eq(nil)
+          end
+        end
       end
     end
   end

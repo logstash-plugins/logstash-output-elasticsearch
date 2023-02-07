@@ -46,15 +46,38 @@ module LogStash; module Outputs; class ElasticSearch
       # definition - remove any existing definition of 'template'
       template.delete('template') if template.include?('template') if plugin.maximum_seen_major_version < 8
       template['index_patterns'] = "#{plugin.ilm_rollover_alias}-*"
-      settings = template_settings(plugin, template)
+      settings = resolve_template_settings(plugin, template)
       if settings && (settings['index.lifecycle.name'] || settings['index.lifecycle.rollover_alias'])
         plugin.logger.info("Overwriting index lifecycle name and rollover alias as ILM is enabled")
       end
       settings.update({ 'index.lifecycle.name' => plugin.ilm_policy, 'index.lifecycle.rollover_alias' => plugin.ilm_rollover_alias})
     end
 
-    def self.template_settings(plugin, template)
-      plugin.maximum_seen_major_version < 8 ? template['settings']: template['template']['settings']
+    def self.resolve_template_settings(plugin, template)
+      if template.key?('template')
+        plugin.logger.trace("Resolving ILM template settings: under 'template' key", :template => template, :template_api => plugin.template_api, :es_version => plugin.maximum_seen_major_version)
+        composable_index_template_settings(template)
+      elsif template.key?('settings')
+        plugin.logger.trace("Resolving ILM template settings: under 'settings' key", :template => template, :template_api => plugin.template_api, :es_version => plugin.maximum_seen_major_version)
+        legacy_index_template_settings(template)
+      else
+        template_endpoint = template_endpoint(plugin)
+        plugin.logger.trace("Resolving ILM template settings: template doesn't have 'settings' or 'template' fields, falling back to auto detection", :template => template, :template_api => plugin.template_api, :es_version => plugin.maximum_seen_major_version, :template_endpoint => template_endpoint)
+        template_endpoint == INDEX_TEMPLATE_ENDPOINT ?
+          composable_index_template_settings(template) :
+          legacy_index_template_settings(template)
+      end
+    end
+
+    # Sets ['settings'] field to be compatible with _template API structure
+    def self.legacy_index_template_settings(template)
+      template['settings'] ||= {}
+    end
+
+    # Sets the ['template']['settings'] fields if not exist to be compatible with _index_template API structure
+    def self.composable_index_template_settings(template)
+      template['template'] ||= {}
+      template['template']['settings'] ||= {}
     end
 
     # Template name - if template_name set, use it
