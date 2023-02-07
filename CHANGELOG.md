@@ -1,5 +1,5 @@
 ## 11.13.1
- - Fixes the failure when legacy template (`template_api=>'legacy'`) API is used with custom template, the plugin doesn't resolve ILM settings and crash. [#1102](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1102)
+ - Avoid crash by ensuring ILM settings are injected in the correct location depending on the default (or custom) template format, template_api setting and ES version [#1102](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1102)
 
 ## 11.13.0
  - add technology preview support for allowing events to individually encode a default pipeline with `[@metadata][target_ingest_pipeline]` (as part of a technology preview, this feature may change without notice) [#1113](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1113)
