@@ -46,15 +46,30 @@ module LogStash; module Outputs; class ElasticSearch
       # definition - remove any existing definition of 'template'
       template.delete('template') if template.include?('template') if plugin.maximum_seen_major_version < 8
       template['index_patterns'] = "#{plugin.ilm_rollover_alias}-*"
-      settings = template_settings(plugin, template)
+      settings = resolve_template_settings(plugin, template)
       if settings && (settings['index.lifecycle.name'] || settings['index.lifecycle.rollover_alias'])
         plugin.logger.info("Overwriting index lifecycle name and rollover alias as ILM is enabled")
       end
       settings.update({ 'index.lifecycle.name' => plugin.ilm_policy, 'index.lifecycle.rollover_alias' => plugin.ilm_rollover_alias})
     end
 
-    def self.template_settings(plugin, template)
-      plugin.maximum_seen_major_version < 8 ? template['settings']: template['template']['settings']
+    def self.resolve_template_settings(plugin, template)
+      return composable_index_template_settings(template) if template.key?('template')
+      return legacy_index_template_settings(template) if template.key?('settings')
+      return template_endpoint(plugin) == INDEX_TEMPLATE_ENDPOINT ?
+               composable_index_template_settings(template) :
+               legacy_index_template_settings(template)
+    end
+
+    # Returns (if exists) or creates _template API compatible template settings
+    def self.legacy_index_template_settings(template)
+      template['settings'] ||= {}
+    end
+
+    # Returns (if exists) or creates _index_template API compatible template settings
+    def self.composable_index_template_settings(template)
+      template['template'] ||= {}
+      template['template']['settings'] ||= {}
     end
 
     # Template name - if template_name set, use it
