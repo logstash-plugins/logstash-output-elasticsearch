@@ -154,12 +154,17 @@ module LogStash; module PluginMixins; module ElasticSearch
       !!maximum_seen_major_version && alive_urls_count > 0
     end
 
+    def shutting_down?
+      @stopping.true? || (execution_context.pipeline.shutdown_requested? && !execution_context.pipeline.worker_threads_draining?)
+    end
+
     # launch a thread that waits for an initial successful connection to the ES cluster to call the given block
     # @param block [Proc] the block to execute upon initial successful connection
     # @return [Thread] the successful connection wait thread
     def after_successful_connection(&block)
       Thread.new do
         sleep_interval = @retry_initial_interval
+        # Using `@stopping` instead of `shutting_down` as no batches are being processed yet
         until successful_connection? || @stopping.true?
           @logger.debug("Waiting for connectivity to Elasticsearch cluster, retrying in #{sleep_interval}s")
           sleep_interval = sleep_for_interval(sleep_interval)
@@ -211,7 +216,7 @@ module LogStash; module PluginMixins; module ElasticSearch
     end
 
     def stoppable_sleep(interval)
-      Stud.stoppable_sleep(interval) { @stopping.true? }
+      Stud.stoppable_sleep(interval) { shutting_down? }
     end
 
     def next_sleep_interval(current_interval)
@@ -322,7 +327,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         # We retry until there are no errors! Errors should all go to the retry queue
         sleep_interval = sleep_for_interval(sleep_interval)
         @bulk_request_metrics.increment(:failures)
-        retry unless @stopping.true?
+        retry unless shutting_down?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::NoConnectionAvailableError => e
         @logger.error(
           "Attempted to send a bulk request but there are no living connections in the pool " +
@@ -332,7 +337,7 @@ module LogStash; module PluginMixins; module ElasticSearch
 
         sleep_interval = sleep_for_interval(sleep_interval)
         @bulk_request_metrics.increment(:failures)
-        retry unless @stopping.true?
+        retry unless shutting_down?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         @bulk_request_metrics.increment(:failures)
         log_hash = {:code => e.response_code, :url => e.url.sanitized.to_s,
@@ -350,7 +355,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         end
 
         sleep_interval = sleep_for_interval(sleep_interval)
-        retry
+        retry unless shutting_down?
       rescue => e # Stuff that should never happen - print out full connection issues
         @logger.error(
           "An unknown error occurred sending a bulk request to Elasticsearch (will retry indefinitely)",
@@ -360,7 +365,7 @@ module LogStash; module PluginMixins; module ElasticSearch
 
         sleep_interval = sleep_for_interval(sleep_interval)
         @bulk_request_metrics.increment(:failures)
-        retry unless @stopping.true?
+        retry unless shutting_down?
       end
     end
 
