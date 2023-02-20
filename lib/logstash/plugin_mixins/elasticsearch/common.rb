@@ -155,7 +155,7 @@ module LogStash; module PluginMixins; module ElasticSearch
     end
 
     def shutting_down?
-      @stopping.true? || (!execution_context.pipeline.nil? && execution_context.pipeline.shutdown_requested? && !execution_context.pipeline.worker_threads_draining?)
+      @stopping.true? || (!execution_context.nil? && !execution_context.pipeline.nil? && execution_context.pipeline.shutdown_requested? && !execution_context.pipeline.worker_threads_draining?)
     end
 
     # launch a thread that waits for an initial successful connection to the ES cluster to call the given block
