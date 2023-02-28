@@ -20,7 +20,7 @@ describe "SSL option" do
       settings = {
         "hosts" => "localhost",
         "ssl_enabled" => true,
-        "ssl_certificate_mode" => 'none',
+        "ssl_verification_mode" => 'none',
         "pool_max" => 1,
         "pool_max_per_route" => 1
       }
