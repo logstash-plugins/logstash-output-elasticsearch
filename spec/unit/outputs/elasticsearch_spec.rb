@@ -699,9 +699,14 @@ describe LogStash::Outputs::ElasticSearch do
       end
     end
 
+    context "With the 'ssl_enabled' option" do
+      let(:options) { {"ssl_enabled" => true}}
 
-    context "With the 'ssl' option" do
-      let(:options) { {"ssl" => true}}
+      include_examples("an encrypted client connection")
+    end
+
+    context "With the 'ssl_enabled' option" do
+      let(:options) { {"ssl_enabled" => true}}
 
       include_examples("an encrypted client connection")
     end
@@ -709,6 +714,81 @@ describe LogStash::Outputs::ElasticSearch do
     context "With an https host" do
       let(:options) { {"hosts" => "https://localhost"} }
       include_examples("an encrypted client connection")
+    end
+  end
+
+  describe "SSL deprecated settings" do
+    context "with client certificate" do
+      let(:do_register) { true }
+      let(:cacert) { Stud::Temporary.file.path }
+      let(:options) { {
+        "ssl" => "true",
+        "cacert" => cacert,
+        "ssl_certificate_verification" => false
+      } }
+
+      after :each do
+        File.delete(cacert)
+      end
+
+      it 'should map new configs into params' do
+        expect(subject.params).to match hash_including(
+                                          "ssl_enabled" => true,
+                                          "ssl_verification_mode" => "none",
+                                          "ssl_certificate_authorities" => [cacert]
+                                        )
+      end
+
+      it 'should set new configs variables' do
+        expect(subject.instance_variable_get(:@ssl_enabled)).to eql(true)
+        expect(subject.instance_variable_get(:@ssl_verification_mode)).to eql("none")
+        expect(subject.instance_variable_get(:@ssl_certificate_authorities)).to eql([cacert])
+      end
+    end
+
+    context "with java stores" do
+      let(:do_register) { true }
+      let(:keystore) { Stud::Temporary.file.path }
+      let(:truststore) { Stud::Temporary.file.path }
+      let(:options) { {
+        "ssl" => "true",
+        "keystore" => keystore,
+        "keystore_password" => "keystore",
+        "truststore" => truststore,
+        "truststore_password" => "truststore",
+        "ssl_certificate_verification" => true
+      } }
+
+      let(:spy_http_client_builder!) do
+        allow(described_class::HttpClientBuilder).to receive(:build).with(any_args).and_call_original
+        allow(described_class::HttpClientBuilder).to receive(:setup_ssl).with(any_args).and_return({})
+      end
+
+      after :each do
+        File.delete(keystore)
+        File.delete(truststore)
+      end
+
+      it 'should map new configs into params' do
+        expect(subject.params).to match hash_including(
+                                          "ssl_enabled" => true,
+                                          "ssl_keystore_path" => keystore,
+                                          "ssl_truststore_path" => truststore,
+                                          "ssl_verification_mode" => "full"
+                                        )
+
+        expect(subject.params["ssl_keystore_password"].value).to eql("keystore")
+        expect(subject.params["ssl_truststore_password"].value).to eql("truststore")
+      end
+
+      it 'should set new configs variables' do
+        expect(subject.instance_variable_get(:@ssl_enabled)).to eql(true)
+        expect(subject.instance_variable_get(:@ssl_keystore_path)).to eql(keystore)
+        expect(subject.instance_variable_get(:@ssl_keystore_password).value).to eql("keystore")
+        expect(subject.instance_variable_get(:@ssl_truststore_path)).to eql(truststore)
+        expect(subject.instance_variable_get(:@ssl_truststore_password).value).to eql("truststore")
+        expect(subject.instance_variable_get(:@ssl_verification_mode)).to eql("full")
+      end
     end
   end
 
@@ -1093,12 +1173,12 @@ describe LogStash::Outputs::ElasticSearch do
       it 'adds the appropriate Authorization header to the manticore client' do
         expect(manticore_options[:headers]).to eq({ "Authorization" => base64_api_key })
       end
-      it 'is provides ssl=>true to the http client builder' do; aggregate_failures do
-        expect(described_class::HttpClientBuilder).to have_received(:build).with(anything, anything, hash_including('ssl'=>true))
+      it 'is provides ssl_enabled=>true to the http client builder' do; aggregate_failures do
+        expect(described_class::HttpClientBuilder).to have_received(:build).with(anything, anything, hash_including('ssl_enabled'=>true))
       end; end
     end
 
-    context "when set without ssl => true" do
+    context "when set without ssl_enabled => true" do
       let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
       let(:options) { { "api_key" => api_key } }
 
@@ -1114,14 +1194,14 @@ describe LogStash::Outputs::ElasticSearch do
       end
     end
 
-    context "when set without ssl specified but with an https host" do
+    context "when set without ssl_enabled specified but with an https host" do
       let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
       let(:options) { { "hosts" => ["https://some.host.com"], "api_key" => api_key } }
 
       it_behaves_like 'secure api-key authenticated client'
     end
 
-    context "when set without ssl specified but with an http host`" do
+    context "when set without ssl_enabled specified but with an http host`" do
       let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
       let(:options) { { "hosts" => ["http://some.host.com"], "api_key" => api_key } }
 
@@ -1130,9 +1210,9 @@ describe LogStash::Outputs::ElasticSearch do
       end
     end
 
-    context "when set with `ssl => false`" do
+    context "when set with `ssl_enabled => false`" do
       let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
-      let(:options) { { "ssl" => "false", "api_key" => api_key } }
+      let(:options) { { "ssl_enabled" => "false", "api_key" => api_key } }
 
       it "should raise a configuration error" do
         expect { subject.register }.to raise_error LogStash::ConfigurationError, /requires SSL\/TLS/
@@ -1142,13 +1222,13 @@ describe LogStash::Outputs::ElasticSearch do
     context "when set" do
       let(:options) { { "api_key" => ::LogStash::Util::Password.new(api_key) } }
 
-      context "with ssl => true" do
-        let(:options) { super().merge("ssl" => true) }
+      context "with ssl_enabled => true" do
+        let(:options) { super().merge("ssl_enabled" => true) }
         it_behaves_like 'secure api-key authenticated client'
       end
 
-      context "with ssl => false" do
-        let(:options) { super().merge("ssl" => "false") }
+      context "with ssl_enabled => false" do
+        let(:options) { super().merge("ssl_enabled" => "false") }
 
         let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
         it "should raise a configuration error" do
@@ -1156,7 +1236,7 @@ describe LogStash::Outputs::ElasticSearch do
         end
       end
 
-      context "without ssl specified" do
+      context "without ssl_enabled specified" do
         context "with an https host" do
           let(:options) { super().merge("hosts" => ["https://some.host.com"]) }
           it_behaves_like 'secure api-key authenticated client'
@@ -1180,7 +1260,7 @@ describe LogStash::Outputs::ElasticSearch do
 
     context 'user also set' do
       let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
-      let(:options) { { "ssl" => true, "api_key" => api_key, 'user' => 'another' } }
+      let(:options) { { "ssl_enabled" => true, "api_key" => api_key, 'user' => 'another' } }
 
       it "should fail" do
         expect { subject.register }.to raise_error LogStash::ConfigurationError, /Multiple authentication options are specified/
@@ -1189,7 +1269,7 @@ describe LogStash::Outputs::ElasticSearch do
 
     context 'cloud_auth also set' do
       let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
-      let(:options) { { "ssl" => true, "api_key" => api_key, 'cloud_auth' => 'foobar' } }
+      let(:options) { { "ssl_enabled" => true, "api_key" => api_key, 'cloud_auth' => 'foobar' } }
 
       it "should fail" do
         expect { subject.register }.to raise_error LogStash::ConfigurationError, /Multiple authentication options are specified/

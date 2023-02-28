@@ -96,9 +96,13 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   require "logstash/outputs/elasticsearch/data_stream_support"
   require 'logstash/plugin_mixins/ecs_compatibility_support'
   require 'logstash/plugin_mixins/deprecation_logger_support'
+  require 'logstash/plugin_mixins/normalize_config_support'
 
   # Protocol agnostic methods
   include(LogStash::PluginMixins::ElasticSearch::Common)
+
+  # Config normalization helpers
+  include(LogStash::PluginMixins::NormalizeConfigSupport)
 
   # Methods for ILM support
   include(LogStash::Outputs::ElasticSearch::Ilm)
@@ -279,6 +283,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def initialize(*params)
     super
     setup_ecs_compatibility_related_defaults
+    setup_ssl_params
   end
 
   def register
@@ -620,6 +625,52 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       logger.debug("Disabling template management since data streams are enabled")
       @manage_template = false
     end
+  end
+
+  def setup_ssl_params
+    @ssl_enabled = normalize_config(:ssl_enabled) do |normalize|
+      normalize.with_deprecated_alias(:ssl)
+    end
+
+    @ssl_certificate_authorities = normalize_config(:ssl_certificate_authorities) do |normalize|
+      normalize.with_deprecated_mapping(:cacert) do |cacert|
+        [cacert]
+      end
+    end
+
+    @ssl_keystore_path =  normalize_config(:ssl_keystore_path) do |normalize|
+      normalize.with_deprecated_alias(:keystore)
+    end
+
+    @ssl_keystore_password = normalize_config(:ssl_keystore_password) do |normalize|
+      normalize.with_deprecated_alias(:keystore_password)
+    end
+
+    @ssl_truststore_path = normalize_config(:ssl_truststore_path) do |normalize|
+      normalize.with_deprecated_alias(:truststore)
+    end
+
+    @ssl_truststore_password =  normalize_config(:ssl_truststore_password) do |normalize|
+      normalize.with_deprecated_alias(:truststore_password)
+    end
+
+    @ssl_verification_mode = normalize_config(:ssl_verification_mode) do |normalize|
+      normalize.with_deprecated_mapping(:ssl_certificate_verification) do |ssl_certificate_verification|
+        if ssl_certificate_verification == true
+          "full"
+        else
+          "none"
+        end
+      end
+    end
+
+    params['ssl_enabled'] = @ssl_enabled unless @ssl_enabled.nil?
+    params['ssl_certificate_authorities'] = @ssl_certificate_authorities unless @ssl_certificate_authorities.nil?
+    params['ssl_keystore_path'] = @ssl_keystore_path unless @ssl_keystore_path.nil?
+    params['ssl_keystore_password'] = @ssl_keystore_password unless @ssl_keystore_password.nil?
+    params['ssl_truststore_path'] = @ssl_truststore_path unless @ssl_truststore_path.nil?
+    params['ssl_truststore_password'] = @ssl_truststore_password unless @ssl_truststore_password.nil?
+    params['ssl_verification_mode'] = @ssl_verification_mode unless @ssl_verification_mode.nil?
   end
 
   # To be overidden by the -java version

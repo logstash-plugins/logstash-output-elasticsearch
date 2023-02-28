@@ -289,8 +289,8 @@ describe "indexing" do
         "hosts" => [ get_host_port ],
         "user" => user,
         "password" => password,
-        "ssl" => true,
-        "cacert" => cacert,
+        "ssl_enabled" => true,
+        "ssl_certificate_authorities" => cacert,
         "index" => index
       }
     end 
@@ -302,7 +302,7 @@ describe "indexing" do
 
       context "when no keystore nor ca cert set and verification is disabled" do
         let(:config) do
-          super().tap { |config| config.delete('cacert') }.merge('ssl_certificate_verification' => false)
+          super().tap { |config| config.delete('ssl_certificate_authorities') }.merge('ssl_verification_mode' => 'none')
         end
 
         include_examples("an indexer", true)
@@ -311,9 +311,9 @@ describe "indexing" do
       context "when keystore is set and verification is disabled" do
         let(:config) do
           super().merge(
-              'ssl_certificate_verification' => false,
-              'keystore' => 'spec/fixtures/test_certs/test.p12',
-              'keystore_password' => '1234567890'
+              'ssl_verification_mode' => 'none',
+              'ssl_keystore_path' => 'spec/fixtures/test_certs/test.p12',
+              'ssl_keystore_password' => '1234567890'
           )
         end
 
@@ -322,10 +322,10 @@ describe "indexing" do
 
       context "when keystore has self-signed cert and verification is disabled" do
         let(:config) do
-          super().tap { |config| config.delete('cacert') }.merge(
-              'ssl_certificate_verification' => false,
-              'keystore' => 'spec/fixtures/test_certs/test_self_signed.p12',
-              'keystore_password' => '1234567890'
+          super().tap { |config| config.delete('ssl_certificate_authorities') }.merge(
+              'ssl_verification_mode' => 'none',
+              'ssl_keystore_path' => 'spec/fixtures/test_certs/test_self_signed.p12',
+              'ssl_keystore_password' => '1234567890'
           )
         end
 
@@ -349,8 +349,8 @@ describe "indexing" do
         let(:config) do
           {
               "hosts" => ["https://#{CGI.escape(user)}:#{CGI.escape(password)}@elasticsearch:9200"],
-              "ssl" => true,
-              "cacert" => "spec/fixtures/test_certs/test.crt",
+              "ssl_enabled" => true,
+              "ssl_certificate_authorities" => "spec/fixtures/test_certs/test.crt",
               "index" => index
           }
         end
@@ -358,10 +358,10 @@ describe "indexing" do
         include_examples("an indexer", true)
       end
 
-      context "without providing `cacert`" do
+      context "without providing `ssl_certificate_authorities`" do
         let(:config) do
           super().tap do |c|
-            c.delete("cacert")
+            c.delete("ssl_certificate_authorities")
           end
         end
 
@@ -369,10 +369,10 @@ describe "indexing" do
       end
 
       if Gem::Version.new(LOGSTASH_VERSION) >= Gem::Version.new("8.3.0")
-        context "with `ca_trusted_fingerprint` instead of `cacert`" do
+        context "with `ca_trusted_fingerprint` instead of `ssl_certificate_authorities`" do
           let(:config) do
             super().tap do |c|
-              c.delete("cacert")
+              c.delete("ssl_certificate_authorities")
               c.update("ca_trusted_fingerprint" => ca_trusted_fingerprint)
             end
           end

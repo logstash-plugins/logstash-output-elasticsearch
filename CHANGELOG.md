@@ -1,3 +1,13 @@
+## 11.14.0
+ - Reviewed and deprecated SSL settings to comply with Logstash's naming convention [#1115](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1115)
+   - Deprecated `ssl` in favor of `ssl_enabled`
+   - Deprecated `cacert` in favor of `ssl_certificate_authorities`
+   - Deprecated `keystore` in favor of `ssl_keystore_path`
+   - Deprecated `keystore_password` in favor of `ssl_keystore_password`
+   - Deprecated `truststore` in favor of `ssl_truststore_path`
+   - Deprecated `truststore_password` in favor of `ssl_truststore_password`
+   - Deprecated `ssl_certificate_verification` in favor of `ssl_verification_mode`
+
 ## 11.13.1
  - Avoid crash by ensuring ILM settings are injected in the correct location depending on the default (or custom) template format, template_api setting and ES version [#1102](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1102)
 

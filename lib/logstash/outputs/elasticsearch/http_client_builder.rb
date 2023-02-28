@@ -107,36 +107,42 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def self.setup_ssl(logger, params)
-      params["ssl"] = true if params["hosts"].any? {|h| h.scheme == "https" }
-      return {} if params["ssl"].nil?
+      params["ssl_enabled"] = true if params["hosts"].any? {|h| h.scheme == "https" }
+      return {} if params["ssl_enabled"].nil?
 
-      return {:ssl => {:enabled => false}} if params["ssl"] == false
+      return {:ssl => {:enabled => false}} if params["ssl_enabled"] == false
 
-      cacert, truststore, truststore_password, keystore, keystore_password =
-        params.values_at('cacert', 'truststore', 'truststore_password', 'keystore', 'keystore_password')
+      ssl_certificate_authorities, ssl_truststore_path, ssl_truststore_password, ssl_keystore_path, ssl_keystore_password, ssl_verification_mode =
+        params.values_at('ssl_certificate_authorities', 'ssl_truststore_path', 'ssl_truststore_password', 'ssl_keystore_path', 'ssl_keystore_password', 'ssl_verification_mode')
 
-      if cacert && truststore
-        raise(LogStash::ConfigurationError, "Use either \"cacert\" or \"truststore\" when configuring the CA certificate") if truststore
+      if ssl_certificate_authorities && ssl_truststore_path
+        raise(LogStash::ConfigurationError, "Use either \"ssl_certificate_authorities\" or \"ssl_truststore_path\" when configuring the CA certificate")
       end
 
       ssl_options = {:enabled => true}
 
-      if cacert
-        ssl_options[:ca_file] = cacert
-      elsif truststore
-        ssl_options[:truststore_password] = truststore_password.value if truststore_password
+      if ssl_certificate_authorities&.any?
+        raise(LogStash::ConfigurationError, "Multiple \"ssl_certificate_authorities\" files are not supported") if ssl_certificate_authorities.size > 1
+        ssl_options[:ca_file] = ssl_certificate_authorities.first
+      elsif ssl_truststore_path
+        ssl_options[:truststore_password] = ssl_truststore_password.value if ssl_truststore_password
       end
 
-      ssl_options[:truststore] = truststore if truststore
-      if keystore
-        ssl_options[:keystore] = keystore
-        ssl_options[:keystore_password] = keystore_password.value if keystore_password
+      ssl_options[:truststore] = ssl_truststore_path if ssl_truststore_path
+      if ssl_keystore_path
+        ssl_options[:keystore] = ssl_keystore_path
+        ssl_options[:keystore_password] = ssl_keystore_password.value if ssl_keystore_password
       end
 
-      if !params["ssl_certificate_verification"]
-        logger.warn "You have enabled encryption but DISABLED certificate verification, " +
-                    "to make sure your data is secure remove `ssl_certificate_verification => false`"
-        ssl_options[:verify] = :disable # false accepts self-signed but still validates hostname
+      unless ssl_verification_mode.nil?
+        case ssl_verification_mode
+          when 'none'
+            logger.warn "You have enabled encryption but DISABLED certificate verification, " +
+                          "to make sure your data is secure set `ssl_verification_mode => full`"
+            ssl_options[:verify] = :disable
+          else
+            ssl_options[:verify] = :strict
+        end
       end
 
       ssl_options[:trust_strategy] = params["ssl_trust_strategy"] if params.include?("ssl_trust_strategy")

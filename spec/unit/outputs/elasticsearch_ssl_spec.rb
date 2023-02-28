@@ -19,8 +19,8 @@ describe "SSL option" do
       require "logstash/outputs/elasticsearch"
       settings = {
         "hosts" => "localhost",
-        "ssl" => true,
-        "ssl_certificate_verification" => false,
+        "ssl_enabled" => true,
+        "ssl_certificate_mode" => 'none',
         "pool_max" => 1,
         "pool_max_per_route" => 1
       }
@@ -64,8 +64,8 @@ describe "SSL option" do
       require "logstash/outputs/elasticsearch"
       settings = {
         "hosts" => "node01",
-        "ssl" => true,
-        "cacert" => keystore_path,
+        "ssl_enabled" => true,
+        "ssl_certificate_authorities" => keystore_path,
       }
       next LogStash::Outputs::ElasticSearch.new(settings)
     end

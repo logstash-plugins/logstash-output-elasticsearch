@@ -307,7 +307,7 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-action>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-api_key>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-bulk_path>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-cacert>> |a valid filesystem path|No
+| <<plugins-{type}s-{plugin}-cacert>> |a valid filesystem path|__Deprecated__
 | <<plugins-{type}s-{plugin}-ca_trusted_fingerprint>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-cloud_auth>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-cloud_id>> |<<string,string>>|No
@@ -333,8 +333,8 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-ilm_policy>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-ilm_rollover_alias>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-index>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-keystore>> |a valid filesystem path|No
-| <<plugins-{type}s-{plugin}-keystore_password>> |<<password,password>>|No
+| <<plugins-{type}s-{plugin}-keystore>> |a valid filesystem path|__Deprecated__
+| <<plugins-{type}s-{plugin}-keystore_password>> |<<password,password>>|__Deprecated__
 | <<plugins-{type}s-{plugin}-silence_errors_in_log>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-manage_template>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-parameters>> |<<hash,hash>>|No
@@ -358,16 +358,23 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-sniffing>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-sniffing_delay>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-sniffing_path>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-ssl>> |<<boolean,boolean>>|No
-| <<plugins-{type}s-{plugin}-ssl_certificate_verification>> |<<boolean,boolean>>|No
+| <<plugins-{type}s-{plugin}-ssl>> |<<boolean,boolean>>|__Deprecated__
+| <<plugins-{type}s-{plugin}-ssl_certificate_authorities>> |list of <<path,path>>|No
+| <<plugins-{type}s-{plugin}-ssl_certificate_verification>> |<<boolean,boolean>>|__Deprecated__
+| <<plugins-{type}s-{plugin}-ssl_enabled>> |<<boolean,boolean>>|No
+| <<plugins-{type}s-{plugin}-ssl_keystore_password>> |<<password,password>>|No
+| <<plugins-{type}s-{plugin}-ssl_keystore_path>> |<<path,path>>|No
 | <<plugins-{type}s-{plugin}-ssl_supported_protocols>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-ssl_truststore_password>> |<<password,password>>|No
+| <<plugins-{type}s-{plugin}-ssl_truststore_path>> |<<path,path>>|No
+| <<plugins-{type}s-{plugin}-ssl_verification_mode>> |<<string,string>>, one of `["full", "none"]`|No
 | <<plugins-{type}s-{plugin}-template>> |a valid filesystem path|No
 | <<plugins-{type}s-{plugin}-template_api>> |<<string,string>>, one of `["auto", "legacy", "composable"]`|No
 | <<plugins-{type}s-{plugin}-template_name>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-template_overwrite>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-timeout>> |<<number,number>>|No
-| <<plugins-{type}s-{plugin}-truststore>> |a valid filesystem path|No
-| <<plugins-{type}s-{plugin}-truststore_password>> |<<password,password>>|No
+| <<plugins-{type}s-{plugin}-truststore>> |a valid filesystem path|__Deprecated__
+| <<plugins-{type}s-{plugin}-truststore_password>> |<<password,password>>|__Deprecated__
 | <<plugins-{type}s-{plugin}-upsert>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-user>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-validate_after_inactivity>> |<<number,number>>|No
@@ -424,8 +431,9 @@ this defaults to a concatenation of the path parameter and "_bulk"
 
 [id="plugins-{type}s-{plugin}-cacert"]
 ===== `cacert`
+deprecated[8.8.0, Replaced by <<plugins-{type}s-{plugin}-ssl_certificate_authorities>>]
 
-  * Value type is <<path,path>>
+  * Value type is a list of <<path,path>>
   * There is no default value for this setting.
 
 The .cer or .pem file to validate the server's certificate.
@@ -771,6 +779,7 @@ formats] and the `@timestamp` field of each event is being used as source for th
 
 [id="plugins-{type}s-{plugin}-keystore"]
 ===== `keystore`
+deprecated[8.8.0, Replaced by <<plugins-{type}s-{plugin}-ssl_keystore_path>>]
 
   * Value type is <<path,path>>
   * There is no default value for this setting.
@@ -780,6 +789,7 @@ It can be either .jks or .p12
 
 [id="plugins-{type}s-{plugin}-keystore_password"]
 ===== `keystore_password`
+deprecated[8.8.0, Replaced by <<plugins-{type}s-{plugin}-ssl_keystore_password>>]
 
   * Value type is <<password,password>>
   * There is no default value for this setting.
@@ -1036,6 +1046,7 @@ do not use full URL here, only paths, e.g. "/sniff/_nodes/http"
 
 [id="plugins-{type}s-{plugin}-ssl"]
 ===== `ssl`
+deprecated[8.8.0, Replaced by <<plugins-{type}s-{plugin}-ssl_enabled>>]
 
   * Value type is <<boolean,boolean>>
   * There is no default value for this setting.
@@ -1044,8 +1055,17 @@ Enable SSL/TLS secured communication to Elasticsearch cluster.
 Leaving this unspecified will use whatever scheme is specified in the URLs listed in <<plugins-{type}s-{plugin}-hosts>> or extracted from the <<plugins-{type}s-{plugin}-cloud_id>>.
 If no explicit protocol is specified plain HTTP will be used.
 
+[id="plugins-{type}s-{plugin}-ssl_certificate_authorities"]
+===== `ssl_certificate_authorities`
+
+  * Value type is a list of <<path,path>>
+  * There is no default value for this setting
+
+The .cer or .pem files to validate the server's certificate.
+
 [id="plugins-{type}s-{plugin}-ssl_certificate_verification"]
 ===== `ssl_certificate_verification`
+deprecated[8.8.0, Replaced by <<plugins-{type}s-{plugin}-ssl_verification_mode>>]
 
   * Value type is <<boolean,boolean>>
   * Default value is `true`
@@ -1053,6 +1073,33 @@ If no explicit protocol is specified plain HTTP will be used.
 Option to validate the server's certificate. Disabling this severely compromises security.
 For more information on disabling certificate verification please read
 https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
+
+[id="plugins-{type}s-{plugin}-ssl_enabled"]
+===== `ssl_enabled`
+
+  * Value type is <<boolean,boolean>>
+  * There is no default value for this setting.
+
+Enable SSL/TLS secured communication to Elasticsearch cluster.
+Leaving this unspecified will use whatever scheme is specified in the URLs listed in <<plugins-{type}s-{plugin}-hosts>> or extracted from the <<plugins-{type}s-{plugin}-cloud_id>>.
+If no explicit protocol is specified plain HTTP will be used.
+
+[id="plugins-{type}s-{plugin}-ssl_keystore_password"]
+===== `ssl_keystore_password`
+
+  * Value type is <<password,password>>
+  * There is no default value for this setting.
+
+Set the keystore password
+
+[id="plugins-{type}s-{plugin}-ssl_keystore_path"]
+===== `ssl_keystore_path`
+
+  * Value type is <<path,path>>
+  * There is no default value for this setting.
+
+The keystore used to present a certificate to the server.
+It can be either .jks or .p12
 
 [id="plugins-{type}s-{plugin}-ssl_supported_protocols"]
 ===== `ssl_supported_protocols`
@@ -1070,6 +1117,40 @@ For Java 8 `'TLSv1.3'` is supported  only since **8u262** (AdoptOpenJDK), but re
 NOTE: If you configure the plugin to use `'TLSv1.1'` on any recent JVM, such as the one packaged with Logstash,
 the protocol is disabled by default and needs to be enabled manually by changing `jdk.tls.disabledAlgorithms` in
 the *$JDK_HOME/conf/security/java.security* configuration file. That is, `TLSv1.1` needs to be removed from the list.
+
+[id="plugins-{type}s-{plugin}-ssl_truststore_password"]
+===== `ssl_truststore_password`
+
+  * Value type is <<password,password>>
+  * There is no default value for this setting.
+
+Set the truststore password
+
+[id="plugins-{type}s-{plugin}-ssl_truststore_path"]
+===== `ssl_truststore_path`
+
+  * Value type is <<path,path>>
+  * There is no default value for this setting.
+
+The truststore to validate the server's certificate.
+It can be either .jks or .p12.
+Use either `:truststore` or `:cacert`.
+
+[id="plugins-{type}s-{plugin}-ssl_verification_mode"]
+===== `ssl_verification_mode`
+
+  * Value can be any of: `full`, `none`
+  * Default value is `["full"]`
+
+Defines how to verify the certificates presented by another party in the TLS connection:
+
+`full` validates that the server certificate has an issue date that’s within
+the not_before and not_after dates; chains to a trusted Certificate Authority (CA), and
+has a hostname or IP address that matches the names within the certificate.
+
+`none` performs no certificate validation.
+
+WARNING: Setting certificate verification to `none` disables many security benefits of SSL/TLS, which is very dangerous. For more information on disabling certificate verification please read https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
 
 [id="plugins-{type}s-{plugin}-template"]
 ===== `template`
@@ -1141,6 +1222,7 @@ a timeout occurs, the request will be retried.
 
 [id="plugins-{type}s-{plugin}-truststore"]
 ===== `truststore`
+deprecated[8.8.0, Replaced by <<plugins-{type}s-{plugin}-ssl_truststore_path>>]
 
   * Value type is <<path,path>>
   * There is no default value for this setting.
@@ -1151,6 +1233,7 @@ Use either `:truststore` or `:cacert`.
 
 [id="plugins-{type}s-{plugin}-truststore_password"]
 ===== `truststore_password`
+deprecated[8.8.0, Replaced by <<plugins-{type}s-{plugin}-ssl_truststore_password>>]
 
   * Value type is <<password,password>>
   * There is no default value for this setting.
