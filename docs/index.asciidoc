@@ -1098,7 +1098,7 @@ https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
   * There is no default value for this setting
 
 The list of cipher suites to use, listed by priorities.
-Supported cipher suites vary depending on which version of Java is used.
+Supported cipher suites vary depending on the Java and protocol versions.
 
 [id="plugins-{type}s-{plugin}-ssl_enabled"]
 ===== `ssl_enabled`
@@ -1194,7 +1194,7 @@ The format of the truststore file. It must be either `jks` or `pkcs12`.
 ===== `ssl_verification_mode`
 
   * Value can be any of: `full`, `none`
-  * Default value is `["full"]`
+  * Default value is `full`
 
 Defines how to verify the certificates presented by another party in the TLS connection:
 
