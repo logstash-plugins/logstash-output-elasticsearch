@@ -705,12 +705,6 @@ describe LogStash::Outputs::ElasticSearch do
       include_examples("an encrypted client connection")
     end
 
-    context "With the 'ssl_enabled' option" do
-      let(:options) { {"ssl_enabled" => true}}
-
-      include_examples("an encrypted client connection")
-    end
-
     context "With an https host" do
       let(:options) { {"hosts" => "https://localhost"} }
       include_examples("an encrypted client connection")
@@ -731,7 +725,7 @@ describe LogStash::Outputs::ElasticSearch do
         File.delete(cacert)
       end
 
-      it 'should map new configs into params' do
+      it "should map new configs into params" do
         expect(subject.params).to match hash_including(
                                           "ssl_enabled" => true,
                                           "ssl_verification_mode" => "none",
@@ -739,7 +733,7 @@ describe LogStash::Outputs::ElasticSearch do
                                         )
       end
 
-      it 'should set new configs variables' do
+      it "should set new configs variables" do
         expect(subject.instance_variable_get(:@ssl_enabled)).to eql(true)
         expect(subject.instance_variable_get(:@ssl_verification_mode)).to eql("none")
         expect(subject.instance_variable_get(:@ssl_certificate_authorities)).to eql([cacert])
@@ -769,7 +763,7 @@ describe LogStash::Outputs::ElasticSearch do
         File.delete(truststore)
       end
 
-      it 'should map new configs into params' do
+      it "should map new configs into params" do
         expect(subject.params).to match hash_including(
                                           "ssl_enabled" => true,
                                           "ssl_keystore_path" => keystore,
@@ -781,7 +775,7 @@ describe LogStash::Outputs::ElasticSearch do
         expect(subject.params["ssl_truststore_password"].value).to eql("truststore")
       end
 
-      it 'should set new configs variables' do
+      it "should set new configs variables" do
         expect(subject.instance_variable_get(:@ssl_enabled)).to eql(true)
         expect(subject.instance_variable_get(:@ssl_keystore_path)).to eql(keystore)
         expect(subject.instance_variable_get(:@ssl_keystore_password).value).to eql("keystore")

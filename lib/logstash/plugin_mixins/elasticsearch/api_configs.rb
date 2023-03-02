@@ -80,6 +80,9 @@ module LogStash; module PluginMixins; module ElasticSearch
         # Use either `:ssl_truststore_path` or `:ssl_certificate_authorities`
         :ssl_truststore_path => { :validate => :path },
 
+        # The format of the truststore file. It must be either jks or pkcs12
+        :ssl_truststore_type => { :validate => %w[pkcs12 jks] },
+
         # Set the truststore password
         :truststore_password => { :validate => :password, :deprecated => "Use 'ssl_truststore_password' instead." },
 
@@ -94,6 +97,9 @@ module LogStash; module PluginMixins; module ElasticSearch
         # It can be either .jks or .p12
         :ssl_keystore_path => { :validate => :path },
 
+        # The format of the keystore file. It must be either jks or pkcs12
+        :ssl_keystore_type => { :validate => %w[pkcs12 jks] },
+
         # Set the keystore password
         :keystore_password => { :validate => :password, :deprecated => "Set 'ssl_keystore_password' instead." },
 
@@ -101,6 +107,16 @@ module LogStash; module PluginMixins; module ElasticSearch
         :ssl_keystore_password => { :validate => :password },
 
         :ssl_supported_protocols => { :validate => ['TLSv1.1', 'TLSv1.2', 'TLSv1.3'], :default => [], :list => true },
+
+        # OpenSSL-style X.509 certificate certificate to authenticate the client
+        :ssl_certificate => { :validate => :path },
+
+        # OpenSSL-style RSA private key to authenticate the client
+        :ssl_key => { :validate => :path },
+
+        # The list of cipher suites to use, listed by priorities.
+        # Supported cipher suites vary depending on which version of Java is used.
+        :ssl_cipher_suites => { :validate => :string, :list => true },
 
         # This setting asks Elasticsearch for the list of all cluster nodes and adds them to the hosts list.
         # Note: This will return ALL nodes with HTTP enabled (including master nodes!). If you use

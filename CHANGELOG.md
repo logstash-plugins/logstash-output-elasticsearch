@@ -1,5 +1,11 @@
 ## 11.14.0
- - Reviewed and deprecated SSL settings to comply with Logstash's naming convention [#1115](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1115)
+ - Added SSL settings for: [#1115](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1115)
+   - `ssl_truststore_type`: The format of the truststore file
+   - `ssl_keystore_type`: The format of the keystore file
+   - `ssl_certificate`: OpenSSL-style X.509 certificate file to authenticate the client
+   - `ssl_key`: OpenSSL-style RSA private key that corresponds to the `ssl_certificate`
+   - `ssl_cipher_suites`: The list of cipher suites
+ - Reviewed and deprecated SSL settings to comply with Logstash's naming convention
    - Deprecated `ssl` in favor of `ssl_enabled`
    - Deprecated `cacert` in favor of `ssl_certificate_authorities`
    - Deprecated `keystore` in favor of `ssl_keystore_path`

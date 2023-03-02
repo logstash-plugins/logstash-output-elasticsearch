@@ -359,14 +359,19 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-sniffing_delay>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-sniffing_path>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-ssl>> |<<boolean,boolean>>|__Deprecated__
+| <<plugins-{type}s-{plugin}-ssl_certificate>> |<<path,path>>|No
 | <<plugins-{type}s-{plugin}-ssl_certificate_authorities>> |list of <<path,path>>|No
 | <<plugins-{type}s-{plugin}-ssl_certificate_verification>> |<<boolean,boolean>>|__Deprecated__
+| <<plugins-{type}s-{plugin}-ssl_cipher_suites>> |list of <<string,string>>|No
 | <<plugins-{type}s-{plugin}-ssl_enabled>> |<<boolean,boolean>>|No
+| <<plugins-{type}s-{plugin}-ssl_key>> |<<path,path>>|No
 | <<plugins-{type}s-{plugin}-ssl_keystore_password>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-ssl_keystore_path>> |<<path,path>>|No
+| <<plugins-{type}s-{plugin}-ssl_keystore_type>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-ssl_supported_protocols>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-ssl_truststore_password>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-ssl_truststore_path>> |<<path,path>>|No
+| <<plugins-{type}s-{plugin}-ssl_truststore_type>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-ssl_verification_mode>> |<<string,string>>, one of `["full", "none"]`|No
 | <<plugins-{type}s-{plugin}-template>> |a valid filesystem path|No
 | <<plugins-{type}s-{plugin}-template_api>> |<<string,string>>, one of `["auto", "legacy", "composable"]`|No
@@ -787,6 +792,8 @@ deprecated[8.8.0, Replaced by <<plugins-{type}s-{plugin}-ssl_keystore_path>>]
 The keystore used to present a certificate to the server.
 It can be either .jks or .p12
 
+NOTE: You cannot use this setting and `ssl_certificate` at the same time.
+
 [id="plugins-{type}s-{plugin}-keystore_password"]
 ===== `keystore_password`
 deprecated[8.8.0, Replaced by <<plugins-{type}s-{plugin}-ssl_keystore_password>>]
@@ -1055,6 +1062,15 @@ Enable SSL/TLS secured communication to Elasticsearch cluster.
 Leaving this unspecified will use whatever scheme is specified in the URLs listed in <<plugins-{type}s-{plugin}-hosts>> or extracted from the <<plugins-{type}s-{plugin}-cloud_id>>.
 If no explicit protocol is specified plain HTTP will be used.
 
+[id="plugins-{type}s-{plugin}-ssl_certificate"]
+===== `ssl_certificate`
+  * Value type is <<path,path>>
+  * There is no default value for this setting.
+
+SSL certificate to use to authenticate the client. This certificate should be an OpenSSL-style X.509 certificate file.
+
+NOTE: This setting can be used only if `ssl_key` is set.
+
 [id="plugins-{type}s-{plugin}-ssl_certificate_authorities"]
 ===== `ssl_certificate_authorities`
 
@@ -1062,6 +1078,8 @@ If no explicit protocol is specified plain HTTP will be used.
   * There is no default value for this setting
 
 The .cer or .pem files to validate the server's certificate.
+
+NOTE: You cannot use this setting and `ssl_truststore_path` at the same time.
 
 [id="plugins-{type}s-{plugin}-ssl_certificate_verification"]
 ===== `ssl_certificate_verification`
@@ -1074,6 +1092,14 @@ Option to validate the server's certificate. Disabling this severely compromises
 For more information on disabling certificate verification please read
 https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
 
+[id="plugins-{type}s-{plugin}-ssl_cipher_suites"]
+===== `ssl_cipher_suites`
+  * Value type is a list of <<string,string>>
+  * There is no default value for this setting
+
+The list of cipher suites to use, listed by priorities.
+Supported cipher suites vary depending on which version of Java is used.
+
 [id="plugins-{type}s-{plugin}-ssl_enabled"]
 ===== `ssl_enabled`
 
@@ -1083,6 +1109,15 @@ https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
 Enable SSL/TLS secured communication to Elasticsearch cluster.
 Leaving this unspecified will use whatever scheme is specified in the URLs listed in <<plugins-{type}s-{plugin}-hosts>> or extracted from the <<plugins-{type}s-{plugin}-cloud_id>>.
 If no explicit protocol is specified plain HTTP will be used.
+
+[id="plugins-{type}s-{plugin}-ssl_key"]
+===== `ssl_key`
+  * Value type is <<path,path>>
+  * There is no default value for this setting.
+
+OpenSSL-style RSA private key that corresponds to the `ssl_certificate`.
+
+NOTE: This setting can be used only if `ssl_certificate` is set.
 
 [id="plugins-{type}s-{plugin}-ssl_keystore_password"]
 ===== `ssl_keystore_password`
@@ -1100,6 +1135,16 @@ Set the keystore password
 
 The keystore used to present a certificate to the server.
 It can be either .jks or .p12
+
+NOTE: You cannot use this setting and `ssl_certificate` at the same time.
+
+[id="plugins-{type}s-{plugin}-ssl_keystore_type"]
+===== `ssl_keystore_type`
+
+  * Value can be any of: `jks`, `pkcs12`
+  * If not provided, the value will be inferred from the keystore filename.
+
+The format of the keystore file. It must be either `jks` or `pkcs12`.
 
 [id="plugins-{type}s-{plugin}-ssl_supported_protocols"]
 ===== `ssl_supported_protocols`
@@ -1134,7 +1179,16 @@ Set the truststore password
 
 The truststore to validate the server's certificate.
 It can be either .jks or .p12.
-Use either `:truststore` or `:cacert`.
+
+NOTE: You cannot use this setting and `ssl_certificate_authorities` at the same time.
+
+[id="plugins-{type}s-{plugin}-ssl_truststore_type"]
+===== `ssl_truststore_type`
+
+* Value can be any of: `jks`, `pkcs12`
+* If not provided, the value will be inferred from the truststore filename.
+
+The format of the truststore file. It must be either `jks` or `pkcs12`.
 
 [id="plugins-{type}s-{plugin}-ssl_verification_mode"]
 ===== `ssl_verification_mode`

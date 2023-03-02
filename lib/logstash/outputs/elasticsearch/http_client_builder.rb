@@ -112,28 +112,44 @@ module LogStash; module Outputs; class ElasticSearch;
 
       return {:ssl => {:enabled => false}} if params["ssl_enabled"] == false
 
-      ssl_certificate_authorities, ssl_truststore_path, ssl_truststore_password, ssl_keystore_path, ssl_keystore_password, ssl_verification_mode =
-        params.values_at('ssl_certificate_authorities', 'ssl_truststore_path', 'ssl_truststore_password', 'ssl_keystore_path', 'ssl_keystore_password', 'ssl_verification_mode')
+      ssl_certificate_authorities, ssl_truststore_path, ssl_certificate, ssl_keystore_path = params.values_at('ssl_certificate_authorities', 'ssl_truststore_path', 'ssl_certificate', 'ssl_keystore_path')
 
       if ssl_certificate_authorities && ssl_truststore_path
-        raise(LogStash::ConfigurationError, "Use either \"ssl_certificate_authorities\" or \"ssl_truststore_path\" when configuring the CA certificate")
+        raise(LogStash::ConfigurationError, 'Use either "ssl_certificate_authorities/cacert" or "ssl_truststore_path/truststore" when configuring the CA certificate')
+      end
+
+      if ssl_certificate && ssl_keystore_path
+        raise(LogStash::ConfigurationError, 'Use either "ssl_certificate" or "ssl_keystore_path/keystore" when configuring client certificates')
       end
 
       ssl_options = {:enabled => true}
 
       if ssl_certificate_authorities&.any?
-        raise(LogStash::ConfigurationError, "Multiple \"ssl_certificate_authorities\" files are not supported") if ssl_certificate_authorities.size > 1
+        raise(LogStash::ConfigurationError, 'Multiple values on "ssl_certificate_authorities" are not supported by this plugin') if ssl_certificate_authorities.size > 1
         ssl_options[:ca_file] = ssl_certificate_authorities.first
-      elsif ssl_truststore_path
-        ssl_options[:truststore_password] = ssl_truststore_password.value if ssl_truststore_password
       end
 
-      ssl_options[:truststore] = ssl_truststore_path if ssl_truststore_path
+      if ssl_truststore_path
+        ssl_options[:truststore] = ssl_truststore_path
+        ssl_options[:truststore_type] = params["ssl_truststore_type"] if params.include?("ssl_truststore_type")
+        ssl_options[:truststore_password] = params["ssl_truststore_password"].value if params.include?("ssl_truststore_password")
+      end
+
       if ssl_keystore_path
         ssl_options[:keystore] = ssl_keystore_path
-        ssl_options[:keystore_password] = ssl_keystore_password.value if ssl_keystore_password
+        ssl_options[:keystore_type] = params["ssl_keystore_type"] if params.include?("ssl_keystore_type")
+        ssl_options[:keystore_password] = params["ssl_keystore_password"].value if params.include?("ssl_keystore_password")
       end
 
+      ssl_key = params["ssl_key"]
+      if ssl_certificate && ssl_key
+        ssl_options[:client_cert] = ssl_certificate
+        ssl_options[:client_key] = ssl_key
+      elsif !!ssl_certificate ^ !!ssl_key
+        raise(LogStash::ConfigurationError, 'You must set both "ssl_certificate" and "ssl_key" for client authentication')
+      end
+
+      ssl_verification_mode = params["ssl_verification_mode"]
       unless ssl_verification_mode.nil?
         case ssl_verification_mode
           when 'none'
@@ -145,6 +161,7 @@ module LogStash; module Outputs; class ElasticSearch;
         end
       end
 
+      ssl_options[:cipher_suites] = params["ssl_cipher_suites"] if params.include?("ssl_cipher_suites")
       ssl_options[:trust_strategy] = params["ssl_trust_strategy"] if params.include?("ssl_trust_strategy")
 
       protocols = params['ssl_supported_protocols']
