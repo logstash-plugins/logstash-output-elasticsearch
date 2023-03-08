@@ -431,7 +431,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def wait_for_successful_connection
     after_successful_connection_done = @after_successful_connection_done
     return unless after_successful_connection_done
-    stoppable_sleep 1 until after_successful_connection_done.true?
+    stoppable_sleep 1 until (after_successful_connection_done.true? || execution_context&.pipeline&.shutdown_requested?)
+
+    if execution_context&.pipeline&.shutdown_requested?
+      @logger.info "Aborting the batch due to shutdown request while waiting for connections to become live"
+      raise org.logstash.execution.AbortedBatchException.new
+    end
 
     status = @after_successful_connection_thread && @after_successful_connection_thread.value
     if status.is_a?(Exception) # check if thread 'halted' with an error

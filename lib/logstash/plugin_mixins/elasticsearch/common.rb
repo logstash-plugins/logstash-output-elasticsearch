@@ -159,6 +159,8 @@ module LogStash; module PluginMixins; module ElasticSearch
     def after_successful_connection(&block)
       Thread.new do
         sleep_interval = @retry_initial_interval
+        # in case of a pipeline's shutdown_requested?, the method #close shutdown also this thread
+        # so no need to explicitly handle it here and return an AbortedBatchException.
         until successful_connection? || @stopping.true?
           @logger.debug("Waiting for connectivity to Elasticsearch cluster, retrying in #{sleep_interval}s")
           sleep_interval = sleep_for_interval(sleep_interval)
@@ -349,6 +351,11 @@ module LogStash; module PluginMixins; module ElasticSearch
         end
 
         sleep_interval = sleep_for_interval(sleep_interval)
+        if execution_context&.pipeline&.shutdown_requested?
+          # In case ES side changes access credentials and a pipeline reload is triggered
+          # this error becomes a retry on restart
+          raise org.logstash.execution.AbortedBatchException.new
+        end
         retry
       rescue => e # Stuff that should never happen - print out full connection issues
         @logger.error(
