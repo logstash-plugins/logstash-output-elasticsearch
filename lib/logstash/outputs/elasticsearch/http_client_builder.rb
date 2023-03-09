@@ -129,23 +129,14 @@ module LogStash; module Outputs; class ElasticSearch;
         ssl_options[:ca_file] = ssl_certificate_authorities.first
       end
 
-      if ssl_truststore_path
-        ssl_options[:truststore] = ssl_truststore_path
-        ssl_options[:truststore_type] = params["ssl_truststore_type"] if params.include?("ssl_truststore_type")
-        ssl_options[:truststore_password] = params["ssl_truststore_password"].value if params.include?("ssl_truststore_password")
-      end
-
-      if ssl_keystore_path
-        ssl_options[:keystore] = ssl_keystore_path
-        ssl_options[:keystore_type] = params["ssl_keystore_type"] if params.include?("ssl_keystore_type")
-        ssl_options[:keystore_password] = params["ssl_keystore_password"].value if params.include?("ssl_keystore_password")
-      end
+      setup_ssl_store(ssl_options, 'truststore', params)
+      setup_ssl_store(ssl_options, 'keystore', params)
 
       ssl_key = params["ssl_key"]
       if ssl_certificate && ssl_key
         ssl_options[:client_cert] = ssl_certificate
         ssl_options[:client_key] = ssl_key
-      elsif !!ssl_certificate ^ !!ssl_key
+      elsif !!ssl_certificate || !!ssl_key
         raise(LogStash::ConfigurationError, 'You must set both "ssl_certificate" and "ssl_key" for client authentication')
       end
 
@@ -168,6 +159,16 @@ module LogStash; module Outputs; class ElasticSearch;
       ssl_options[:protocols] = protocols if protocols && protocols.any?
 
       { ssl: ssl_options }
+    end
+
+    # @param kind is a string [truststore|keystore]
+    def self.setup_ssl_store(ssl_options, kind, params)
+      store_path = params["ssl_#{kind}_path"]
+      if store_path
+        ssl_options[kind.to_sym] = store_path
+        ssl_options["#{kind}_type".to_sym] = params["ssl_#{kind}_type"] if params.include?("ssl_#{kind}_type")
+        ssl_options["#{kind}_password".to_sym] = params["ssl_#{kind}_password"].value if params.include?("ssl_#{kind}_password")
+      end
     end
 
     def self.setup_basic_auth(logger, params)

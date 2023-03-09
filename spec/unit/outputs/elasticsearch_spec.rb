@@ -712,14 +712,15 @@ describe LogStash::Outputs::ElasticSearch do
   end
 
   describe "SSL deprecated settings" do
+    let(:base_options) { {"ssl" => "true"} }
+
     context "with client certificate" do
       let(:do_register) { true }
       let(:cacert) { Stud::Temporary.file.path }
-      let(:options) { {
-        "ssl" => "true",
+      let(:options) { base_options.merge(
         "cacert" => cacert,
         "ssl_certificate_verification" => false
-      } }
+      ) }
 
       after :each do
         File.delete(cacert)
@@ -744,14 +745,13 @@ describe LogStash::Outputs::ElasticSearch do
       let(:do_register) { true }
       let(:keystore) { Stud::Temporary.file.path }
       let(:truststore) { Stud::Temporary.file.path }
-      let(:options) { {
-        "ssl" => "true",
+      let(:options) { base_options.merge(
         "keystore" => keystore,
         "keystore_password" => "keystore",
         "truststore" => truststore,
         "truststore_password" => "truststore",
         "ssl_certificate_verification" => true
-      } }
+      ) }
 
       let(:spy_http_client_builder!) do
         allow(described_class::HttpClientBuilder).to receive(:build).with(any_args).and_call_original
