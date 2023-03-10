@@ -115,17 +115,17 @@ module LogStash; module Outputs; class ElasticSearch;
       ssl_certificate_authorities, ssl_truststore_path, ssl_certificate, ssl_keystore_path = params.values_at('ssl_certificate_authorities', 'ssl_truststore_path', 'ssl_certificate', 'ssl_keystore_path')
 
       if ssl_certificate_authorities && ssl_truststore_path
-        raise(LogStash::ConfigurationError, 'Use either "ssl_certificate_authorities/cacert" or "ssl_truststore_path/truststore" when configuring the CA certificate')
+        raise LogStash::ConfigurationError, 'Use either "ssl_certificate_authorities/cacert" or "ssl_truststore_path/truststore" when configuring the CA certificate'
       end
 
       if ssl_certificate && ssl_keystore_path
-        raise(LogStash::ConfigurationError, 'Use either "ssl_certificate" or "ssl_keystore_path/keystore" when configuring client certificates')
+        raise LogStash::ConfigurationError, 'Use either "ssl_certificate" or "ssl_keystore_path/keystore" when configuring client certificates'
       end
 
       ssl_options = {:enabled => true}
 
       if ssl_certificate_authorities&.any?
-        raise(LogStash::ConfigurationError, 'Multiple values on "ssl_certificate_authorities" are not supported by this plugin') if ssl_certificate_authorities.size > 1
+        raise LogStash::ConfigurationError, 'Multiple values on "ssl_certificate_authorities" are not supported by this plugin' if ssl_certificate_authorities.size > 1
         ssl_options[:ca_file] = ssl_certificate_authorities.first
       end
 
@@ -137,7 +137,7 @@ module LogStash; module Outputs; class ElasticSearch;
         ssl_options[:client_cert] = ssl_certificate
         ssl_options[:client_key] = ssl_key
       elsif !!ssl_certificate || !!ssl_key
-        raise(LogStash::ConfigurationError, 'You must set both "ssl_certificate" and "ssl_key" for client authentication')
+        raise LogStash::ConfigurationError, 'You must set both "ssl_certificate" and "ssl_key" for client authentication'
       end
 
       ssl_verification_mode = params["ssl_verification_mode"]
