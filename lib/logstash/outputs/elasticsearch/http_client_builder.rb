@@ -133,11 +133,12 @@ module LogStash; module Outputs; class ElasticSearch;
       setup_ssl_store(ssl_options, 'keystore', params)
 
       ssl_key = params["ssl_key"]
-      if ssl_certificate && ssl_key
+      if ssl_certificate
+        raise LogStash::ConfigurationError, 'Using an "ssl_certificate" requires an "ssl_key"' unless ssl_key
         ssl_options[:client_cert] = ssl_certificate
         ssl_options[:client_key] = ssl_key
-      elsif !!ssl_certificate || !!ssl_key
-        raise LogStash::ConfigurationError, 'You must set both "ssl_certificate" and "ssl_key" for client authentication'
+      elsif !ssl_key.nil?
+        raise LogStash::ConfigurationError, 'An "ssl_certificate" is required when using an "ssl_key"'
       end
 
       ssl_verification_mode = params["ssl_verification_mode"]

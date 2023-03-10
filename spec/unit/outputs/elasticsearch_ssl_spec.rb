@@ -181,7 +181,7 @@ describe "SSL options" do
       let(:settings) { super().reject { |k| "ssl_key".eql?(k) } }
 
       it "should raise a configuration error" do
-        expect { subject.register }.to raise_error(LogStash::ConfigurationError, /You must set both "ssl_certificate" and "ssl_key"/)
+        expect { subject.register }.to raise_error(LogStash::ConfigurationError, /Using an "ssl_certificate" requires an "ssl_key"/)
       end
     end
 
@@ -189,7 +189,7 @@ describe "SSL options" do
       let(:settings) { super().reject { |k| "ssl_certificate".eql?(k) } }
 
       it "should raise a configuration error" do
-        expect { subject.register }.to raise_error(LogStash::ConfigurationError, /You must set both "ssl_certificate" and "ssl_key"/)
+        expect { subject.register }.to raise_error(LogStash::ConfigurationError, /An "ssl_certificate" is required when using an "ssl_key"/)
       end
     end
   end

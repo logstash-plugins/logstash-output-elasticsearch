@@ -299,7 +299,7 @@ checks.
 ==== Elasticsearch Output Configuration Options
 
 This plugin supports the following configuration options plus the
-<<plugins-{type}s-{plugin}-common-options>> described later.
+<<plugins-{type}s-{plugin}-common-options>> and the <<plugins-{type}s-{plugin}-deprecated-options>> described later.
 
 [cols="<,<,<",options="header",]
 |=======================================================================
@@ -307,7 +307,6 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-action>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-api_key>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-bulk_path>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-cacert>> |a valid filesystem path|__Deprecated__
 | <<plugins-{type}s-{plugin}-ca_trusted_fingerprint>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-cloud_auth>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-cloud_id>> |<<string,string>>|No
@@ -333,8 +332,6 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-ilm_policy>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-ilm_rollover_alias>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-index>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-keystore>> |a valid filesystem path|__Deprecated__
-| <<plugins-{type}s-{plugin}-keystore_password>> |<<password,password>>|__Deprecated__
 | <<plugins-{type}s-{plugin}-silence_errors_in_log>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-manage_template>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-parameters>> |<<hash,hash>>|No
@@ -358,10 +355,8 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-sniffing>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-sniffing_delay>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-sniffing_path>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-ssl>> |<<boolean,boolean>>|__Deprecated__
 | <<plugins-{type}s-{plugin}-ssl_certificate>> |<<path,path>>|No
 | <<plugins-{type}s-{plugin}-ssl_certificate_authorities>> |list of <<path,path>>|No
-| <<plugins-{type}s-{plugin}-ssl_certificate_verification>> |<<boolean,boolean>>|__Deprecated__
 | <<plugins-{type}s-{plugin}-ssl_cipher_suites>> |list of <<string,string>>|No
 | <<plugins-{type}s-{plugin}-ssl_enabled>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-ssl_key>> |<<path,path>>|No
@@ -378,8 +373,6 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-template_name>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-template_overwrite>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-timeout>> |<<number,number>>|No
-| <<plugins-{type}s-{plugin}-truststore>> |a valid filesystem path|__Deprecated__
-| <<plugins-{type}s-{plugin}-truststore_password>> |<<password,password>>|__Deprecated__
 | <<plugins-{type}s-{plugin}-upsert>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-user>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-validate_after_inactivity>> |<<number,number>>|No
@@ -433,15 +426,6 @@ Elasticsearch {ref}/security-api-create-api-key.html[Create API key API].
 
 HTTP Path to perform the _bulk requests to
 this defaults to a concatenation of the path parameter and "_bulk"
-
-[id="plugins-{type}s-{plugin}-cacert"]
-===== `cacert`
-deprecated[11.14.0, Replaced by <<plugins-{type}s-{plugin}-ssl_certificate_authorities>>]
-
-  * Value type is a list of <<path,path>>
-  * There is no default value for this setting.
-
-The .cer or .pem file to validate the server's certificate.
 
 [id="plugins-{type}s-{plugin}-ca_trusted_fingerprint"]
 ===== `ca_trusted_fingerprint`
@@ -782,27 +766,6 @@ Logstash uses
 http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html[Joda
 formats] and the `@timestamp` field of each event is being used as source for the date.
 
-[id="plugins-{type}s-{plugin}-keystore"]
-===== `keystore`
-deprecated[11.14.0, Replaced by <<plugins-{type}s-{plugin}-ssl_keystore_path>>]
-
-  * Value type is <<path,path>>
-  * There is no default value for this setting.
-
-The keystore used to present a certificate to the server.
-It can be either .jks or .p12
-
-NOTE: You cannot use this setting and <<plugins-{type}s-{plugin}-ssl_certificate>> at the same time.
-
-[id="plugins-{type}s-{plugin}-keystore_password"]
-===== `keystore_password`
-deprecated[11.14.0, Replaced by <<plugins-{type}s-{plugin}-ssl_keystore_password>>]
-
-  * Value type is <<password,password>>
-  * There is no default value for this setting.
-
-Set the keystore password
-
 [id="plugins-{type}s-{plugin}-manage_template"]
 ===== `manage_template`
 
@@ -1051,17 +1014,6 @@ the default value is computed by concatenating the path value and "_nodes/http"
 if sniffing_path is set it will be used as an absolute path
 do not use full URL here, only paths, e.g. "/sniff/_nodes/http"
 
-[id="plugins-{type}s-{plugin}-ssl"]
-===== `ssl`
-deprecated[11.14.0, Replaced by <<plugins-{type}s-{plugin}-ssl_enabled>>]
-
-  * Value type is <<boolean,boolean>>
-  * There is no default value for this setting.
-
-Enable SSL/TLS secured communication to Elasticsearch cluster.
-Leaving this unspecified will use whatever scheme is specified in the URLs listed in <<plugins-{type}s-{plugin}-hosts>> or extracted from the <<plugins-{type}s-{plugin}-cloud_id>>.
-If no explicit protocol is specified plain HTTP will be used.
-
 [id="plugins-{type}s-{plugin}-ssl_certificate"]
 ===== `ssl_certificate`
   * Value type is <<path,path>>
@@ -1080,17 +1032,6 @@ NOTE: This setting can be used only if <<plugins-{type}s-{plugin}-ssl_key>> is s
 The .cer or .pem files to validate the server's certificate.
 
 NOTE: You cannot use this setting and <<plugins-{type}s-{plugin}-ssl_truststore_path>> at the same time.
-
-[id="plugins-{type}s-{plugin}-ssl_certificate_verification"]
-===== `ssl_certificate_verification`
-deprecated[11.14.0, Replaced by <<plugins-{type}s-{plugin}-ssl_verification_mode>>]
-
-  * Value type is <<boolean,boolean>>
-  * Default value is `true`
-
-Option to validate the server's certificate. Disabling this severely compromises security.
-For more information on disabling certificate verification please read
-https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
 
 [id="plugins-{type}s-{plugin}-ssl_cipher_suites"]
 ===== `ssl_cipher_suites`
@@ -1274,26 +1215,6 @@ the "logstash" template (i.e. removing all customized settings)
 Set the timeout, in seconds, for network operations and requests sent Elasticsearch. If
 a timeout occurs, the request will be retried.
 
-[id="plugins-{type}s-{plugin}-truststore"]
-===== `truststore`
-deprecated[11.14.0, Replaced by <<plugins-{type}s-{plugin}-ssl_truststore_path>>]
-
-  * Value type is <<path,path>>
-  * There is no default value for this setting.
-
-The truststore to validate the server's certificate.
-It can be either .jks or .p12.
-Use either `:truststore` or `:cacert`.
-
-[id="plugins-{type}s-{plugin}-truststore_password"]
-===== `truststore_password`
-deprecated[11.14.0, Replaced by <<plugins-{type}s-{plugin}-ssl_truststore_password>>]
-
-  * Value type is <<password,password>>
-  * There is no default value for this setting.
-
-Set the truststore password
-
 [id="plugins-{type}s-{plugin}-upsert"]
 ===== `upsert`
 
@@ -1350,6 +1271,97 @@ https://www.elastic.co/blog/elasticsearch-versioning-support[versioning support
 blog] and {ref}/docs-index_.html#_version_types[Version types] in the
 Elasticsearch documentation.
 
+[id="plugins-{type}s-{plugin}-deprecated-options"]
+==== Elasticsearch Output Deprecated Configuration Options
+
+This plugin supports the following deprecated configurations.
+
+WARNING: Deprecated options are subject to removal in future releases.
+
+[cols="<,<,<",options="header",]
+|=======================================================================
+|Setting|Input type|Replaced by
+| <<plugins-{type}s-{plugin}-cacert>> |a valid filesystem path|<<plugins-{type}s-{plugin}-ssl_certificate_authorities>>
+| <<plugins-{type}s-{plugin}-keystore>> |a valid filesystem path|<<plugins-{type}s-{plugin}-ssl_keystore_path>>
+| <<plugins-{type}s-{plugin}-keystore_password>> |<<password,password>>|<<plugins-{type}s-{plugin}-ssl_keystore_password>>
+| <<plugins-{type}s-{plugin}-ssl>> |<<boolean,boolean>>|<<plugins-{type}s-{plugin}-ssl_enabled>>
+| <<plugins-{type}s-{plugin}-ssl_certificate_verification>> |<<boolean,boolean>>|<<plugins-{type}s-{plugin}-ssl_verification_mode>>
+| <<plugins-{type}s-{plugin}-truststore>> |a valid filesystem path|<<plugins-{type}s-{plugin}-ssl_truststore_path>>
+| <<plugins-{type}s-{plugin}-truststore_password>> |<<password,password>>|<<plugins-{type}s-{plugin}-ssl_truststore_password>>
+|=======================================================================
+
+
+[id="plugins-{type}s-{plugin}-cacert"]
+===== `cacert`
+deprecated[11.14.0, Replaced by <<plugins-{type}s-{plugin}-ssl_certificate_authorities>>]
+
+* Value type is a list of <<path,path>>
+* There is no default value for this setting.
+
+The .cer or .pem file to validate the server's certificate.
+
+[id="plugins-{type}s-{plugin}-keystore"]
+===== `keystore`
+deprecated[11.14.0, Replaced by <<plugins-{type}s-{plugin}-ssl_keystore_path>>]
+
+* Value type is <<path,path>>
+* There is no default value for this setting.
+
+The keystore used to present a certificate to the server.
+It can be either .jks or .p12
+
+NOTE: You cannot use this setting and <<plugins-{type}s-{plugin}-ssl_certificate>> at the same time.
+
+[id="plugins-{type}s-{plugin}-keystore_password"]
+===== `keystore_password`
+deprecated[11.14.0, Replaced by <<plugins-{type}s-{plugin}-ssl_keystore_password>>]
+
+* Value type is <<password,password>>
+* There is no default value for this setting.
+
+Set the keystore password
+
+[id="plugins-{type}s-{plugin}-ssl"]
+===== `ssl`
+deprecated[11.14.0, Replaced by <<plugins-{type}s-{plugin}-ssl_enabled>>]
+
+* Value type is <<boolean,boolean>>
+* There is no default value for this setting.
+
+Enable SSL/TLS secured communication to Elasticsearch cluster.
+Leaving this unspecified will use whatever scheme is specified in the URLs listed in <<plugins-{type}s-{plugin}-hosts>> or extracted from the <<plugins-{type}s-{plugin}-cloud_id>>.
+If no explicit protocol is specified plain HTTP will be used.
+
+[id="plugins-{type}s-{plugin}-ssl_certificate_verification"]
+===== `ssl_certificate_verification`
+deprecated[11.14.0, Replaced by <<plugins-{type}s-{plugin}-ssl_verification_mode>>]
+
+* Value type is <<boolean,boolean>>
+* Default value is `true`
+
+Option to validate the server's certificate. Disabling this severely compromises security.
+For more information on disabling certificate verification please read
+https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
+
+[id="plugins-{type}s-{plugin}-truststore"]
+===== `truststore`
+deprecated[11.14.0, Replaced by <<plugins-{type}s-{plugin}-ssl_truststore_path>>]
+
+* Value type is <<path,path>>
+* There is no default value for this setting.
+
+The truststore to validate the server's certificate.
+It can be either `.jks` or `.p12`.
+Use either `:truststore` or `:cacert`.
+
+[id="plugins-{type}s-{plugin}-truststore_password"]
+===== `truststore_password`
+deprecated[11.14.0, Replaced by <<plugins-{type}s-{plugin}-ssl_truststore_password>>]
+
+* Value type is <<password,password>>
+* There is no default value for this setting.
+
+Set the truststore password
 
 [id="plugins-{type}s-{plugin}-common-options"]
 include::{include_path}/{type}.asciidoc[]
