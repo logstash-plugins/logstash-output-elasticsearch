@@ -354,7 +354,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         if execution_context&.pipeline&.shutdown_requested?
           # In case ES side changes access credentials and a pipeline reload is triggered
           # this error becomes a retry on restart
-          raise org.logstash.execution.AbortedBatchException.new
+          abort_batch_if_available!
         end
         retry
       rescue => e # Stuff that should never happen - print out full connection issues
@@ -368,6 +368,14 @@ module LogStash; module PluginMixins; module ElasticSearch
         @bulk_request_metrics.increment(:failures)
         retry unless @stopping.true?
       end
+    end
+
+    def abort_batch_if_available!
+      raise org.logstash.execution.AbortedBatchException.new if abort_batch_present?
+    end
+
+    def abort_batch_present?
+      ::Gem::Version.create(LOGSTASH_VERSION) >= ::Gem::Version.create('8.8.0')
     end
 
     def dlq_enabled?

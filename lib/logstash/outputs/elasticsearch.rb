@@ -435,7 +435,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     if execution_context&.pipeline&.shutdown_requested?
       @logger.info "Aborting the batch due to shutdown request while waiting for connections to become live"
-      raise org.logstash.execution.AbortedBatchException.new
+      abort_batch_if_available!
     end
 
     status = @after_successful_connection_thread && @after_successful_connection_thread.value
