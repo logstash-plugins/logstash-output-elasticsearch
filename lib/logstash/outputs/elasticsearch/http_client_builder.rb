@@ -107,44 +107,69 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def self.setup_ssl(logger, params)
-      params["ssl"] = true if params["hosts"].any? {|h| h.scheme == "https" }
-      return {} if params["ssl"].nil?
+      params["ssl_enabled"] = true if params["hosts"].any? {|h| h.scheme == "https" }
+      return {} if params["ssl_enabled"].nil?
 
-      return {:ssl => {:enabled => false}} if params["ssl"] == false
+      return {:ssl => {:enabled => false}} if params["ssl_enabled"] == false
 
-      cacert, truststore, truststore_password, keystore, keystore_password =
-        params.values_at('cacert', 'truststore', 'truststore_password', 'keystore', 'keystore_password')
+      ssl_certificate_authorities, ssl_truststore_path, ssl_certificate, ssl_keystore_path = params.values_at('ssl_certificate_authorities', 'ssl_truststore_path', 'ssl_certificate', 'ssl_keystore_path')
 
-      if cacert && truststore
-        raise(LogStash::ConfigurationError, "Use either \"cacert\" or \"truststore\" when configuring the CA certificate") if truststore
+      if ssl_certificate_authorities && ssl_truststore_path
+        raise LogStash::ConfigurationError, 'Use either "ssl_certificate_authorities/cacert" or "ssl_truststore_path/truststore" when configuring the CA certificate'
+      end
+
+      if ssl_certificate && ssl_keystore_path
+        raise LogStash::ConfigurationError, 'Use either "ssl_certificate" or "ssl_keystore_path/keystore" when configuring client certificates'
       end
 
       ssl_options = {:enabled => true}
 
-      if cacert
-        ssl_options[:ca_file] = cacert
-      elsif truststore
-        ssl_options[:truststore_password] = truststore_password.value if truststore_password
+      if ssl_certificate_authorities&.any?
+        raise LogStash::ConfigurationError, 'Multiple values on "ssl_certificate_authorities" are not supported by this plugin' if ssl_certificate_authorities.size > 1
+        ssl_options[:ca_file] = ssl_certificate_authorities.first
       end
 
-      ssl_options[:truststore] = truststore if truststore
-      if keystore
-        ssl_options[:keystore] = keystore
-        ssl_options[:keystore_password] = keystore_password.value if keystore_password
+      setup_ssl_store(ssl_options, 'truststore', params)
+      setup_ssl_store(ssl_options, 'keystore', params)
+
+      ssl_key = params["ssl_key"]
+      if ssl_certificate
+        raise LogStash::ConfigurationError, 'Using an "ssl_certificate" requires an "ssl_key"' unless ssl_key
+        ssl_options[:client_cert] = ssl_certificate
+        ssl_options[:client_key] = ssl_key
+      elsif !ssl_key.nil?
+        raise LogStash::ConfigurationError, 'An "ssl_certificate" is required when using an "ssl_key"'
       end
 
-      if !params["ssl_certificate_verification"]
-        logger.warn "You have enabled encryption but DISABLED certificate verification, " +
-                    "to make sure your data is secure remove `ssl_certificate_verification => false`"
-        ssl_options[:verify] = :disable # false accepts self-signed but still validates hostname
+      ssl_verification_mode = params["ssl_verification_mode"]
+      unless ssl_verification_mode.nil?
+        case ssl_verification_mode
+          when 'none'
+            logger.warn "You have enabled encryption but DISABLED certificate verification, " +
+                          "to make sure your data is secure set `ssl_verification_mode => full`"
+            ssl_options[:verify] = :disable
+          else
+            ssl_options[:verify] = :strict
+        end
       end
 
+      ssl_options[:cipher_suites] = params["ssl_cipher_suites"] if params.include?("ssl_cipher_suites")
       ssl_options[:trust_strategy] = params["ssl_trust_strategy"] if params.include?("ssl_trust_strategy")
 
       protocols = params['ssl_supported_protocols']
       ssl_options[:protocols] = protocols if protocols && protocols.any?
 
       { ssl: ssl_options }
+    end
+
+    # @param kind is a string [truststore|keystore]
+    def self.setup_ssl_store(ssl_options, kind, params)
+      store_path = params["ssl_#{kind}_path"]
+      if store_path
+        ssl_options[kind.to_sym] = store_path
+        ssl_options["#{kind}_type".to_sym] = params["ssl_#{kind}_type"] if params.include?("ssl_#{kind}_type")
+        ssl_options["#{kind}_password".to_sym] = params["ssl_#{kind}_password"].value if params.include?("ssl_#{kind}_password")
+      end
     end
 
     def self.setup_basic_auth(logger, params)

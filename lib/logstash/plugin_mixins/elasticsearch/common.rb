@@ -28,8 +28,7 @@ module LogStash; module PluginMixins; module ElasticSearch
 
       setup_hosts
 
-
-      params['ssl'] = effectively_ssl? unless params.include?('ssl')
+      params['ssl_enabled'] = effectively_ssl? unless params.include?('ssl_enabled')
 
       # inject the TrustStrategy from CATrustedFingerprintSupport
       if trust_strategy_for_ca_trusted_fingerprint
@@ -74,7 +73,7 @@ module LogStash; module PluginMixins; module ElasticSearch
     end
 
     def effectively_ssl?
-      return @ssl unless @ssl.nil?
+      return @ssl_enabled unless @ssl_enabled.nil?
 
       hosts = Array(@hosts)
       return false if hosts.nil? || hosts.empty?

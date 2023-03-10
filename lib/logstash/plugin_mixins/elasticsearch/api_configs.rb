@@ -45,34 +45,78 @@ module LogStash; module PluginMixins; module ElasticSearch
         # Enable SSL/TLS secured communication to Elasticsearch cluster. Leaving this unspecified will use whatever scheme
         # is specified in the URLs listed in 'hosts'. If no explicit protocol is specified plain HTTP will be used.
         # If SSL is explicitly disabled here the plugin will refuse to start if an HTTPS URL is given in 'hosts'
-        :ssl => { :validate => :boolean },
+        :ssl => { :validate => :boolean, :deprecated => "Set 'ssl_enabled' instead." },
+
+        # Enable SSL/TLS secured communication to Elasticsearch cluster. Leaving this unspecified will use whatever scheme
+        # is specified in the URLs listed in 'hosts'. If no explicit protocol is specified plain HTTP will be used.
+        # If SSL is explicitly disabled here the plugin will refuse to start if an HTTPS URL is given in 'hosts'
+        :ssl_enabled => { :validate => :boolean },
 
         # Option to validate the server's certificate. Disabling this severely compromises security.
         # For more information on disabling certificate verification please read
         # https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf
-        :ssl_certificate_verification => { :validate => :boolean, :default => true },
+        :ssl_certificate_verification => { :validate => :boolean, :default => true, :deprecated => "Set 'ssl_verification_mode' instead." },
+
+        # Options to verify the server's certificate.
+        # "full": validates that the provided certificate has an issue date that’s within the not_before and not_after dates;
+        # chains to a trusted Certificate Authority (CA); has a hostname or IP address that matches the names within the certificate.
+        # "none": performs no certificate validation. Disabling this severely compromises security (https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf)
+        :ssl_verification_mode => { :validate => %w[full none], :default => 'full' },
 
         # The .cer or .pem file to validate the server's certificate
-        :cacert => { :validate => :path },
+        :cacert => { :validate => :path, :deprecated => "Set 'ssl_certificate_authorities' instead." },
+
+        # The .cer or .pem files to validate the server's certificate
+        :ssl_certificate_authorities => { :validate => :path, :list => true },
 
         # One or more hex-encoded SHA256 fingerprints to trust as Certificate Authorities
         :ca_trusted_fingerprint => LogStash::PluginMixins::CATrustedFingerprintSupport,
 
         # The JKS truststore to validate the server's certificate.
         # Use either `:truststore` or `:cacert`
-        :truststore => { :validate => :path },
+        :truststore => { :validate => :path, :deprecated => "Set 'ssl_truststore_path' instead." },
+
+        # The JKS truststore to validate the server's certificate.
+        # Use either `:ssl_truststore_path` or `:ssl_certificate_authorities`
+        :ssl_truststore_path => { :validate => :path },
+
+        # The format of the truststore file. It must be either jks or pkcs12
+        :ssl_truststore_type => { :validate => %w[pkcs12 jks] },
 
         # Set the truststore password
-        :truststore_password => { :validate => :password },
+        :truststore_password => { :validate => :password, :deprecated => "Use 'ssl_truststore_password' instead." },
+
+        # Set the truststore password
+        :ssl_truststore_password => { :validate => :password },
 
         # The keystore used to present a certificate to the server.
         # It can be either .jks or .p12
-        :keystore => { :validate => :path },
+        :keystore => { :validate => :path, :deprecated => "Set 'ssl_keystore_path' instead." },
+
+        # The keystore used to present a certificate to the server.
+        # It can be either .jks or .p12
+        :ssl_keystore_path => { :validate => :path },
+
+        # The format of the keystore file. It must be either jks or pkcs12
+        :ssl_keystore_type => { :validate => %w[pkcs12 jks] },
 
         # Set the keystore password
-        :keystore_password => { :validate => :password },
+        :keystore_password => { :validate => :password, :deprecated => "Set 'ssl_keystore_password' instead." },
+
+        # Set the keystore password
+        :ssl_keystore_password => { :validate => :password },
 
         :ssl_supported_protocols => { :validate => ['TLSv1.1', 'TLSv1.2', 'TLSv1.3'], :default => [], :list => true },
+
+        # OpenSSL-style X.509 certificate certificate to authenticate the client
+        :ssl_certificate => { :validate => :path },
+
+        # OpenSSL-style RSA private key to authenticate the client
+        :ssl_key => { :validate => :path },
+
+        # The list of cipher suites to use, listed by priorities.
+        # Supported cipher suites vary depending on which version of Java is used.
+        :ssl_cipher_suites => { :validate => :string, :list => true },
 
         # This setting asks Elasticsearch for the list of all cluster nodes and adds them to the hosts list.
         # Note: This will return ALL nodes with HTTP enabled (including master nodes!). If you use

@@ -114,7 +114,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
       {
           'hosts' => [ 'http://127.0.0.1:12345' ],
           'http_compression' => 'true', 'bulk_path' => '_bulk', 'timeout' => '30',
-          'user' => 'elastic', 'password' => 'ForSearch!', 'ssl' => 'false'
+          'user' => 'elastic', 'password' => 'ForSearch!', 'ssl_enabled' => 'false'
       }
     end
 
