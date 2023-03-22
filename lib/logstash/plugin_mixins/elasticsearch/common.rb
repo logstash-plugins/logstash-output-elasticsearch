@@ -373,6 +373,11 @@ module LogStash; module PluginMixins; module ElasticSearch
       end
     end
 
+    def pipeline_shutdown_requested?
+        return super if defined?(super) # since LS 8.1.0
+        execution_context&.pipeline&.shutdown_requested
+      end
+
     def abort_batch_if_available!
       raise org.logstash.execution.AbortedBatchException.new if abort_batch_present?
     end
