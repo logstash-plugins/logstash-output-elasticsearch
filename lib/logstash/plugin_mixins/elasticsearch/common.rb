@@ -351,7 +351,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         end
 
         sleep_interval = sleep_for_interval(sleep_interval)
-        if execution_context&.pipeline&.shutdown_requested?
+        if pipeline_shutdown_requested?
           # In case ES side changes access credentials and a pipeline reload is triggered
           # this error becomes a retry on restart
           abort_batch_if_available!
