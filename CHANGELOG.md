@@ -1,5 +1,8 @@
+## 11.14.1
+ - [DOC] Fixed incorrect pull request link on the CHANGELOG `11.14.0` entry [#1122](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1122)
+
 ## 11.14.0
- - Added SSL settings for: [#1115](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1115)
+ - Added SSL settings for: [#1118](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1118)
    - `ssl_truststore_type`: The format of the truststore file
    - `ssl_keystore_type`: The format of the keystore file
    - `ssl_certificate`: OpenSSL-style X.509 certificate file to authenticate the client
