@@ -192,12 +192,15 @@ module LogStash; module PluginMixins; module ElasticSearch
           if submit_actions && submit_actions.size > 0
             @logger.info("Retrying individual bulk actions that failed or were rejected by the previous bulk request", count: submit_actions.size)
           end
-        rescue org.logstash.execution.AbortedBatchException => e
-          # if aborting the batch, bubble the exception up so that the pipeline can handle it
-          raise e
         rescue => e
-          @logger.error("Encountered an unexpected error submitting a bulk request, will retry",
-                        message: e.message, exception: e.class, backtrace: e.backtrace)
+          if abort_batch_present? && e.instance_of?(org.logstash.execution.AbortedBatchException)
+            # if Logstash support abort of a batch and the batch is aborting,
+            # bubble up the exception so that the pipeline can handle it
+            raise e
+          else
+            @logger.error("Encountered an unexpected error submitting a bulk request, will retry",
+                          message: e.message, exception: e.class, backtrace: e.backtrace)
+          end
         end
 
         # Everything was a success!
