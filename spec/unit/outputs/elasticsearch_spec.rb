@@ -50,6 +50,84 @@ describe LogStash::Outputs::ElasticSearch do
     subject.close
   end
 
+  context "check aborting of a batch" do
+    context "on an unreachable ES instance" do
+      let(:events) { [ ::LogStash::Event.new("foo" => "bar1"), ::LogStash::Event.new("foo" => "bar2") ] }
+
+      let(:shutdown_value) { true }
+
+      let(:logger) { double("logger") }
+
+      before(:each) do
+        allow(subject).to receive(:logger).and_return(logger)
+        allow(logger).to receive(:info)
+
+        allow(subject).to receive(:pipeline_shutdown_requested?) do
+          shutdown_value
+        end
+      end
+
+      it "the #multi_receive abort while waiting on unreachable and a shutdown is requested" do
+        expect { subject.multi_receive(events) }.to raise_error(org.logstash.execution.AbortedBatchException)
+        expect(logger).to have_received(:info).with(/Aborting the batch due to shutdown request while waiting for connections to become live/i)
+      end
+    end
+
+    context "when a connected ES becomes unreachable with 429 errors" do
+      let(:options) {
+        {
+          "index" => "my-index",
+          "hosts" => ["localhost","localhost:9202"],
+          "path" => "some-path",
+          "manage_template" => false
+        }
+      }
+
+      let(:manticore_urls) { subject.client.pool.urls }
+      let(:manticore_url) { manticore_urls.first }
+
+      let(:stub_http_client_pool!) do
+        [:start_resurrectionist, :start_sniffer, :healthcheck!].each do |method|
+          allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(method)
+        end
+      end
+
+      let(:event) { ::LogStash::Event.new("foo" => "bar") }
+      let(:error) do
+        ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(
+          429, double("url").as_null_object, request_body, double("response body")
+        )
+      end
+      let(:logger) { double("logger").as_null_object }
+      let(:response) { { :errors => [], :items => [] } }
+
+      let(:request_body) { double(:request_body, :bytesize => 1023) }
+
+      before(:each) do
+        bulk_param =  [["index", anything, event.to_hash]]
+
+        allow(subject).to receive(:logger).and_return(logger)
+
+        # fail consistently for ever
+        allow(subject.client).to receive(:bulk).with(bulk_param).and_raise(error)
+      end
+
+      it "should exit the retry with an abort exception if shutdown is requested" do
+        # execute in another thread because it blocks in a retry loop until the shutdown is triggered
+        th = Thread.new do
+          subject.multi_receive([event])
+        rescue org.logstash.execution.AbortedBatchException => e
+          # return exception's class so that it can be verified when retrieving the thread's value
+          e.class
+        end
+
+        # trigger the shutdown signal
+        allow(subject).to receive(:pipeline_shutdown_requested?) { true }
+
+        expect(th.value).to eq(org.logstash.execution.AbortedBatchException)
+      end
+    end
+  end if LOGSTASH_VERSION >= '8.8'
 
   context "with an active instance" do
     let(:options) {
