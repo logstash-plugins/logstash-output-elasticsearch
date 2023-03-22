@@ -1,5 +1,5 @@
 ## 11.14.1
- - [DOC] Fixed incorrect pull request link on the CHANGELOG `11.14.0` entry
+ - [DOC] Fixed incorrect pull request link on the CHANGELOG `11.14.0` entry [#1122](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1122)
 
 ## 11.14.0
  - Added SSL settings for: [#1118](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1118)
