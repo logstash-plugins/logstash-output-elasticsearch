@@ -159,6 +159,8 @@ module LogStash; module PluginMixins; module ElasticSearch
     def after_successful_connection(&block)
       Thread.new do
         sleep_interval = @retry_initial_interval
+        # in case of a pipeline's shutdown_requested?, the method #close shutdown also this thread
+        # so no need to explicitly handle it here and return an AbortedBatchException.
         until successful_connection? || @stopping.true?
           @logger.debug("Waiting for connectivity to Elasticsearch cluster, retrying in #{sleep_interval}s")
           sleep_interval = sleep_for_interval(sleep_interval)
@@ -191,8 +193,14 @@ module LogStash; module PluginMixins; module ElasticSearch
             @logger.info("Retrying individual bulk actions that failed or were rejected by the previous bulk request", count: submit_actions.size)
           end
         rescue => e
-          @logger.error("Encountered an unexpected error submitting a bulk request, will retry",
-                        message: e.message, exception: e.class, backtrace: e.backtrace)
+          if abort_batch_present? && e.instance_of?(org.logstash.execution.AbortedBatchException)
+            # if Logstash support abort of a batch and the batch is aborting,
+            # bubble up the exception so that the pipeline can handle it
+            raise e
+          else
+            @logger.error("Encountered an unexpected error submitting a bulk request, will retry",
+                          message: e.message, exception: e.class, backtrace: e.backtrace)
+          end
         end
 
         # Everything was a success!
@@ -331,6 +339,11 @@ module LogStash; module PluginMixins; module ElasticSearch
 
         sleep_interval = sleep_for_interval(sleep_interval)
         @bulk_request_metrics.increment(:failures)
+        if pipeline_shutdown_requested?
+          # when any connection is available and a shutdown is requested
+          # the batch can be aborted, eventually for future retry.
+          abort_batch_if_available!
+        end
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         @bulk_request_metrics.increment(:failures)
@@ -349,6 +362,11 @@ module LogStash; module PluginMixins; module ElasticSearch
         end
 
         sleep_interval = sleep_for_interval(sleep_interval)
+        if pipeline_shutdown_requested?
+          # In case ES side changes access credentials and a pipeline reload is triggered
+          # this error becomes a retry on restart
+          abort_batch_if_available!
+        end
         retry
       rescue => e # Stuff that should never happen - print out full connection issues
         @logger.error(
@@ -361,6 +379,19 @@ module LogStash; module PluginMixins; module ElasticSearch
         @bulk_request_metrics.increment(:failures)
         retry unless @stopping.true?
       end
+    end
+
+    def pipeline_shutdown_requested?
+        return super if defined?(super) # since LS 8.1.0
+        execution_context&.pipeline&.shutdown_requested
+      end
+
+    def abort_batch_if_available!
+      raise org.logstash.execution.AbortedBatchException.new if abort_batch_present?
+    end
+
+    def abort_batch_present?
+      ::Gem::Version.create(LOGSTASH_VERSION) >= ::Gem::Version.create('8.8.0')
     end
 
     def dlq_enabled?
