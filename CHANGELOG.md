@@ -1,3 +1,6 @@
+## 11.15.0
+ - Added the ability to negatively acknowledge the batch under processing if the plugin is blocked in a retry-error-loop and a shutdown is requested. [#1119](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1119)
+
 ## 11.14.1
  - [DOC] Fixed incorrect pull request link on the CHANGELOG `11.14.0` entry [#1122](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1122)
 
