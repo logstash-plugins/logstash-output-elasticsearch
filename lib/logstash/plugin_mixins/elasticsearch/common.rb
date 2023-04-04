@@ -339,6 +339,11 @@ module LogStash; module PluginMixins; module ElasticSearch
 
         sleep_interval = sleep_for_interval(sleep_interval)
         @bulk_request_metrics.increment(:failures)
+        if pipeline_shutdown_requested?
+          # when any connection is available and a shutdown is requested
+          # the batch can be aborted, eventually for future retry.
+          abort_batch_if_available!
+        end
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         @bulk_request_metrics.increment(:failures)
