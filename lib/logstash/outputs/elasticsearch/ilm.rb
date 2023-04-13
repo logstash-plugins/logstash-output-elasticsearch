@@ -32,7 +32,7 @@ module LogStash; module Outputs; class ElasticSearch
     private
 
     def ilm_alias_set?
-      default_index?(@index) || !default_rollover_alias?(@ilm_rollover_alias)
+      !default_rollover_alias?(@ilm_rollover_alias)
     end
 
     def ilm_on_by_default?
