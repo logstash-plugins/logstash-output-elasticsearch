@@ -325,6 +325,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         @after_successful_connection_done.make_true
       end
     end
+    wait_for_successful_connection
 
     # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
     @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
