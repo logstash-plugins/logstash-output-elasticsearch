@@ -314,18 +314,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     setup_template_manager_defaults(data_stream_enabled)
 
-    @after_successful_connection_thread = after_successful_connection do
-      begin
-        finish_register
-        true # thread.value
-      rescue => e
-        # we do not want to halt the thread with an exception as that has consequences for LS
-        e # thread.value
-      ensure
-        @after_successful_connection_done.make_true
-      end
-    end
-
     # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
     @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
 
@@ -353,6 +341,18 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     if ecs_compatibility == :v8
       @logger.warn("Elasticsearch Output configured with `ecs_compatibility => v8`, which resolved to an UNRELEASED preview of version 8.0.0 of the Elastic Common Schema. " +
                    "Once ECS v8 and an updated release of this plugin are publicly available, you will need to update this plugin to resolve this warning.")
+    end
+
+    @after_successful_connection_thread = after_successful_connection do
+      begin
+        finish_register
+        true # thread.value
+      rescue => e
+        # we do not want to halt the thread with an exception as that has consequences for LS
+        e # thread.value
+      ensure
+        @after_successful_connection_done.make_true
+      end
     end
   end
 
