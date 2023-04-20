@@ -1456,6 +1456,42 @@ describe LogStash::Outputs::ElasticSearch do
       end
 
     end
+
+    context 'during register/finish_register' do
+
+      let(:options) { { 'hosts' => '127.0.0.1:9999', 'data_stream' => 'true' } }
+      let(:es_version) { '8.7.0' } # DS default on LS 8.x
+
+      before do
+        allow(subject).to receive(:discover_cluster_uuid)
+        allow(subject).to receive(:maybe_create_rollover_alias)
+        allow(subject).to receive(:maybe_create_ilm_policy)
+        allow(subject).to receive(:build_client)
+      end
+
+      # this test could not have been done using latches as the fix to the race
+      # condition alters the order of the instructions in elasticsearch.rb
+      #
+      # the race condition happened when the @index was set to the datastream
+      # after `ilm_in_use?` is called but before `setup_ilm`
+      it 'doesn\'t have a race condition leading to resetting back to ILM' do
+        ilm_in_use = subject.method(:ilm_in_use?)
+        expect(subject).to receive(:ilm_in_use?) do |params|
+          ret = ilm_in_use.call
+          sleep 3
+          ret
+        end
+        setup_mapper_and_target = subject.method(:setup_mapper_and_target)
+        expect(subject).to receive(:setup_mapper_and_target).once do |params|
+          sleep 1
+          setup_mapper_and_target.call(params)
+        end
+        subject.register
+        sleep 6
+        expect(subject.index).to eq("logs-generic-default")
+      end
+
+    end
   end
 
   @private

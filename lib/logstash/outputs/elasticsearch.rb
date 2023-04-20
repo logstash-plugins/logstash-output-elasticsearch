@@ -313,6 +313,27 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     data_stream_enabled = data_stream_config?
 
     setup_template_manager_defaults(data_stream_enabled)
+    # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
+    @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
+
+    @dlq_codes = DOC_DLQ_CODES.to_set
+
+    if dlq_enabled?
+      check_dlq_custom_codes
+      @dlq_codes.merge(dlq_custom_codes)
+    else
+      raise LogStash::ConfigurationError, "DLQ feature (dlq_custom_codes) is configured while DLQ is not enabled" unless dlq_custom_codes.empty?
+    end
+
+    setup_mapper_and_target(data_stream_enabled)
+
+    @bulk_request_metrics = metric.namespace(:bulk_requests)
+    @document_level_metrics = metric.namespace(:documents)
+
+    if ecs_compatibility == :v8
+      @logger.warn("Elasticsearch Output configured with `ecs_compatibility => v8`, which resolved to an UNRELEASED preview of version 8.0.0 of the Elastic Common Schema. " +
+                   "Once ECS v8 and an updated release of this plugin are publicly available, you will need to update this plugin to resolve this warning.")
+    end
 
     @after_successful_connection_thread = after_successful_connection do
       begin
@@ -326,18 +347,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       end
     end
 
-    # To support BWC, we check if DLQ exists in core (< 5.4). If it doesn't, we use nil to resort to previous behavior.
-    @dlq_writer = dlq_enabled? ? execution_context.dlq_writer : nil
+  end
 
-    @dlq_codes = DOC_DLQ_CODES.to_set
-
-    if dlq_enabled?
-      check_dlq_custom_codes
-      @dlq_codes.merge(dlq_custom_codes)
-    else
-      raise LogStash::ConfigurationError, "DLQ feature (dlq_custom_codes) is configured while DLQ is not enabled" unless dlq_custom_codes.empty?
-    end
-
+  def setup_mapper_and_target(data_stream_enabled)
     if data_stream_enabled
       @event_mapper = -> (e) { data_stream_event_action_tuple(e) }
       @event_target = -> (e) { data_stream_name(e) }
@@ -345,14 +357,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     else
       @event_mapper = -> (e) { event_action_tuple(e) }
       @event_target = -> (e) { e.sprintf(@index) }
-    end
-
-    @bulk_request_metrics = metric.namespace(:bulk_requests)
-    @document_level_metrics = metric.namespace(:documents)
-
-    if ecs_compatibility == :v8
-      @logger.warn("Elasticsearch Output configured with `ecs_compatibility => v8`, which resolved to an UNRELEASED preview of version 8.0.0 of the Elastic Common Schema. " +
-                   "Once ECS v8 and an updated release of this plugin are publicly available, you will need to update this plugin to resolve this warning.")
     end
   end
 
