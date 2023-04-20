@@ -1,3 +1,6 @@
+## 11.15.1
+ - Move async finish_register to bottom of register to avoid race condition [#1125](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1125)
+
 ## 11.15.0
  - Added the ability to negatively acknowledge the batch under processing if the plugin is blocked in a retry-error-loop and a shutdown is requested. [#1119](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1119)
 
