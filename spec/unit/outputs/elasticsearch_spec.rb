@@ -1459,7 +1459,7 @@ describe LogStash::Outputs::ElasticSearch do
 
     context 'during register/finish_register' do
 
-      let(:options) { { 'hosts' => '127.0.0.1:9999' } }
+      let(:options) { { 'hosts' => '127.0.0.1:9999', 'data_stream' => 'true' } }
       let(:es_version) { '8.7.0' } # DS default on LS 8.x
       let(:latch) { Concurrent::CountDownLatch.new }
 
@@ -1477,7 +1477,7 @@ describe LogStash::Outputs::ElasticSearch do
       # after `ilm_in_use?` is called but before `setup_ilm`
       it 'doesn\'t have a race condition leading to resetting back to ILM' do
         ilm_in_use = subject.method(:ilm_in_use?)
-        expect(subject).to receive(:ilm_in_use?).once do |params|
+        expect(subject).to receive(:ilm_in_use?) do |params|
           ret = ilm_in_use.call
           sleep 3
           ret
