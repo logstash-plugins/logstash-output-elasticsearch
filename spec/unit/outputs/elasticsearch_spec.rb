@@ -1461,7 +1461,6 @@ describe LogStash::Outputs::ElasticSearch do
 
       let(:options) { { 'hosts' => '127.0.0.1:9999', 'data_stream' => 'true' } }
       let(:es_version) { '8.7.0' } # DS default on LS 8.x
-      let(:latch) { Concurrent::CountDownLatch.new }
 
       before do
         allow(subject).to receive(:discover_cluster_uuid)
