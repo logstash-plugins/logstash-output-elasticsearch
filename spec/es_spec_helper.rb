@@ -67,19 +67,24 @@ module ESHelper
   end
 
   RSpec::Matchers.define :have_hits do |expected|
+    hits_count_path = ESHelper.es_version_satisfies?(">=7") ? %w(hits total value) : %w(hits total)
+
     match do |actual|
-      if ESHelper.es_version_satisfies?(">=7")
-        expected == actual['hits']['total']['value']
-      else
-        expected == actual['hits']['total']
-      end
+      @actual_hits_count = actual&.dig(*hits_count_path)
+      values_match? expected, @actual_hits_count
+    end
+    failure_message do |actual|
+      "expected that #{actual} with #{@actual_hits_count || "UNKNOWN" } hits would have #{expected} hits"
     end
   end
 
   RSpec::Matchers.define :have_index_pattern do |expected|
     match do |actual|
-      test_against = Array(actual['index_patterns'].nil? ? actual['template'] : actual['index_patterns'])
-      test_against.include?(expected)
+      @actual_index_pattterns = Array(actual['index_patterns'].nil? ? actual['template'] : actual['index_patterns'])
+      @actual_index_pattterns.any? { |v| values_match? expected, v }
+    end
+    failure_message do |actual|
+      "expected that #{actual} with index patterns #{@actual_index_pattterns} would have included `#{expected}`"
     end
   end
 

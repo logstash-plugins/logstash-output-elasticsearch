@@ -227,22 +227,16 @@ module LogStash; module PluginMixins; module ElasticSearch
     end
 
     def handle_dlq_response(message, action, status, response)
-      _, action_params = action.event, [action[0], action[1], action[2]]
+      event, action_params = action.event, [action[0], action[1], action[2]]
 
-      # TODO: Change this to send a map with { :status => status, :action => action } in the future
-      detailed_message = "#{message} status: #{status}, action: #{action_params}, response: #{response}"
-
-      log_level = dig_value(response, 'index', 'error', 'type') == 'invalid_index_name_exception' ? :error : :warn
-
-      handle_dlq_status(action.event, log_level, detailed_message)
-    end
-
-    def handle_dlq_status(event, log_level, message)
-      # To support bwc, we check if DLQ exists. otherwise we log and drop event (previous behavior)
       if @dlq_writer
-        @dlq_writer.write(event, "#{message}")
+        # TODO: Change this to send a map with { :status => status, :action => action } in the future
+        detailed_message = "#{message} status: #{status}, action: #{action_params}, response: #{response}"
+        @dlq_writer.write(event, "#{detailed_message}")
       else
-        @logger.send log_level, message
+        log_level = dig_value(response, 'index', 'error', 'type') == 'invalid_index_name_exception' ? :error : :warn
+
+        @logger.public_send(log_level, message, status: status, action: action_params, response: response)
       end
     end
 
