@@ -14,6 +14,7 @@ describe "Proxy option" do
 
   describe "valid configs" do
     before do
+      allow(subject).to receive(:wait_for_connection).and_return false
       subject.register
     end
 
@@ -71,6 +72,10 @@ describe "Proxy option" do
 
   context "when specified as ''" do
     let(:settings) { super().merge("proxy" => "${A_MISSING_ENV_VARIABLE:}")}
+
+    before do
+      allow(subject).to receive(:wait_for_connection).and_return false
+    end
 
     it "should not send the proxy option to manticore" do
       expect { subject.register }.not_to raise_error

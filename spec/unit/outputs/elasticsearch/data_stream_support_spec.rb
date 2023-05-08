@@ -28,6 +28,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
     # emulate 'successful' ES connection on the same thread
     allow(subject).to receive(:after_successful_connection) { |&block| block.call }
+    allow(subject).to receive(:wait_for_connection).and_return true
     allow(subject).to receive(:stop_after_successful_connection_thread)
 
     subject.register
@@ -144,7 +145,11 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
         change_constant :LOGSTASH_VERSION, '8.0.0' do
           expect( subject.logger ).to receive(:error).with(/Elasticsearch version does not support data streams/,
                                                            {:es_version=>"7.8.1"})
-          stub_plugin_register!
+          ds_min_version = LogStash::Outputs::ElasticSearch::DataStreamSupport::DATA_STREAMS_ORIGIN_ES_VERSION
+
+          expected_error_message = "A data_stream configuration is only supported since Elasticsearch #{ds_min_version} " +
+                                   "(detected version #{es_version}), please upgrade your cluster"
+          expect { stub_plugin_register! }.to raise_error(LogStash::Error, expected_error_message)
         end
       end
 
@@ -293,7 +298,11 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
         change_constant :LOGSTASH_VERSION, '7.12.0' do
           expect( subject.logger ).to receive(:error).with(/Elasticsearch version does not support data streams/,
                                                            {:es_version=>"6.8.11"})
-          stub_plugin_register!
+          ds_min_version = LogStash::Outputs::ElasticSearch::DataStreamSupport::DATA_STREAMS_ORIGIN_ES_VERSION
+
+          expected_error_message = "A data_stream configuration is only supported since Elasticsearch #{ds_min_version} " +
+                                   "(detected version #{es_version}), please upgrade your cluster"
+          expect { stub_plugin_register! }.to raise_error(LogStash::Error, expected_error_message)
         end
       end
 
@@ -301,7 +310,11 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
         change_constant :LOGSTASH_VERSION, '8.0.5' do
           expect( subject.logger ).to receive(:error).with(/Elasticsearch version does not support data streams/,
                                                            {:es_version=>"6.8.11"})
-          stub_plugin_register!
+          ds_min_version = LogStash::Outputs::ElasticSearch::DataStreamSupport::DATA_STREAMS_ORIGIN_ES_VERSION
+
+          expected_error_message = "A data_stream configuration is only supported since Elasticsearch #{ds_min_version} " +
+                                   "(detected version #{es_version}), please upgrade your cluster"
+          expect { stub_plugin_register! }.to raise_error(LogStash::Error, expected_error_message)
         end
       end
 

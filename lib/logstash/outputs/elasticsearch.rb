@@ -335,18 +335,38 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
                    "Once ECS v8 and an updated release of this plugin are publicly available, you will need to update this plugin to resolve this warning.")
     end
 
-    @after_successful_connection_thread = after_successful_connection do
-      begin
-        finish_register
-        true # thread.value
-      rescue => e
-        # we do not want to halt the thread with an exception as that has consequences for LS
-        e # thread.value
-      ensure
-        @after_successful_connection_done.make_true
-      end
+    if wait_for_connection
+      finish_register
+    else
+      # if we are, the plugin and pipeline are stopping
+      @logger.warn("Stopping plugin while waiting for connection during registration")
     end
 
+    #@after_successful_connection_thread = after_successful_connection do
+    #  begin
+    #    finish_register
+    #    true # thread.value
+    #  rescue => e
+    #    # we do not want to halt the thread with an exception as that has consequences for LS
+    #    e # thread.value
+    #  ensure
+    #    @after_successful_connection_done.make_true
+    #  end
+    #end
+    #
+    #wait_for_successful_connection if @after_successful_connection_done
+  end
+
+  def wait_for_connection
+    sleep_interval = @retry_initial_interval
+    # in case of a pipeline's shutdown_requested?, the method #close shutdown also this thread
+    # so no need to explicitly handle it here and return an AbortedBatchException.
+    until successful_connection? || @stopping.true?
+      @logger.debug("Waiting for connectivity to Elasticsearch cluster, retrying in #{sleep_interval}")
+      puts "Waiting for connectivity to Elasticsearch cluster, retrying in #{sleep_interval}"
+      sleep_interval = sleep_for_interval(sleep_interval)
+    end
+    successful_connection?
   end
 
   def setup_mapper_and_target(data_stream_enabled)
@@ -387,7 +407,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Receive an array of events and immediately attempt to index them (no buffering)
   def multi_receive(events)
-    wait_for_successful_connection if @after_successful_connection_done
+#     wait_for_successful_connection if @after_successful_connection_done
     events_mapped = safe_interpolation_map_events(events)
     retrying_submit(events_mapped.successful_events)
     unless events_mapped.event_mapping_errors.empty?

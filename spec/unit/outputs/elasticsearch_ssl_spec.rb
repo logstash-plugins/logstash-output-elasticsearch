@@ -19,6 +19,7 @@ describe "SSL options" do
     allow(manticore_double).to receive(:head).with(any_args).and_return(response_double)
     allow(manticore_double).to receive(:get).with(any_args).and_return(response_double)
     allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
+    allow(subject).to receive(:wait_for_connection).and_return false
   end
 
   after do

@@ -31,10 +31,10 @@ describe LogStash::Outputs::ElasticSearch do
       stub_http_client_pool!
 
       allow(subject).to receive(:finish_register) # stub-out thread completion (to avoid error log entries)
-
+      allow(subject).to receive(:wait_for_connection).and_return true
       # emulate 'successful' ES connection on the same thread
-      allow(subject).to receive(:after_successful_connection) { |&block| block.call }.
-          and_return after_successful_connection_thread_mock
+#       allow(subject).to receive(:after_successful_connection) { |&block| block.call }.
+#           and_return after_successful_connection_thread_mock
       allow(subject).to receive(:stop_after_successful_connection_thread)
 
       subject.register
@@ -67,7 +67,8 @@ describe LogStash::Outputs::ElasticSearch do
         end
       end
 
-      it "the #multi_receive abort while waiting on unreachable and a shutdown is requested" do
+      # this can't happen because the multi_receive doesn't wait anymore for successful connection
+      xit "the #multi_receive abort while waiting on unreachable and a shutdown is requested" do
         expect { subject.multi_receive(events) }.to raise_error(org.logstash.execution.AbortedBatchException)
         expect(logger).to have_received(:info).with(/Aborting the batch due to shutdown request while waiting for connections to become live/i)
       end
@@ -788,6 +789,7 @@ describe LogStash::Outputs::ElasticSearch do
 
     before(:each) do
       stub_manticore_client!
+      allow(subject).to receive(:wait_for_connection).and_return false
       subject.register
     end
 
@@ -944,6 +946,8 @@ describe LogStash::Outputs::ElasticSearch do
 
     before :each do
       allow(subject).to receive(:finish_register)
+      # mock the call to simulate an initial connection is done
+      allow(subject).to receive(:wait_for_connection).and_return true
 
       allow(::Manticore::Client).to receive(:new).with(any_args).and_call_original
     end
@@ -1053,6 +1057,7 @@ describe LogStash::Outputs::ElasticSearch do
     let(:options) { { 'cloud_id' => valid_cloud_id } }
 
     before(:each) do
+      allow(subject).to receive(:wait_for_connection).and_return false
       stub_manticore_client!
     end
 
@@ -1085,6 +1090,7 @@ describe LogStash::Outputs::ElasticSearch do
     let(:options) { { 'cloud_auth' => LogStash::Util::Password.new('elastic:my-passwd-00') } }
 
     before(:each) do
+      allow(subject).to receive(:wait_for_connection).and_return false
       stub_manticore_client!
     end
 
@@ -1432,7 +1438,7 @@ describe LogStash::Outputs::ElasticSearch do
       allow(subject).to receive(:install_template)
       allow(subject).to receive(:ilm_in_use?).and_return nil
       subject.register
-      subject.send :wait_for_successful_connection
+#       subject.send :wait_for_successful_connection
 
       expect(logger).to have_received(:error).with(/Unable to retrieve Elasticsearch cluster uuid/i, anything)
     end if LOGSTASH_VERSION >= '7.0.0'
@@ -1441,12 +1447,13 @@ describe LogStash::Outputs::ElasticSearch do
       allow(subject).to receive(:discover_cluster_uuid)
       allow(subject).to receive(:ilm_in_use?).and_return nil
       subject.register
-      subject.send :wait_for_successful_connection
+#       subject.send :wait_for_successful_connection
 
       expect(logger).to have_received(:error).with(/Failed to install template/i, anything)
     end
 
-    context 'error raised' do
+# Useless tests because the initialization is completed in #register, so no logging of such kind during the #multi_receive
+    xcontext 'error raised' do
 
       let(:es_version) { '7.8.0' }
       let(:options) { super().merge('data_stream' => 'true', 'ecs_compatibility' => 'v1') }
