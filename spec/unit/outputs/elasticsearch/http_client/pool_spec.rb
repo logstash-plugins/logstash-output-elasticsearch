@@ -201,12 +201,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       end
 
       before :each do
-<<<<<<< HEAD
-        allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil)
-        allow(adapter).to receive(:perform_request).with(anything, :get, subject.healthcheck_path, {}, nil).and_return(version_ok)
-=======
         allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil).and_return(success_response)
->>>>>>> bbbaafb (pool: abort connection if version cannot be determined)
       end
       let(:initial_urls) { [ ::LogStash::Util::SafeURI.new("http://localhost:9200"), ::LogStash::Util::SafeURI.new("http://localhost:9201"), ::LogStash::Util::SafeURI.new("http://localhost:9202") ] }
       let(:success_response) { double("Response", :code => 200)}
@@ -251,7 +246,6 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       ::LogStash::Util::SafeURI.new("http://otherhost:9201")
     ] }
 
-<<<<<<< HEAD
     let(:valid_response) { MockResponse.new(200, {"tagline" => "You Know, for Search",
                                                           "version" => {
                                                             "number" => '7.13.0',
@@ -260,12 +254,6 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
     before(:each) do
       allow(subject).to receive(:perform_request_to_url).and_return(valid_response)
-=======
-    let(:success_response) { double("Response", :code => 200) }
-
-    before(:each) do
-      allow(subject).to receive(:perform_request_to_url).and_return(success_response)
->>>>>>> bbbaafb (pool: abort connection if version cannot be determined)
       subject.start
     end
 
