@@ -57,7 +57,6 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
           expect(url.path).to be_empty
         end
       end
-      
       context "and not setting healthcheck_path" do
         it "performs the healthcheck to the root" do
           expect(adapter).to receive(:perform_request).with(anything, :head, "/", anything, anything) do |url, _, _, _, _|
