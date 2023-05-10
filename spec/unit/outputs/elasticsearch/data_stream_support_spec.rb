@@ -27,9 +27,9 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
     allow(subject).to receive(:ilm_in_use?).and_return nil
 
     # emulate 'successful' ES connection on the same thread
-    allow(subject).to receive(:after_successful_connection) { |&block| block.call }
+#     allow(subject).to receive(:after_successful_connection) { |&block| block.call }
     allow(subject).to receive(:wait_for_connection).and_return true
-    allow(subject).to receive(:stop_after_successful_connection_thread)
+#     allow(subject).to receive(:stop_after_successful_connection_thread)
 
     subject.register
 
@@ -97,7 +97,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
       let(:es_version) { '7.8.0' }
 
-      it "does not print an error (from after_successful_connection thread)" do
+      it "does not print an error" do
         change_constant :LOGSTASH_VERSION, '7.8.1' do
           expect( subject.logger ).to_not receive(:error)
           expect( subject ).to receive(:finish_register).once.and_call_original
@@ -141,7 +141,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
       let(:es_version) { '7.8.1' }
 
-      it "prints an error (from after_successful_connection thread) on LS 8.0" do
+      it "prints an error on LS 8.0" do
         change_constant :LOGSTASH_VERSION, '8.0.0' do
           expect( subject.logger ).to receive(:error).with(/Elasticsearch version does not support data streams/,
                                                            {:es_version=>"7.8.1"})
@@ -294,7 +294,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
 
       let(:es_version) { '6.8.11' }
 
-      it "prints an error (from after_successful_connection thread) on LS 7.x" do
+      it "prints an error on LS 7.x" do
         change_constant :LOGSTASH_VERSION, '7.12.0' do
           expect( subject.logger ).to receive(:error).with(/Elasticsearch version does not support data streams/,
                                                            {:es_version=>"6.8.11"})
@@ -306,7 +306,7 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
         end
       end
 
-      it "prints an error (from after_successful_connection thread) on LS 8.0" do
+      it "prints an error on LS 8.0" do
         change_constant :LOGSTASH_VERSION, '8.0.5' do
           expect( subject.logger ).to receive(:error).with(/Elasticsearch version does not support data streams/,
                                                            {:es_version=>"6.8.11"})

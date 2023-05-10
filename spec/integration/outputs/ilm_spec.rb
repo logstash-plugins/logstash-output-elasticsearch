@@ -201,9 +201,9 @@ shared_examples_for 'an Elasticsearch instance that does not support index lifec
         begin
           subject.register
           finish_register.call
-          sleep(1.5) # wait_for_successful_connection (for the thread to raise)
+#           sleep(1.5) # wait_for_successful_connection (for the thread to raise)
         ensure
-          subject.send :stop_after_successful_connection_thread
+#           subject.send :stop_after_successful_connection_thread
         end
       end.to raise_error(LogStash::ConfigurationError)
     end

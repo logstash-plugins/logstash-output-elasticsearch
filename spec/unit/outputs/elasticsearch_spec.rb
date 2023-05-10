@@ -21,9 +21,9 @@ describe LogStash::Outputs::ElasticSearch do
     allow(described_class::HttpClientBuilder).to receive(:build).with(any_args).and_call_original
   end
 
-  let(:after_successful_connection_thread_mock) do
-    double('after_successful_connection_thread', value: true)
-  end
+#   let(:after_successful_connection_thread_mock) do
+#     double('after_successful_connection_thread', value: true)
+#   end
 
   before(:each) do
     if do_register
@@ -35,7 +35,7 @@ describe LogStash::Outputs::ElasticSearch do
       # emulate 'successful' ES connection on the same thread
 #       allow(subject).to receive(:after_successful_connection) { |&block| block.call }.
 #           and_return after_successful_connection_thread_mock
-      allow(subject).to receive(:stop_after_successful_connection_thread)
+#       allow(subject).to receive(:stop_after_successful_connection_thread)
 
       subject.register
 
@@ -1431,7 +1431,7 @@ describe LogStash::Outputs::ElasticSearch do
       # make successful_connection? return true:
       allow(subject).to receive(:maximum_seen_major_version).and_return Integer(es_version.split('.').first)
       allow(subject).to receive(:alive_urls_count).and_return Integer(1)
-      allow(subject).to receive(:stop_after_successful_connection_thread)
+#       allow(subject).to receive(:stop_after_successful_connection_thread)
     end
 
     it "logs inability to retrieve uuid" do
