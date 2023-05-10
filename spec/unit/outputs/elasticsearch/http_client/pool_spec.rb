@@ -52,6 +52,12 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
       let(:success_response) { double("Response", :code => 200) }
 
+      before(:example) do
+        expect(adapter).to receive(:perform_request).with(anything, :get, "/", anything, anything) do |url, _, _, _, _|
+          expect(url.path).to be_empty
+        end
+      end
+      
       context "and not setting healthcheck_path" do
         it "performs the healthcheck to the root" do
           expect(adapter).to receive(:perform_request).with(anything, :head, "/", anything, anything) do |url, _, _, _, _|
