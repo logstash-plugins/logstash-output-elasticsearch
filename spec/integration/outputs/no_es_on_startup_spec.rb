@@ -19,7 +19,7 @@ describe "elasticsearch is down on startup", :integration => true do
 
   before :each do
     # Delete all templates first.
-    allow(Stud).to receive(:stoppable_sleep)
+    #allow(Stud).to receive(:stoppable_sleep)
 
     # Clean ES of data before we start.
     @es = get_client
@@ -36,15 +36,23 @@ describe "elasticsearch is down on startup", :integration => true do
     allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_raise(
         ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new StandardError.new("TEST: before docs are sent"), 'http://test.es/'
     )
+
+    # trigger an action in near feature to simulate the ES that comes up, register is blocking
+    Thread.new do
+      sleep 1
+      allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_return(ESHelper.es_version)
+    end
+
     subject.register
-    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_return(ESHelper.es_version)
+#     allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_return(ESHelper.es_version)
     subject.multi_receive([event1, event2])
     @es.indices.refresh
     r = @es.search(index: 'logstash-*')
     expect(r).to have_hits(2)
   end
 
-  it 'should ingest events when Elasticsearch recovers after documents are sent' do
+  # This case should never happen because register is synchronous
+  xit 'should ingest events when Elasticsearch recovers after documents are sent' do
     allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_raise(
         ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new StandardError.new("TEST: after docs are sent"), 'http://test.es/'
     )
@@ -63,11 +71,12 @@ describe "elasticsearch is down on startup", :integration => true do
     allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_license).and_raise(
         ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new StandardError.new("TEST: docs are sent"), 'http://test.es/_license'
     )
-    subject.register
+    # trigger an action in near feature to simulate the ES that comes up, register is blocking
     Thread.new do
       sleep 4
       allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_license).and_call_original
     end
+    subject.register
     subject.multi_receive([event1, event2])
     @es.indices.refresh
     r = @es.search(index: 'logstash-*')

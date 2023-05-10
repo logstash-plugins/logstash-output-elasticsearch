@@ -363,7 +363,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     # so no need to explicitly handle it here and return an AbortedBatchException.
     until successful_connection? || @stopping.true?
       @logger.debug("Waiting for connectivity to Elasticsearch cluster, retrying in #{sleep_interval}")
-      puts "Waiting for connectivity to Elasticsearch cluster, retrying in #{sleep_interval}"
+      puts "Waiting for connectivity to Elasticsearch cluster, retrying in #{sleep_interval} @stopping.true? :#{@stopping.true?}"
       sleep_interval = sleep_for_interval(sleep_interval)
     end
     successful_connection?
