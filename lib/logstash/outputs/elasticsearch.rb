@@ -330,11 +330,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @bulk_request_metrics = metric.namespace(:bulk_requests)
     @document_level_metrics = metric.namespace(:documents)
 
-    if ecs_compatibility == :v8
-      @logger.warn("Elasticsearch Output configured with `ecs_compatibility => v8`, which resolved to an UNRELEASED preview of version 8.0.0 of the Elastic Common Schema. " +
-                   "Once ECS v8 and an updated release of this plugin are publicly available, you will need to update this plugin to resolve this warning.")
-    end
-
     @after_successful_connection_thread = after_successful_connection do
       begin
         finish_register
