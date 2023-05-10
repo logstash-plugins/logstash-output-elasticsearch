@@ -205,7 +205,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       end
 
       before :each do
-        allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil).and_return(success_response)
+        allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil)
+        allow(adapter).to receive(:perform_request).with(anything, :get, subject.healthcheck_path, {}, nil).and_return(success_response)
       end
       let(:initial_urls) { [ ::LogStash::Util::SafeURI.new("http://localhost:9200"), ::LogStash::Util::SafeURI.new("http://localhost:9201"), ::LogStash::Util::SafeURI.new("http://localhost:9202") ] }
       let(:success_response) { double("Response", :code => 200)}
