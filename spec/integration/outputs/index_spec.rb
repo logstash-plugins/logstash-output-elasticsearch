@@ -399,10 +399,11 @@ describe "indexing" do
         let(:config) { super().merge 'ssl_supported_protocols' => [ 'TLSv1.2' ] }
 
         let(:initial_events) { nil }
+        let(:do_register) { false }
 
         it "does not ship events" do
           curl_and_get_json_response index_url, method: :put # make sure index exists
-          Thread.start { subject.multi_receive(events) } # we'll be stuck in a retry loop
+          Thread.start { subject.register } # we'll be stuck in a retry loop
           sleep 2.5
 
           curl_and_get_json_response "#{es_url}/_refresh", method: :post
