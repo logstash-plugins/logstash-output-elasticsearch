@@ -198,13 +198,8 @@ shared_examples_for 'an Elasticsearch instance that does not support index lifec
       finish_register = subject.method(:finish_register)
       expect(subject).to receive(:finish_register)
       expect do
-        begin
-          subject.register
-          finish_register.call
-#           sleep(1.5) # wait_for_successful_connection (for the thread to raise)
-        ensure
-#           subject.send :stop_after_successful_connection_thread
-        end
+        subject.register
+        finish_register.call
       end.to raise_error(LogStash::ConfigurationError)
     end
   end

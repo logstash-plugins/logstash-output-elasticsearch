@@ -21,10 +21,6 @@ describe LogStash::Outputs::ElasticSearch do
     allow(described_class::HttpClientBuilder).to receive(:build).with(any_args).and_call_original
   end
 
-#   let(:after_successful_connection_thread_mock) do
-#     double('after_successful_connection_thread', value: true)
-#   end
-
   before(:each) do
     if do_register
       spy_http_client_builder!
@@ -32,10 +28,6 @@ describe LogStash::Outputs::ElasticSearch do
 
       allow(subject).to receive(:finish_register) # stub-out thread completion (to avoid error log entries)
       allow(subject).to receive(:wait_for_connection).and_return true
-      # emulate 'successful' ES connection on the same thread
-#       allow(subject).to receive(:after_successful_connection) { |&block| block.call }.
-#           and_return after_successful_connection_thread_mock
-#       allow(subject).to receive(:stop_after_successful_connection_thread)
 
       subject.register
 
@@ -1431,14 +1423,12 @@ describe LogStash::Outputs::ElasticSearch do
       # make successful_connection? return true:
       allow(subject).to receive(:maximum_seen_major_version).and_return Integer(es_version.split('.').first)
       allow(subject).to receive(:alive_urls_count).and_return Integer(1)
-#       allow(subject).to receive(:stop_after_successful_connection_thread)
     end
 
     it "logs inability to retrieve uuid" do
       allow(subject).to receive(:install_template)
       allow(subject).to receive(:ilm_in_use?).and_return nil
       subject.register
-#       subject.send :wait_for_successful_connection
 
       expect(logger).to have_received(:error).with(/Unable to retrieve Elasticsearch cluster uuid/i, anything)
     end if LOGSTASH_VERSION >= '7.0.0'
@@ -1447,45 +1437,8 @@ describe LogStash::Outputs::ElasticSearch do
       allow(subject).to receive(:discover_cluster_uuid)
       allow(subject).to receive(:ilm_in_use?).and_return nil
       subject.register
-#       subject.send :wait_for_successful_connection
 
       expect(logger).to have_received(:error).with(/Failed to install template/i, anything)
-    end
-
-# Useless tests because the initialization is completed in #register, so no logging of such kind during the #multi_receive
-    xcontext 'error raised' do
-
-      let(:es_version) { '7.8.0' }
-      let(:options) { super().merge('data_stream' => 'true', 'ecs_compatibility' => 'v1') }
-      let(:latch) { Concurrent::CountDownLatch.new }
-
-      before do
-        allow(subject).to receive(:install_template)
-        allow(subject).to receive(:discover_cluster_uuid)
-        allow(subject).to receive(:ilm_in_use?).and_return nil
-        # executes from the after_successful_connection thread :
-        allow(subject).to receive(:finish_register) { latch.wait }.and_call_original
-        subject.register
-      end
-
-      it 'keeps logging on multi_receive' do
-        allow(subject).to receive(:retrying_submit)
-        latch.count_down; sleep(1.0)
-
-        expect_logged_error = lambda do |count|
-          expect(logger).to have_received(:error).with(
-              /Elasticsearch setup did not complete normally, please review previously logged errors/i,
-              hash_including(message:  'A data_stream configuration is only supported since Elasticsearch 7.9.0 (detected version 7.8.0), please upgrade your cluster')
-          ).exactly(count).times
-        end
-
-        subject.multi_receive [ LogStash::Event.new('foo' => 1) ]
-        expect_logged_error.call(1)
-
-        subject.multi_receive [ LogStash::Event.new('foo' => 2) ]
-        expect_logged_error.call(2)
-      end
-
     end
 
     context 'during register/finish_register' do

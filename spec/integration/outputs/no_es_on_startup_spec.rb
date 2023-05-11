@@ -18,9 +18,6 @@ describe "elasticsearch is down on startup", :integration => true do
   }
 
   before :each do
-    # Delete all templates first.
-    #allow(Stud).to receive(:stoppable_sleep)
-
     # Clean ES of data before we start.
     @es = get_client
     @es.indices.delete_template(:name => "*")
@@ -44,23 +41,6 @@ describe "elasticsearch is down on startup", :integration => true do
     end
 
     subject.register
-#     allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_return(ESHelper.es_version)
-    subject.multi_receive([event1, event2])
-    @es.indices.refresh
-    r = @es.search(index: 'logstash-*')
-    expect(r).to have_hits(2)
-  end
-
-  # This case should never happen because register is synchronous
-  xit 'should ingest events when Elasticsearch recovers after documents are sent' do
-    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_raise(
-        ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new StandardError.new("TEST: after docs are sent"), 'http://test.es/'
-    )
-    subject.register
-    Thread.new do
-      sleep 4
-      allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_return(ESHelper.es_version)
-    end
     subject.multi_receive([event1, event2])
     @es.indices.refresh
     r = @es.search(index: 'logstash-*')

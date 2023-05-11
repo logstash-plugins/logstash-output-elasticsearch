@@ -153,23 +153,6 @@ module LogStash; module PluginMixins; module ElasticSearch
       !!maximum_seen_major_version && alive_urls_count > 0
     end
 
-#     # launch a thread that waits for an initial successful connection to the ES cluster to call the given block
-#     # @param block [Proc] the block to execute upon initial successful connection
-#     # @return [Thread] the successful connection wait thread
-#     def after_successful_connection(&block)
-#       Thread.new do
-#         sleep_interval = @retry_initial_interval
-#         # in case of a pipeline's shutdown_requested?, the method #close shutdown also this thread
-#         # so no need to explicitly handle it here and return an AbortedBatchException.
-#         until successful_connection? || @stopping.true?
-#           @logger.debug("Waiting for connectivity to Elasticsearch cluster, retrying in #{sleep_interval}s")
-#           sleep_interval = sleep_for_interval(sleep_interval)
-#         end
-#         block.call if successful_connection?
-#       end
-#     end
-#     private :after_successful_connection
-
     def discover_cluster_uuid
       return unless defined?(plugin_metadata)
       cluster_info = client.get('/')

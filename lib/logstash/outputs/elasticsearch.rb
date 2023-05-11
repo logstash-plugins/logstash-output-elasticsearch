@@ -296,7 +296,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       @silence_errors_in_log = silence_errors_in_log | failure_type_logging_whitelist
     end
 
-#     @after_successful_connection_done = Concurrent::AtomicBoolean.new(false)
     @stopping = Concurrent::AtomicBoolean.new(false)
 
     check_action_validity
@@ -341,20 +340,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       # if we are, the plugin and pipeline are stopping
       @logger.warn("Stopping plugin while waiting for connection during registration")
     end
-
-    #@after_successful_connection_thread = after_successful_connection do
-    #  begin
-    #    finish_register
-    #    true # thread.value
-    #  rescue => e
-    #    # we do not want to halt the thread with an exception as that has consequences for LS
-    #    e # thread.value
-    #  ensure
-    #    @after_successful_connection_done.make_true
-    #  end
-    #end
-    #
-    #wait_for_successful_connection if @after_successful_connection_done
   end
 
   def wait_for_connection
@@ -407,7 +392,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Receive an array of events and immediately attempt to index them (no buffering)
   def multi_receive(events)
-#     wait_for_successful_connection if @after_successful_connection_done
     events_mapped = safe_interpolation_map_events(events)
     retrying_submit(events_mapped.successful_events)
     unless events_mapped.event_mapping_errors.empty?
@@ -452,38 +436,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     safe_interpolation_map_events(events).successful_events
   end
 
-#   def wait_for_successful_connection
-#     after_successful_connection_done = @after_successful_connection_done
-#     return unless after_successful_connection_done
-#     stoppable_sleep 1 until (after_successful_connection_done.true? || pipeline_shutdown_requested?)
-#
-#     if pipeline_shutdown_requested?
-#       logger.info "Aborting the batch due to shutdown request while waiting for connections to become live"
-#       abort_batch_if_available!
-#     end
-#
-#     status = @after_successful_connection_thread && @after_successful_connection_thread.value
-#     if status.is_a?(Exception) # check if thread 'halted' with an error
-#       # keep logging that something isn't right (from every #multi_receive)
-#       @logger.error "Elasticsearch setup did not complete normally, please review previously logged errors",
-#                     message: status.message, exception: status.class
-#     else
-#       @after_successful_connection_done = nil # do not execute __method__ again if all went well
-#     end
-#   end
-#   private :wait_for_successful_connection
-
   def close
     @stopping.make_true if @stopping
-#     stop_after_successful_connection_thread
     @client.close if @client
   end
 
   private
-
-#   def stop_after_successful_connection_thread
-#     @after_successful_connection_thread.join unless @after_successful_connection_thread.nil?
-#   end
 
   # Convert the event into a 3-tuple of action, params and event hash
   def event_action_tuple(event)
