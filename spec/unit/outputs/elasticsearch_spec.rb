@@ -59,8 +59,7 @@ describe LogStash::Outputs::ElasticSearch do
         end
       end
 
-      # this can't happen because the multi_receive doesn't wait anymore for successful connection
-      xit "the #multi_receive abort while waiting on unreachable and a shutdown is requested" do
+      it "the #multi_receive abort while waiting on unreachable and a shutdown is requested" do
         expect { subject.multi_receive(events) }.to raise_error(org.logstash.execution.AbortedBatchException)
         expect(logger).to have_received(:info).with(/Aborting the batch due to shutdown request while waiting for connections to become live/i)
       end
