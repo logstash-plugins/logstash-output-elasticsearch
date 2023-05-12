@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.description     = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using $LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program"
   s.authors         = ["Elastic"]
   s.email           = 'info@elastic.co'
-  s.homepage        = "https://logstash.net"
+  s.homepage        = "https://www.elastic.co/guide/en/logstash/current/index.html"
   s.require_paths = ["lib"]
 
   s.platform = RUBY_PLATFORM
