@@ -203,13 +203,13 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
                                  "build_flavor" => 'default'}
                                })
       end
+      let(:success_response) { double("head_req", :code => 200)}
 
       before :each do
-        allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil)
-        allow(adapter).to receive(:perform_request).with(anything, :get, subject.healthcheck_path, {}, nil).and_return(success_response)
+        allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil).and_return(success_response)
+        allow(adapter).to receive(:perform_request).with(anything, :get, subject.healthcheck_path, {}, nil).and_return(version_ok)
       end
       let(:initial_urls) { [ ::LogStash::Util::SafeURI.new("http://localhost:9200"), ::LogStash::Util::SafeURI.new("http://localhost:9201"), ::LogStash::Util::SafeURI.new("http://localhost:9202") ] }
-      let(:success_response) { double("Response", :code => 200)}
 
       it "should minimize the number of connections to a single URL" do
         connected_urls = []
