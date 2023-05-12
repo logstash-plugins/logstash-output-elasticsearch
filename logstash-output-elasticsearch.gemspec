@@ -1,12 +1,12 @@
 Gem::Specification.new do |s|
   s.name            = 'logstash-output-elasticsearch'
-  s.version         = '11.15.2'
+  s.version         = '11.15.3'
   s.licenses        = ['apache-2.0']
   s.summary         = "Stores logs in Elasticsearch"
   s.description     = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using $LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program"
   s.authors         = ["Elastic"]
   s.email           = 'info@elastic.co'
-  s.homepage        = "http://logstash.net/"
+  s.homepage        = "https://www.elastic.co/guide/en/logstash/current/index.html"
   s.require_paths = ["lib"]
 
   s.platform = RUBY_PLATFORM
