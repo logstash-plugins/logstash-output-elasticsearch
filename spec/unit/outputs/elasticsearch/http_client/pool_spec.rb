@@ -50,6 +50,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
     describe "healthcheck url handling" do
       let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
+      let(:success_response) { double("Response", :code => 200) }
+
       before(:example) do
         expect(adapter).to receive(:perform_request).with(anything, :get, "/", anything, anything) do |url, _, _, _, _|
           expect(url.path).to be_empty
@@ -60,6 +62,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
         it "performs the healthcheck to the root" do
           expect(adapter).to receive(:perform_request).with(anything, :head, "/", anything, anything) do |url, _, _, _, _|
             expect(url.path).to be_empty
+
+            success_response
           end
           expect { subject.healthcheck! }.to raise_error(LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch")
         end
@@ -71,6 +75,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
         it "performs the healthcheck to the healthcheck_path" do
           expect(adapter).to receive(:perform_request).with(anything, :head, eq(healthcheck_path), anything, anything) do |url, _, _, _, _|
             expect(url.path).to be_empty
+
+            success_response
           end
           expect { subject.healthcheck! }.to raise_error(LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch")
         end
@@ -197,9 +203,10 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
                                  "build_flavor" => 'default'}
                                })
       end
+      let(:success_response) { double("head_req", :code => 200)}
 
       before :each do
-        allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil)
+        allow(adapter).to receive(:perform_request).with(anything, :head, subject.healthcheck_path, {}, nil).and_return(success_response)
         allow(adapter).to receive(:perform_request).with(anything, :get, subject.healthcheck_path, {}, nil).and_return(version_ok)
       end
       let(:initial_urls) { [ ::LogStash::Util::SafeURI.new("http://localhost:9200"), ::LogStash::Util::SafeURI.new("http://localhost:9201"), ::LogStash::Util::SafeURI.new("http://localhost:9202") ] }
@@ -225,7 +232,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
         u,m = subject.get_connection
 
         # The resurrectionist will call this to check on the backend
-        response = double("response")
+        response = double("response", :code => 200)
         expect(adapter).to receive(:perform_request).with(u, :head, subject.healthcheck_path, {}, nil).and_return(response)
 
         subject.return_connection(u)

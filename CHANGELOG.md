@@ -1,3 +1,9 @@
+## 11.15.4
+  - Improved connection handling under several partial-failure scenarios [#1130](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1130)
+   - Ensures an HTTP connection can be established before adding the connection to the pool
+   - Ensures that the version of the connected Elasticsearch is retrieved _successfully_ before the connection is added to the pool.
+   - Fixes a crash that could occur when the plugin is configured to connect to a live HTTP resource that is _not_ Elasticsearch
+
 ## 11.15.3
   -  Removes the ECS v8 unreleased preview warning [#1131](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1131)
 
