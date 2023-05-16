@@ -432,7 +432,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     return unless after_successful_connection_done
     stoppable_sleep 1 until (after_successful_connection_done.true? || pipeline_shutdown_requested?)
 
-    if pipeline_shutdown_requested?
+    if pipeline_shutdown_requested? && !after_successful_connection_done.true?
       logger.info "Aborting the batch due to shutdown request while waiting for connections to become live"
       abort_batch_if_available!
     end
