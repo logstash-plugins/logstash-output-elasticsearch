@@ -1,3 +1,6 @@
+## 11.15.5
+  - Fixes `undefined 'shutdown_requested' method` error when plugin checks if shutdown request is received [#1134](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1134)
+
 ## 11.15.4
   - Improved connection handling under several partial-failure scenarios [#1130](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1130)
    - Ensures an HTTP connection can be established before adding the connection to the pool
