@@ -96,16 +96,13 @@ describe LogStash::Outputs::ElasticSearch do
     context "on a reachable ES instance" do
       let(:events) { [ ::LogStash::Event.new("foo" => "bar1"), ::LogStash::Event.new("foo" => "bar2") ] }
 
-      let(:shutdown_value) { true }
-
       let(:logger) { double("logger") }
+
       before(:each) do
         allow(subject).to receive(:logger).and_return(logger)
         allow(logger).to receive(:info)
 
-        allow(subject).to receive(:pipeline_shutdown_requested?) do
-          shutdown_value
-        end
+        allow(subject).to receive(:pipeline_shutdown_requested?).and_return(true)
         allow(subject).to receive(:retrying_submit)
       end
 
