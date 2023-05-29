@@ -107,6 +107,7 @@ describe LogStash::Outputs::ElasticSearch do
       end
 
       it "the #multi_receive doesn't abort when waiting for a connection on alive ES and a shutdown is requested" do
+        subject.multi_receive(events)
         expect(logger).to_not have_received(:info).with(/Aborting the batch due to shutdown request while waiting for connections to become live/i)
       end
     end
