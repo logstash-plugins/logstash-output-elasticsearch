@@ -1,3 +1,6 @@
+## 11.15.6
+  - Fixes a regression introduced in 11.14.0 which could prevent a connection from being established to Elasticsearch in some SSL configurations [#1138](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1138)
+
 ## 11.15.5
   - Fixes `undefined 'shutdown_requested' method` error when plugin checks if shutdown request is received [#1134](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1134)
 
