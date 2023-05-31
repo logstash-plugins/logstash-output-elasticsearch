@@ -58,7 +58,27 @@ describe LogStash::Outputs::ElasticSearch do
 
       let(:logger) { double("logger") }
 
+      let(:never_ending) { Thread.new { sleep 1 while true } }
+
+      let(:do_register) { false }
+
       before(:each) do
+        spy_http_client_builder!
+        stub_http_client_pool!
+
+        allow(subject).to receive(:finish_register) # stub-out thread completion (to avoid error log entries)
+
+        # emulate 'failed' ES connection, which sleeps forever
+        allow(subject).to receive(:after_successful_connection) { |&block| never_ending }
+        allow(subject).to receive(:stop_after_successful_connection_thread)
+
+        subject.register
+
+        allow(subject.client).to receive(:maximum_seen_major_version).at_least(:once).and_return(maximum_seen_major_version)
+        allow(subject.client).to receive(:get_xpack_info)
+
+        subject.client.pool.adapter.manticore.respond_with(:body => "{}")
+
         allow(subject).to receive(:logger).and_return(logger)
         allow(logger).to receive(:info)
 
@@ -70,6 +90,25 @@ describe LogStash::Outputs::ElasticSearch do
       it "the #multi_receive abort while waiting on unreachable and a shutdown is requested" do
         expect { subject.multi_receive(events) }.to raise_error(org.logstash.execution.AbortedBatchException)
         expect(logger).to have_received(:info).with(/Aborting the batch due to shutdown request while waiting for connections to become live/i)
+      end
+    end
+
+    context "on a reachable ES instance" do
+      let(:events) { [ ::LogStash::Event.new("foo" => "bar1"), ::LogStash::Event.new("foo" => "bar2") ] }
+
+      let(:logger) { double("logger") }
+
+      before(:each) do
+        allow(subject).to receive(:logger).and_return(logger)
+        allow(logger).to receive(:info)
+
+        allow(subject).to receive(:pipeline_shutdown_requested?).and_return(true)
+        allow(subject).to receive(:retrying_submit)
+      end
+
+      it "the #multi_receive doesn't abort when waiting for a connection on alive ES and a shutdown is requested" do
+        subject.multi_receive(events)
+        expect(logger).to_not have_received(:info).with(/Aborting the batch due to shutdown request while waiting for connections to become live/i)
       end
     end
 
@@ -116,6 +155,9 @@ describe LogStash::Outputs::ElasticSearch do
         end
 
         it "should exit the retry with an abort exception if shutdown is requested" do
+          # trigger the shutdown signal
+          allow(subject).to receive(:pipeline_shutdown_requested?) { true }
+
           # execute in another thread because it blocks in a retry loop until the shutdown is triggered
           th = Thread.new do
             subject.multi_receive([event])
@@ -123,9 +165,6 @@ describe LogStash::Outputs::ElasticSearch do
             # return exception's class so that it can be verified when retrieving the thread's value
             e.class
           end
-
-          # trigger the shutdown signal
-          allow(subject).to receive(:pipeline_shutdown_requested?) { true }
 
           expect(th.value).to eq(org.logstash.execution.AbortedBatchException)
         end
