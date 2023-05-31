@@ -155,6 +155,9 @@ describe LogStash::Outputs::ElasticSearch do
         end
 
         it "should exit the retry with an abort exception if shutdown is requested" do
+          # trigger the shutdown signal
+          allow(subject).to receive(:pipeline_shutdown_requested?) { true }
+
           # execute in another thread because it blocks in a retry loop until the shutdown is triggered
           th = Thread.new do
             subject.multi_receive([event])
@@ -162,9 +165,6 @@ describe LogStash::Outputs::ElasticSearch do
             # return exception's class so that it can be verified when retrieving the thread's value
             e.class
           end
-
-          # trigger the shutdown signal
-          allow(subject).to receive(:pipeline_shutdown_requested?) { true }
 
           expect(th.value).to eq(org.logstash.execution.AbortedBatchException)
         end
