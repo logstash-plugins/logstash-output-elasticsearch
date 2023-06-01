@@ -144,12 +144,14 @@ module LogStash; module Outputs; class ElasticSearch;
       ssl_verification_mode = params["ssl_verification_mode"]
       unless ssl_verification_mode.nil?
         case ssl_verification_mode
-          when 'none'
-            logger.warn "You have enabled encryption but DISABLED certificate verification, " +
-                          "to make sure your data is secure set `ssl_verification_mode => full`"
-            ssl_options[:verify] = :disable
-          else
-            ssl_options[:verify] = :strict
+        when 'none'
+          logger.warn "You have enabled encryption but DISABLED certificate verification, " +
+                        "to make sure your data is secure set `ssl_verification_mode => full`"
+          ssl_options[:verify] = :disable
+        else
+          # Manticore's :default maps to Apache HTTP Client's DefaultHostnameVerifier,
+          # which is the modern STRICT verifier that replaces the deprecated StrictHostnameVerifier
+          ssl_options[:verify] = :default
         end
       end
 

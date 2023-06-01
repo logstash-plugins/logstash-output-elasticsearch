@@ -1,3 +1,6 @@
+## 11.15.7
+  - Fixes a regression introduced in 11.14.0 which could prevent a connection from being established to Elasticsearch in some SSL configurations [#1138](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1138)
+
 ## 11.15.6
   - Fix: avoid to reject a batch when the Elasticsearch connection is alive and the processing should continue [#1132](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1132).
 
