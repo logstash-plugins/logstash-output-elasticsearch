@@ -1,3 +1,6 @@
+## 11.15.8
+  - Fixes a regression introduced in 11.14.0 which could prevent Logstash 8.8 from establishing a connection to Elasticsearch for Central Management and Monitoring core features [#1141](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1141)
+
 ## 11.15.7
   - Fixes a regression introduced in 11.14.0 which could prevent a connection from being established to Elasticsearch in some SSL configurations [#1138](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1138)
 
