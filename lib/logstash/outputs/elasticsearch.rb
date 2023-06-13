@@ -283,11 +283,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def initialize(*params)
     super
     setup_ecs_compatibility_related_defaults
+    setup_ssl_params!
   end
 
   def register
-    setup_ssl_params!
-
     if !failure_type_logging_whitelist.empty?
       log_message = "'failure_type_logging_whitelist' is deprecated and in a future version of Elasticsearch " +
         "output plugin will be removed, please use 'silence_errors_in_log' instead."
