@@ -180,7 +180,7 @@ module LogStash; module Outputs; class ElasticSearch;
       case response.code
       when 200 # OK
         body = response.body
-        if body[0..40].match?(/"errors":false/) && ENV["SHORT_CIRCUIT"] == "1"
+        if body[0..40].match?(/"errors":false/)
           # fake a successful bulk response
           # {"took":7, "errors": false, "items":[{"index":{"_index":"test","_id":"1","_version":1,"result":"created","forced_refresh":false}}]}
           {"errors": false, "items": []}
