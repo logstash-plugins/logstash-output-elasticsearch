@@ -164,7 +164,9 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
         'data_stream_dataset' => 'any',
         'data_stream_namespace' => 'any',
         'data_stream_sync_fields' => true,
-        'data_stream_auto_routing' => true)
+        'data_stream_auto_routing' => true,
+        'dlq_custom_codes' => [ 404 ],
+        'dlq_on_failed_indexname_interpolation' => false)
       }
 
       it 'should enable data-streams by default' do
