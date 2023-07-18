@@ -1,3 +1,6 @@
+## 11.15.9
+  - allow dlq_ settings when using data streams [#1144](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1144)
+
 ## 11.15.8
   - Fixes a regression introduced in 11.14.0 which could prevent Logstash 8.8 from establishing a connection to Elasticsearch for Central Management and Monitoring core features [#1141](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1141)
 

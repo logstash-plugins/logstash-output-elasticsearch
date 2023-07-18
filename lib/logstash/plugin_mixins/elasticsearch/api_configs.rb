@@ -213,7 +213,15 @@ module LogStash; module PluginMixins; module ElasticSearch
         :retry_initial_interval => { :validate => :number, :default => 2 },
 
         # Set max interval in seconds between bulk retries.
-        :retry_max_interval => { :validate => :number, :default => 64 }
+        :retry_max_interval => { :validate => :number, :default => 64 },
+
+        # List extra HTTP's error codes that are considered valid to move the events into the dead letter queue.
+        # It's considered a configuration error to re-use the same predefined codes for success, DLQ or conflict.
+        # The option accepts a list of natural numbers corresponding to HTTP errors codes.
+        :dlq_custom_codes => { :validate => :number, :list => true, :default => [] },
+
+        # if enabled, failed index name interpolation events go into dead letter queue.
+        :dlq_on_failed_indexname_interpolation => { :validate => :boolean, :default => true }
     }.freeze
 
     def self.included(base)
