@@ -48,6 +48,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       :sniffer_delay => 10,
     }.freeze
 
+    BUILD_FLAVOUR_SERVERLESS = 'serverless'.freeze
+
     def initialize(logger, adapter, initial_urls=[], options={})
       @logger = logger
       @adapter = adapter
@@ -75,6 +77,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @license_checker = options[:license_checker] || LogStash::PluginMixins::ElasticSearch::NoopLicenseChecker::INSTANCE
 
       @last_es_version = Concurrent::AtomicReference.new
+      @build_flavour = Concurrent::AtomicReference.new
     end
 
     def start
@@ -250,7 +253,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           # If no exception was raised it must have succeeded!
           logger.warn("Restored connection to ES instance", url: url.sanitized.to_s)
           # We reconnected to this node, check its ES version
-          es_version = get_es_version(url)
+          version_info = get_es_version(url)
+          es_version = version_info.fetch('number', nil)
+          build_flavour = version_info.fetch('build_flavor', nil)
+
           if es_version.nil?
             logger.warn("Failed to retrieve Elasticsearch version data from connected endpoint, connection aborted", :url => url.sanitized.to_s)
             next
@@ -258,6 +264,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           @state_mutex.synchronize do
             meta[:version] = es_version
             set_last_es_version(es_version, url)
+            set_build_flavour(build_flavour)
 
             alive = @license_checker.appropriate_license?(self, url)
             meta[:state] = alive ? :alive : :dead
@@ -475,7 +482,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
       response = LogStash::Json.load(response.body)
 
-      response.fetch('version', {}).fetch('number', nil)
+      response.fetch('version', {})
     end
 
     def last_es_version
@@ -484,6 +491,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
     def maximum_seen_major_version
       @state_mutex.synchronize { @maximum_seen_major_version }
+    end
+
+    def serverless?
+      @build_flavour.get == BUILD_FLAVOUR_SERVERLESS
     end
 
     private
@@ -513,6 +524,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @logger.warn("Detected a node with a higher major version than previously observed, " +
                    "this could be the result of an Elasticsearch cluster upgrade",
                    previous_major: @maximum_seen_major_version, new_major: major, node_url: url.sanitized.to_s)
+    end
+
+    def set_build_flavour(flavour)
+      @build_flavour.set(flavour)
     end
 
   end

@@ -14,11 +14,18 @@ module LogStash; module Outputs; class ElasticSearch
       return @ilm_actually_enabled if defined?(@ilm_actually_enabled)
       @ilm_actually_enabled =
         begin
-          if @ilm_enabled == 'auto'
+          if serverless?
+            raise LogStash::ConfigurationError, "Invalid ILM configuration `ilm_enabled => true`. " +
+              "Serverless Elasticsearch cluster does not support Index Lifecycle Management." if @ilm_enabled.to_s == 'true'
+            @logger.info("ILM auto configuration (`ilm_enabled => auto` or unset) resolved to `false`. "\
+              "Serverless Elasticsearch cluster does not support Index Lifecycle Management.") if @ilm_enabled == 'auto'
+            false
+          elsif @ilm_enabled == 'auto'
             if ilm_on_by_default?
               ilm_alias_set?
             else
-              @logger.info("Index Lifecycle Management is set to 'auto', but will be disabled - Your Elasticsearch cluster is before 7.0.0, which is the minimum version required to automatically run Index Lifecycle Management")
+              @logger.info("ILM auto configuration (`ilm_enabled => auto` or unset) resolved to `false`."\
+                " Elasticsearch cluster is before 7.0.0, which is the minimum version required to automatically run Index Lifecycle Management")
               false
             end
           elsif @ilm_enabled.to_s == 'true'
