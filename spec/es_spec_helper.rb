@@ -60,14 +60,12 @@ module ESHelper
 
   def self.es_version
     {
-      "version" => {
-        "number" => [
-          nilify(RSpec.configuration.filter[:es_version]),
-          nilify(ENV['ES_VERSION']),
-          nilify(ENV['ELASTIC_STACK_VERSION']),
-        ].compact.first,
-        "build_flavor" => 'default'
-      }
+      "number" => [
+        nilify(RSpec.configuration.filter[:es_version]),
+        nilify(ENV['ES_VERSION']),
+        nilify(ENV['ELASTIC_STACK_VERSION']),
+      ].compact.first,
+      "build_flavor" => 'default'
     }
   end
 
