@@ -6,7 +6,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:logger) { Cabin::Channel.get }
   let(:adapter) { LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter.new(logger, {}) }
   let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
-  let(:options) { {:resurrect_delay => 2, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
+  let(:options) { {:resurrect_delay => 3, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
   let(:es_version_info) { [ { "number" => '0.0.0', "build_flavor" => 'default'} ] }
   let(:license_status) { 'active' }
 
