@@ -278,7 +278,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   describe "build flavour tracking" do
     let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://somehost:9200")] }
 
-    let(:es_version_info) { [ { "number" => '8.9.0', "build_flavor" => LogStash::Outputs::ElasticSearch::HttpClient::Pool::BUILD_FLAVOUR_SERVERLESS } ] }
+    let(:es_version_info) { [ { "number" => '8.9.0', "build_flavor" => "serverless" } ] }
 
     let(:valid_response) { MockResponse.new(200,
                                             {"tagline" => "You Know, for Search",
