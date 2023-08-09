@@ -145,6 +145,10 @@ module LogStash; module PluginMixins; module ElasticSearch
       client.maximum_seen_major_version
     end
 
+    def serverless?
+      client.serverless?
+    end
+
     def alive_urls_count
       client.alive_urls_count
     end

@@ -13,7 +13,10 @@ module LogStash; module Outputs; class ElasticSearch
                            "We recommend either setting `template_api => legacy` to continue providing legacy-style templates, " +
                            "or migrating your template to the composable style and setting `template_api => composable`. " +
                            "The legacy template API is slated for removal in Elasticsearch 9.")
+      elsif plugin.template_api == 'legacy' && plugin.serverless?
+        raise LogStash::ConfigurationError, "Invalid template configuration `template_api => legacy`. Serverless Elasticsearch does not support legacy template API."
       end
+
 
       if plugin.template
         plugin.logger.info("Using mapping template from", :path => plugin.template)
@@ -61,11 +64,13 @@ module LogStash; module Outputs; class ElasticSearch
         plugin.logger.trace("Resolving ILM template settings: under 'settings' key", :template => template, :template_api => plugin.template_api, :es_version => plugin.maximum_seen_major_version)
         legacy_index_template_settings(template)
       else
-        template_endpoint = template_endpoint(plugin)
-        plugin.logger.trace("Resolving ILM template settings: template doesn't have 'settings' or 'template' fields, falling back to auto detection", :template => template, :template_api => plugin.template_api, :es_version => plugin.maximum_seen_major_version, :template_endpoint => template_endpoint)
-        template_endpoint == INDEX_TEMPLATE_ENDPOINT ?
-          composable_index_template_settings(template) :
+        use_index_template_api = index_template_api?(plugin)
+        plugin.logger.trace("Resolving ILM template settings: template doesn't have 'settings' or 'template' fields, falling back to auto detection", :template => template, :template_api => plugin.template_api, :es_version => plugin.maximum_seen_major_version, :index_template_api => use_index_template_api)
+        if use_index_template_api
+          composable_index_template_settings(template)
+        else
           legacy_index_template_settings(template)
+        end
       end
     end
 
@@ -100,12 +105,25 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def self.template_endpoint(plugin)
-      if plugin.template_api == 'auto'
-        plugin.maximum_seen_major_version < 8 ? LEGACY_TEMPLATE_ENDPOINT : INDEX_TEMPLATE_ENDPOINT
-      elsif plugin.template_api.to_s == 'legacy'
-        LEGACY_TEMPLATE_ENDPOINT
+      index_template_api?(plugin) ? INDEX_TEMPLATE_ENDPOINT : LEGACY_TEMPLATE_ENDPOINT
+    end
+
+    def self.index_template_api?(plugin)
+      case plugin.serverless?
+      when true
+        true
       else
-        INDEX_TEMPLATE_ENDPOINT
+        case plugin.template_api
+        when 'auto'
+          plugin.maximum_seen_major_version >= 8
+        when 'composable'
+          true
+        when 'legacy'
+          false
+        else
+          plugin.logger.warn("Invalid template_api value #{plugin.template_api}")
+          true
+        end
       end
     end
 

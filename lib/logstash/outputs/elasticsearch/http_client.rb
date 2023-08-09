@@ -93,6 +93,10 @@ module LogStash; module Outputs; class ElasticSearch;
       @pool.maximum_seen_major_version
     end
 
+    def serverless?
+      @pool.serverless?
+    end
+
     def alive_urls_count
       @pool.alive_urls_count
     end

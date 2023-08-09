@@ -6,8 +6,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   let(:logger) { Cabin::Channel.get }
   let(:adapter) { LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter.new(logger, {}) }
   let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
-  let(:options) { {:resurrect_delay => 2, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
-  let(:es_node_versions) { [ "0.0.0" ] }
+  let(:options) { {:resurrect_delay => 3, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
+  let(:es_version_info) { [ { "number" => '0.0.0', "build_flavor" => 'default'} ] }
   let(:license_status) { 'active' }
 
   subject { described_class.new(logger, adapter, initial_urls, options) }
@@ -22,7 +22,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
     allow(::Manticore::Client).to receive(:new).and_return(manticore_double)
 
-    allow(subject).to receive(:get_es_version).with(any_args).and_return(*es_node_versions)
+    allow(subject).to receive(:get_es_version).with(any_args).and_return(*es_version_info)
     allow(subject.license_checker).to receive(:license_status).and_return(license_status)
   end
 
@@ -267,10 +267,34 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     end
 
     context "if there are nodes with multiple major versions" do
-      let(:es_node_versions) { [ "0.0.0", "6.0.0" ] }
+      let(:es_version_info) { [ { "number" => '0.0.0', "build_flavor" => 'default'}, { "number" => '6.0.0', "build_flavor" => 'default'} ] }
       it "picks the largest major version" do
         expect(subject.maximum_seen_major_version).to eq(6)
       end
+    end
+  end
+
+
+  describe "build flavour tracking" do
+    let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://somehost:9200")] }
+
+    let(:es_version_info) { [ { "number" => '8.9.0', "build_flavor" => "serverless" } ] }
+
+    let(:valid_response) { MockResponse.new(200,
+                                            {"tagline" => "You Know, for Search",
+                                                  "version" => {
+                                                    "number" => '8.9.0',
+                                                    "build_flavor" => LogStash::Outputs::ElasticSearch::HttpClient::Pool::BUILD_FLAVOUR_SERVERLESS} },
+                                            { "X-Elastic-Product" => "Elasticsearch" }
+    ) }
+
+    before(:each) do
+      allow(subject).to receive(:perform_request_to_url).and_return(valid_response)
+      subject.start
+    end
+
+    it "picks the build flavour" do
+      expect(subject.serverless?).to be_truthy
     end
   end
 
@@ -364,7 +388,7 @@ describe "#elasticsearch?" do
   let(:adapter) { double("Manticore Adapter") }
   let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://localhost:9200")] }
   let(:options) { {:resurrect_delay => 2, :url_normalizer => proc {|u| u}} } # Shorten the delay a bit to speed up tests
-  let(:es_node_versions) { [ "0.0.0" ] }
+  let(:es_version_info) { [{ "number" => '0.0.0', "build_flavor" => 'default'}] }
   let(:license_status) { 'active' }
 
   subject { LogStash::Outputs::ElasticSearch::HttpClient::Pool.new(logger, adapter, initial_urls, options) }

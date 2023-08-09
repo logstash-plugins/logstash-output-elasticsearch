@@ -1,3 +1,6 @@
+## 11.16.0
+  - Added support to Serverless Elasticsearch [#1445](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1145)
+
 ## 11.15.9
   - allow dlq_ settings when using data streams [#1144](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1144)
 
