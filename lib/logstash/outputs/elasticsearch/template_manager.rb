@@ -64,9 +64,9 @@ module LogStash; module Outputs; class ElasticSearch
         plugin.logger.trace("Resolving ILM template settings: under 'settings' key", :template => template, :template_api => plugin.template_api, :es_version => plugin.maximum_seen_major_version)
         legacy_index_template_settings(template)
       else
-        use_index_template = index_template?(plugin)
-        plugin.logger.trace("Resolving ILM template settings: template doesn't have 'settings' or 'template' fields, falling back to auto detection", :template => template, :template_api => plugin.template_api, :es_version => plugin.maximum_seen_major_version, :index_template => use_index_template)
-        if use_index_template
+        use_index_template_api = index_template_api?(plugin)
+        plugin.logger.trace("Resolving ILM template settings: template doesn't have 'settings' or 'template' fields, falling back to auto detection", :template => template, :template_api => plugin.template_api, :es_version => plugin.maximum_seen_major_version, :index_template_api => use_index_template_api)
+        if use_index_template_api
           composable_index_template_settings(template)
         else
           legacy_index_template_settings(template)
@@ -105,10 +105,10 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def self.template_endpoint(plugin)
-      index_template?(plugin) ? INDEX_TEMPLATE_ENDPOINT : LEGACY_TEMPLATE_ENDPOINT
+      index_template_api?(plugin) ? INDEX_TEMPLATE_ENDPOINT : LEGACY_TEMPLATE_ENDPOINT
     end
 
-    def self.index_template?(plugin)
+    def self.index_template_api?(plugin)
       case plugin.serverless?
       when true
         true
