@@ -209,7 +209,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def get(path)
-      response = @pool.get(path, nil)
+      response = @pool.get(path)
       LogStash::Json.load(response.body)
     end
 

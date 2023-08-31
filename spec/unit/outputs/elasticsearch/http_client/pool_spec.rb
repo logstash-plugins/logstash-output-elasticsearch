@@ -327,6 +327,36 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     end
   end
 
+  describe "elastic api version header" do
+    let(:eav) { "Elastic-Api-Version" }
+
+    context "when it is serverless" do
+      before(:each) do
+        expect(subject).to receive(:serverless?).and_return(true)
+      end
+
+      it "add the default header" do
+        expect(adapter).to receive(:perform_request).with(anything, :get, "/", anything, anything) do |_, _, _, params, _|
+          expect(params[:headers]).to eq({ "User-Agent" => "chromium",  "Elastic-Api-Version" => "2023-10-31"})
+        end
+        subject.perform_request_to_url(initial_urls, :get, "/", { :headers => { "User-Agent" => "chromium" }} )
+      end
+    end
+
+    context "when it is stateful" do
+      before(:each) do
+        expect(subject).to receive(:serverless?).and_return(false)
+      end
+
+      it "add the default header" do
+        expect(adapter).to receive(:perform_request).with(anything, :get, "/", anything, anything) do |_, _, _, params, _|
+          expect(params[:headers]).to be_nil
+        end
+        subject.perform_request_to_url(initial_urls, :get, "/" )
+      end
+    end
+  end
+
   # TODO: extract to ElasticSearchOutputLicenseChecker unit spec
   describe "license checking with ElasticSearchOutputLicenseChecker" do
     let(:options) do
