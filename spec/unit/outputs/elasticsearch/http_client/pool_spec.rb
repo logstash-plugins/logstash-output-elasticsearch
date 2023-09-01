@@ -275,7 +275,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
   end
 
 
-  describe "build flavour tracking" do
+  describe "build flavor tracking" do
     let(:initial_urls) { [::LogStash::Util::SafeURI.new("http://somehost:9200")] }
 
     let(:es_version_info) { [ { "number" => '8.9.0', "build_flavor" => "serverless" } ] }
@@ -284,7 +284,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
                                             {"tagline" => "You Know, for Search",
                                                   "version" => {
                                                     "number" => '8.9.0',
-                                                    "build_flavor" => LogStash::Outputs::ElasticSearch::HttpClient::Pool::BUILD_FLAVOUR_SERVERLESS} },
+                                                    "build_flavor" => LogStash::Outputs::ElasticSearch::HttpClient::Pool::BUILD_FLAVOR_SERVERLESS} },
                                             { "X-Elastic-Product" => "Elasticsearch" }
     ) }
 
@@ -293,7 +293,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       subject.start
     end
 
-    it "picks the build flavour" do
+    it "picks the build flavor" do
       expect(subject.serverless?).to be_truthy
     end
   end

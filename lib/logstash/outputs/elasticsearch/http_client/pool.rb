@@ -48,7 +48,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       :sniffer_delay => 10,
     }.freeze
 
-    BUILD_FLAVOUR_SERVERLESS = 'serverless'.freeze
+    BUILD_FLAVOR_SERVERLESS = 'serverless'.freeze
     DEFAULT_EAV_HEADER = { "Elastic-Api-Version" => "2023-10-31" }.freeze
 
     def initialize(logger, adapter, initial_urls=[], options={})
@@ -78,7 +78,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @license_checker = options[:license_checker] || LogStash::PluginMixins::ElasticSearch::NoopLicenseChecker::INSTANCE
 
       @last_es_version = Concurrent::AtomicReference.new
-      @build_flavour = Concurrent::AtomicReference.new
+      @build_flavor = Concurrent::AtomicReference.new
     end
 
     def start
@@ -256,7 +256,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           # We reconnected to this node, check its ES version
           version_info = get_es_version(url)
           es_version = version_info.fetch('number', nil)
-          build_flavour = version_info.fetch('build_flavor', nil)
+          build_flavor = version_info.fetch('build_flavor', nil)
 
           if es_version.nil?
             logger.warn("Failed to retrieve Elasticsearch version data from connected endpoint, connection aborted", :url => url.sanitized.to_s)
@@ -265,7 +265,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           @state_mutex.synchronize do
             meta[:version] = es_version
             set_last_es_version(es_version, url)
-            set_build_flavour(build_flavour)
+            set_build_flavor(build_flavor)
 
             alive = @license_checker.appropriate_license?(self, url)
             meta[:state] = alive ? :alive : :dead
@@ -496,7 +496,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def serverless?
-      @build_flavour.get == BUILD_FLAVOUR_SERVERLESS
+      @build_flavor.get == BUILD_FLAVOR_SERVERLESS
     end
 
     private
@@ -528,8 +528,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
                    previous_major: @maximum_seen_major_version, new_major: major, node_url: url.sanitized.to_s)
     end
 
-    def set_build_flavour(flavour)
-      @build_flavour.set(flavour)
+    def set_build_flavor(flavor)
+      @build_flavor.set(flavor)
     end
 
   end
