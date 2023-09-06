@@ -1,3 +1,6 @@
+## 11.17.0
+  - Added support to http compression level. `http_compression` accepts `true`, `false` and 1 to 9 as compression level.
+
 ## 11.16.0
   - Added support to Serverless Elasticsearch [#1445](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1145)
 
