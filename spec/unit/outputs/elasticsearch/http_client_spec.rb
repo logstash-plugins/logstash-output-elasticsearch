@@ -183,6 +183,25 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     end
   end
 
+  describe "http_compression?" do
+    subject { described_class.new(base_options) }
+    let(:base_options) { super().merge(:client_settings => {:http_compression => http_compression}) }
+
+    context "with client_settings `http_compression => 6`" do
+      let(:http_compression) { 6 }
+      it "gives true" do
+        expect(subject.http_compression?).to be_truthy
+      end
+    end
+
+    context "with client_settings `http_compression => false`" do
+      let(:http_compression) { false }
+      it "gives false" do
+        expect(subject.http_compression?).to be_falsey
+      end
+    end
+  end
+
   describe "#bulk" do
     subject(:http_client) { described_class.new(base_options) }
 
