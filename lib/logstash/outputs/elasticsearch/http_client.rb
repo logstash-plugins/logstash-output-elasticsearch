@@ -118,7 +118,7 @@ module LogStash; module Outputs; class ElasticSearch;
       end
 
       body_stream = StringIO.new
-      if http_compression
+      if http_compression?
         body_stream.set_encoding "BINARY"
         stream_writer = gzip_writer(body_stream)
       else
@@ -141,14 +141,14 @@ module LogStash; module Outputs; class ElasticSearch;
                        :batch_offset => (index + 1 - batch_actions.size))
           bulk_responses << bulk_send(body_stream, batch_actions)
           body_stream.truncate(0) && body_stream.seek(0)
-          stream_writer = gzip_writer(body_stream) if http_compression
+          stream_writer = gzip_writer(body_stream) if http_compression?
           batch_actions.clear
         end
         stream_writer.write(as_json)
         batch_actions << action
       end
 
-      stream_writer.close if http_compression
+      stream_writer.close if http_compression?
 
       logger.debug("Sending final bulk request for batch.",
                    :action_count => batch_actions.size,
@@ -157,7 +157,7 @@ module LogStash; module Outputs; class ElasticSearch;
                    :batch_offset => (actions.size - batch_actions.size))
       bulk_responses << bulk_send(body_stream, batch_actions) if body_stream.size > 0
 
-      body_stream.close if !http_compression
+      body_stream.close unless http_compression?
       join_bulk_responses(bulk_responses)
     end
 
@@ -165,7 +165,7 @@ module LogStash; module Outputs; class ElasticSearch;
       fail(ArgumentError, "Cannot create gzip writer on IO with unread bytes") unless io.eof?
       fail(ArgumentError, "Cannot create gzip writer on non-empty IO") unless io.pos == 0
 
-      Zlib::GzipWriter.new(io, Zlib::DEFAULT_COMPRESSION, Zlib::DEFAULT_STRATEGY)
+      Zlib::GzipWriter.new(io, client_settings.fetch(:http_compression), Zlib::DEFAULT_STRATEGY)
     end
 
     def join_bulk_responses(bulk_responses)
@@ -176,7 +176,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def bulk_send(body_stream, batch_actions)
-      params = http_compression ? {:headers => {"Content-Encoding" => "gzip"}} : {}
+      params = http_compression? ? {:headers => {"Content-Encoding" => "gzip"}} : {}
       response = @pool.post(@bulk_path, params, body_stream.string)
 
       @bulk_response_metrics.increment(response.code.to_s)
@@ -298,8 +298,9 @@ module LogStash; module Outputs; class ElasticSearch;
       @_ssl_options ||= client_settings.fetch(:ssl, {})
     end
 
-    def http_compression
-      client_settings.fetch(:http_compression, false)
+    # return true if http_compression is [1..9] or true
+    def http_compression?
+      !(client_settings.fetch(:http_compression, false).to_s == "false")
     end
 
     def build_adapter(options)

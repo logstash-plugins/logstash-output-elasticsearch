@@ -368,6 +368,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         params['proxy'] = proxy # do not do resolving again
       end
     end
+
+    params['http_compression'] = DEFAULT_ZIP_LEVEL if params['http_compression'].to_s == "true" # set compression level to 6 for backward compatibility
+
     super(params)
   end
 
