@@ -474,7 +474,7 @@ describe LogStash::Outputs::ElasticSearch do
 
     context "unexpected bulk response" do
       let(:options) do
-        { "hosts" => "127.0.0.1:9999", "index" => "%{foo}", "manage_template" => false }
+        { "hosts" => "127.0.0.1:9999", "index" => "%{foo}", "manage_template" => false, "http_compression" => false }
       end
 
       let(:events) { [ ::LogStash::Event.new("foo" => "bar1"), ::LogStash::Event.new("foo" => "bar2") ] }
@@ -624,6 +624,7 @@ describe LogStash::Outputs::ElasticSearch do
   end
 
   context '413 errors' do
+    let(:options) { super().merge("http_compression" => "false") }
     let(:payload_size) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES + 1024 }
     let(:event) { ::LogStash::Event.new("message" => ("a" * payload_size ) ) }
 
@@ -1558,23 +1559,26 @@ describe LogStash::Outputs::ElasticSearch do
   end
 
   describe "http compression" do
-    context "with `http_compression` => true" do
-      let(:options) { super().merge('http_compression' => true) }
-      it "set compression level to 6" do
-        subject.register
-        expect(subject.instance_variable_get(:@http_compression)).to eq(6)
-      end
-    end
-
-    [false, 1].each do |config|
-      context "with `http_compression` => #{config}" do
-        let(:options) { super().merge('http_compression' => config) }
-        it "keeps the setting" do
+    describe "initialize setting" do
+      context "with `http_compression` => true" do
+        let(:options) { super().merge('http_compression' => true) }
+        it "set compression level to 6" do
           subject.register
-          expect(subject.instance_variable_get(:@http_compression)).to eq(config)
+          expect(subject.instance_variable_get(:@http_compression)).to eq(6)
+        end
+      end
+
+      [false, 1].each do |config|
+        context "with `http_compression` => #{config}" do
+          let(:options) { super().merge('http_compression' => config) }
+          it "keeps the setting" do
+            subject.register
+            expect(subject.instance_variable_get(:@http_compression)).to eq(config)
+          end
         end
       end
     end
+
   end
 
   @private
