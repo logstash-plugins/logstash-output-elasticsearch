@@ -187,7 +187,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         :validate_after_inactivity => { :validate => :number, :default => 10000 },
 
         # Enable gzip compression on requests. Note that response compression is on by default for Elasticsearch v5.0 and beyond
-        :http_compression => { :validate => [ "true", "false", true, false, 1, 2, 3, 4, 5, 6, 7, 8, 9 ], :default => false },
+        :http_compression => { :validate => [ "true", "false", true, false, 1, 2, 3, 4, 5, 6, 7, 8, 9 ], :default => DEFAULT_ZIP_LEVEL },
 
         # Custom Headers to send on each request to elasticsearch nodes
         :custom_headers => { :validate => :hash, :default => {} },
