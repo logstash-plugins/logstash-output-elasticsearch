@@ -8,7 +8,7 @@ module LogStash; module Outputs; class ElasticSearch;
         :pool_max => params["pool_max"],
         :pool_max_per_route => params["pool_max_per_route"],
         :check_connection_timeout => params["validate_after_inactivity"],
-        :http_compression => params["http_compression"],
+        :compression_level => params["compression_level"],
         :headers => params["custom_headers"] || {}
       }
       

@@ -1562,9 +1562,9 @@ describe LogStash::Outputs::ElasticSearch do
     describe "initialize setting" do
       context "with `http_compression` => true" do
         let(:options) { super().merge('http_compression' => true) }
-        it "set compression level to 6" do
+        it "set compression level to 1" do
           subject.register
-          expect(subject.instance_variable_get(:@http_compression)).to eq(6)
+          expect(subject.instance_variable_get(:@compression_level)).to eq(1)
         end
       end
 
@@ -1572,16 +1572,16 @@ describe LogStash::Outputs::ElasticSearch do
         let(:options) { super().merge('http_compression' => false) }
         it "set compression level to 0" do
           subject.register
-          expect(subject.instance_variable_get(:@http_compression)).to eq(0)
+          expect(subject.instance_variable_get(:@compression_level)).to eq(0)
         end
       end
 
       [0, 9].each do |config|
-        context "with `http_compression` => #{config}" do
-          let(:options) { super().merge('http_compression' => config) }
+        context "with `compression_level` => #{config}" do
+          let(:options) { super().merge('compression_level' => config) }
           it "keeps the setting" do
             subject.register
-            expect(subject.instance_variable_get(:@http_compression)).to eq(config)
+            expect(subject.instance_variable_get(:@compression_level)).to eq(config)
           end
         end
       end

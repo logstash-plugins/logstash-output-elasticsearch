@@ -276,6 +276,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     super
     setup_ecs_compatibility_related_defaults
     setup_ssl_params!
+    setup_compression_level!
   end
 
   def register
@@ -368,10 +369,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         params['proxy'] = proxy # do not do resolving again
       end
     end
-
-    # for backward compatibility, set compression level to 6 when true, and 0 when false
-    params['http_compression'] = DEFAULT_ZIP_LEVEL if params['http_compression'].to_s == "true"
-    params['http_compression'] = 0 if params['http_compression'].to_s == "false"
 
     super(params)
   end
@@ -672,6 +669,20 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     params['ssl_truststore_path'] = @ssl_truststore_path unless @ssl_truststore_path.nil?
     params['ssl_truststore_password'] = @ssl_truststore_password unless @ssl_truststore_password.nil?
     params['ssl_verification_mode'] = @ssl_verification_mode unless @ssl_verification_mode.nil?
+  end
+
+  def setup_compression_level!
+    @compression_level = normalize_config(:compression_level) do |normalize|
+      normalize.with_deprecated_mapping(:http_compression) do |http_compression|
+        if http_compression == true
+          DEFAULT_ZIP_LEVEL
+        else
+          0
+        end
+      end
+    end
+
+    params['compression_level'] = @compression_level unless @compression_level.nil?
   end
 
   # To be overidden by the -java version

@@ -310,6 +310,7 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-ca_trusted_fingerprint>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-cloud_auth>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-cloud_id>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-compression_level>> |<<number,number>>, one of `[0 ~ 9]`|No
 | <<plugins-{type}s-{plugin}-custom_headers>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-data_stream>> |<<string,string>>, one of `["true", "false", "auto"]`|No
 | <<plugins-{type}s-{plugin}-data_stream_auto_routing>> |<<boolean,boolean>>|No
@@ -326,7 +327,7 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-failure_type_logging_whitelist>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-healthcheck_path>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-hosts>> |<<uri,uri>>|No
-| <<plugins-{type}s-{plugin}-http_compression>> |<<string,string>>, one of `["true", "false", "0" ~ "9"]`|No
+| <<plugins-{type}s-{plugin}-http_compression>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-ilm_enabled>> |<<string,string>>, one of `["true", "false", "auto"]`|No
 | <<plugins-{type}s-{plugin}-ilm_pattern>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-ilm_policy>> |<<string,string>>|No
@@ -458,6 +459,19 @@ Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
 
 For more details, check out the
 {logstash-ref}/connecting-to-cloud.html[Logstash-to-Cloud documentation].
+
+[id="plugins-{type}s-{plugin}-compression_level"]
+===== `compression_level`
+
+  * Value can be any of: `0`, `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`
+  * Default value is `0`
+
+The gzip compression level. Setting this value to `0` disables compression.
+The compression level must be in the range of `1` (best speed) to `9` (best compression).
+
+Increasing the compression level will reduce the network usage but will increase the cpu usage.
+
+The default value is `0`.
 
 [id="plugins-{type}s-{plugin}-data_stream"]
 ===== `data_stream`
@@ -660,13 +674,12 @@ Any special characters present in the URLs here MUST be URL escaped! This means
 [id="plugins-{type}s-{plugin}-http_compression"]
 ===== `http_compression`
 
-  * Value can be any of: `true`, `false`, `0`, 1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`
-  * Default value is `0`
+  * Value type is <<boolean,boolean>>
+  * Default value is `false`
 
-Setting the flag to `true` enable gzip compression on requests and use compression level `6`.
-Setting the flag to `false` or `0` disable gzip compression.
+deprecated[11.17.0, Replaced by <<plugins-{type}s-{plugin}-compression_level>>]
 
-Number `1` (best speed) to `9` (best compression) are the gzip compression level.
+Setting `true` enables gzip compression level 6 on requests.
 
 This setting allows you to reduce this plugin's outbound network traffic by
 compressing each bulk _request_ to {es}.

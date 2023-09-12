@@ -7,7 +7,7 @@ module LogStash; module PluginMixins; module ElasticSearch
     # This module defines common options that can be reused by alternate elasticsearch output plugins such as the elasticsearch_data_streams output.
 
     DEFAULT_HOST = ::LogStash::Util::SafeURI.new("//127.0.0.1")
-    DEFAULT_ZIP_LEVEL = 6 # default zip level if http compression is enabled
+    DEFAULT_ZIP_LEVEL = 1
 
     CONFIG_PARAMS = {
         # Username to authenticate to a secure Elasticsearch cluster
@@ -187,12 +187,14 @@ module LogStash; module PluginMixins; module ElasticSearch
         :validate_after_inactivity => { :validate => :number, :default => 10000 },
 
         # Enable gzip compression on requests. Note that response compression is on by default for Elasticsearch v5.0 and beyond
-        # Set `true` to enable compression with level 6
+        # Set `true` to enable compression with level 1
         # Set `false` to disable compression with level 0
+        :http_compression => { :validate => :boolean, :default => true, :deprecated => "Set 'compression_level' instead." },
+
         # Number `1` ~ `9` are the gzip compression level
         # Set `0` to disable compression
         # Set `1` (best speed) to `9` (best compression) to use compression
-        :http_compression => { :validate => [ "true", "false", true, false, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ], :default => 0 },
+        :compression_level => { :validate => [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ], :default => DEFAULT_ZIP_LEVEL },
 
         # Custom Headers to send on each request to elasticsearch nodes
         :custom_headers => { :validate => :hash, :default => {} },
