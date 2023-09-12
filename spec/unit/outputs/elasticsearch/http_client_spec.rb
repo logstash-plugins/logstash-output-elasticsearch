@@ -194,8 +194,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       end
     end
 
-    context "with client_settings `http_compression => false`" do
-      let(:http_compression) { false }
+    context "with client_settings `http_compression => 0`" do
+      let(:http_compression) { 0 }
       it "gives false" do
         expect(subject.http_compression?).to be_falsey
       end
@@ -211,13 +211,14 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message}],
     ]}
 
-    [1, 9, false].each do |http_compression|
+    [0, 9].each do |http_compression|
       context "with `http_compression => #{http_compression}`" do
 
         let(:base_options) { super().merge(:client_settings => {:http_compression => http_compression}) }
+        let(:http_compression_enabled) { http_compression > 0 }
 
         before(:each) do
-          if !!http_compression
+          if http_compression_enabled
             expect(http_client).to receive(:gzip_writer).at_least(:once).and_call_original
           else
             expect(http_client).to_not receive(:gzip_writer)
@@ -231,7 +232,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
           it "should be handled properly" do
             allow(subject).to receive(:join_bulk_responses)
             expect(subject).to receive(:bulk_send).once do |data|
-              if !http_compression
+              if !http_compression_enabled
                 expect(data.size).to be > target_bulk_bytes
               else
                 expect(Zlib::gunzip(data.string).size).to be > target_bulk_bytes

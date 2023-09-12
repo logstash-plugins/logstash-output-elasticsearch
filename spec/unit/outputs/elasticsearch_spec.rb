@@ -1568,7 +1568,15 @@ describe LogStash::Outputs::ElasticSearch do
         end
       end
 
-      [false, 1].each do |config|
+      context "with `http_compression` => false" do
+        let(:options) { super().merge('http_compression' => false) }
+        it "set compression level to 0" do
+          subject.register
+          expect(subject.instance_variable_get(:@http_compression)).to eq(0)
+        end
+      end
+
+      [0, 9].each do |config|
         context "with `http_compression` => #{config}" do
           let(:options) { super().merge('http_compression' => config) }
           it "keeps the setting" do

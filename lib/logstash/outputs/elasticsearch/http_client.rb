@@ -298,9 +298,10 @@ module LogStash; module Outputs; class ElasticSearch;
       @_ssl_options ||= client_settings.fetch(:ssl, {})
     end
 
-    # return true if http_compression is [1..9] or true
+    # return true if http_compression is [1..9]
+    # return false if it is 0
     def http_compression?
-      !(client_settings.fetch(:http_compression, false).to_s == "false")
+      client_settings.fetch(:http_compression, 0) > 0
     end
 
     def build_adapter(options)

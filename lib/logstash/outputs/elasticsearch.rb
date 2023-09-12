@@ -369,7 +369,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       end
     end
 
-    params['http_compression'] = DEFAULT_ZIP_LEVEL if params['http_compression'].to_s == "true" # set compression level to 6 for backward compatibility
+    # for backward compatibility, set compression level to 6 when true, and 0 when false
+    params['http_compression'] = DEFAULT_ZIP_LEVEL if params['http_compression'].to_s == "true"
+    params['http_compression'] = 0 if params['http_compression'].to_s == "false"
 
     super(params)
   end
