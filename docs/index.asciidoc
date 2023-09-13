@@ -277,9 +277,9 @@ not reevaluate its DNS value while the keepalive is in effect.
 ==== HTTP Compression
 
 This plugin always reads compressed responses from {es}.
-It _can be configured_ to send compressed bulk requests to {es}.
+By default, it sends compressed bulk requests to {es}.
 
-If you are concerned about bandwidth, you can enable <<plugins-{type}s-{plugin}-http_compression>> to trade a small amount of CPU capacity for a significant reduction in network IO.
+If you are concerned about bandwidth, you can set a higher <<plugins-{type}s-{plugin}-compression_level>> to trade CPU capacity for a reduction in network IO.
 
 ==== Authentication
 
@@ -464,14 +464,12 @@ For more details, check out the
 ===== `compression_level`
 
   * Value can be any of: `0`, `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`
-  * Default value is `0`
+  * Default value is `1`
 
 The gzip compression level. Setting this value to `0` disables compression.
 The compression level must be in the range of `1` (best speed) to `9` (best compression).
 
 Increasing the compression level will reduce the network usage but will increase the cpu usage.
-
-The default value is `0`.
 
 [id="plugins-{type}s-{plugin}-data_stream"]
 ===== `data_stream`
@@ -632,7 +630,7 @@ NOTE: Deprecated, refer to <<plugins-{type}s-{plugin}-silence_errors_in_log>>.
 Pass a set of key value pairs as the headers sent in each request to
 an elasticsearch node. The headers will be used for any kind of request
 (_bulk request, template installation, health checks and sniffing).
-These custom headers will be overidden by settings like `http_compression`.
+These custom headers will be overidden by settings like `compression_level`.
 
 [id="plugins-{type}s-{plugin}-healthcheck_path"]
 ===== `healthcheck_path`
@@ -679,7 +677,7 @@ Any special characters present in the URLs here MUST be URL escaped! This means
 
 deprecated[11.17.0, Replaced by <<plugins-{type}s-{plugin}-compression_level>>]
 
-Setting `true` enables gzip compression level 6 on requests.
+Setting `true` enables gzip compression level 1 on requests.
 
 This setting allows you to reduce this plugin's outbound network traffic by
 compressing each bulk _request_ to {es}.
