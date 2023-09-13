@@ -44,6 +44,19 @@ ensure your template uses the `_doc` document-type before
 connecting to Elasticsearch 7.x.
 ================================================================================
 
+[id="plugins-{type}s-{plugin}-serverless"]
+
+.Logstash to {serverless-full}
+****
+If you are sending data from {ls} to {serverless-full}, note these differences from {ess} and self-managed {es}:
+
+* {serverless-full} uses data streams and Data Lifecycle Management (DLM) instead of Index Lifecycle Management (ILM). 
+Any ILM settings in your <<plugins-outputs-elasticsearch,{es} output plugin>> configuration are ignored and may cause errors.
+* Use API keys to access {serverless-full} from {ls}. 
+Any user-based security settings in your in your <<plugins-outputs-elasticsearch,{es} output plugin>> configuration are ignored and may cause errors.
+* Logstash monitoring for {serverless-full} is still under development.
+****
+
 ===== Hosted {es} Service on Elastic Cloud
 
 {ess-leadin}
@@ -68,8 +81,8 @@ and will correctly reject events with fields that conflict and cannot be coerced
 The {es} output plugin can store both time series datasets (such
 as logs, events, and metrics) and non-time series data in Elasticsearch.
 
-The data stream options are recommended for indexing time series datasets (such
-as logs, metrics, and events) into {es}:
+Use the data stream options for indexing time series datasets (such
+as logs, metrics, and events) into {es} and {serverless-full}:
 
 * <<plugins-{type}s-{plugin}-data_stream>>
 * <<plugins-{type}s-{plugin}-data_stream_auto_routing>> 
@@ -203,10 +216,14 @@ but should be used only in motivated cases.
 ==== Index Lifecycle Management
 
 [NOTE]
-The Index Lifecycle Management feature requires plugin version `9.3.1` or higher.
+--
+* The ILM feature does not apply for {serverless-full}. 
+Any ILM settings in your plugin configuration are ignored and may cause errors.
+* The Index Lifecycle Management feature requires plugin version `9.3.1` or higher.
+* This feature requires an Elasticsearch instance of 6.6.0 or higher with at least a Basic license
 
-[NOTE]
-This feature requires an Elasticsearch instance of 6.6.0 or higher with at least a Basic license
+
+--
 
 Logstash can use {ref}/index-lifecycle-management.html[Index Lifecycle
 Management] to automate the management of indices over time.
@@ -246,14 +263,15 @@ See config below for an example:
       }
     }
 
-NOTE: Custom ILM policies must already exist on the Elasticsearch cluster before they can be used.
 
-NOTE: If the rollover alias or pattern is modified, the index template will need to be
+[NOTE]
+--
+* Custom ILM policies must already exist on the Elasticsearch cluster before they can be used.
+* If the rollover alias or pattern is modified, the index template will need to be
 overwritten as the settings `index.lifecycle.name` and
 `index.lifecycle.rollover_alias` are automatically written to the template
-
-NOTE: If the index property is supplied in the output definition, it will be overwritten by the rollover alias.
-
+* If the index property is supplied in the output definition, it will be overwritten by the rollover alias.
+--
 
 ==== Batch Sizes
 
