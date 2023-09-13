@@ -1,5 +1,5 @@
 ## 11.17.0
-  - Added support to http compression level. Deprecated `http_compression` in favour of `compression_level` [#1148](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1148)
+  - Added support to http compression level. Deprecated `http_compression` in favour of `compression_level` and enabled compression level 1 by default. [#1148](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1148)
 
 ## 11.16.0
   - Added support to Serverless Elasticsearch [#1445](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1145)
