@@ -474,7 +474,7 @@ describe LogStash::Outputs::ElasticSearch do
 
     context "unexpected bulk response" do
       let(:options) do
-        { "hosts" => "127.0.0.1:9999", "index" => "%{foo}", "manage_template" => false }
+        { "hosts" => "127.0.0.1:9999", "index" => "%{foo}", "manage_template" => false, "http_compression" => false }
       end
 
       let(:events) { [ ::LogStash::Event.new("foo" => "bar1"), ::LogStash::Event.new("foo" => "bar2") ] }
@@ -624,6 +624,7 @@ describe LogStash::Outputs::ElasticSearch do
   end
 
   context '413 errors' do
+    let(:options) { super().merge("http_compression" => "false") }
     let(:payload_size) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES + 1024 }
     let(:event) { ::LogStash::Event.new("message" => ("a" * payload_size ) ) }
 
@@ -1555,6 +1556,37 @@ describe LogStash::Outputs::ElasticSearch do
       end
 
     end
+  end
+
+  describe "http compression" do
+    describe "initialize setting" do
+      context "with `http_compression` => true" do
+        let(:options) { super().merge('http_compression' => true) }
+        it "set compression level to 1" do
+          subject.register
+          expect(subject.instance_variable_get(:@compression_level)).to eq(1)
+        end
+      end
+
+      context "with `http_compression` => false" do
+        let(:options) { super().merge('http_compression' => false) }
+        it "set compression level to 0" do
+          subject.register
+          expect(subject.instance_variable_get(:@compression_level)).to eq(0)
+        end
+      end
+
+      [0, 9].each do |config|
+        context "with `compression_level` => #{config}" do
+          let(:options) { super().merge('compression_level' => config) }
+          it "keeps the setting" do
+            subject.register
+            expect(subject.instance_variable_get(:@compression_level)).to eq(config)
+          end
+        end
+      end
+    end
+
   end
 
   @private

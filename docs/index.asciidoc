@@ -277,9 +277,9 @@ not reevaluate its DNS value while the keepalive is in effect.
 ==== HTTP Compression
 
 This plugin always reads compressed responses from {es}.
-It _can be configured_ to send compressed bulk requests to {es}.
+By default, it sends compressed bulk requests to {es}.
 
-If you are concerned about bandwidth, you can enable <<plugins-{type}s-{plugin}-http_compression>> to trade a small amount of CPU capacity for a significant reduction in network IO.
+If you are concerned about bandwidth, you can set a higher <<plugins-{type}s-{plugin}-compression_level>> to trade CPU capacity for a reduction in network IO.
 
 ==== Authentication
 
@@ -310,6 +310,7 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-ca_trusted_fingerprint>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-cloud_auth>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-cloud_id>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-compression_level>> |<<number,number>>, one of `[0 ~ 9]`|No
 | <<plugins-{type}s-{plugin}-custom_headers>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-data_stream>> |<<string,string>>, one of `["true", "false", "auto"]`|No
 | <<plugins-{type}s-{plugin}-data_stream_auto_routing>> |<<boolean,boolean>>|No
@@ -458,6 +459,17 @@ Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
 
 For more details, check out the
 {logstash-ref}/connecting-to-cloud.html[Logstash-to-Cloud documentation].
+
+[id="plugins-{type}s-{plugin}-compression_level"]
+===== `compression_level`
+
+  * Value can be any of: `0`, `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`
+  * Default value is `1`
+
+The gzip compression level. Setting this value to `0` disables compression.
+The compression level must be in the range of `1` (best speed) to `9` (best compression).
+
+Increasing the compression level will reduce the network usage but will increase the CPU usage.
 
 [id="plugins-{type}s-{plugin}-data_stream"]
 ===== `data_stream`
@@ -618,7 +630,7 @@ NOTE: Deprecated, refer to <<plugins-{type}s-{plugin}-silence_errors_in_log>>.
 Pass a set of key value pairs as the headers sent in each request to
 an elasticsearch node. The headers will be used for any kind of request
 (_bulk request, template installation, health checks and sniffing).
-These custom headers will be overidden by settings like `http_compression`.
+These custom headers will be overidden by settings like `compression_level`.
 
 [id="plugins-{type}s-{plugin}-healthcheck_path"]
 ===== `healthcheck_path`
@@ -659,11 +671,12 @@ Any special characters present in the URLs here MUST be URL escaped! This means
 
 [id="plugins-{type}s-{plugin}-http_compression"]
 ===== `http_compression`
+deprecated[11.17.0, Replaced by <<plugins-{type}s-{plugin}-compression_level>>]
 
   * Value type is <<boolean,boolean>>
   * Default value is `false`
 
-Enable gzip compression on requests.
+Setting `true` enables gzip compression level 1 on requests.
 
 This setting allows you to reduce this plugin's outbound network traffic by
 compressing each bulk _request_ to {es}.
