@@ -262,7 +262,8 @@ describe "indexing" do
     let(:config) {
       {
         "hosts" => get_host_port,
-        "index" => index
+        "index" => index,
+        "http_compression" => false
       }
     }
     it_behaves_like("an indexer")
@@ -273,7 +274,8 @@ describe "indexing" do
     let(:config) {
       {
         "hosts" => get_host_port,
-        "index" => index
+        "index" => index,
+        "http_compression" => false
       }
     }
     it_behaves_like("an indexer")
@@ -291,7 +293,8 @@ describe "indexing" do
         "password" => password,
         "ssl_enabled" => true,
         "ssl_certificate_authorities" => cacert,
-        "index" => index
+        "index" => index,
+        "http_compression" => false
       }
     end 
 
@@ -351,7 +354,8 @@ describe "indexing" do
               "hosts" => ["https://#{CGI.escape(user)}:#{CGI.escape(password)}@elasticsearch:9200"],
               "ssl_enabled" => true,
               "ssl_certificate_authorities" => "spec/fixtures/test_certs/test.crt",
-              "index" => index
+              "index" => index,
+              "http_compression" => false
           }
         end
 
