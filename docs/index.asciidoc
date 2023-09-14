@@ -671,11 +671,10 @@ Any special characters present in the URLs here MUST be URL escaped! This means
 
 [id="plugins-{type}s-{plugin}-http_compression"]
 ===== `http_compression`
+deprecated[11.17.0, Replaced by <<plugins-{type}s-{plugin}-compression_level>>]
 
   * Value type is <<boolean,boolean>>
   * Default value is `false`
-
-deprecated[11.17.0, Replaced by <<plugins-{type}s-{plugin}-compression_level>>]
 
 Setting `true` enables gzip compression level 1 on requests.
 
