@@ -469,7 +469,7 @@ For more details, check out the
 The gzip compression level. Setting this value to `0` disables compression.
 The compression level must be in the range of `1` (best speed) to `9` (best compression).
 
-Increasing the compression level will reduce the network usage but will increase the cpu usage.
+Increasing the compression level will reduce the network usage but will increase the CPU usage.
 
 [id="plugins-{type}s-{plugin}-data_stream"]
 ===== `data_stream`
