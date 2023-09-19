@@ -49,7 +49,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     }.freeze
 
     BUILD_FLAVOR_SERVERLESS = 'serverless'.freeze
-    DEFAULT_EAV_HEADER = { "Elastic-Api-Version" => "2023-10-31" }.freeze
+    ELASTIC_API_VERSION = "Elastic-Api-Version".freeze
+    DEFAULT_EAV_HEADER = { ELASTIC_API_VERSION => "2023-10-31" }.freeze
 
     def initialize(logger, adapter, initial_urls=[], options={})
       @logger = logger
@@ -233,35 +234,45 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def health_check_request(url)
-      response = perform_request_to_url(url, :head, @healthcheck_path)
-      raise BadResponseCodeError.new(response.code, url, nil, response.body) unless (200..299).cover?(response.code)
+      logger.debug("Running health check to see if an Elasticsearch connection is working",
+                   :healthcheck_url => url.sanitized.to_s, :path => @healthcheck_path)
+      begin
+        response = perform_request_to_url(url, :head, @healthcheck_path)
+        return response, nil
+      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        logger.warn("Health check failed", code: e.response_code, url: e.url, message: e.message)
+        return nil, e
+      end
     end
 
     def healthcheck!(register_phase = true)
       # Try to keep locking granularity low such that we don't affect IO...
       @state_mutex.synchronize { @url_info.select {|url,meta| meta[:state] != :alive } }.each do |url,meta|
         begin
-          logger.debug("Running health check to see if an Elasticsearch connection is working",
-                        :healthcheck_url => url.sanitized.to_s, :path => @healthcheck_path)
-          health_check_request(url)
+          _, health_bad_code_err = health_check_request(url)
+          root_response, root_bad_code_err = get_root_path(url) if health_bad_code_err.nil? || register_phase
 
           # when called from resurrectionist skip the product check done during register phase
           if register_phase
-            if !elasticsearch?(url)
-              raise LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch"
-            end
+            raise LogStash::ConfigurationError,
+                  "The Elastic-Api-Version header is not valid" if invalid_eav_header?(root_bad_code_err)
+            raise LogStash::ConfigurationError,
+                  "Could not connect to a compatible version of Elasticsearch" if client_err_code?(root_bad_code_err) ||
+                                                                                  (root_bad_code_err.nil? && !elasticsearch?(root_response))
           end
+
+          raise health_bad_code_err if health_bad_code_err
+          raise root_bad_code_err if root_bad_code_err
+
           # If no exception was raised it must have succeeded!
           logger.warn("Restored connection to ES instance", url: url.sanitized.to_s)
-          # We reconnected to this node, check its ES version
-          version_info = get_es_version(url)
-          es_version = version_info.fetch('number', nil)
-          build_flavor = version_info.fetch('build_flavor', nil)
 
-          if es_version.nil?
-            logger.warn("Failed to retrieve Elasticsearch version data from connected endpoint, connection aborted", :url => url.sanitized.to_s)
-            next
-          end
+          # We check its ES version
+          es_version, build_flavor = parse_es_version(root_response)
+          logger.warn("Failed to retrieve Elasticsearch build flavor") if build_flavor.nil?
+          logger.warn("Failed to retrieve Elasticsearch version data from connected endpoint, connection aborted", :url => url.sanitized.to_s) if es_version.nil?
+          next if es_version.nil?
+
           @state_mutex.synchronize do
             meta[:version] = es_version
             set_last_es_version(es_version, url)
@@ -276,40 +287,15 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
     end
 
-    def elasticsearch?(url)
+    def get_root_path(url)
       begin
-        response = perform_request_to_url(url, :get, ROOT_URI_PATH)
+        resp = perform_request_to_url(url, :get, ROOT_URI_PATH)
+        return resp, nil
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-        return false if response.code == 401 || response.code == 403
-        raise e
+        logger.warn("Failed to get Elasticsearch root endpoint",
+                     code: e.response_code, message: e.message, body: e.response_body)
+        return nil, e
       end
-
-      version_info = LogStash::Json.load(response.body)
-      return false if version_info['version'].nil?
-
-      version = ::Gem::Version.new(version_info["version"]['number'])
-      return false if version < ::Gem::Version.new('6.0.0')
-
-      if VERSION_6_TO_7.satisfied_by?(version)
-        return valid_tagline?(version_info)
-      elsif VERSION_7_TO_7_14.satisfied_by?(version)
-        build_flavor = version_info["version"]['build_flavor']
-        return false if build_flavor.nil? || build_flavor != 'default' || !valid_tagline?(version_info)
-      else
-        # case >= 7.14
-        lower_headers = response.headers.transform_keys {|key| key.to_s.downcase }
-        product_header = lower_headers['x-elastic-product']
-        return false if product_header != 'Elasticsearch'
-      end
-      return true
-    rescue => e
-      logger.error("Unable to retrieve Elasticsearch version", url: url.sanitized.to_s, exception: e.class, message: e.message)
-      false
-    end
-
-    def valid_tagline?(version_info)
-      tagline = version_info['tagline']
-      tagline == "You Know, for Search"
     end
 
     def stop_resurrectionist
@@ -478,15 +464,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
     end
 
-    def get_es_version(url)
-      response = perform_request_to_url(url, :get, ROOT_URI_PATH)
-      return nil unless (200..299).cover?(response.code)
-
-      response = LogStash::Json.load(response.body)
-
-      response.fetch('version', {})
-    end
-
     def last_es_version
       @last_es_version.get
     end
@@ -532,5 +509,54 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @build_flavor.set(flavor)
     end
 
+    def invalid_eav_header?(bad_code_err)
+      bad_code_err&.response_code == 400 && bad_code_err&.response_body&.include?(ELASTIC_API_VERSION)
+    end
+
+    def client_err_code?(bad_code_err)
+      [401, 403].include?(bad_code_err&.response_code)
+    end
+
+    def parse_es_version(response)
+      return nil, nil unless (200..299).cover?(response.code)
+
+      response = LogStash::Json.load(response.body)
+      version_info = response.fetch('version', {})
+      es_version = version_info.fetch('number', nil)
+      build_flavor = version_info.fetch('build_flavor', nil)
+
+      return es_version, build_flavor
+    end
+
+    def elasticsearch?(response)
+      return false if response.nil?
+
+      version_info = LogStash::Json.load(response.body)
+      return false if version_info['version'].nil?
+
+      version = ::Gem::Version.new(version_info["version"]['number'])
+      return false if version < ::Gem::Version.new('6.0.0')
+
+      if VERSION_6_TO_7.satisfied_by?(version)
+        return valid_tagline?(version_info)
+      elsif VERSION_7_TO_7_14.satisfied_by?(version)
+        build_flavor = version_info["version"]['build_flavor']
+        return false if build_flavor.nil? || build_flavor != 'default' || !valid_tagline?(version_info)
+      else
+        # case >= 7.14
+        lower_headers = response.headers.transform_keys {|key| key.to_s.downcase }
+        product_header = lower_headers['x-elastic-product']
+        return false if product_header != 'Elasticsearch'
+      end
+      return true
+    rescue => e
+      logger.error("Unable to retrieve Elasticsearch version", exception: e.class, message: e.message)
+      false
+    end
+
+    def valid_tagline?(version_info)
+      tagline = version_info['tagline']
+      tagline == "You Know, for Search"
+    end
   end
 end; end; end; end;
