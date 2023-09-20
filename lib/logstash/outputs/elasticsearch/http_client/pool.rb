@@ -292,8 +292,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         resp = perform_request_to_url(url, :get, ROOT_URI_PATH)
         return resp, nil
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-        logger.warn("Failed to get Elasticsearch root endpoint",
-                     code: e.response_code, message: e.message, body: e.response_body)
+        logger.warn("Elasticsearch main endpoint returns #{e.response_code}", message: e.message, body: e.response_body)
         return nil, e
       end
     end
