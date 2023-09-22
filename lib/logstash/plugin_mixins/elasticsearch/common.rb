@@ -180,6 +180,7 @@ module LogStash; module PluginMixins; module ElasticSearch
       plugin_metadata.set(:cluster_uuid, cluster_info['cluster_uuid'])
     rescue => e
       @logger.error("Unable to retrieve Elasticsearch cluster uuid", message: e.message, exception: e.class, backtrace: e.backtrace)
+      raise e if register_termination_error?(e)
     end
 
     def retrying_submit(actions)
@@ -404,6 +405,10 @@ module LogStash; module PluginMixins; module ElasticSearch
       val = val[first_key]
       return val if rest_keys.empty? || val == nil
       dig_value(val, *rest_keys)
+    end
+
+    def register_termination_error?(e)
+      e.is_a?(LogStash::ConfigurationError) || e.is_a?(LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError)
     end
   end
 end; end; end

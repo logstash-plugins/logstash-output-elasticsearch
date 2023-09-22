@@ -150,7 +150,7 @@ module LogStash module Outputs class ElasticSearch
       if es_version < ::Gem::Version.create(DATA_STREAMS_ORIGIN_ES_VERSION)
         @logger.error "Elasticsearch version does not support data streams, Logstash might end up writing to an index", es_version: es_version.version
         # NOTE: when switching to synchronous check from register, this should be a ConfigurationError
-        raise LogStash::Error, "A data_stream configuration is only supported since Elasticsearch #{DATA_STREAMS_ORIGIN_ES_VERSION} " +
+        raise LogStash::ConfigurationError, "A data_stream configuration is only supported since Elasticsearch #{DATA_STREAMS_ORIGIN_ES_VERSION} " +
                                "(detected version #{es_version.version}), please upgrade your cluster"
       end
       es_version # return truthy

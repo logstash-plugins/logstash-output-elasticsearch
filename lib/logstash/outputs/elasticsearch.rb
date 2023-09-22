@@ -322,10 +322,17 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @bulk_request_metrics = metric.namespace(:bulk_requests)
     @document_level_metrics = metric.namespace(:documents)
 
+    @stop_after_finish_register = Concurrent::AtomicBoolean.new(false)
     @after_successful_connection_thread = after_successful_connection do
       begin
         finish_register
         true # thread.value
+      rescue LogStash::ConfigurationError, LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        @stop_after_finish_register.make_true
+        respond_to?(:execution_context) && execution_context.respond_to?(:pipeline_id) &&
+          execution_context.respond_to?(:agent) && execution_context.agent.respond_to?(:stop_pipeline) &&
+          execution_context.agent.stop_pipeline(execution_context.pipeline_id)
+        e
       rescue => e
         # we do not want to halt the thread with an exception as that has consequences for LS
         e # thread.value
@@ -450,7 +457,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   private
 
   def stop_after_successful_connection_thread
-    @after_successful_connection_thread.join unless @after_successful_connection_thread.nil?
+    return if @stop_after_finish_register&.true?
+    @after_successful_connection_thread.join if @after_successful_connection_thread&.alive?
   end
 
   # Convert the event into a 3-tuple of action, params and event hash
@@ -597,6 +605,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     TemplateManager.install_template(self)
   rescue => e
     @logger.error("Failed to install template", message: e.message, exception: e.class, backtrace: e.backtrace)
+
+    raise e if register_termination_error?(e)
   end
 
   def setup_ecs_compatibility_related_defaults

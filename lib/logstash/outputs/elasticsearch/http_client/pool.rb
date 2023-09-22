@@ -17,6 +17,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
 
     end
+
     class HostUnreachableError < Error;
       attr_reader :original_error, :url
 
@@ -55,7 +56,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @adapter = adapter
       @metric = options[:metric]
       @initial_urls = initial_urls
-      
+
       raise ArgumentError, "No URL Normalizer specified!" unless options[:url_normalizer]
       @url_normalizer = options[:url_normalizer]
       DEFAULT_OPTIONS.merge(options).tap do |merged|
@@ -145,7 +146,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
             :error_message => e.message,
             :class => e.class.name,
             :backtrace => e.backtrace
-            )
+          )
         end
       end
     end
@@ -183,11 +184,11 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         sniff(nodes)
       end
     end
-    
+
     def major_version(version_string)
       version_string.split('.').first.to_i
     end
-    
+
     def sniff(nodes)
       nodes.map do |id,info|
         # Skip master-only nodes
@@ -347,7 +348,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
     def update_urls(new_urls)
       return if new_urls.nil?
-      
+
       # Normalize URLs
       new_urls = new_urls.map(&method(:normalize_url))
 
@@ -375,14 +376,14 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       if state_changes[:removed].size > 0 || state_changes[:added].size > 0
         logger.info? && logger.info("Elasticsearch pool URLs updated", :changes => state_changes)
       end
-      
+
       # Run an inline healthcheck anytime URLs are updated
       # This guarantees that during startup / post-startup
       # sniffing we don't have idle periods waiting for the
       # periodic sniffer to allow new hosts to come online
-      healthcheck! 
+      healthcheck!
     end
-    
+
     def size
       @state_mutex.synchronize { @url_info.size }
     end
