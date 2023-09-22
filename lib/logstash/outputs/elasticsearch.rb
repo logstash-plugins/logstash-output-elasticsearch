@@ -328,10 +328,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         finish_register
         true # thread.value
       rescue LogStash::ConfigurationError, LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-        @stop_after_finish_register.make_true
-        respond_to?(:execution_context) && execution_context.respond_to?(:pipeline_id) &&
-          execution_context.respond_to?(:agent) && execution_context.agent.respond_to?(:stop_pipeline) &&
+        if respond_to?(:execution_context) && execution_context.respond_to?(:pipeline_id) &&
+          execution_context.respond_to?(:agent) && execution_context.agent.respond_to?(:stop_pipeline)
+          @stop_after_finish_register.make_true
           execution_context.agent.stop_pipeline(execution_context.pipeline_id)
+        end
         e
       rescue => e
         # we do not want to halt the thread with an exception as that has consequences for LS
@@ -457,7 +458,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   private
 
   def stop_after_successful_connection_thread
+    # avoid deadlock when calling execution_context.agent.stop_pipeline
+    # stop_pipeline triggers plugin close and the plugin close waits for after_successful_connection_thread to join
     return if @stop_after_finish_register&.true?
+
     @after_successful_connection_thread.join if @after_successful_connection_thread&.alive?
   end
 
