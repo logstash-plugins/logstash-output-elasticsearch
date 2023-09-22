@@ -16,6 +16,18 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         @response_body = response_body
       end
 
+      def invalid_eav_header?
+        @response_code == 400 && @response_body&.include?(ELASTIC_API_VERSION)
+      end
+
+      def invalid_credentials?
+        @response_code == 401
+      end
+
+      def forbidden?
+        @response_code == 403
+      end
+
     end
     class HostUnreachableError < Error;
       attr_reader :original_error, :url
@@ -255,10 +267,17 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           # when called from resurrectionist skip the product check done during register phase
           if register_phase
             raise LogStash::ConfigurationError,
-                  "The Elastic-Api-Version header is not valid" if invalid_eav_header?(root_bad_code_err)
+                  "Could not read Elasticsearch. Please check the credentials" if root_bad_code_err&.invalid_credentials?
             raise LogStash::ConfigurationError,
-                  "Could not connect to a compatible version of Elasticsearch" if client_err_code?(root_bad_code_err) ||
-                                                                                  (root_bad_code_err.nil? && !elasticsearch?(root_response))
+                  "Could not read Elasticsearch. Please check the privileges" if root_bad_code_err&.forbidden?
+            # when customer_headers is invalid
+            raise LogStash::ConfigurationError,
+                  "The Elastic-Api-Version header is not valid" if root_bad_code_err&.invalid_eav_header?
+            # when it is not Elasticserach
+            raise LogStash::ConfigurationError,
+                  "Could not connect to a compatible version of Elasticsearch" if root_bad_code_err.nil? && !elasticsearch?(root_response)
+
+            test_serverless_connection(url, root_response)
           end
 
           raise health_bad_code_err if health_bad_code_err
@@ -287,14 +306,21 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
     end
 
-    def get_root_path(url)
+    def get_root_path(url, params={})
       begin
-        resp = perform_request_to_url(url, :get, ROOT_URI_PATH)
+        resp = perform_request_to_url(url, :get, ROOT_URI_PATH, params)
         return resp, nil
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         logger.warn("Elasticsearch main endpoint returns #{e.response_code}", message: e.message, body: e.response_body)
         return nil, e
       end
+    end
+
+    def test_serverless_connection(url, root_response)
+      _, build_flavor = parse_es_version(root_response)
+      params = { :headers => DEFAULT_EAV_HEADER }
+      _, bad_code_err = get_root_path(url, params) if build_flavor == BUILD_FLAVOR_SERVERLESS
+      raise LogStash::ConfigurationError, "The Elastic-Api-Version header is not valid" if bad_code_err&.invalid_eav_header?
     end
 
     def stop_resurrectionist
@@ -508,18 +534,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       @build_flavor.set(flavor)
     end
 
-    def invalid_eav_header?(bad_code_err)
-      bad_code_err&.response_code == 400 && bad_code_err&.response_body&.include?(ELASTIC_API_VERSION)
-    end
-
-    def client_err_code?(bad_code_err)
-      [401, 403].include?(bad_code_err&.response_code)
-    end
-
     def parse_es_version(response)
-      return nil, nil unless (200..299).cover?(response.code)
+      return nil, nil unless (200..299).cover?(response&.code)
 
-      response = LogStash::Json.load(response.body)
+      response = LogStash::Json.load(response&.body)
       version_info = response.fetch('version', {})
       es_version = version_info.fetch('number', nil)
       build_flavor = version_info.fetch('build_flavor', nil)

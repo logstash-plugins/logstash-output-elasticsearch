@@ -99,7 +99,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
         it "raises ConfigurationError" do
           expect(subject).to receive(:health_check_request).with(anything).and_return(["", nil])
-          expect(subject).to receive(:get_root_path).with(anything).and_return([mock_resp,
+          expect(subject).to receive(:get_root_path).with(anything).and_return([nil,
                                                                                 ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(mock_resp.code, nil, nil, mock_resp.body)])
           expect { subject.healthcheck! }.to raise_error(LogStash::ConfigurationError, err_msg)
         end
@@ -117,6 +117,56 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
         end
       end
 
+      context "with 200 serverless" do
+        let(:good_resp) { MockResponse.new(200,
+                                           { "tagline" => "You Know, for Search",
+                                             "version" => { "number" => '8.10.0', "build_flavor" => 'serverless'}
+                                           },
+                                           { "X-Elastic-Product" => "Elasticsearch" }
+        ) }
+        let(:bad_400_err) do
+          ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(400,
+           nil, nil,
+           "The requested [Elastic-Api-Version] header value of [2024-10-31] is not valid. Only [2023-10-31] is supported")
+        end
+
+        it "raises ConfigurationError when the serverless connection test fails" do
+          subject.update_initial_urls
+
+          expect(subject).to receive(:health_check_request).with(anything).and_return(["", nil])
+          expect(subject).to receive(:get_root_path).with(anything).and_return([good_resp, nil])
+          expect(subject).to receive(:get_root_path).with(anything, hash_including(:headers => LogStash::Outputs::ElasticSearch::HttpClient::Pool::DEFAULT_EAV_HEADER)).and_return([nil, bad_400_err])
+          expect { subject.healthcheck! }.to raise_error(LogStash::ConfigurationError, "The Elastic-Api-Version header is not valid")
+        end
+
+        it "passes when the serverless connection test succeeds" do
+          subject.update_initial_urls
+
+          expect(subject).to receive(:health_check_request).with(anything).and_return(["", nil])
+          expect(subject).to receive(:get_root_path).with(anything).and_return([good_resp, nil])
+          expect(subject).to receive(:get_root_path).with(anything, hash_including(:headers => LogStash::Outputs::ElasticSearch::HttpClient::Pool::DEFAULT_EAV_HEADER)).and_return([good_resp, nil])
+          expect { subject.healthcheck! }.not_to raise_error
+        end
+      end
+
+      context "with 200 default" do
+        let(:good_resp) { MockResponse.new(200,
+                                           { "tagline" => "You Know, for Search",
+                                             "version" => { "number" => '8.10.0', "build_flavor" => 'default'}
+                                           },
+                                           { "X-Elastic-Product" => "Elasticsearch" }
+        ) }
+
+        it "passes without checking serverless connection" do
+          subject.update_initial_urls
+
+          expect(subject).to receive(:health_check_request).with(anything).and_return(["", nil])
+          expect(subject).to receive(:get_root_path).with(anything).and_return([good_resp, nil])
+          expect(subject).not_to receive(:get_root_path).with(anything, hash_including(:headers => LogStash::Outputs::ElasticSearch::HttpClient::Pool::DEFAULT_EAV_HEADER))
+          expect { subject.healthcheck! }.not_to raise_error
+        end
+      end
+
       context "with 400" do
         let(:mock_resp) { MockResponse.new(400, "The requested [Elastic-Api-Version] header value of [2024-10-31] is not valid. Only [2023-10-31] is supported") }
         it_behaves_like "root path returns bad code error", "The Elastic-Api-Version header is not valid"
@@ -124,12 +174,12 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
       context "with 401" do
         let(:mock_resp) { MockResponse.new(401, "missing authentication") }
-        it_behaves_like "root path returns bad code error", "Could not connect to a compatible version of Elasticsearch"
+        it_behaves_like "root path returns bad code error", "Could not read Elasticsearch. Please check the credentials"
       end
 
       context "with 403" do
         let(:mock_resp) { MockResponse.new(403, "Forbidden") }
-        it_behaves_like "root path returns bad code error", "Could not connect to a compatible version of Elasticsearch"
+        it_behaves_like "root path returns bad code error", "Could not read Elasticsearch. Please check the privileges"
       end
     end
 
