@@ -19,7 +19,10 @@ describe "startup", :integration => true do
     process.poll_for_exit(60)
     out.rewind
 
+    log = out.read
+    puts log
+
     expect(process.exit_code).to eq(0)
-    expect(out.read).to match /Failed to bootstrap. Pipeline "main" is going to shut down/
+    expect(log).to match /Failed to bootstrap. Pipeline "main" is going to shut down/
   end
 end
