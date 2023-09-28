@@ -1,3 +1,6 @@
+## 11.18.1
+  - Changed the register to initiate pipeline shutdown upon bootstrap failure instead of simply logging the error [#1151](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1151)
+
 ## 11.18.0
   - Added request header `Elastic-Api-Version` for serverless [#1147](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1147)
 
