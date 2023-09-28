@@ -102,6 +102,8 @@ module LogStash; module Outputs; class ElasticSearch
       raise LogStash::ConfigurationError, "Template file '#{template_path}' could not be found" unless ::File.exists?(template_path)
       template_data = ::IO.read(template_path)
       LogStash::Json.load(template_data)
+    rescue => e
+      raise LogStash::ConfigurationError, "Failed to load template file '#{template_path}'. #{e.message}"
     end
 
     def self.template_endpoint(plugin)

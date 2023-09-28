@@ -330,6 +330,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       rescue LogStash::ConfigurationError, LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         if respond_to?(:execution_context) && execution_context.respond_to?(:pipeline_id) &&
           execution_context.respond_to?(:agent) && execution_context.agent.respond_to?(:stop_pipeline)
+
+          @logger.error("Failed to bootstrap. Pipeline \"#{execution_context.pipeline_id}\" is going to shut down",
+                        { message: e.message, exception: e.class, backtrace: e.backtrace })
           @stop_after_finish_register.make_true
           execution_context.agent.stop_pipeline(execution_context.pipeline_id)
         end
