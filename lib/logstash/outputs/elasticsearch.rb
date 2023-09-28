@@ -608,8 +608,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def install_template
     TemplateManager.install_template(self)
   rescue => e
-    @logger.error("Failed to install template", message: e.message, exception: e.class, backtrace: e.backtrace)
-
+    details = { message: e.message, exception: e.class, backtrace: e.backtrace }
+    details[:body] = e.response_body if e.respond_to?(:response_body)
+    @logger.error("Failed to install template", details)
     raise e if register_termination_error?(e)
   end
 
