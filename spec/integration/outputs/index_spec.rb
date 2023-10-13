@@ -156,7 +156,7 @@ describe "indexing" do
   let(:config) { "not implemented" }
   let(:events) { event_count.times.map { event }.to_a }
   subject { LogStash::Outputs::ElasticSearch.new(config) }
-  
+
   let(:es_url) { "http://#{get_host_port}" }
   let(:index_url) { "#{es_url}/#{index}" }
 
@@ -178,7 +178,7 @@ describe "indexing" do
     subject.do_close
   end
 
-  shared_examples "an indexer" do |secure|
+  shared_examples "an indexer" do |secure, expected_path|
     before(:each) do
       host_unreachable_error_class = LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError
       allow(host_unreachable_error_class).to receive(:new).with(any_args).and_wrap_original do |m, original, url|
@@ -212,13 +212,13 @@ describe "indexing" do
         expect(doc["_index"]).to eq(index)
       end
     end
-    
+
     it "sets the correct content-type header" do
-      expected_manticore_opts = {:headers => {"Content-Type" => "application/json"}, :body => anything}
+      expected_manticore_opts = {:headers => {"Content-Type" => "application/json"}, :body => anything, :query => anything}
       if secure
         expected_manticore_opts = {
-          :headers => {"Content-Type" => "application/json"}, 
-          :body => anything, 
+          :headers => {"Content-Type" => "application/json"},
+          :body => anything,
           :auth => {
             :user => user,
             :password => password,
@@ -230,6 +230,22 @@ describe "indexing" do
         and_call_original
       subject.multi_receive(events)
     end
+
+    it "sets the bulk path URL and filter path parameter correctly" do
+      expect(subject.client.pool.adapter.client).to receive(:send).
+          with(anything, expected_path != nil ? expected_path : anything,
+               hash_including(:query => {"filter_path" => "errors,items.*.error,items.*.status"})).at_least(:once).
+          and_call_original
+      subject.multi_receive(events)
+    end
+
+    it "receives a filtered response" do
+      expect(subject.client).to receive(:join_bulk_responses).
+          with([{"errors"=>false, "items"=>[{"index"=>{"status"=>201}}]}]).
+          and_call_original
+      subject.multi_receive([event])
+    end
+
   end
 
   shared_examples "PKIX path failure" do
@@ -269,6 +285,33 @@ describe "indexing" do
     it_behaves_like("an indexer")
   end
 
+  describe "an indexer with custom bulk path", :integration => true do
+    let(:config) {
+      {
+          "hosts" => get_host_port,
+          "index" => index,
+          "http_compression" => false,
+          "bulk_path" => "/_bulk?routing=true"
+      }
+    }
+    it_behaves_like("an indexer", false) do
+      let (:expected_path) { "#{es_url}#{bulk_path}" }
+    end
+  end
+
+  describe "an indexer with the standard bulk path", :integration => true do
+    let(:config) {
+      {
+          "hosts" => get_host_port,
+          "index" => index,
+          "http_compression" => false
+      }
+    }
+    it_behaves_like("an indexer", false) do
+      let (:expected_path) { "#{es_url}/_bulk" }
+    end
+  end
+
   describe "an indexer with no type value set (default to doc)", :integration => true do
     let(:type) { ESHelper.es_version_satisfies?("< 7") ? "doc" : "_doc" }
     let(:config) {
@@ -296,7 +339,7 @@ describe "indexing" do
         "index" => index,
         "http_compression" => false
       }
-    end 
+    end
 
     let(:curl_opts) { "-u #{user}:#{password}" }
 

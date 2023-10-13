@@ -211,6 +211,24 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message}],
     ]}
 
+    context "when sending a bulk message" do
+      let(:base_options) { super().merge(:client_settings => {:compression_level => 0}) }
+      let(:message1) { "hey" }
+      let(:actions) { [
+          ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message1}],
+      ]}
+      let(:post_response) {
+        double("response", :code => 200, :body => LogStash::Json::dump( { "body" => "body" }))
+      }
+
+      it "sets fhe filter path" do
+        expect(subject.pool).to receive(:post).with(anything, {:query=>{"filter_path"=>"errors,items.*.error,items.*.status"}}, anything).and_return(post_response)
+        subject.send(:bulk, actions)
+      end
+
+    end
+
+
     [0, 9].each do |compression_level|
       context "with `compression_level => #{compression_level}`" do
 
@@ -249,9 +267,14 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
             ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message1}],
             ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message2}],
           ]}
+          let(:post_response) {
+            double("response", :code => 200, :body => LogStash::Json::dump( { "body" => "body" }))
+          }
+
           it "executes one bulk_send operation" do
             allow(subject).to receive(:join_bulk_responses)
-            expect(subject).to receive(:bulk_send).once
+            expect(subject).to receive(:bulk_send).once.and_call_original
+            expect(subject.pool).to receive(:post).once.and_return(post_response)
             s = subject.send(:bulk, actions)
           end
 
@@ -354,6 +377,17 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
         transmitted_user_agent = request.header['user-agent'][0]
         expect(transmitted_user_agent).to match(/Logstash\/\d*\.\d*\.\d* \(OS=.*; JVM=.*\) logstash-output-elasticsearch\/\d*\.\d*\.\d*/)
       end
+
+      it "contains the Logstash environment details" do
+        adapter = client.build_adapter(client.options)
+        adapter.perform_request(::LogStash::Util::SafeURI.new("http://localhost:#{webserver.port}"), :get, "/headers_check")
+
+        request = webserver.wait_receive_request
+
+        transmitted_user_agent = request.header['user-agent'][0]
+        expect(transmitted_user_agent).to match(/Logstash\/\d*\.\d*\.\d* \(OS=.*; JVM=.*\) logstash-output-elasticsearch\/\d*\.\d*\.\d*/)
+      end
+
     end
   end
 end
