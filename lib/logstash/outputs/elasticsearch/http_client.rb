@@ -182,6 +182,7 @@ module LogStash; module Outputs; class ElasticSearch;
       params[:headers] = {"Content-Encoding" => "gzip"} if compression_level?
 
       response = @pool.post(@bulk_path, params, body_stream.string)
+
       @bulk_response_metrics.increment(response.code.to_s)
 
       case response.code
