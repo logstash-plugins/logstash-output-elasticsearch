@@ -218,6 +218,7 @@ describe "indexing" do
       if secure
         expected_manticore_opts = {
           :headers => {"Content-Type" => "application/json"},
+          :query=>{"filter_path"=>"errors,items.*.error,items.*.status"},
           :body => anything,
           :auth => {
             :user => user,
