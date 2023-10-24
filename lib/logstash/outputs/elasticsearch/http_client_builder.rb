@@ -198,6 +198,8 @@ module LogStash; module Outputs; class ElasticSearch;
       url.gsub(/\/+/, "/")
     end
 
+    # Set a `filter_path` query parameter if it is not already set to be
+    # `filter_path=errors,items.*.error,items.*.status` to reduce the payload between Logstash and Elasticsearch
     def self.resolve_filter_path(url)
       return url if url.match?(/(?:[&|?])filter_path=/)
       ("#{url}#{query_param_separator(url)}filter_path=errors,items.*.error,items.*.status")
