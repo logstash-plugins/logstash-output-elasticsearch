@@ -331,8 +331,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         if respond_to?(:execution_context) && execution_context.respond_to?(:pipeline_id) &&
           execution_context.respond_to?(:agent) && execution_context.agent.respond_to?(:stop_pipeline)
 
-          @logger.error("Failed to bootstrap. Pipeline \"#{execution_context.pipeline_id}\" is going to shut down",
-                        { message: e.message, exception: e.class, backtrace: e.backtrace })
+          details = { message: e.message, exception: e.class }
+          details[:backtrace] = e.backtrace if @logger.debug?
+          @logger.error("Failed to bootstrap. Pipeline \"#{execution_context.pipeline_id}\" is going to shut down", details)
+
           @stop_after_finish_register.make_true
           execution_context.agent.stop_pipeline(execution_context.pipeline_id)
         end
