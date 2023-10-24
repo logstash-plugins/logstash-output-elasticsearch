@@ -211,23 +211,6 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message}],
     ]}
 
-    context "when sending a bulk message" do
-      let(:base_options) { super().merge(:client_settings => {:compression_level => 0}) }
-      let(:message1) { "hey" }
-      let(:actions) { [
-          ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message1}],
-      ]}
-      let(:post_response) {
-        double("response", :code => 200, :body => LogStash::Json::dump( { "body" => "body" }))
-      }
-
-      it "sets the filter path" do
-        expect(subject.pool).to receive(:post).with(anything, {:query=>{"filter_path"=>"errors,items.*.error,items.*.status"}}, anything).and_return(post_response)
-        subject.send(:bulk, actions)
-      end
-    end
-
-
     [0, 9].each do |compression_level|
       context "with `compression_level => #{compression_level}`" do
 

@@ -156,7 +156,7 @@ describe "indexing" do
   let(:config) { "not implemented" }
   let(:events) { event_count.times.map { event }.to_a }
   subject { LogStash::Outputs::ElasticSearch.new(config) }
-
+  let(:filter_path) { "filter_path=errors,items.*.error,items.*.status"}
   let(:es_url) { "http://#{get_host_port}" }
   let(:index_url) { "#{es_url}/#{index}" }
 
@@ -214,11 +214,10 @@ describe "indexing" do
     end
 
     it "sets the correct content-type header" do
-      expected_manticore_opts = {:headers => {"Content-Type" => "application/json"}, :body => anything, :query => anything}
+      expected_manticore_opts = {:headers => {"Content-Type" => "application/json"}, :body => anything}
       if secure
         expected_manticore_opts = {
           :headers => {"Content-Type" => "application/json"},
-          :query=>{"filter_path"=>"errors,items.*.error,items.*.status"},
           :body => anything,
           :auth => {
             :user => user,
@@ -234,9 +233,7 @@ describe "indexing" do
 
     it "sets the bulk path URL and filter path parameter correctly" do
       expect(subject.client.pool.adapter.client).to receive(:send).
-          with(anything, expected_path != nil ? expected_path : anything,
-               hash_including(:query => {"filter_path" => "errors,items.*.error,items.*.status"})).at_least(:once).
-          and_call_original
+          with(anything, expected_path != nil ? expected_path : anything, anything).at_least(:once).and_call_original
       subject.multi_receive(events)
     end
 
@@ -287,16 +284,47 @@ describe "indexing" do
   end
 
   describe "an indexer with custom bulk path", :integration => true do
+    let(:bulk_path) { "/_bulk?routing=true"}
     let(:config) {
       {
           "hosts" => get_host_port,
           "index" => index,
           "http_compression" => false,
-          "bulk_path" => "/_bulk?routing=true"
+          "bulk_path" => bulk_path
       }
     }
     it_behaves_like("an indexer", false) do
-      let (:expected_path) { "#{es_url}#{bulk_path}" }
+      let (:expected_path) { "#{es_url}#{bulk_path}&#{filter_path}" }
+    end
+  end
+
+  describe "an indexer with filter path as second parameter", :integration => true do
+    let(:bulk_path) { "/_bulk?routing=true&#{filter_path}"}
+    let(:config) {
+      {
+          "hosts" => get_host_port,
+          "index" => index,
+          "http_compression" => false,
+          "bulk_path" => bulk_path
+      }
+    }
+    it_behaves_like("an indexer", false) do
+      let (:expected_path) { "#{es_url}/#{bulk_path}" }
+    end
+  end
+
+  describe "an indexer with filter path as first  parameter", :integration => true do
+    let(:bulk_path) { "/_bulk?#{filter_path}&routing=true"}
+    let(:config) {
+      {
+          "hosts" => get_host_port,
+          "index" => index,
+          "http_compression" => false,
+          "bulk_path" => bulk_path
+      }
+    }
+    it_behaves_like("an indexer", false) do
+      let (:expected_path) { "#{es_url}/#{bulk_path}" }
     end
   end
 
@@ -309,8 +337,9 @@ describe "indexing" do
       }
     }
     it_behaves_like("an indexer", false) do
-      let (:expected_path) { "#{es_url}/_bulk" }
+      let (:expected_path) { "#{es_url}/_bulk?#{filter_path}" }
     end
+
   end
 
   describe "an indexer with no type value set (default to doc)", :integration => true do

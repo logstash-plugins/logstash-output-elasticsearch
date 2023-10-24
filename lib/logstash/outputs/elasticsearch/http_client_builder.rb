@@ -33,9 +33,9 @@ module LogStash; module Outputs; class ElasticSearch;
       end
 
       common_options[:bulk_path] = if params["bulk_path"]
-         dedup_slashes("/#{params["bulk_path"]}")
+        resolve_filter_path(dedup_slashes("/#{params["bulk_path"]}"))
       else
-         dedup_slashes("/#{params["path"]}/_bulk")
+        resolve_filter_path(dedup_slashes("/#{params["path"]}/_bulk"))
       end
 
       common_options[:sniffing_path] = if params["sniffing_path"]
@@ -196,6 +196,15 @@ module LogStash; module Outputs; class ElasticSearch;
     private
     def self.dedup_slashes(url)
       url.gsub(/\/+/, "/")
+    end
+
+    def self.resolve_filter_path(url)
+      return url if url.nil? || url.match?(/(?:[&|?])filter_path=/)
+      ("#{url}#{query_param_separator(url)}filter_path=errors,items.*.error,items.*.status")
+    end
+
+    def self.query_param_separator(url)
+      url.match?(/\?[^\s#]+/) ? '&' : '?'
     end
   end
 end; end; end

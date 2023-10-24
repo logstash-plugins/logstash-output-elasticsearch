@@ -176,10 +176,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def bulk_send(body_stream, batch_actions)
-      params = {
-          :query => {"filter_path" => "errors,items.*.error,items.*.status"}
-      }
-      params[:headers] = {"Content-Encoding" => "gzip"} if compression_level?
+      params = compression_level? ? {:headers => {"Content-Encoding" => "gzip"}} : {}
 
       response = @pool.post(@bulk_path, params, body_stream.string)
 
