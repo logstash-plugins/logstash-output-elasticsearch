@@ -199,7 +199,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def self.resolve_filter_path(url)
-      return url if url.nil? || url.match?(/(?:[&|?])filter_path=/)
+      return url if url.match?(/(?:[&|?])filter_path=/)
       ("#{url}#{query_param_separator(url)}filter_path=errors,items.*.error,items.*.status")
     end
 
