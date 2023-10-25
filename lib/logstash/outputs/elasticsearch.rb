@@ -540,10 +540,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # @return Hash (initial) parameters for given event
   # @private shared event params factory between index and data_stream mode
   def common_event_params(event)
-    sprintf_index = @event_target.call(event)
-    raise IndexInterpolationError, sprintf_index if sprintf_index.match(/%{.*?}/) && dlq_on_failed_indexname_interpolation
+    sprintf_index = resolve_index!(event)
     params = {
-        :_id => @document_id ? event.sprintf(@document_id) : nil,
+        :_id => resolve_document_id(event),
         :_index => sprintf_index,
         routing_field_name => @routing ? event.sprintf(@routing) : nil
     }
@@ -558,6 +557,18 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     params
   end
+
+  def resolve_document_id(event)
+    @document_id ? event.sprintf(@document_id) : nil
+  end
+  private :resolve_document_id
+
+  def resolve_index!(event)
+    sprintf_index = @event_target.call(event)
+    raise IndexInterpolationError, sprintf_index if sprintf_index.match(/%{.*?}/) && dlq_on_failed_indexname_interpolation
+    sprintf_index
+  end
+  private :resolve_index!
 
   def resolve_pipeline(event)
     pipeline_template = @pipeline || event.get("[@metadata][target_ingest_pipeline]")&.to_s
