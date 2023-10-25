@@ -1,3 +1,6 @@
+## 11.19.0
+  - Added `filter_path` to bulk requests to reduce the size of responses from elasticsearch
+  
 ## 11.18.0
   - Added request header `Elastic-Api-Version` for serverless [#1147](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1147)
 
