@@ -423,10 +423,12 @@ Elasticsearch {ref}/security-api-create-api-key.html[Create API key API].
 ===== `bulk_path`
 
   * Value type is <<string,string>>
-  * There is no default value for this setting.
+  * The default value for this settings is `/_bulk?filter_path=errors,items.*.error,items.*.status`
 
 HTTP Path to perform the _bulk requests to
-this defaults to a concatenation of the path parameter and "_bulk"
+* This default bulk path is the concatenation of the value of `path` parameter and `/_bulk?filter_path=errors,items.*.error,items.*.status`
+* The `filter_path` query parameter is appended to the bulk path to reduce the payload between logstash and elasticsearch. However, if a custom `filter_path` query parameter is included in the `bulk_path` setting, then that value will be used.
+
 
 [id="plugins-{type}s-{plugin}-ca_trusted_fingerprint"]
 ===== `ca_trusted_fingerprint`
