@@ -540,10 +540,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # @return Hash (initial) parameters for given event
   # @private shared event params factory between index and data_stream mode
   def common_event_params(event)
-    sprintf_index = resolve_index!(event)
+    event_control = event.get("[@metadata][_ingest_document]")
+    event_id, event_pipeline, event_index = event_control&.values_at("id","pipeline","index") rescue nil
+
     params = {
-        :_id => resolve_document_id(event),
-        :_index => sprintf_index,
+        :_id => resolve_document_id(event, event_id),
+        :_index => resolve_index!(event, event_index),
         routing_field_name => @routing ? event.sprintf(@routing) : nil
     }
 
@@ -558,15 +560,20 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     params
   end
 
-  def resolve_document_id(event)
-    @document_id ? event.sprintf(@document_id) : nil
+  def resolve_document_id(event, event_id)
+    return event.sprintf(@document_id) if @document_id
+    return event_id || nil
   end
   private :resolve_document_id
 
-  def resolve_index!(event)
+  def resolve_index!(event, event_index)
     sprintf_index = @event_target.call(event)
     raise IndexInterpolationError, sprintf_index if sprintf_index.match(/%{.*?}/) && dlq_on_failed_indexname_interpolation
-    sprintf_index
+    # if its not a data stream, sprintf_index is the @index with resolved placeholders.
+    # if its a data stream, sprintf_index could be either the name of a data stream or the value contained in
+    # @index without placeholders substitution. In any case if event's metadata index is provided takes precedence
+    # on datastream name or whaterver is returned by the event_target provider.
+    return event_index || sprintf_index
   end
   private :resolve_index!
 
