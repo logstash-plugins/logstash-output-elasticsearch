@@ -549,7 +549,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         routing_field_name => @routing ? event.sprintf(@routing) : nil
     }
 
-    target_pipeline = resolve_pipeline(event)
+    target_pipeline = resolve_pipeline(event, event_pipeline)
     # convention: empty string equates to not using a pipeline
     # this is useful when using a field reference in the pipeline setting, e.g.
     #      elasticsearch {
@@ -577,7 +577,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   end
   private :resolve_index!
 
-  def resolve_pipeline(event)
+  def resolve_pipeline(event, event_pipeline)
+    return event_pipeline if event_pipeline && !@pipeline
     pipeline_template = @pipeline || event.get("[@metadata][target_ingest_pipeline]")&.to_s
     pipeline_template && event.sprintf(pipeline_template)
   end

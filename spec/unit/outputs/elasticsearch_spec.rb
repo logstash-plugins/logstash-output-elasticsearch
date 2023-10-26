@@ -792,6 +792,24 @@ describe LogStash::Outputs::ElasticSearch do
         expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "my-ingest-pipeline")
       end
 
+      context "when event contains also _ingest_document pipeline name" do
+        let(:event) { LogStash::Event.new({"pipeline" => "my-ingest-pipeline",
+                                           "@metadata" => {"target_ingest_pipeline" => "meta-ingest-pipeline",
+                                                           "_ingest_document" => {"pipeline" => "integration-pipeline"}}}) }
+
+        it "the one provided by user takes precedence on all the others" do
+          expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "my-ingest-pipeline")
+        end
+
+        context "when settings doesn't configure a pipeline and integration provides one in the event" do
+          let(:options) { { } }
+
+          it "the one provided by user takes precedence on all the others" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "integration-pipeline")
+          end
+        end
+      end
+
       context "when the plugin's `pipeline` is constant" do
         let(:options) { super().merge("pipeline" => "my-constant-pipeline") }
          it "uses plugin's pipeline value" do
