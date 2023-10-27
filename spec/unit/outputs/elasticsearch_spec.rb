@@ -908,7 +908,7 @@ describe LogStash::Outputs::ElasticSearch do
                                            "@metadata" => {"target_ingest_pipeline" => "meta-ingest-pipeline",
                                                            "_ingest_document" => {"pipeline" => "integration-pipeline"}}}) }
 
-        it "the one provided by user takes precedence on all the others" do
+        it "precedence is given to the integration" do
           expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "my-ingest-pipeline")
         end
 
