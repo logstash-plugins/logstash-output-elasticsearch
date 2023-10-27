@@ -569,10 +569,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def resolve_index!(event, event_index)
     sprintf_index = @event_target.call(event)
     raise IndexInterpolationError, sprintf_index if sprintf_index.match(/%{.*?}/) && dlq_on_failed_indexname_interpolation
-    # if its not a data stream, sprintf_index is the @index with resolved placeholders.
-    # if its a data stream, sprintf_index could be either the name of a data stream or the value contained in
-    # @index without placeholders substitution. In any case if event's metadata index is provided takes precedence
-    # on datastream name or whaterver is returned by the event_target provider.
+    # if it's not a data stream, sprintf_index is the @index with resolved placeholders.
+    # if is a data stream, sprintf_index could be either the name of a data stream or the value contained in
+    # @index without placeholders substitution. If event's metadata index is provided, it takes precedence
+    # on datastream name or whatever is returned by the event_target provider.
     return event_index || sprintf_index
   end
   private :resolve_index!

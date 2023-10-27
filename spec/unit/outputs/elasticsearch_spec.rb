@@ -272,40 +272,38 @@ describe LogStash::Outputs::ElasticSearch do
     end
 
     describe "with event integration metadata" do
-      context "when user doesn't specify index setting and the event contains an index field in metadata" do
+      context "when there isn't any index setting specified and the event contains an integration metadata index" do
         let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"index" => "meta-document-index"}}}) }
 
-        it "use the index provided by the integration" do
+        it "precedence is given to the integration" do
           expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "meta-document-index")
         end
       end
 
-      context "when datastream is provided" do
-#         let(:event) { LogStash::Event.new({"data_stream" => {"type" => "logs", "dataset" => "generic", "namespace" => "default"}}) }
-
-        context "event contains an index field in metadata" do
+      context "when datastream is used" do
+        context "event contains an integration metadata index" do
           let(:event) { LogStash::Event.new({"data_stream" => {"type" => "logs", "dataset" => "generic", "namespace" => "default"},
                                              "@metadata" => {"_ingest_document" => {"index" => "meta-document-index"}}}) }
 
-          it "use the index provided by the integration" do
+          it "precedence is given to the integration" do
             expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "meta-document-index")
           end
         end
       end
 
-      context "when user doesn't specify document_id setting" do
-        context "event's contains one" do
+      context "when there isn't any document_id setting" do
+        context "event contains an integration metadata id" do
           let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"id" => "meta-document-id"}}}) }
 
-          it "use the _id provided by the integration" do
+          it "precedence is given to the integration" do
             expect(subject.send(:event_action_tuple, event)[1]).to include(:_id => "meta-document-id")
           end
         end
 
-        context "event doesn't contains one" do
+        context "event doesn't contain an integration metadata id" do
           let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {}}}) }
 
-          it "use the _id provided by the integration" do
+          it "let Elasticsearch to assign one" do
             expect(subject.send(:event_action_tuple, event)[1]).to include(:_id => nil)
           end
         end
@@ -797,7 +795,7 @@ describe LogStash::Outputs::ElasticSearch do
                                            "@metadata" => {"target_ingest_pipeline" => "meta-ingest-pipeline",
                                                            "_ingest_document" => {"pipeline" => "integration-pipeline"}}}) }
 
-        it "the one provided by user takes precedence on all the others" do
+        it "precedence is given to the integration" do
           expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "my-ingest-pipeline")
         end
 
