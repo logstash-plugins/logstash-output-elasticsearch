@@ -275,6 +275,25 @@ describe LogStash::Outputs::ElasticSearch do
       let(:event_fields) {{}}
       let(:event) { LogStash::Event.new(event_fields)}
 
+      context "which contains routing field in its metadata" do
+        # defines an event with routing in the integration metadata section
+        let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"routing" => "meta-document-routing"}}}) }
+
+        context "when routing is specified in plugin settings" do
+          let(:options) { super().merge("routing" => "settings_routing")}
+
+          it "takes precedence over the integration one" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:routing => "settings_routing")
+          end
+        end
+
+        context "when routing is not defined in plugin settings" do
+          it "must use the value from the integration's metadata" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:routing => "meta-document-routing")
+          end
+        end
+      end
+
       context "when plugin's index is specified" do
         let(:options) { super().merge("index" => "index_from_settings")}
 
