@@ -294,6 +294,25 @@ describe LogStash::Outputs::ElasticSearch do
         end
       end
 
+      context "which contains version_type field" do
+        # defines an event with version_type in the integration metadata section
+        let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"version_type" => "external"}}}) }
+
+        context "when version_type is also specified in plugin settings" do
+          let(:options) { super().merge("version_type" => "internal")}
+
+          it "takes precedence over the integration one" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:version_type => "internal")
+          end
+        end
+
+        context "when version_type is not defined in plugin settings" do
+          it "must use the value from the integration's metadata" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:version_type => "external")
+          end
+        end
+      end
+
       context "which contains routing field in its metadata" do
         # defines an event with routing in the integration metadata section
         let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"routing" => "meta-document-routing"}}}) }

@@ -538,7 +538,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # @private shared event params factory between index and data_stream mode
   def common_event_params(event)
     event_control = event.get("[@metadata][_ingest_document]")
-    event_id, event_pipeline, event_index, event_routing, event_version = event_control&.values_at("id","pipeline","index", "routing", "version") rescue nil
+    event_id, event_pipeline, event_index, event_routing, event_version, event_version_type = event_control&.values_at("id","pipeline","index", "routing", "version", "version_type") rescue nil
 
     params = {
         :_id => resolve_document_id(event, event_id),
@@ -555,7 +555,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     params[:pipeline] = target_pipeline unless (target_pipeline.nil? || target_pipeline.empty?)
 
     params[:version] = resolve_version(event, event_version)
-    params[:version_type] = event.sprintf(@version_type) if @version_type
+    params[:version_type] = resolve_version_type(event, event_version_type)
 
     params
   end
@@ -565,6 +565,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     event.sprintf(@version) if @version
   end
   private :resolve_version
+
+  def resolve_version_type(event, event_version_type)
+    return event_version_type if event_version_type && !@version_type
+    event.sprintf(@version_type) if @version_type
+  end
+  private :resolve_version_type
 
   def resolve_routing(event, event_routing)
     return event_routing if event_routing && !@routing
