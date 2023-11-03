@@ -541,12 +541,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # @private shared event params factory between index and data_stream mode
   def common_event_params(event)
     event_control = event.get("[@metadata][_ingest_document]")
-    event_id, event_pipeline, event_index = event_control&.values_at("id","pipeline","index") rescue nil
+    event_id, event_pipeline, event_index = event_control&.values_at("id","pipeline","index", "routing") rescue nil
 
     params = {
         :_id => resolve_document_id(event, event_id),
         :_index => resolve_index!(event, event_index),
-        routing_field_name => @routing ? event.sprintf(@routing) : nil
+        routing_field_name => resolve_routing(event)
     }
 
     target_pipeline = resolve_pipeline(event, event_pipeline)
@@ -559,6 +559,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
     params
   end
+
+  def resolve_routing(event)
+    @routing ? event.sprintf(@routing) : nil
+  end
+  private :resolve_routing
 
   def resolve_document_id(event, event_id)
     return event.sprintf(@document_id) if @document_id
