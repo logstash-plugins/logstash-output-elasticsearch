@@ -275,6 +275,25 @@ describe LogStash::Outputs::ElasticSearch do
       let(:event_fields) {{}}
       let(:event) { LogStash::Event.new(event_fields)}
 
+      context "which contains version field" do
+        # defines an event with version in the integration metadata section
+        let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"version" => "456"}}}) }
+
+        context "when version is also specified in plugin settings" do
+          let(:options) { super().merge("version" => "123")}
+
+          it "takes precedence over the integration one" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:version => "123")
+          end
+        end
+
+        context "when version is not defined in plugin settings" do
+          it "must use the value from the integration's metadata" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:version => "456")
+          end
+        end
+      end
+
       context "which contains routing field in its metadata" do
         # defines an event with routing in the integration metadata section
         let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"routing" => "meta-document-routing"}}}) }
@@ -294,11 +313,16 @@ describe LogStash::Outputs::ElasticSearch do
         end
       end
 
+<<<<<<< HEAD
       context "when plugin's index is specified" do
         let(:options) { super().merge("index" => "index_from_settings")}
 
         context "when the event contains an integration metadata index" do
           let(:event_fields) { super().merge({"@metadata" => {"_ingest_document" => {"index" => "meta-document-index"}}}) }
+=======
+      context "when there isn't any index setting specified and the event contains an integration metadata index" do
+        let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"index" => "meta-document-index"}}}) }
+>>>>>>> 332e6e3 (Use version setting from ingest_document metadata, if present)
 
           it "plugin's index is used" do
             expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "index_from_settings")
