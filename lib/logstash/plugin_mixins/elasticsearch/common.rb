@@ -411,5 +411,10 @@ module LogStash; module PluginMixins; module ElasticSearch
     def register_termination_error?(e)
       e.is_a?(LogStash::ConfigurationError) || e.is_a?(LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError)
     end
+
+    def too_many_requests?(e)
+      e.is_a?(LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError) &&
+        e.too_many_requests?
+    end
   end
 end; end; end

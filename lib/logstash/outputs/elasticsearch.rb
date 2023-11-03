@@ -328,6 +328,13 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         finish_register
         true # thread.value
       rescue LogStash::ConfigurationError, LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        # retry when 429
+        if too_many_requests?(e)
+          @logger.info("Received a 429 status code during registration")
+          retry
+        end
+
+        # shut down pipeline
         if execution_context.agent.respond_to?(:stop_pipeline)
           details = { message: e.message, exception: e.class }
           details[:backtrace] = e.backtrace if @logger.debug?
@@ -336,6 +343,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
           @stop_after_finish_register.make_true
           execution_context.agent.stop_pipeline(execution_context.pipeline_id)
         end
+
         e
       rescue => e
         # we do not want to halt the thread with an exception as that has consequences for LS

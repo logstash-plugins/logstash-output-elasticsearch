@@ -28,6 +28,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         @response_code == 403
       end
 
+      def too_many_requests?
+        @response_code == 429
+      end
+
     end
 
     class HostUnreachableError < Error;
