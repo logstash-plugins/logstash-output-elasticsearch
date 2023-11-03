@@ -499,9 +499,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       params[retry_on_conflict_action_name] = @retry_on_conflict
     end
 
-    params[:version] = event.sprintf(@version) if @version
-    params[:version_type] = event.sprintf(@version_type) if @version_type
-
     EventActionTuple.new(action, params, event)
   end
 
@@ -556,6 +553,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     #        pipeline => "%{[@metadata][pipeline]}"
     #      }
     params[:pipeline] = target_pipeline unless (target_pipeline.nil? || target_pipeline.empty?)
+
+    params[:version] = event.sprintf(@version) if @version
+    params[:version_type] = event.sprintf(@version_type) if @version_type
 
     params
   end
