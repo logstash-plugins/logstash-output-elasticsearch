@@ -322,31 +322,29 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @bulk_request_metrics = metric.namespace(:bulk_requests)
     @document_level_metrics = metric.namespace(:documents)
 
-    @stop_after_finish_register = Concurrent::AtomicBoolean.new(false)
+    @shutdown_from_finish_register = Concurrent::AtomicBoolean.new(false)
     @after_successful_connection_thread = after_successful_connection do
       begin
         finish_register
         true # thread.value
       rescue LogStash::ConfigurationError, LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        return e if pipeline_shutdown_requested?
+
         # retry when 429
-        if too_many_requests?(e)
-          @logger.info("Received a 429 status code during registration")
-          retry
-        end
+        @logger.info("Received a 429 status code during registration") && retry if too_many_requests?(e)
 
         # shut down pipeline
-        if execution_context.agent.respond_to?(:stop_pipeline)
+        if execution_context&.agent.respond_to?(:stop_pipeline)
           details = { message: e.message, exception: e.class }
           details[:backtrace] = e.backtrace if @logger.debug?
           @logger.error("Failed to bootstrap. Pipeline \"#{execution_context.pipeline_id}\" is going to shut down", details)
 
-          @stop_after_finish_register.make_true
+          @shutdown_from_finish_register.make_true
           execution_context.agent.stop_pipeline(execution_context.pipeline_id)
         end
 
         e
       rescue => e
-        # we do not want to halt the thread with an exception as that has consequences for LS
         e # thread.value
       ensure
         @after_successful_connection_done.make_true
@@ -469,9 +467,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   private
 
   def stop_after_successful_connection_thread
-    # avoid deadlock when calling execution_context.agent.stop_pipeline
+    # avoid deadlock when finish_register calling execution_context.agent.stop_pipeline
     # stop_pipeline triggers plugin close and the plugin close waits for after_successful_connection_thread to join
-    return if @stop_after_finish_register&.true?
+    return if @shutdown_from_finish_register&.true?
 
     @after_successful_connection_thread.join if @after_successful_connection_thread&.alive?
   end
