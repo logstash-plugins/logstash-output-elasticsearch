@@ -272,21 +272,71 @@ describe LogStash::Outputs::ElasticSearch do
     end
 
     describe "with event integration metadata" do
-      context "when there isn't any index setting specified and the event contains an integration metadata index" do
-        let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"index" => "meta-document-index"}}}) }
+      let(:event_fields) {{}}
+      let(:event) { LogStash::Event.new(event_fields)}
 
-        it "precedence is given to the integration" do
-          expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "meta-document-index")
+      context "when plugin's index is specified" do
+        let(:options) { super().merge("index" => "index_from_settings")}
+
+        context "when the event contains an integration metadata index" do
+          let(:event_fields) { super().merge({"@metadata" => {"_ingest_document" => {"index" => "meta-document-index"}}}) }
+
+          it "plugin's index is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "index_from_settings")
+          end
+        end
+
+        context "when the event doesn't contains an integration metadata index" do
+          it "plugin's index is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "index_from_settings")
+          end
         end
       end
 
-      context "when datastream is used" do
-        context "event contains an integration metadata index" do
-          let(:event) { LogStash::Event.new({"data_stream" => {"type" => "logs", "dataset" => "generic", "namespace" => "default"},
-                                             "@metadata" => {"_ingest_document" => {"index" => "meta-document-index"}}}) }
-
-          it "precedence is given to the integration" do
+      context "when plugin's index is NOT specified" do
+        let(:options) { super().merge("index" => nil)}
+        
+        context "when the event contains an integration metadata index" do
+          let(:event_fields) { super().merge({"@metadata" => {"_ingest_document" => {"index" => "meta-document-index"}}}) }
+        
+          it "plugin's configuration metadata index is used" do
             expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "meta-document-index")
+          end
+
+          context "when datastream settings are NOT configured" do
+            it "plugin's configuration metadata index is used" do
+              expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "meta-document-index")
+            end
+          end
+
+          context "when datastream settings are configured" do
+            let(:event_fields) { super().merge({"data_stream" => {"type" => "logs", "dataset" => "generic", "namespace" => "default"}}) }
+
+            it "plugin's configuration metadata index is used" do
+              expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "meta-document-index")
+            end
+          end
+        end
+
+        context "when the event DOESN'T contain integration metadata index" do
+          let(:default_index_resolved) { event.sprintf(subject.default_index) }
+
+          it "default index is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => default_index_resolved)
+          end
+          
+          context "when datastream settings are NOT configured" do
+            it "default index is used" do
+              expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => default_index_resolved)
+            end
+          end
+          
+          context "when datastream settings are configured" do
+            let(:event_fields) { super().merge({"data_stream" => {"type" => "logs", "dataset" => "generic", "namespace" => "default"}}) }
+          
+            it "default index is used" do
+              expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => default_index_resolved)
+            end
           end
         end
       end
