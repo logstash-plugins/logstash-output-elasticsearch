@@ -377,6 +377,43 @@ describe LogStash::Outputs::ElasticSearch do
         end
       end
 
+      context "when plugin's pipeline is specified" do
+        let(:options) { {"pipeline" => "pipeline_from_settings" } }
+
+        context "when the event contains an integration metadata pipeline" do
+          let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"pipeline" => "integration-pipeline"}}}) }
+
+          it "plugin's pipeline is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "pipeline_from_settings")
+          end
+        end
+
+        context "when the event DOESN'T contains an integration metadata pipeline" do
+          it "plugin's pipeline is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "pipeline_from_settings")
+          end
+        end
+      end
+
+      context "when plugin's pipeline is NOT specified" do
+        let(:options) { super().merge("pipeline" => nil)}
+
+        context "when the event contains an integration metadata pipeline" do
+          let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"pipeline" => "integration-pipeline"}}}) }
+
+          it "event's metadata pipeline is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "integration-pipeline")
+          end
+        end
+
+        context "when the event DOESN'T contains an integration metadata pipeline" do
+          it "plugin's default pipeline mechanism is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to_not have_key(:pipeline)
+          end
+        end
+      end
+    end
+
     describe "with auth" do
       let(:user) { "myuser" }
       let(:password) { ::LogStash::Util::Password.new("mypassword") }
