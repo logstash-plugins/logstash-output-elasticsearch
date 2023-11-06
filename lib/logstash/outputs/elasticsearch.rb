@@ -573,7 +573,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     # if is a data stream, sprintf_index could be either the name of a data stream or the value contained in
     # @index without placeholders substitution. If event's metadata index is provided, it takes precedence
     # on datastream name or whatever is returned by the event_target provider.
-    return event_index || sprintf_index
+    return event_index if @index == @default_index && event_index
+    return sprintf_index
   end
   private :resolve_index!
 
