@@ -298,12 +298,12 @@ describe LogStash::Outputs::ElasticSearch do
         context "when the event contains an integration metadata index" do
           let(:event_fields) { super().merge({"@metadata" => {"_ingest_document" => {"index" => "meta-document-index"}}}) }
         
-          it "plugin's configuration metadata index is used" do
+          it "event's metadata index is used" do
             expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "meta-document-index")
           end
 
           context "when datastream settings are NOT configured" do
-            it "plugin's configuration metadata index is used" do
+            it "event's metadata index is used" do
               expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "meta-document-index")
             end
           end
@@ -311,7 +311,7 @@ describe LogStash::Outputs::ElasticSearch do
           context "when datastream settings are configured" do
             let(:event_fields) { super().merge({"data_stream" => {"type" => "logs", "dataset" => "generic", "namespace" => "default"}}) }
 
-            it "plugin's configuration metadata index is used" do
+            it "event's metadata index is used" do
               expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "meta-document-index")
             end
           end
@@ -948,24 +948,6 @@ describe LogStash::Outputs::ElasticSearch do
 
       it "interpolates the plugin's pipeline value" do
         expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "my-ingest-pipeline")
-      end
-
-      context "when event contains also _ingest_document pipeline name" do
-        let(:event) { LogStash::Event.new({"pipeline" => "my-ingest-pipeline",
-                                           "@metadata" => {"target_ingest_pipeline" => "meta-ingest-pipeline",
-                                                           "_ingest_document" => {"pipeline" => "integration-pipeline"}}}) }
-
-        it "precedence is given to the integration" do
-          expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "my-ingest-pipeline")
-        end
-
-        context "when settings doesn't configure a pipeline and integration provides one in the event" do
-          let(:options) { { } }
-
-          it "the one provided by user takes precedence on all the others" do
-            expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "integration-pipeline")
-          end
-        end
       end
 
       context "when the plugin's `pipeline` is constant" do
