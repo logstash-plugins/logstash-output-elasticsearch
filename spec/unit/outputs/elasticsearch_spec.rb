@@ -341,24 +341,41 @@ describe LogStash::Outputs::ElasticSearch do
         end
       end
 
-      context "when there isn't any document_id setting" do
-        context "event contains an integration metadata id" do
+      context "when plugin's document_id is specified" do
+        let(:options) { super().merge("document_id" => "id_from_settings")}
+
+        context "when the event contains an integration metadata document_id" do
           let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"id" => "meta-document-id"}}}) }
 
-          it "precedence is given to the integration" do
+          it "plugin's document_id is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:_id => "id_from_settings")
+          end
+        end
+
+        context "when the event DOESN'T contains an integration metadata document_id" do
+          it "plugin's document_id is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:_id => "id_from_settings")
+          end
+        end
+      end
+
+      context "when plugin's document_id is NOT specified" do
+        let(:options) { super().merge("document_id" => nil)}
+
+        context "when the event contains an integration metadata document_id" do
+          let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"id" => "meta-document-id"}}}) }
+
+          it "plugin's configuration metadata document_id is used" do
             expect(subject.send(:event_action_tuple, event)[1]).to include(:_id => "meta-document-id")
           end
         end
 
-        context "event doesn't contain an integration metadata id" do
-          let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {}}}) }
-
-          it "let Elasticsearch to assign one" do
+        context "when the event DOESN'T contains an integration metadata document_id" do
+          it "plugin's default id mechanism is used" do
             expect(subject.send(:event_action_tuple, event)[1]).to include(:_id => nil)
           end
         end
       end
-    end
 
     describe "with auth" do
       let(:user) { "myuser" }
