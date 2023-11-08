@@ -37,7 +37,7 @@ module LogStash; module Outputs; class ElasticSearch
       template_path = default_template_path(es_major_version, ecs_compatibility)
       read_template_file(template_path)
     rescue => e
-      fail "Failed to load default template for Elasticsearch v#{es_major_version} with ECS #{ecs_compatibility}; caused by: #{e.inspect}"
+      raise LogStash::ConfigurationError, "Failed to load default template for Elasticsearch v#{es_major_version} with ECS #{ecs_compatibility}; caused by: #{e.inspect}"
     end
 
     def self.install(client, template_endpoint, template_name, template, template_overwrite)
@@ -99,9 +99,11 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     def self.read_template_file(template_path)
-      raise ArgumentError, "Template file '#{template_path}' could not be found" unless ::File.exists?(template_path)
+      raise LogStash::ConfigurationError, "Template file '#{template_path}' could not be found" unless ::File.exists?(template_path)
       template_data = ::IO.read(template_path)
       LogStash::Json.load(template_data)
+    rescue => e
+      raise LogStash::ConfigurationError, "Failed to load template file '#{template_path}': #{e.message}"
     end
 
     def self.template_endpoint(plugin)

@@ -33,11 +33,11 @@ describe "elasticsearch is down on startup", :integration => true do
   end
 
   it 'should ingest events when Elasticsearch recovers before documents are sent' do
-    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_raise(
+    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_root_path).with(any_args).and_raise(
         ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new StandardError.new("TEST: before docs are sent"), 'http://test.es/'
     )
     subject.register
-    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_return(ESHelper.es_version)
+    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_root_path).with(any_args).and_call_original
     subject.multi_receive([event1, event2])
     @es.indices.refresh
     r = @es.search(index: 'logstash-*')
@@ -45,13 +45,13 @@ describe "elasticsearch is down on startup", :integration => true do
   end
 
   it 'should ingest events when Elasticsearch recovers after documents are sent' do
-    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_raise(
+    allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_root_path).with(any_args).and_raise(
         ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new StandardError.new("TEST: after docs are sent"), 'http://test.es/'
     )
     subject.register
     Thread.new do
       sleep 4
-      allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_es_version).and_return(ESHelper.es_version)
+      allow_any_instance_of(LogStash::Outputs::ElasticSearch::HttpClient::Pool).to receive(:get_root_path).with(any_args).and_call_original
     end
     subject.multi_receive([event1, event2])
     @es.indices.refresh

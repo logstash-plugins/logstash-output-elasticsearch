@@ -322,12 +322,29 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @bulk_request_metrics = metric.namespace(:bulk_requests)
     @document_level_metrics = metric.namespace(:documents)
 
+    @shutdown_from_finish_register = Concurrent::AtomicBoolean.new(false)
     @after_successful_connection_thread = after_successful_connection do
       begin
         finish_register
         true # thread.value
+      rescue LogStash::ConfigurationError, LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        return e if pipeline_shutdown_requested?
+
+        # retry when 429
+        @logger.debug("Received a 429 status code during registration. Retrying..") && retry if too_many_requests?(e)
+
+        # shut down pipeline
+        if execution_context&.agent.respond_to?(:stop_pipeline)
+          details = { message: e.message, exception: e.class }
+          details[:backtrace] = e.backtrace if @logger.debug?
+          @logger.error("Failed to bootstrap. Pipeline \"#{execution_context.pipeline_id}\" is going to shut down", details)
+
+          @shutdown_from_finish_register.make_true
+          execution_context.agent.stop_pipeline(execution_context.pipeline_id)
+        end
+
+        e
       rescue => e
-        # we do not want to halt the thread with an exception as that has consequences for LS
         e # thread.value
       ensure
         @after_successful_connection_done.make_true
@@ -450,7 +467,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   private
 
   def stop_after_successful_connection_thread
-    @after_successful_connection_thread.join unless @after_successful_connection_thread.nil?
+    # avoid deadlock when finish_register calling execution_context.agent.stop_pipeline
+    # stop_pipeline triggers plugin close and the plugin close waits for after_successful_connection_thread to join
+    return if @shutdown_from_finish_register&.true?
+
+    @after_successful_connection_thread.join if @after_successful_connection_thread&.alive?
   end
 
   # Convert the event into a 3-tuple of action, params and event hash
@@ -599,6 +620,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     details = { message: e.message, exception: e.class, backtrace: e.backtrace }
     details[:body] = e.response_body if e.respond_to?(:response_body)
     @logger.error("Failed to install template", details)
+    raise e if register_termination_error?(e)
   end
 
   def setup_ecs_compatibility_related_defaults
