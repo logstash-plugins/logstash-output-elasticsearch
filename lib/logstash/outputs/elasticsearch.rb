@@ -331,7 +331,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         return e if pipeline_shutdown_requested?
 
         # retry when 429
-        @logger.info("Received a 429 status code during registration") && retry if too_many_requests?(e)
+        @logger.debug("Received a 429 status code during registration. Retrying..") && retry if too_many_requests?(e)
 
         # shut down pipeline
         if execution_context&.agent.respond_to?(:stop_pipeline)
