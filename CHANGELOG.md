@@ -1,3 +1,6 @@
+## 11.21.0
+  - Added support for propagating event processing metadata when this output is downstream of an Elastic Integration Filter and configured _without_ explicit `index`, `document_id`, or `pipeline` directives [#1155](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1155)
+
 ## 11.20.1
   - Doc: Replace `document_already_exist_exception` with `version_conflict_engine_exception` in the `silence_errors_in_log` setting example [#1159](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1159)
 
