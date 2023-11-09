@@ -988,12 +988,12 @@ if enabled, script is in charge of creating non-existent document (scripted upda
 
 Defines the list of Elasticsearch errors that you don't want to log.
 A useful example is when you want to skip all 409 errors
-which are `document_already_exists_exception`.
+which are `version_conflict_engine_exception`.
 
 [source,ruby]
     output {
       elasticsearch {
-        silence_errors_in_log => ["document_already_exists_exception"]
+        silence_errors_in_log => ["version_conflict_engine_exception"]
       }
     }
 
