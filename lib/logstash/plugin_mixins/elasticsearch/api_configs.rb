@@ -149,7 +149,7 @@ module LogStash; module PluginMixins; module ElasticSearch
 
         # Defines the list of Elasticsearch errors that you don't want to log.
         # A useful example is when you want to skip all 409 errors
-        # which are `document_already_exists_exception`.
+        # which are `version_conflict_engine_exception`.
         # Deprecates `failure_type_logging_whitelist`.
         :silence_errors_in_log => { :validate => :array, :default => [] },
 

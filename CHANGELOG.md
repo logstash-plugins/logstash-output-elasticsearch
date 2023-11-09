@@ -1,3 +1,6 @@
+## 11.20.1
+- Replace `document_already_exist_exception` with `version_conflict_engine_exception` in the `silence_errors_in_log` setting example [#1159](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1159)
+
 ## 11.20.0
   - Changed the register to initiate pipeline shutdown upon bootstrap failure instead of simply logging the error [#1151](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1151)
 
