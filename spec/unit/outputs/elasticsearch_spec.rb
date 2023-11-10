@@ -271,6 +271,158 @@ describe LogStash::Outputs::ElasticSearch do
       end
     end
 
+    describe "with event integration metadata" do
+      let(:event_fields) {{}}
+      let(:event) { LogStash::Event.new(event_fields)}
+
+      context "when plugin's index is specified" do
+        let(:options) { super().merge("index" => "index_from_settings")}
+
+        context "when the event contains an integration metadata index" do
+          let(:event_fields) { super().merge({"@metadata" => {"_ingest_document" => {"index" => "meta-document-index"}}}) }
+
+          it "plugin's index is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "index_from_settings")
+          end
+        end
+
+        context "when the event doesn't contains an integration metadata index" do
+          it "plugin's index is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "index_from_settings")
+          end
+        end
+      end
+
+      context "when plugin's index is NOT specified" do
+        let(:options) { super().merge("index" => nil)}
+        
+        context "when the event contains an integration metadata index" do
+          let(:event_fields) { super().merge({"@metadata" => {"_ingest_document" => {"index" => "meta-document-index"}}}) }
+        
+          it "event's metadata index is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "meta-document-index")
+          end
+
+          context "when datastream settings are NOT configured" do
+            it "event's metadata index is used" do
+              expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "meta-document-index")
+            end
+          end
+
+          context "when datastream settings are configured" do
+            let(:event_fields) { super().merge({"data_stream" => {"type" => "logs", "dataset" => "generic", "namespace" => "default"}}) }
+
+            it "event's metadata index is used" do
+              expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "meta-document-index")
+            end
+          end
+        end
+
+        context "when the event DOESN'T contain integration metadata index" do
+          let(:default_index_resolved) { event.sprintf(subject.default_index) }
+
+          it "default index is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => default_index_resolved)
+          end
+          
+          context "when datastream settings are NOT configured" do
+            it "default index is used" do
+              expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => default_index_resolved)
+            end
+          end
+          
+          context "when datastream settings are configured" do
+            let(:event_fields) { super().merge({"data_stream" => {"type" => "logs", "dataset" => "generic", "namespace" => "default"}}) }
+          
+            it "default index is used" do
+              expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => default_index_resolved)
+            end
+          end
+        end
+      end
+
+      context "when plugin's document_id is specified" do
+        let(:options) { super().merge("document_id" => "id_from_settings")}
+
+        context "when the event contains an integration metadata document_id" do
+          let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"id" => "meta-document-id"}}}) }
+
+          it "plugin's document_id is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:_id => "id_from_settings")
+          end
+        end
+
+        context "when the event DOESN'T contains an integration metadata document_id" do
+          it "plugin's document_id is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:_id => "id_from_settings")
+          end
+        end
+      end
+
+      context "when plugin's document_id is NOT specified" do
+        let(:options) { super().merge("document_id" => nil)}
+
+        context "when the event contains an integration metadata document_id" do
+          let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"id" => "meta-document-id"}}}) }
+
+          it "event's metadata document_id is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:_id => "meta-document-id")
+          end
+        end
+
+        context "when the event DOESN'T contains an integration metadata document_id" do
+          it "plugin's default id mechanism is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:_id => nil)
+          end
+        end
+      end
+
+      context "when plugin's pipeline is specified" do
+        let(:options) { {"pipeline" => "pipeline_from_settings" } }
+
+        context "when the event contains an integration metadata pipeline" do
+          let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"pipeline" => "integration-pipeline"}}}) }
+
+          it "plugin's pipeline is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "pipeline_from_settings")
+          end
+        end
+
+        context "when the event DOESN'T contains an integration metadata pipeline" do
+          it "plugin's pipeline is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "pipeline_from_settings")
+          end
+        end
+      end
+
+      context "when plugin's pipeline is NOT specified" do
+        let(:options) { super().merge("pipeline" => nil)}
+
+        context "when the event contains an integration metadata pipeline" do
+          let(:metadata) { {"_ingest_document" => {"pipeline" => "integration-pipeline"}} }
+          let(:event) { LogStash::Event.new({"@metadata" => metadata}) }
+
+          it "event's metadata pipeline is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "integration-pipeline")
+          end
+
+          context "when also target_ingest_pipeline id defined" do
+            let(:metadata) { super().merge({"target_ingest_pipeline" => "meta-ingest-pipeline"}) }
+
+            it "then event's pipeline from _ingest_document is used" do
+              expect(subject.send(:event_action_tuple, event)[1]).to include(:pipeline => "integration-pipeline")
+            end
+          end
+        end
+
+        context "when the event DOESN'T contains an integration metadata pipeline" do
+          it "plugin's default pipeline mechanism is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to_not have_key(:pipeline)
+          end
+        end
+      end
+    end
+
     describe "with auth" do
       let(:user) { "myuser" }
       let(:password) { ::LogStash::Util::Password.new("mypassword") }

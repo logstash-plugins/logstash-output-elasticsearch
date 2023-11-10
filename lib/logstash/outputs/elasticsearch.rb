@@ -540,15 +540,16 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # @return Hash (initial) parameters for given event
   # @private shared event params factory between index and data_stream mode
   def common_event_params(event)
-    sprintf_index = @event_target.call(event)
-    raise IndexInterpolationError, sprintf_index if sprintf_index.match(/%{.*?}/) && dlq_on_failed_indexname_interpolation
+    event_control = event.get("[@metadata][_ingest_document]")
+    event_id, event_pipeline, event_index = event_control&.values_at("id","pipeline","index") rescue nil
+
     params = {
-        :_id => @document_id ? event.sprintf(@document_id) : nil,
-        :_index => sprintf_index,
+        :_id => resolve_document_id(event, event_id),
+        :_index => resolve_index!(event, event_index),
         routing_field_name => @routing ? event.sprintf(@routing) : nil
     }
 
-    target_pipeline = resolve_pipeline(event)
+    target_pipeline = resolve_pipeline(event, event_pipeline)
     # convention: empty string equates to not using a pipeline
     # this is useful when using a field reference in the pipeline setting, e.g.
     #      elasticsearch {
@@ -559,7 +560,26 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     params
   end
 
-  def resolve_pipeline(event)
+  def resolve_document_id(event, event_id)
+    return event.sprintf(@document_id) if @document_id
+    return event_id || nil
+  end
+  private :resolve_document_id
+
+  def resolve_index!(event, event_index)
+    sprintf_index = @event_target.call(event)
+    raise IndexInterpolationError, sprintf_index if sprintf_index.match(/%{.*?}/) && dlq_on_failed_indexname_interpolation
+    # if it's not a data stream, sprintf_index is the @index with resolved placeholders.
+    # if is a data stream, sprintf_index could be either the name of a data stream or the value contained in
+    # @index without placeholders substitution. If event's metadata index is provided, it takes precedence
+    # on datastream name or whatever is returned by the event_target provider.
+    return event_index if @index == @default_index && event_index
+    return sprintf_index
+  end
+  private :resolve_index!
+
+  def resolve_pipeline(event, event_pipeline)
+    return event_pipeline if event_pipeline && !@pipeline
     pipeline_template = @pipeline || event.get("[@metadata][target_ingest_pipeline]")&.to_s
     pipeline_template && event.sprintf(pipeline_template)
   end
