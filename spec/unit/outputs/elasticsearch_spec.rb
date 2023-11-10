@@ -393,53 +393,6 @@ describe LogStash::Outputs::ElasticSearch do
             expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "index_from_settings")
           end
         end
-
-      context "when plugin's index is NOT specified" do
-        let(:options) { super().merge("index" => nil)}
-        
-        context "when the event contains an integration metadata index" do
-          let(:event_fields) { super().merge({"@metadata" => {"_ingest_document" => {"index" => "meta-document-index"}}}) }
-        
-          it "event's metadata index is used" do
-            expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "meta-document-index")
-          end
-
-          context "when datastream settings are NOT configured" do
-            it "event's metadata index is used" do
-              expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "meta-document-index")
-            end
-          end
-
-          context "when datastream settings are configured" do
-            let(:event_fields) { super().merge({"data_stream" => {"type" => "logs", "dataset" => "generic", "namespace" => "default"}}) }
-
-            it "event's metadata index is used" do
-              expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "meta-document-index")
-            end
-          end
-        end
-
-        context "when the event DOESN'T contain integration metadata index" do
-          let(:default_index_resolved) { event.sprintf(subject.default_index) }
-
-          it "default index is used" do
-            expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => default_index_resolved)
-          end
-          
-          context "when datastream settings are NOT configured" do
-            it "default index is used" do
-              expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => default_index_resolved)
-            end
-          end
-          
-          context "when datastream settings are configured" do
-            let(:event_fields) { super().merge({"data_stream" => {"type" => "logs", "dataset" => "generic", "namespace" => "default"}}) }
-          
-            it "default index is used" do
-              expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => default_index_resolved)
-            end
-          end
-        end
       end
 
       context "when plugin's index is NOT specified" do
