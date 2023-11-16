@@ -275,6 +275,108 @@ describe LogStash::Outputs::ElasticSearch do
       let(:event_fields) {{}}
       let(:event) { LogStash::Event.new(event_fields)}
 
+      context "when plugin's version is specified" do
+        let(:options) { super().merge("version" => "123")}
+
+        context "when the event contains an integration metadata version" do
+          let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"version" => "456"}}}) }
+
+          it "plugin's version is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:version => "123")
+          end
+        end
+
+        context "when the event DOESN'T contains an integration metadata version" do
+          it "plugin's version is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:version => "123")
+          end
+        end
+      end
+
+      context "when plugin's version is NOT specified" do
+        context "when the event contains an integration metadata version" do
+          let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"version" => "456"}}}) }
+
+          it "event's metadata version is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:version => "456")
+          end
+        end
+
+        context "when the event DOESN'T contain an integration metadata version" do
+          it "plugin's default id mechanism is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to_not include(:version)
+          end
+        end
+      end
+
+      context "when plugin's version_type is specified" do
+        let(:options) { super().merge("version_type" => "internal")}
+
+        context "when the event contains an integration metadata version_type" do
+          let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"version_type" => "external"}}}) }
+
+          it "plugin's version_type is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:version_type => "internal")
+          end
+        end
+
+        context "when the event DOESN'T contains an integration metadata version_type" do
+          it "plugin's version_type is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:version_type => "internal")
+          end
+        end
+      end
+
+      context "when plugin's version_type is NOT specified" do
+        context "when the event contains an integration metadata version_type" do
+          let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"version_type" => "external"}}}) }
+
+          it "event's metadata version_type is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:version_type => "external")
+          end
+        end
+
+        context "when the event DOESN'T contain an integration metadata version_type" do
+          it "plugin's default id mechanism is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to_not include(:version_type)
+          end
+        end
+      end
+
+      context "when plugin's routing is specified" do
+        let(:options) { super().merge("routing" => "settings_routing")}
+
+        context "when the event contains an integration metadata routing" do
+          let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"routing" => "meta-document-routing"}}}) }
+
+          it "plugin's routing is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:routing => "settings_routing")
+          end
+        end
+
+        context "when the event DOESN'T contains an integration metadata routing" do
+          it "plugin's routing is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:routing => "settings_routing")
+          end
+        end
+      end
+
+      context "when plugin's routing is NOT specified" do
+        context "when the event contains an integration metadata routing" do
+          let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"routing" => "meta-document-routing"}}}) }
+
+          it "event's metadata routing is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:routing => "meta-document-routing")
+          end
+        end
+
+        context "when the event DOESN'T contain an integration metadata routing" do
+          it "plugin's default id mechanism is used" do
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:routing => nil)
+          end
+        end
+      end
+
       context "when plugin's index is specified" do
         let(:options) { super().merge("index" => "index_from_settings")}
 

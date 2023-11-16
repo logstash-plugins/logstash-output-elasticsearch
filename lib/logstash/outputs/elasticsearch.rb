@@ -499,9 +499,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       params[retry_on_conflict_action_name] = @retry_on_conflict
     end
 
-    params[:version] = event.sprintf(@version) if @version
-    params[:version_type] = event.sprintf(@version_type) if @version_type
-
     EventActionTuple.new(action, params, event)
   end
 
@@ -541,12 +538,12 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # @private shared event params factory between index and data_stream mode
   def common_event_params(event)
     event_control = event.get("[@metadata][_ingest_document]")
-    event_id, event_pipeline, event_index = event_control&.values_at("id","pipeline","index") rescue nil
+    event_id, event_pipeline, event_index, event_routing, event_version, event_version_type = event_control&.values_at("id","pipeline","index", "routing", "version", "version_type") rescue nil
 
     params = {
         :_id => resolve_document_id(event, event_id),
         :_index => resolve_index!(event, event_index),
-        routing_field_name => @routing ? event.sprintf(@routing) : nil
+        routing_field_name => resolve_routing(event, event_routing)
     }
 
     target_pipeline = resolve_pipeline(event, event_pipeline)
@@ -557,8 +554,32 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     #      }
     params[:pipeline] = target_pipeline unless (target_pipeline.nil? || target_pipeline.empty?)
 
+    resolved_version = resolve_version(event, event_version)
+    resolved_version_type = resolve_version_type(event, event_version_type)
+    # avoid to add nil valued key-value pairs
+    params[:version] = resolved_version unless resolved_version.nil?
+    params[:version_type] = resolved_version_type unless resolved_version_type.nil?
+
     params
   end
+
+  def resolve_version(event, event_version)
+    return event_version if event_version && !@version
+    event.sprintf(@version) if @version
+  end
+  private :resolve_version
+
+  def resolve_version_type(event, event_version_type)
+    return event_version_type if event_version_type && !@version_type
+    event.sprintf(@version_type) if @version_type
+  end
+  private :resolve_version_type
+
+  def resolve_routing(event, event_routing)
+    return event_routing if event_routing && !@routing
+    @routing ? event.sprintf(@routing) : nil
+  end
+  private :resolve_routing
 
   def resolve_document_id(event, event_id)
     return event.sprintf(@document_id) if @document_id
