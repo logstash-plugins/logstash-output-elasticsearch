@@ -557,7 +557,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     params[:version] = resolve_version(event, event_version)
     params[:version_type] = resolve_version_type(event, event_version_type)
 
-    params
+    # purge nil valued key-value pairs
+    params.compact
   end
 
   def resolve_version(event, event_version)

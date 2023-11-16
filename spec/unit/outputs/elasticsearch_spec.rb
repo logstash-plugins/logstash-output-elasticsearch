@@ -304,7 +304,7 @@ describe LogStash::Outputs::ElasticSearch do
 
         context "when the event DOESN'T contain an integration metadata version" do
           it "plugin's default id mechanism is used" do
-            expect(subject.send(:event_action_tuple, event)[1]).to include(:version => nil)
+            expect(subject.send(:event_action_tuple, event)[1]).to_not include(:version)
           end
         end
       end
@@ -338,7 +338,7 @@ describe LogStash::Outputs::ElasticSearch do
 
         context "when the event DOESN'T contain an integration metadata version_type" do
           it "plugin's default id mechanism is used" do
-            expect(subject.send(:event_action_tuple, event)[1]).to include(:version_type => nil)
+            expect(subject.send(:event_action_tuple, event)[1]).to_not include(:version_type)
           end
         end
       end
@@ -372,7 +372,7 @@ describe LogStash::Outputs::ElasticSearch do
 
         context "when the event DOESN'T contain an integration metadata routing" do
           it "plugin's default id mechanism is used" do
-            expect(subject.send(:event_action_tuple, event)[1]).to include(:routing => nil)
+            expect(subject.send(:event_action_tuple, event)[1]).to_not include(:routing)
           end
         end
       end
