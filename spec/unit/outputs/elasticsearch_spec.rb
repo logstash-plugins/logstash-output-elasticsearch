@@ -372,7 +372,7 @@ describe LogStash::Outputs::ElasticSearch do
 
         context "when the event DOESN'T contain an integration metadata routing" do
           it "plugin's default id mechanism is used" do
-            expect(subject.send(:event_action_tuple, event)[1]).to_not include(:routing)
+            expect(subject.send(:event_action_tuple, event)[1]).to include(:routing => nil)
           end
         end
       end

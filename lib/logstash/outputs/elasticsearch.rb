@@ -554,11 +554,13 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     #      }
     params[:pipeline] = target_pipeline unless (target_pipeline.nil? || target_pipeline.empty?)
 
-    params[:version] = resolve_version(event, event_version)
-    params[:version_type] = resolve_version_type(event, event_version_type)
+    resolved_version = resolve_version(event, event_version)
+    resolved_version_type = resolve_version_type(event, event_version_type)
+    # avoid to add nil valued key-value pairs
+    params[:version] = resolved_version unless resolved_version.nil?
+    params[:version_type] = resolved_version_type unless resolved_version_type.nil?
 
-    # purge nil valued key-value pairs
-    params.compact
+    params
   end
 
   def resolve_version(event, event_version)
