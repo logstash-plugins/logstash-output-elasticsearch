@@ -297,8 +297,32 @@ describe LogStash::Outputs::ElasticSearch do
         context "when the event contains an integration metadata version" do
           let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"version" => "456"}}}) }
 
-          it "event's metadata version is used" do
-            expect(subject.send(:event_action_tuple, event)[1]).to include(:version => "456")
+          context "when datastream settings are NOT configured" do
+            it "event's metadata version is used" do
+              expect(subject.send(:event_action_tuple, event)[1]).to include(:version => "456")
+            end
+          end
+
+          context "when datastream settings are configured" do
+#             let(:options) {
+#               {
+#                 "hosts" => ["localhost","localhost:9202"],
+#                 "data_stream" => "true",
+#                 "data_stream_type" => "logs",
+#                 "data_stream_dataset" => "generic",
+#                 "data_stream_namespace" => "default"
+#               }
+#             }
+#
+#             data_stream => "true"
+#                     data_stream_type => "metrics"
+#                     data_stream_dataset => "foo"
+#                     data_stream_namespace => "bar"
+            let(:event_fields) { super().merge({"data_stream" => {"type" => "logs", "dataset" => "generic", "namespace" => "default"}}) }
+
+            it "no version is used" do
+              expect(subject.send(:data_stream_event_action_tuple, event)[1]).to_not include(:version)
+            end
           end
         end
 
@@ -315,8 +339,18 @@ describe LogStash::Outputs::ElasticSearch do
         context "when the event contains an integration metadata version_type" do
           let(:event) { LogStash::Event.new({"@metadata" => {"_ingest_document" => {"version_type" => "external"}}}) }
 
-          it "plugin's version_type is used" do
-            expect(subject.send(:event_action_tuple, event)[1]).to include(:version_type => "internal")
+          context "when datastream settings are NOT configured" do
+            it "plugin's version_type is used" do
+              expect(subject.send(:event_action_tuple, event)[1]).to include(:version_type => "internal")
+            end
+          end
+
+          context "when datastream settings are configured" do
+            let(:event_fields) { super().merge({"data_stream" => {"type" => "logs", "dataset" => "generic", "namespace" => "default"}}) }
+
+            it "no version_type is used" do
+              expect(subject.send(:data_stream_event_action_tuple, event)[1]).to_not include(:version_type)
+            end
           end
         end
 
