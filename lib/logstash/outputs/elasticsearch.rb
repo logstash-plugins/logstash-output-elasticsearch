@@ -499,6 +499,16 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       params[retry_on_conflict_action_name] = @retry_on_conflict
     end
 
+    event_control = event.get("[@metadata][_ingest_document]")
+    event_version, event_version_type = event_control&.values_at("version", "version_type") rescue nil
+
+    resolved_version = resolve_version(event, event_version)
+    resolved_version_type = resolve_version_type(event, event_version_type)
+
+    # avoid to add nil valued key-value pairs
+    params[:version] = resolved_version unless resolved_version.nil?
+    params[:version_type] = resolved_version_type unless resolved_version_type.nil?
+
     EventActionTuple.new(action, params, event)
   end
 
@@ -538,7 +548,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # @private shared event params factory between index and data_stream mode
   def common_event_params(event)
     event_control = event.get("[@metadata][_ingest_document]")
-    event_id, event_pipeline, event_index, event_routing, event_version, event_version_type = event_control&.values_at("id","pipeline","index", "routing", "version", "version_type") rescue nil
+    event_id, event_pipeline, event_index, event_routing = event_control&.values_at("id","pipeline","index", "routing") rescue nil
 
     params = {
         :_id => resolve_document_id(event, event_id),
@@ -553,12 +563,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     #        pipeline => "%{[@metadata][pipeline]}"
     #      }
     params[:pipeline] = target_pipeline unless (target_pipeline.nil? || target_pipeline.empty?)
-
-    resolved_version = resolve_version(event, event_version)
-    resolved_version_type = resolve_version_type(event, event_version_type)
-    # avoid to add nil valued key-value pairs
-    params[:version] = resolved_version unless resolved_version.nil?
-    params[:version_type] = resolved_version_type unless resolved_version_type.nil?
 
     params
   end
