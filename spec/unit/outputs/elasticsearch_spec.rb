@@ -304,20 +304,7 @@ describe LogStash::Outputs::ElasticSearch do
           end
 
           context "when datastream settings are configured" do
-#             let(:options) {
-#               {
-#                 "hosts" => ["localhost","localhost:9202"],
-#                 "data_stream" => "true",
-#                 "data_stream_type" => "logs",
-#                 "data_stream_dataset" => "generic",
-#                 "data_stream_namespace" => "default"
-#               }
-#             }
-#
-#             data_stream => "true"
-#                     data_stream_type => "metrics"
-#                     data_stream_dataset => "foo"
-#                     data_stream_namespace => "bar"
+            # NOTE: we validate with datastream-specific `data_stream_event_action_tuple`
             let(:event_fields) { super().merge({"data_stream" => {"type" => "logs", "dataset" => "generic", "namespace" => "default"}}) }
 
             it "no version is used" do
@@ -346,6 +333,7 @@ describe LogStash::Outputs::ElasticSearch do
           end
 
           context "when datastream settings are configured" do
+            # NOTE: we validate with datastream-specific `data_stream_event_action_tuple`
             let(:event_fields) { super().merge({"data_stream" => {"type" => "logs", "dataset" => "generic", "namespace" => "default"}}) }
 
             it "no version_type is used" do
