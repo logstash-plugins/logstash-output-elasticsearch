@@ -62,6 +62,8 @@ The logstash-output-elasticsearch `hosts` setting on {serverless-short} defaults
 Set the value to port :443 instead.
 ****
 
+For more info on sending data from {ls} to {es-serverless}, check out the {serverless-docs}/elasticsearch/what-is-elasticsearch-serverless[{es-serverless} docs].
+
 [id="plugins-{type}s-{plugin}-ess"]
 ==== Hosted {es} Service on Elastic Cloud
 
