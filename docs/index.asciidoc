@@ -58,7 +58,7 @@ Any {ilm-init} settings in your <<plugins-outputs-elasticsearch,{es} output plug
 
 .Known issue for {ls} to {es-serverless}
 ****
-The logstash-output-elasticsearch `hosts` setting on {serverless-short} defaults to port :9200. 
+The logstash-output-elasticsearch `hosts` setting on {serverless-short} defaults the port to 9200 when omitted. 
 Set the value to port :443 instead.
 ****
 
