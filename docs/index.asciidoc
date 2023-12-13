@@ -30,7 +30,7 @@ the website landing page or in the {ref}[Elasticsearch documentation].
 
 .Compatibility Note
 [NOTE]
-================================================================================
+=====
 When connected to Elasticsearch 7.x, modern versions of this plugin
 don't use the document-type when inserting documents, unless the user
 explicitly sets <<plugins-{type}s-{plugin}-document_type>>.
@@ -42,9 +42,30 @@ picks up changes to the Elasticsearch index template.
 If you are using a custom <<plugins-{type}s-{plugin}-template>>,
 ensure your template uses the `_doc` document-type before
 connecting to Elasticsearch 7.x.
-================================================================================
+=====
 
-===== Hosted {es} Service on Elastic Cloud
+[id="plugins-{type}s-{plugin}-serverless"]
+==== {ls} to {es-serverless}
+
+You can use this plugin to send your {ls} data to {es-serverless}.
+Some differences to note between {es-serverless} and self-managed {es}:
+
+* Use *API keys* to access {serverless-full} from {ls}. 
+Any user-based security settings in your in your <<plugins-outputs-elasticsearch,{es} output plugin>> configuration are ignored and may cause errors.
+* {es-serverless} uses *data streams* and {ref}/data-stream-lifecycle.html[{dlm} ({dlm-init})] instead of {ilm} ({ilm-init}). 
+Any {ilm-init} settings in your <<plugins-outputs-elasticsearch,{es} output plugin>> configuration are ignored and may cause errors.
+* *{ls} monitoring* is available through the https://github.com/elastic/integrations/blob/main/packages/logstash/_dev/build/docs/README.md[{ls} Integration] in {serverless-docs}/observability/what-is-observability-serverless[Elastic Observability] on {serverless-full}.
+
+.Known issue for {ls} to {es-serverless}
+****
+The logstash-output-elasticsearch `hosts` setting on {serverless-short} defaults the port to 9200 when omitted. 
+Set the value to port :443 instead.
+****
+
+For more info on sending data from {ls} to {es-serverless}, check out the {serverless-docs}/elasticsearch/what-is-elasticsearch-serverless[{es-serverless} docs].
+
+[id="plugins-{type}s-{plugin}-ess"]
+==== Hosted {es} Service on Elastic Cloud
 
 {ess-leadin}
 
@@ -68,8 +89,8 @@ and will correctly reject events with fields that conflict and cannot be coerced
 The {es} output plugin can store both time series datasets (such
 as logs, events, and metrics) and non-time series data in Elasticsearch.
 
-The data stream options are recommended for indexing time series datasets (such
-as logs, metrics, and events) into {es}:
+Use the data stream options for indexing time series datasets (such
+as logs, metrics, and events) into {es} and {es-serverless}:
 
 * <<plugins-{type}s-{plugin}-data_stream>>
 * <<plugins-{type}s-{plugin}-data_stream_auto_routing>> 
@@ -200,27 +221,28 @@ The list of error codes accepted for DLQ could be customized with <<plugins-{typ
 but should be used only in motivated cases.
 
 [id="plugins-{type}s-{plugin}-ilm"]
-==== Index Lifecycle Management
+==== {ilm-cap} ({ilm-init})
 
 [NOTE]
-The Index Lifecycle Management feature requires plugin version `9.3.1` or higher.
+--
+* The {ilm-cap} ({ilm-init}) feature does not apply for {es-serverless}. 
+Any {ilm-init} settings in your plugin configuration are ignored and may cause errors.
+* The {ilm-init} feature requires plugin version `9.3.1` or higher.
+* This feature requires an {es} instance of 6.6.0 or higher with at least a Basic license
+--
 
-[NOTE]
-This feature requires an Elasticsearch instance of 6.6.0 or higher with at least a Basic license
+{ls} can use {ref}/index-lifecycle-management.html[{ilm}] to automate the management of indices over time.
 
-Logstash can use {ref}/index-lifecycle-management.html[Index Lifecycle
-Management] to automate the management of indices over time.
-
-The use of Index Lifecycle Management is controlled by the `ilm_enabled`
+The use of {ilm} is controlled by the `ilm_enabled`
 setting. By default, this setting detects whether the Elasticsearch instance
-supports ILM, and uses it if it is available. `ilm_enabled` can also be set to
-`true` or `false` to override the automatic detection, or disable ILM.
+supports {ilm-init}, and uses it if it is available. `ilm_enabled` can also be set to
+`true` or `false` to override the automatic detection, or disable {ilm-init}.
 
-This will overwrite the index settings and adjust the Logstash template to write
-the necessary settings for the template to support index lifecycle management,
+This will overwrite the index settings and adjust the {ls} template to write
+the necessary settings for the template to support {ilm},
 including the index policy and rollover alias to be used.
 
-Logstash will create a rollover alias for the indices to be written to,
+{ls} creates a rollover alias for the indices to be written to,
 including a pattern for how the actual indices will be named, and unless an ILM
 policy that already exists has been specified, a default policy will also be
 created. The default policy is configured to rollover an index when it reaches
@@ -246,14 +268,14 @@ See config below for an example:
       }
     }
 
-NOTE: Custom ILM policies must already exist on the Elasticsearch cluster before they can be used.
-
-NOTE: If the rollover alias or pattern is modified, the index template will need to be
+[NOTE]
+--
+* Custom ILM policies must already exist on the {es} cluster before they can be used.
+* If the rollover alias or pattern is modified, the index template will need to be
 overwritten as the settings `index.lifecycle.name` and
 `index.lifecycle.rollover_alias` are automatically written to the template
-
-NOTE: If the index property is supplied in the output definition, it will be overwritten by the rollover alias.
-
+* If the index property is supplied in the output definition, it will be overwritten by the rollover alias.
+--
 
 ==== Batch Sizes
 

@@ -1,3 +1,6 @@
+## 11.22.2
+  - [DOC] Add content for sending data to Elasticsearch on serverless [#1164](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1164)
+
 ## 11.22.1
   - Fix, avoid to populate `version` and `version_type` attributes when processing integration metadata and datastream is enabled. [#1161](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1161)
 
