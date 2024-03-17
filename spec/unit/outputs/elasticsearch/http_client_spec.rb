@@ -242,12 +242,14 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
           end
         end
 
-        context "with two messages" do
-          let(:message1) { "hey" }
-          let(:message2) { "you" }
+        context "with multiple messages" do
+          let(:message_head) { "Spacecraft message" }
+          let(:message_tail) { "byte sequence" }
+          let(:invalid_utf_8_message) { "contains invalid \xAC" }
           let(:actions) { [
-            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message1}],
-            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message2}],
+            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message_head}],
+            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> invalid_utf_8_message}],
+            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message_tail}],
           ]}
           it "executes one bulk_send operation" do
             allow(subject).to receive(:join_bulk_responses)

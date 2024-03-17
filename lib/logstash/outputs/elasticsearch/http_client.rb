@@ -37,7 +37,7 @@ module LogStash; module Outputs; class ElasticSearch;
     # * `:user` - String. The user to use for authentication.
     # * `:password` - String. The password to use for authentication.
     # * `:timeout` - Float. A duration value, in seconds, after which a socket
-    #    operation or request will be aborted if not yet successfull
+    #    operation or request will be aborted if not yet successful
     # * `:client_settings` - a hash; see below for keys.
     #
     # The `client_settings` key is a has that can contain other settings:
@@ -132,6 +132,9 @@ module LogStash; module Outputs; class ElasticSearch;
                     action.map {|line| LogStash::Json.dump(line)}.join("\n") :
                     LogStash::Json.dump(action)
         as_json << "\n"
+
+        replace_invalid_bytes!(as_json)
+
         if (stream_writer.pos + as_json.bytesize) > TARGET_BULK_BYTES && stream_writer.pos > 0
           stream_writer.flush # ensure writer has sync'd buffers before reporting sizes
           logger.debug("Sending partial bulk request for batch with one or more actions remaining.",
@@ -178,6 +181,12 @@ module LogStash; module Outputs; class ElasticSearch;
     def bulk_send(body_stream, batch_actions)
       params = compression_level? ? {:headers => {"Content-Encoding" => "gzip"}} : {}
 
+      # body_stream.string check with wireshark how it represents on BINARY vs Ruby#string
+      # debug body_stream.string.byte, then check with wirehark
+      logger.info("body_stream.string.bytes: ",
+                  :string_encoding => body_stream.string.encoding.to_s,
+                  :body_stream_string => body_stream.string.bytes,
+                  :body_stream_string_size => body_stream.string.bytes.size)
       response = @pool.post(@bulk_path, params, body_stream.string)
 
       @bulk_response_metrics.increment(response.code.to_s)
@@ -496,5 +505,15 @@ module LogStash; module Outputs; class ElasticSearch;
       end
       [args, source]
     end
+
+    private
+    # Replaces invalid byte sequences of given JSON string with replacements character
+    def replace_invalid_bytes!(json_string)
+      has_invalid_bytes = false
+      replacement_character = "\uFFFD"
+      json_string.scrub! { |_| has_invalid_bytes = true; replacement_character }
+      logger.debug("The event invalid bytes got replaced by replacement character") if has_invalid_bytes
+    end
+
   end
 end end end

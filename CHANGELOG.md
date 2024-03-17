@@ -1,3 +1,6 @@
+## 11.22.3
+  - Fixes the buggy behavior when JSON events contain non UTF-8 bytes. [#1169](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1169)
+
 ## 11.22.2
   - [DOC] Add content for sending data to Elasticsearch on serverless [#1164](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1164)
 
