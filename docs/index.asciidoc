@@ -316,6 +316,11 @@ index level and `monitoring` permissions at cluster level. The `monitoring`
 permission at cluster level is necessary to perform periodic connectivity
 checks.
 
+[id="plugins-{type}s-{plugin}-handling-non-utf-8"]
+==== Handling non UTF-8 data
+
+The plugin assumes that incoming JSON data is in UTF-8 shape.
+If event JSON data contains invalid UTF-8 byte sequence(s), the plugin replaces with replacement (`\uFFFD`) character.
 
 [id="plugins-{type}s-{plugin}-options"]
 ==== Elasticsearch Output Configuration Options
