@@ -181,12 +181,6 @@ module LogStash; module Outputs; class ElasticSearch;
     def bulk_send(body_stream, batch_actions)
       params = compression_level? ? {:headers => {"Content-Encoding" => "gzip"}} : {}
 
-      # body_stream.string check with wireshark how it represents on BINARY vs Ruby#string
-      # debug body_stream.string.byte, then check with wirehark
-      logger.info("body_stream.string.bytes: ",
-                  :string_encoding => body_stream.string.encoding.to_s,
-                  :body_stream_string => body_stream.string.bytes,
-                  :body_stream_string_size => body_stream.string.bytes.size)
       response = @pool.post(@bulk_path, params, body_stream.string)
 
       @bulk_response_metrics.increment(response.code.to_s)
