@@ -22,6 +22,9 @@ module LogStash; module Outputs; class ElasticSearch;
   # made sense. We picked one on the lowish side to not use too much heap.
   TARGET_BULK_BYTES = 20 * 1024 * 1024 # 20MiB
 
+  # a replacement for invalid bytes in JSON string of the event
+  REPLACEMENT_CHARACTER = "\uFFFD".freeze
+
   class HttpClient
     attr_reader :client, :options, :logger, :pool, :action_count, :recv_count
     # This is here in case we use DEFAULT_OPTIONS in the future
@@ -504,8 +507,7 @@ module LogStash; module Outputs; class ElasticSearch;
     # Replaces invalid byte sequences of given JSON string with replacements character
     def replace_invalid_bytes!(json_string)
       has_invalid_bytes = false
-      replacement_character = "\uFFFD"
-      json_string.scrub! { |_| has_invalid_bytes = true; replacement_character }
+      json_string.scrub! { |_| has_invalid_bytes = true; REPLACEMENT_CHARACTER }
       logger.debug("The event invalid bytes got replaced by replacement character") if has_invalid_bytes
     end
 
