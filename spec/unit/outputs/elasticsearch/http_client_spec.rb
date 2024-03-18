@@ -259,7 +259,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
 
           context "if one exceeds TARGET_BULK_BYTES" do
             let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
-            let(:message1) { "a" * (target_bulk_bytes + 1) }
+            let(:message_head) { "a" * (target_bulk_bytes + 1) }
             it "executes two bulk_send operations" do
               allow(subject).to receive(:join_bulk_responses)
               expect(subject).to receive(:bulk_send).twice
