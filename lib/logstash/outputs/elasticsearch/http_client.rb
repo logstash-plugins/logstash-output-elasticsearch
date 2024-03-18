@@ -136,7 +136,7 @@ module LogStash; module Outputs; class ElasticSearch;
                     LogStash::Json.dump(action)
         as_json << "\n"
 
-        replace_invalid_bytes!(as_json)
+        as_json.scrub! # ensure generated JSON is valid UTF-8
 
         if (stream_writer.pos + as_json.bytesize) > TARGET_BULK_BYTES && stream_writer.pos > 0
           stream_writer.flush # ensure writer has sync'd buffers before reporting sizes
