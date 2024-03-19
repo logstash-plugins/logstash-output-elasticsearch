@@ -17,7 +17,7 @@ end
     let(:type) { ESHelper.es_version_satisfies?("< 7") ? "doc" : "_doc" }
     let(:event_count) { 10000 + rand(500) }
     # mix the events with valid and invalid UTF-8 payloads
-    let(:events) { event_count.times.map do |i| i%3 == 0 ? event : event_with_invalid_utf_8_bytes end.to_a }
+    let(:events) { event_count.times.map { |i| i%3 == 0 ? event : event_with_invalid_utf_8_bytes }.to_a }
     let(:config) {
       {
         "hosts" => get_host_port,
