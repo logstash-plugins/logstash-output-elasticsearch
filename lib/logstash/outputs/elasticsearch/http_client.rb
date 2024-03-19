@@ -22,6 +22,7 @@ module LogStash; module Outputs; class ElasticSearch;
   # made sense. We picked one on the lowish side to not use too much heap.
   TARGET_BULK_BYTES = 20 * 1024 * 1024 # 20MiB
 
+
   class HttpClient
     attr_reader :client, :options, :logger, :pool, :action_count, :recv_count
     # This is here in case we use DEFAULT_OPTIONS in the future
@@ -37,7 +38,7 @@ module LogStash; module Outputs; class ElasticSearch;
     # * `:user` - String. The user to use for authentication.
     # * `:password` - String. The password to use for authentication.
     # * `:timeout` - Float. A duration value, in seconds, after which a socket
-    #    operation or request will be aborted if not yet successfull
+    #    operation or request will be aborted if not yet successful
     # * `:client_settings` - a hash; see below for keys.
     #
     # The `client_settings` key is a has that can contain other settings:
@@ -132,6 +133,9 @@ module LogStash; module Outputs; class ElasticSearch;
                     action.map {|line| LogStash::Json.dump(line)}.join("\n") :
                     LogStash::Json.dump(action)
         as_json << "\n"
+
+        as_json.scrub! # ensure generated JSON is valid UTF-8
+
         if (stream_writer.pos + as_json.bytesize) > TARGET_BULK_BYTES && stream_writer.pos > 0
           stream_writer.flush # ensure writer has sync'd buffers before reporting sizes
           logger.debug("Sending partial bulk request for batch with one or more actions remaining.",
@@ -496,5 +500,6 @@ module LogStash; module Outputs; class ElasticSearch;
       end
       [args, source]
     end
+
   end
 end end end
