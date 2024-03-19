@@ -1,3 +1,6 @@
+## 11.4.2
+ - Fixes an issue where events containing non-unicode strings could fail to serialize correctly when compression is enabled [#1169](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1169)
+
 ## 11.4.1
  - Feat: upgrade manticore (http-client) library [#1063](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1063)
    - the underlying changes include latest HttpClient (4.5.13)
