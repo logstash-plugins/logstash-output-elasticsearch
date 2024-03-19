@@ -6,7 +6,8 @@ set -ex
 cd .ci
 
 if [ "$INTEGRATION" == "true" ]; then
-    docker-compose up --exit-code-from logstash
+    # remove the `--attach logstash` if you want to see all logs including elasticsearch container logs
+    docker-compose up --exit-code-from logstash --attach logstash
 else
     docker-compose up --exit-code-from logstash logstash
 fi
