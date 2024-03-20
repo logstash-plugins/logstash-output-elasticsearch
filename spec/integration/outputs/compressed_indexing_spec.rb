@@ -10,10 +10,12 @@ end
 
 describe "indexing with http_compression turned on", :integration => true do
   let(:event) { LogStash::Event.new("message" => "Hello World!", "type" => type) }
+  let(:event_with_invalid_utf_8_bytes) { LogStash::Event.new("message" => "Message from spacecraft which contains \xAC invalid \xD7 byte sequences.", "type" => type) }
   let(:index) { 10.times.collect { rand(10).to_s }.join("") }
   let(:type) { ESHelper.es_version_satisfies?("< 7") ? "doc" : "_doc" }
   let(:event_count) { 10000 + rand(500) }
-  let(:events) { event_count.times.map { event }.to_a }
+  # mix the events with valid and invalid UTF-8 payloads
+  let(:events) { event_count.times.map { |i| i%3 == 0 ? event : event_with_invalid_utf_8_bytes }.to_a }
   let(:config) {
     {
       "hosts" => get_host_port,

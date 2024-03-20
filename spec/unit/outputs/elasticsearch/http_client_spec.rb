@@ -243,12 +243,14 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
           end
         end
 
-        context "with two messages" do
-          let(:message1) { "hey" }
-          let(:message2) { "you" }
+        context "with multiple messages" do
+          let(:message_head) { "Spacecraft message" }
+          let(:message_tail) { "byte sequence" }
+          let(:invalid_utf_8_message) { "contains invalid \xAC" }
           let(:actions) { [
-            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message1}],
-            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message2}],
+            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message_head}],
+            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> invalid_utf_8_message}],
+            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message_tail}],
           ]}
           it "executes one bulk_send operation" do
             allow(subject).to receive(:join_bulk_responses)
@@ -258,7 +260,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
 
           context "if one exceeds TARGET_BULK_BYTES" do
             let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
-            let(:message1) { "a" * (target_bulk_bytes + 1) }
+            let(:message_head) { "a" * (target_bulk_bytes + 1) }
             it "executes two bulk_send operations" do
               allow(subject).to receive(:join_bulk_responses)
               expect(subject).to receive(:bulk_send).twice

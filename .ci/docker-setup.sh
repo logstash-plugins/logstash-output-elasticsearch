@@ -48,10 +48,10 @@ if [ "$ELASTIC_STACK_VERSION" ]; then
 
     if [ "$INTEGRATION" == "true" ]; then
         docker-compose down
-        docker-compose build
+        docker-compose build --quiet
     else
         docker-compose down
-        docker-compose build logstash
+        docker-compose build logstash --quiet
     fi
 else
     echo "Please set the ELASTIC_STACK_VERSION environment variable"
