@@ -1,3 +1,6 @@
+## 11.22.4
+  - [DOC] Adds note that ecs-compatibility is required for data streams to work properly [#1174](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1174)
+
 ## 11.22.3
   - Fixes an issue where events containing non-unicode strings could fail to serialize correctly when compression is enabled [#1169](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1169)
 

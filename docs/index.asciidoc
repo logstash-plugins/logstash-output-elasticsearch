@@ -99,6 +99,8 @@ as logs, metrics, and events) into {es} and {es-serverless}:
 * <<plugins-{type}s-{plugin}-data_stream_sync_fields>>
 * <<plugins-{type}s-{plugin}-data_stream_type>> 
 
+IMPORTANT: <<plugins-{type}s-{plugin}-ecs_compatibility,ECS compatibility>> must be enabled (set to `v1` or `v8`) for data streams to work properly.
+
 [id="plugins-{type}s-{plugin}-ds-examples"]
 ===== Data stream configuration examples
 
@@ -132,8 +134,6 @@ output {
     }
 }
 -----
-
-
 
 
 ==== Writing to different indices: best practices
@@ -511,6 +511,7 @@ The other `data_stream_*` settings will be used only if this setting is enabled.
 
 Logstash handles the output as a data stream when the supplied configuration
 is compatible with data streams and this value is set to `auto`.
+Note that <<plugins-{type}s-{plugin}-ecs_compatibility,ECS compatibility>> must be enabled (set to `v1` or `v8`) for data streams to work properly.
 
 [id="plugins-{type}s-{plugin}-data_stream_auto_routing"]
 ===== `data_stream_auto_routing`
