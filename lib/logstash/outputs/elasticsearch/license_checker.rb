@@ -11,6 +11,8 @@ module LogStash; module Outputs; class ElasticSearch
     # @param url [LogStash::Util::SafeURI] ES node URL
     # @return [Boolean] true if provided license is deemed appropriate
     def appropriate_license?(pool, url)
+      return true if pool.serverless?
+
       license = extract_license(pool.get_license(url))
       case license_status(license)
       when 'active'

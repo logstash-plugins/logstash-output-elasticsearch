@@ -30,7 +30,7 @@ the website landing page or in the {ref}[Elasticsearch documentation].
 
 .Compatibility Note
 [NOTE]
-================================================================================
+=====
 When connected to Elasticsearch 7.x, modern versions of this plugin
 don't use the document-type when inserting documents, unless the user
 explicitly sets <<plugins-{type}s-{plugin}-document_type>>.
@@ -42,9 +42,30 @@ picks up changes to the Elasticsearch index template.
 If you are using a custom <<plugins-{type}s-{plugin}-template>>,
 ensure your template uses the `_doc` document-type before
 connecting to Elasticsearch 7.x.
-================================================================================
+=====
 
-===== Hosted {es} Service on Elastic Cloud
+[id="plugins-{type}s-{plugin}-serverless"]
+==== {ls} to {es-serverless}
+
+You can use this plugin to send your {ls} data to {es-serverless}.
+Some differences to note between {es-serverless} and self-managed {es}:
+
+* Use *API keys* to access {serverless-full} from {ls}. 
+Any user-based security settings in your <<plugins-outputs-elasticsearch,{es} output plugin>> configuration are ignored and may cause errors.
+* {es-serverless} uses *data streams* and {ref}/data-stream-lifecycle.html[{dlm} ({dlm-init})] instead of {ilm} ({ilm-init}). 
+Any {ilm-init} settings in your <<plugins-outputs-elasticsearch,{es} output plugin>> configuration are ignored and may cause errors.
+* *{ls} monitoring* is available through the https://github.com/elastic/integrations/blob/main/packages/logstash/_dev/build/docs/README.md[{ls} Integration] in {serverless-docs}/observability/what-is-observability-serverless[Elastic Observability] on {serverless-full}.
+
+.Known issue for {ls} to {es-serverless}
+****
+The logstash-output-elasticsearch `hosts` setting on {serverless-short} defaults the port to 9200 when omitted. 
+Set the value to port :443 instead.
+****
+
+For more info on sending data from {ls} to {es-serverless}, check out the {serverless-docs}/elasticsearch/what-is-elasticsearch-serverless[{es-serverless} docs].
+
+[id="plugins-{type}s-{plugin}-ess"]
+==== Hosted {es} Service on Elastic Cloud
 
 {ess-leadin}
 
@@ -68,8 +89,8 @@ and will correctly reject events with fields that conflict and cannot be coerced
 The {es} output plugin can store both time series datasets (such
 as logs, events, and metrics) and non-time series data in Elasticsearch.
 
-The data stream options are recommended for indexing time series datasets (such
-as logs, metrics, and events) into {es}:
+Use the data stream options for indexing time series datasets (such
+as logs, metrics, and events) into {es} and {es-serverless}:
 
 * <<plugins-{type}s-{plugin}-data_stream>>
 * <<plugins-{type}s-{plugin}-data_stream_auto_routing>> 
@@ -77,6 +98,8 @@ as logs, metrics, and events) into {es}:
 * <<plugins-{type}s-{plugin}-data_stream_namespace>>
 * <<plugins-{type}s-{plugin}-data_stream_sync_fields>>
 * <<plugins-{type}s-{plugin}-data_stream_type>> 
+
+IMPORTANT: <<plugins-{type}s-{plugin}-ecs_compatibility,ECS compatibility>> must be enabled (set to `v1` or `v8`) for data streams to work properly.
 
 [id="plugins-{type}s-{plugin}-ds-examples"]
 ===== Data stream configuration examples
@@ -111,8 +134,6 @@ output {
     }
 }
 -----
-
-
 
 
 ==== Writing to different indices: best practices
@@ -200,27 +221,28 @@ The list of error codes accepted for DLQ could be customized with <<plugins-{typ
 but should be used only in motivated cases.
 
 [id="plugins-{type}s-{plugin}-ilm"]
-==== Index Lifecycle Management
+==== {ilm-cap} ({ilm-init})
 
 [NOTE]
-The Index Lifecycle Management feature requires plugin version `9.3.1` or higher.
+--
+* The {ilm-cap} ({ilm-init}) feature does not apply for {es-serverless}. 
+Any {ilm-init} settings in your plugin configuration are ignored and may cause errors.
+* The {ilm-init} feature requires plugin version `9.3.1` or higher.
+* This feature requires an {es} instance of 6.6.0 or higher with at least a Basic license
+--
 
-[NOTE]
-This feature requires an Elasticsearch instance of 6.6.0 or higher with at least a Basic license
+{ls} can use {ref}/index-lifecycle-management.html[{ilm}] to automate the management of indices over time.
 
-Logstash can use {ref}/index-lifecycle-management.html[Index Lifecycle
-Management] to automate the management of indices over time.
-
-The use of Index Lifecycle Management is controlled by the `ilm_enabled`
+The use of {ilm} is controlled by the `ilm_enabled`
 setting. By default, this setting detects whether the Elasticsearch instance
-supports ILM, and uses it if it is available. `ilm_enabled` can also be set to
-`true` or `false` to override the automatic detection, or disable ILM.
+supports {ilm-init}, and uses it if it is available. `ilm_enabled` can also be set to
+`true` or `false` to override the automatic detection, or disable {ilm-init}.
 
-This will overwrite the index settings and adjust the Logstash template to write
-the necessary settings for the template to support index lifecycle management,
+This will overwrite the index settings and adjust the {ls} template to write
+the necessary settings for the template to support {ilm},
 including the index policy and rollover alias to be used.
 
-Logstash will create a rollover alias for the indices to be written to,
+{ls} creates a rollover alias for the indices to be written to,
 including a pattern for how the actual indices will be named, and unless an ILM
 policy that already exists has been specified, a default policy will also be
 created. The default policy is configured to rollover an index when it reaches
@@ -246,14 +268,14 @@ See config below for an example:
       }
     }
 
-NOTE: Custom ILM policies must already exist on the Elasticsearch cluster before they can be used.
-
-NOTE: If the rollover alias or pattern is modified, the index template will need to be
+[NOTE]
+--
+* Custom ILM policies must already exist on the {es} cluster before they can be used.
+* If the rollover alias or pattern is modified, the index template will need to be
 overwritten as the settings `index.lifecycle.name` and
 `index.lifecycle.rollover_alias` are automatically written to the template
-
-NOTE: If the index property is supplied in the output definition, it will be overwritten by the rollover alias.
-
+* If the index property is supplied in the output definition, it will be overwritten by the rollover alias.
+--
 
 ==== Batch Sizes
 
@@ -277,9 +299,9 @@ not reevaluate its DNS value while the keepalive is in effect.
 ==== HTTP Compression
 
 This plugin always reads compressed responses from {es}.
-It _can be configured_ to send compressed bulk requests to {es}.
+By default, it sends compressed bulk requests to {es}.
 
-If you are concerned about bandwidth, you can enable <<plugins-{type}s-{plugin}-http_compression>> to trade a small amount of CPU capacity for a significant reduction in network IO.
+If you are concerned about bandwidth, you can set a higher <<plugins-{type}s-{plugin}-compression_level>> to trade CPU capacity for a reduction in network IO.
 
 ==== Authentication
 
@@ -294,6 +316,11 @@ index level and `monitoring` permissions at cluster level. The `monitoring`
 permission at cluster level is necessary to perform periodic connectivity
 checks.
 
+[id="plugins-{type}s-{plugin}-handling-non-utf-8"]
+==== Handling non UTF-8 data
+
+This plugin transmits events to Elasticsearch using a JSON API, and therefore requires that all string values in events to be valid UTF-8.
+When a string value on an event contains one or more byte sequences that are not valid in UTF-8, each offending byte sequence is replaced with the UTF-8 replacement character (`\uFFFD`).
 
 [id="plugins-{type}s-{plugin}-options"]
 ==== Elasticsearch Output Configuration Options
@@ -310,6 +337,7 @@ This plugin supports the following configuration options plus the
 | <<plugins-{type}s-{plugin}-ca_trusted_fingerprint>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-cloud_auth>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-cloud_id>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-compression_level>> |<<number,number>>, one of `[0 ~ 9]`|No
 | <<plugins-{type}s-{plugin}-custom_headers>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-data_stream>> |<<string,string>>, one of `["true", "false", "auto"]`|No
 | <<plugins-{type}s-{plugin}-data_stream_auto_routing>> |<<boolean,boolean>>|No
@@ -422,10 +450,12 @@ Elasticsearch {ref}/security-api-create-api-key.html[Create API key API].
 ===== `bulk_path`
 
   * Value type is <<string,string>>
-  * There is no default value for this setting.
+  * The default value for this settings is `/_bulk?filter_path=errors,items.*.error,items.*.status`
 
 HTTP Path to perform the _bulk requests to
-this defaults to a concatenation of the path parameter and "_bulk"
+* This default bulk path is the concatenation of the value of `path` parameter and `/_bulk?filter_path=errors,items.*.error,items.*.status`
+* The `filter_path` query parameter is appended to the bulk path to reduce the payload between logstash and elasticsearch. However, if a custom `filter_path` query parameter is included in the `bulk_path` setting, then that value will be used.
+
 
 [id="plugins-{type}s-{plugin}-ca_trusted_fingerprint"]
 ===== `ca_trusted_fingerprint`
@@ -459,6 +489,17 @@ Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
 For more details, check out the
 {logstash-ref}/connecting-to-cloud.html[Logstash-to-Cloud documentation].
 
+[id="plugins-{type}s-{plugin}-compression_level"]
+===== `compression_level`
+
+  * Value can be any of: `0`, `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`
+  * Default value is `1`
+
+The gzip compression level. Setting this value to `0` disables compression.
+The compression level must be in the range of `1` (best speed) to `9` (best compression).
+
+Increasing the compression level will reduce the network usage but will increase the CPU usage.
+
 [id="plugins-{type}s-{plugin}-data_stream"]
 ===== `data_stream`
 
@@ -470,6 +511,7 @@ The other `data_stream_*` settings will be used only if this setting is enabled.
 
 Logstash handles the output as a data stream when the supplied configuration
 is compatible with data streams and this value is set to `auto`.
+Note that <<plugins-{type}s-{plugin}-ecs_compatibility,ECS compatibility>> must be enabled (set to `v1` or `v8`) for data streams to work properly.
 
 [id="plugins-{type}s-{plugin}-data_stream_auto_routing"]
 ===== `data_stream_auto_routing`
@@ -618,7 +660,7 @@ NOTE: Deprecated, refer to <<plugins-{type}s-{plugin}-silence_errors_in_log>>.
 Pass a set of key value pairs as the headers sent in each request to
 an elasticsearch node. The headers will be used for any kind of request
 (_bulk request, template installation, health checks and sniffing).
-These custom headers will be overidden by settings like `http_compression`.
+These custom headers will be overidden by settings like `compression_level`.
 
 [id="plugins-{type}s-{plugin}-healthcheck_path"]
 ===== `healthcheck_path`
@@ -659,11 +701,12 @@ Any special characters present in the URLs here MUST be URL escaped! This means
 
 [id="plugins-{type}s-{plugin}-http_compression"]
 ===== `http_compression`
+deprecated[11.17.0, Replaced by <<plugins-{type}s-{plugin}-compression_level>>]
 
   * Value type is <<boolean,boolean>>
   * Default value is `false`
 
-Enable gzip compression on requests.
+Setting `true` enables gzip compression level 1 on requests.
 
 This setting allows you to reduce this plugin's outbound network traffic by
 compressing each bulk _request_ to {es}.
@@ -973,12 +1016,12 @@ if enabled, script is in charge of creating non-existent document (scripted upda
 
 Defines the list of Elasticsearch errors that you don't want to log.
 A useful example is when you want to skip all 409 errors
-which are `document_already_exists_exception`.
+which are `version_conflict_engine_exception`.
 
 [source,ruby]
     output {
       elasticsearch {
-        silence_errors_in_log => ["document_already_exists_exception"]
+        silence_errors_in_log => ["version_conflict_engine_exception"]
       }
     }
 

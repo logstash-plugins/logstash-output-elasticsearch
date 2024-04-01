@@ -267,14 +267,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # ILM policy to use, if undefined the default policy will be used.
   config :ilm_policy, :validate => :string, :default => DEFAULT_POLICY
 
-  # List extra HTTP's error codes that are considered valid to move the events into the dead letter queue.
-  # It's considered a configuration error to re-use the same predefined codes for success, DLQ or conflict.
-  # The option accepts a list of natural numbers corresponding to HTTP errors codes.
-  config :dlq_custom_codes, :validate => :number, :list => true, :default => []
-
-  # if enabled, failed index name interpolation events go into dead letter queue.
-  config :dlq_on_failed_indexname_interpolation, :validate => :boolean, :default => true
-
   attr_reader :client
   attr_reader :default_index
   attr_reader :default_ilm_rollover_alias
@@ -283,11 +275,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def initialize(*params)
     super
     setup_ecs_compatibility_related_defaults
+    setup_ssl_params!
+    setup_compression_level!
   end
 
   def register
-    setup_ssl_params!
-
     if !failure_type_logging_whitelist.empty?
       log_message = "'failure_type_logging_whitelist' is deprecated and in a future version of Elasticsearch " +
         "output plugin will be removed, please use 'silence_errors_in_log' instead."
@@ -330,12 +322,29 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     @bulk_request_metrics = metric.namespace(:bulk_requests)
     @document_level_metrics = metric.namespace(:documents)
 
+    @shutdown_from_finish_register = Concurrent::AtomicBoolean.new(false)
     @after_successful_connection_thread = after_successful_connection do
       begin
         finish_register
         true # thread.value
+      rescue LogStash::ConfigurationError, LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        return e if pipeline_shutdown_requested?
+
+        # retry when 429
+        @logger.debug("Received a 429 status code during registration. Retrying..") && retry if too_many_requests?(e)
+
+        # shut down pipeline
+        if execution_context&.agent.respond_to?(:stop_pipeline)
+          details = { message: e.message, exception: e.class }
+          details[:backtrace] = e.backtrace if @logger.debug?
+          @logger.error("Failed to bootstrap. Pipeline \"#{execution_context.pipeline_id}\" is going to shut down", details)
+
+          @shutdown_from_finish_register.make_true
+          execution_context.agent.stop_pipeline(execution_context.pipeline_id)
+        end
+
+        e
       rescue => e
-        # we do not want to halt the thread with an exception as that has consequences for LS
         e # thread.value
       ensure
         @after_successful_connection_done.make_true
@@ -377,6 +386,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         params['proxy'] = proxy # do not do resolving again
       end
     end
+
     super(params)
   end
 
@@ -457,7 +467,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   private
 
   def stop_after_successful_connection_thread
-    @after_successful_connection_thread.join unless @after_successful_connection_thread.nil?
+    # avoid deadlock when finish_register calling execution_context.agent.stop_pipeline
+    # stop_pipeline triggers plugin close and the plugin close waits for after_successful_connection_thread to join
+    return if @shutdown_from_finish_register&.true?
+
+    @after_successful_connection_thread.join if @after_successful_connection_thread&.alive?
   end
 
   # Convert the event into a 3-tuple of action, params and event hash
@@ -485,8 +499,15 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
       params[retry_on_conflict_action_name] = @retry_on_conflict
     end
 
-    params[:version] = event.sprintf(@version) if @version
-    params[:version_type] = event.sprintf(@version_type) if @version_type
+    event_control = event.get("[@metadata][_ingest_document]")
+    event_version, event_version_type = event_control&.values_at("version", "version_type") rescue nil
+
+    resolved_version = resolve_version(event, event_version)
+    resolved_version_type = resolve_version_type(event, event_version_type)
+
+    # avoid to add nil valued key-value pairs
+    params[:version] = resolved_version unless resolved_version.nil?
+    params[:version_type] = resolved_version_type unless resolved_version_type.nil?
 
     EventActionTuple.new(action, params, event)
   end
@@ -526,15 +547,16 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # @return Hash (initial) parameters for given event
   # @private shared event params factory between index and data_stream mode
   def common_event_params(event)
-    sprintf_index = @event_target.call(event)
-    raise IndexInterpolationError, sprintf_index if sprintf_index.match(/%{.*?}/) && dlq_on_failed_indexname_interpolation
+    event_control = event.get("[@metadata][_ingest_document]")
+    event_id, event_pipeline, event_index, event_routing = event_control&.values_at("id","pipeline","index", "routing") rescue nil
+
     params = {
-        :_id => @document_id ? event.sprintf(@document_id) : nil,
-        :_index => sprintf_index,
-        routing_field_name => @routing ? event.sprintf(@routing) : nil
+        :_id => resolve_document_id(event, event_id),
+        :_index => resolve_index!(event, event_index),
+        routing_field_name => resolve_routing(event, event_routing)
     }
 
-    target_pipeline = resolve_pipeline(event)
+    target_pipeline = resolve_pipeline(event, event_pipeline)
     # convention: empty string equates to not using a pipeline
     # this is useful when using a field reference in the pipeline setting, e.g.
     #      elasticsearch {
@@ -545,7 +567,44 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     params
   end
 
-  def resolve_pipeline(event)
+  def resolve_version(event, event_version)
+    return event_version if event_version && !@version
+    event.sprintf(@version) if @version
+  end
+  private :resolve_version
+
+  def resolve_version_type(event, event_version_type)
+    return event_version_type if event_version_type && !@version_type
+    event.sprintf(@version_type) if @version_type
+  end
+  private :resolve_version_type
+
+  def resolve_routing(event, event_routing)
+    return event_routing if event_routing && !@routing
+    @routing ? event.sprintf(@routing) : nil
+  end
+  private :resolve_routing
+
+  def resolve_document_id(event, event_id)
+    return event.sprintf(@document_id) if @document_id
+    return event_id || nil
+  end
+  private :resolve_document_id
+
+  def resolve_index!(event, event_index)
+    sprintf_index = @event_target.call(event)
+    raise IndexInterpolationError, sprintf_index if sprintf_index.match(/%{.*?}/) && dlq_on_failed_indexname_interpolation
+    # if it's not a data stream, sprintf_index is the @index with resolved placeholders.
+    # if is a data stream, sprintf_index could be either the name of a data stream or the value contained in
+    # @index without placeholders substitution. If event's metadata index is provided, it takes precedence
+    # on datastream name or whatever is returned by the event_target provider.
+    return event_index if @index == @default_index && event_index
+    return sprintf_index
+  end
+  private :resolve_index!
+
+  def resolve_pipeline(event, event_pipeline)
+    return event_pipeline if event_pipeline && !@pipeline
     pipeline_template = @pipeline || event.get("[@metadata][target_ingest_pipeline]")&.to_s
     pipeline_template && event.sprintf(pipeline_template)
   end
@@ -603,7 +662,10 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def install_template
     TemplateManager.install_template(self)
   rescue => e
-    @logger.error("Failed to install template", message: e.message, exception: e.class, backtrace: e.backtrace)
+    details = { message: e.message, exception: e.class, backtrace: e.backtrace }
+    details[:body] = e.response_body if e.respond_to?(:response_body)
+    @logger.error("Failed to install template", details)
+    raise e if register_termination_error?(e)
   end
 
   def setup_ecs_compatibility_related_defaults
@@ -676,6 +738,20 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     params['ssl_truststore_path'] = @ssl_truststore_path unless @ssl_truststore_path.nil?
     params['ssl_truststore_password'] = @ssl_truststore_password unless @ssl_truststore_password.nil?
     params['ssl_verification_mode'] = @ssl_verification_mode unless @ssl_verification_mode.nil?
+  end
+
+  def setup_compression_level!
+    @compression_level = normalize_config(:compression_level) do |normalize|
+      normalize.with_deprecated_mapping(:http_compression) do |http_compression|
+        if http_compression == true
+          DEFAULT_ZIP_LEVEL
+        else
+          0
+        end
+      end
+    end
+
+    params['compression_level'] = @compression_level unless @compression_level.nil?
   end
 
   # To be overidden by the -java version

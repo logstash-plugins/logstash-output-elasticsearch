@@ -22,6 +22,7 @@ module LogStash; module Outputs; class ElasticSearch;
   # made sense. We picked one on the lowish side to not use too much heap.
   TARGET_BULK_BYTES = 20 * 1024 * 1024 # 20MiB
 
+
   class HttpClient
     attr_reader :client, :options, :logger, :pool, :action_count, :recv_count
     # This is here in case we use DEFAULT_OPTIONS in the future
@@ -37,7 +38,7 @@ module LogStash; module Outputs; class ElasticSearch;
     # * `:user` - String. The user to use for authentication.
     # * `:password` - String. The password to use for authentication.
     # * `:timeout` - Float. A duration value, in seconds, after which a socket
-    #    operation or request will be aborted if not yet successfull
+    #    operation or request will be aborted if not yet successful
     # * `:client_settings` - a hash; see below for keys.
     #
     # The `client_settings` key is a has that can contain other settings:
@@ -93,6 +94,10 @@ module LogStash; module Outputs; class ElasticSearch;
       @pool.maximum_seen_major_version
     end
 
+    def serverless?
+      @pool.serverless?
+    end
+
     def alive_urls_count
       @pool.alive_urls_count
     end
@@ -114,7 +119,7 @@ module LogStash; module Outputs; class ElasticSearch;
       end
 
       body_stream = StringIO.new
-      if http_compression
+      if compression_level?
         body_stream.set_encoding "BINARY"
         stream_writer = gzip_writer(body_stream)
       else
@@ -128,6 +133,9 @@ module LogStash; module Outputs; class ElasticSearch;
                     action.map {|line| LogStash::Json.dump(line)}.join("\n") :
                     LogStash::Json.dump(action)
         as_json << "\n"
+
+        as_json.scrub! # ensure generated JSON is valid UTF-8
+
         if (stream_writer.pos + as_json.bytesize) > TARGET_BULK_BYTES && stream_writer.pos > 0
           stream_writer.flush # ensure writer has sync'd buffers before reporting sizes
           logger.debug("Sending partial bulk request for batch with one or more actions remaining.",
@@ -137,14 +145,14 @@ module LogStash; module Outputs; class ElasticSearch;
                        :batch_offset => (index + 1 - batch_actions.size))
           bulk_responses << bulk_send(body_stream, batch_actions)
           body_stream.truncate(0) && body_stream.seek(0)
-          stream_writer = gzip_writer(body_stream) if http_compression
+          stream_writer = gzip_writer(body_stream) if compression_level?
           batch_actions.clear
         end
         stream_writer.write(as_json)
         batch_actions << action
       end
 
-      stream_writer.close if http_compression
+      stream_writer.close if compression_level?
 
       logger.debug("Sending final bulk request for batch.",
                    :action_count => batch_actions.size,
@@ -153,7 +161,7 @@ module LogStash; module Outputs; class ElasticSearch;
                    :batch_offset => (actions.size - batch_actions.size))
       bulk_responses << bulk_send(body_stream, batch_actions) if body_stream.size > 0
 
-      body_stream.close if !http_compression
+      body_stream.close unless compression_level?
       join_bulk_responses(bulk_responses)
     end
 
@@ -161,7 +169,7 @@ module LogStash; module Outputs; class ElasticSearch;
       fail(ArgumentError, "Cannot create gzip writer on IO with unread bytes") unless io.eof?
       fail(ArgumentError, "Cannot create gzip writer on non-empty IO") unless io.pos == 0
 
-      Zlib::GzipWriter.new(io, Zlib::DEFAULT_COMPRESSION, Zlib::DEFAULT_STRATEGY)
+      Zlib::GzipWriter.new(io, client_settings.fetch(:compression_level), Zlib::DEFAULT_STRATEGY)
     end
 
     def join_bulk_responses(bulk_responses)
@@ -172,7 +180,8 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def bulk_send(body_stream, batch_actions)
-      params = http_compression ? {:headers => {"Content-Encoding" => "gzip"}} : {}
+      params = compression_level? ? {:headers => {"Content-Encoding" => "gzip"}} : {}
+
       response = @pool.post(@bulk_path, params, body_stream.string)
 
       @bulk_response_metrics.increment(response.code.to_s)
@@ -205,7 +214,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def get(path)
-      response = @pool.get(path, nil)
+      response = @pool.get(path)
       LogStash::Json.load(response.body)
     end
 
@@ -294,8 +303,10 @@ module LogStash; module Outputs; class ElasticSearch;
       @_ssl_options ||= client_settings.fetch(:ssl, {})
     end
 
-    def http_compression
-      client_settings.fetch(:http_compression, false)
+    # return true if compression_level is [1..9]
+    # return false if it is 0
+    def compression_level?
+      client_settings.fetch(:compression_level) > 0
     end
 
     def build_adapter(options)
@@ -489,5 +500,6 @@ module LogStash; module Outputs; class ElasticSearch;
       end
       [args, source]
     end
+
   end
 end end end

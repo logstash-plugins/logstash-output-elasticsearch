@@ -1,5 +1,47 @@
+## 11.22.5
+  - [DOC] Correct default data stream name (`logs-generic-default`) [#1140](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1140)
+
+## 11.22.4
+  - [DOC] Adds note that ecs-compatibility is required for data streams to work properly [#1174](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1174)
+
+## 11.22.3
+  - Fixes an issue where events containing non-unicode strings could fail to serialize correctly when compression is enabled [#1169](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1169)
+
+## 11.22.2
+  - [DOC] Add content for sending data to Elasticsearch on serverless [#1164](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1164)
+
+## 11.22.1
+  - Fix, avoid to populate `version` and `version_type` attributes when processing integration metadata and datastream is enabled. [#1161](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1161)
+
+## 11.22.0
+  - Added support for propagating event processing metadata when this output is downstream of an Elastic Integration Filter and configured _without_ explicit `version`, `version_type`, or `routing` directives [#1158](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1158)
+
+## 11.21.0
+  - Added support for propagating event processing metadata when this output is downstream of an Elastic Integration Filter and configured _without_ explicit `index`, `document_id`, or `pipeline` directives [#1155](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1155)
+
+## 11.20.1
+  - Doc: Replace `document_already_exist_exception` with `version_conflict_engine_exception` in the `silence_errors_in_log` setting example [#1159](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1159)
+
+## 11.20.0
+  - Changed the register to initiate pipeline shutdown upon bootstrap failure instead of simply logging the error [#1151](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1151)
+
+## 11.19.0
+  - Added `filter_path` to bulk requests to reduce the size of responses from elasticsearch [#1154](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1154)
+  
+## 11.18.0
+  - Added request header `Elastic-Api-Version` for serverless [#1147](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1147)
+
+## 11.17.0
+  - Added support to http compression level. Deprecated `http_compression` in favour of `compression_level` and enabled compression level 1 by default. [#1148](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1148)
+
+## 11.16.0
+  - Added support to Serverless Elasticsearch [#1445](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1145)
+
+## 11.15.9
+  - allow dlq_ settings when using data streams [#1144](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1144)
+
 ## 11.15.8
-[DOC] Correct default data stream name (`logs-generic-default`) [#1140](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1140)
+  - Fixes a regression introduced in 11.14.0 which could prevent Logstash 8.8 from establishing a connection to Elasticsearch for Central Management and Monitoring core features [#1141](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1141)
 
 ## 11.15.7
   - Fixes a regression introduced in 11.14.0 which could prevent a connection from being established to Elasticsearch in some SSL configurations [#1138](https://github.com/logstash-plugins/logstash-output-elasticsearch/issues/1138)
@@ -103,9 +145,11 @@
 
 ## 11.5.0
  - Feat: add ssl_supported_protocols option [#1055](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1055)
+ - [DOC] Add `v8` to supported values for ecs_compatiblity defaults [#1059](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1059)
 
 ## 11.4.2
- - [DOC] Add `v8` to supported values for ecs_compatiblity defaults [#1059](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1059)
+- Fixes an issue where events containing non-unicode strings could fail to serialize correctly when compression is enabled [#1169](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1169)
+  - NOTE: This is a backport of the relevant fix from v11.22.3 to the 11.4 series for inclusion with Logstash 7.17 maintenance releases
 
 ## 11.4.1
  - Feat: upgrade manticore (http-client) library [#1063](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1063)

@@ -1,0 +1,16 @@
+{
+  "license": {
+    "status": "active",
+    "uid": "d85d2c6a-b96d-3cc6-96db-5571a789b156",
+    "type": "enterprise",
+    "issue_date": "1970-01-01T00:00:00.000Z",
+    "issue_date_in_millis": 0,
+    "expiry_date": "2100-01-01T00:00:00.000Z",
+    "expiry_date_in_millis": 4102444800000,
+    "max_nodes": null,
+    "max_resource_units": 100000,
+    "issued_to": "Elastic Cloud",
+    "issuer": "API",
+    "start_date_in_millis": 0
+  }
+}

@@ -36,7 +36,17 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
       end
     end
 
-    describe "healthcheck_path" do
+    describe "bulk_path" do
+      let (:filter_path) {"filter_path=errors,items.*.error,items.*.status"}
+
+      shared_examples("filter_path added to bulk path appropriately") do
+        it "sets the bulk_path option to the expected bulk path" do
+          expect(described_class).to receive(:create_http_client) do |options|
+            expect(options[:bulk_path]).to eq(expected_bulk_path)
+          end
+          described_class.build(logger, hosts, options)
+          end
+      end
 
       context "when setting bulk_path" do
         let(:bulk_path) { "/meh" }
@@ -44,21 +54,31 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
 
         context "when using path" do
           let(:options) { super().merge("path" => "/path") }
-          it "ignores the path setting" do
-            expect(described_class).to receive(:create_http_client) do |options|
-              expect(options[:bulk_path]).to eq(bulk_path)
-            end
-            described_class.build(logger, hosts, options)
-          end
-        end
-        context "when not using path" do
+          let(:expected_bulk_path) { "#{bulk_path}?#{filter_path}" }
 
-          it "uses the bulk_path setting" do
-            expect(described_class).to receive(:create_http_client) do |options|
-              expect(options[:bulk_path]).to eq(bulk_path)
-            end
-            described_class.build(logger, hosts, options)
-          end
+          it_behaves_like "filter_path added to bulk path appropriately"
+        end
+
+        context "when setting a filter path as first parameter"  do
+          let (:filter_path) {"filter_path=error"}
+          let(:bulk_path) { "/meh?#{filter_path}&routing=true" }
+          let(:expected_bulk_path) { bulk_path }
+
+          it_behaves_like "filter_path added to bulk path appropriately"
+        end
+
+        context "when setting a filter path as second parameter" do
+          let (:filter_path) {"filter_path=error"}
+          let(:bulk_path) { "/meh?routing=true&#{filter_path}" }
+          let(:expected_bulk_path) { bulk_path }
+
+          it_behaves_like "filter_path added to bulk path appropriately"
+        end
+
+        context "when not using path" do
+          let(:expected_bulk_path) { "#{bulk_path}?#{filter_path}"}
+
+          it_behaves_like "filter_path added to bulk path appropriately"
         end
       end
 
@@ -66,25 +86,20 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
 
         context "when using path" do
           let(:path) { "/meh" }
+          let(:expected_bulk_path) { "#{path}/_bulk?#{filter_path}"}
           let(:options) { super().merge("path" => path) }
-          it "sets bulk_path to path+_bulk" do
-            expect(described_class).to receive(:create_http_client) do |options|
-              expect(options[:bulk_path]).to eq("#{path}/_bulk")
-            end
-            described_class.build(logger, hosts, options)
-          end
+
+          it_behaves_like "filter_path added to bulk path appropriately"
         end
 
         context "when not using path" do
-          it "sets the bulk_path to _bulk" do
-            expect(described_class).to receive(:create_http_client) do |options|
-              expect(options[:bulk_path]).to eq("/_bulk")
-            end
-            described_class.build(logger, hosts, options)
-          end
+          let(:expected_bulk_path) { "/_bulk?#{filter_path}"}
+
+          it_behaves_like "filter_path added to bulk path appropriately"
         end
       end
     end
+
     describe "healthcheck_path" do
       context "when setting healthcheck_path" do
         let(:healthcheck_path) { "/meh" }
