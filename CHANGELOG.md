@@ -1,3 +1,6 @@
+## 11.22.5
+  - [DOC] Correct default data stream name (`logs-generic-default`) [#1140](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1140)
+
 ## 11.22.4
   - [DOC] Adds note that ecs-compatibility is required for data streams to work properly [#1174](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1174)
 

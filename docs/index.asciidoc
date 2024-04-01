@@ -118,7 +118,7 @@ output {
 
 This example shows the minimal settings for processing data streams. Events
 with `data_stream.*`` fields are routed to the appropriate data streams. If the
-fields are missing, routing defaults to `logs-generic-logstash`.
+fields are missing, routing defaults to `logs-generic-default`.
 
 **Example: Customize data stream name**
 
