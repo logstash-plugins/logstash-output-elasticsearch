@@ -1,3 +1,6 @@
+## 11.15.8
+  - [Doc+] Logstash output.elasticsearch index can be alias or datastream [#1136](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1136)
+
 ## 11.15.5
   - Fixes `undefined 'shutdown_requested' method` error when plugin checks if shutdown request is received [#1134](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1134)
 
