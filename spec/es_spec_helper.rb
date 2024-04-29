@@ -59,11 +59,14 @@ module ESHelper
   end
 
   def self.es_version
-    [
-      nilify(RSpec.configuration.filter[:es_version]),
-      nilify(ENV['ES_VERSION']),
-      nilify(ENV['ELASTIC_STACK_VERSION']),
-    ].compact.first
+    {
+      "number" => [
+        nilify(RSpec.configuration.filter[:es_version]),
+        nilify(ENV['ES_VERSION']),
+        nilify(ENV['ELASTIC_STACK_VERSION']),
+      ].compact.first,
+      "build_flavor" => 'default'
+    }
   end
 
   RSpec::Matchers.define :have_hits do |expected|

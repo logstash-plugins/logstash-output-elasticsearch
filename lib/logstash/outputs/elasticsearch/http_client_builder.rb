@@ -8,7 +8,7 @@ module LogStash; module Outputs; class ElasticSearch;
         :pool_max => params["pool_max"],
         :pool_max_per_route => params["pool_max_per_route"],
         :check_connection_timeout => params["validate_after_inactivity"],
-        :http_compression => params["http_compression"],
+        :compression_level => params["compression_level"],
         :headers => params["custom_headers"] || {}
       }
       
@@ -33,9 +33,9 @@ module LogStash; module Outputs; class ElasticSearch;
       end
 
       common_options[:bulk_path] = if params["bulk_path"]
-         dedup_slashes("/#{params["bulk_path"]}")
+        resolve_filter_path(dedup_slashes("/#{params["bulk_path"]}"))
       else
-         dedup_slashes("/#{params["path"]}/_bulk")
+        resolve_filter_path(dedup_slashes("/#{params["path"]}/_bulk"))
       end
 
       common_options[:sniffing_path] = if params["sniffing_path"]
@@ -144,12 +144,14 @@ module LogStash; module Outputs; class ElasticSearch;
       ssl_verification_mode = params["ssl_verification_mode"]
       unless ssl_verification_mode.nil?
         case ssl_verification_mode
-          when 'none'
-            logger.warn "You have enabled encryption but DISABLED certificate verification, " +
-                          "to make sure your data is secure set `ssl_verification_mode => full`"
-            ssl_options[:verify] = :disable
-          else
-            ssl_options[:verify] = :strict
+        when 'none'
+          logger.warn "You have enabled encryption but DISABLED certificate verification, " +
+                        "to make sure your data is secure set `ssl_verification_mode => full`"
+          ssl_options[:verify] = :disable
+        else
+          # Manticore's :default maps to Apache HTTP Client's DefaultHostnameVerifier,
+          # which is the modern STRICT verifier that replaces the deprecated StrictHostnameVerifier
+          ssl_options[:verify] = :default
         end
       end
 
@@ -194,6 +196,17 @@ module LogStash; module Outputs; class ElasticSearch;
     private
     def self.dedup_slashes(url)
       url.gsub(/\/+/, "/")
+    end
+
+    # Set a `filter_path` query parameter if it is not already set to be
+    # `filter_path=errors,items.*.error,items.*.status` to reduce the payload between Logstash and Elasticsearch
+    def self.resolve_filter_path(url)
+      return url if url.match?(/(?:[&|?])filter_path=/)
+      ("#{url}#{query_param_separator(url)}filter_path=errors,items.*.error,items.*.status")
+    end
+
+    def self.query_param_separator(url)
+      url.match?(/\?[^\s#]+/) ? '&' : '?'
     end
   end
 end; end; end

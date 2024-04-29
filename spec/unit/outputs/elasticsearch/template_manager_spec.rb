@@ -73,6 +73,7 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
         let(:template_api) { "composable" }
 
         it 'resolves composable index template API compatible setting' do
+          expect(plugin).to receive(:serverless?).and_return(false)
           expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(8) # required to log
           template = {}
           described_class.resolve_template_settings(plugin, template)
@@ -84,6 +85,7 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
         let(:template_api) { "legacy" }
 
         it 'resolves legacy index template API compatible setting' do
+          expect(plugin).to receive(:serverless?).and_return(false)
           expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(7) # required to log
           template = {}
           described_class.resolve_template_settings(plugin, template)
@@ -97,6 +99,7 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
         describe "with ES < 8 versions" do
 
           it 'resolves legacy index template API compatible setting' do
+            expect(plugin).to receive(:serverless?).and_return(false)
             expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(7)
             template = {}
             described_class.resolve_template_settings(plugin, template)
@@ -106,6 +109,7 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
 
         describe "with ES >= 8 versions" do
           it 'resolves composable index template API compatible setting' do
+            expect(plugin).to receive(:serverless?).and_return(false)
             expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(8)
             template = {}
             described_class.resolve_template_settings(plugin, template)
@@ -123,6 +127,7 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
 
       describe "in version 8+" do
         it "should use index template API" do
+          expect(plugin).to receive(:serverless?).and_return(false)
           expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(8)
           endpoint = described_class.template_endpoint(plugin)
           expect(endpoint).to be_equal(LogStash::Outputs::ElasticSearch::TemplateManager::INDEX_TEMPLATE_ENDPOINT)
@@ -131,6 +136,7 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
 
       describe "in version < 8" do
         it "should use legacy template API" do
+          expect(plugin).to receive(:serverless?).and_return(false)
           expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(7)
           endpoint = described_class.template_endpoint(plugin)
           expect(endpoint).to be_equal(LogStash::Outputs::ElasticSearch::TemplateManager::LEGACY_TEMPLATE_ENDPOINT)
@@ -144,6 +150,7 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
 
       describe "in version 8+" do
         it "should use legacy template API" do
+          expect(plugin).to receive(:serverless?).and_return(false)
           expect(plugin).to receive(:maximum_seen_major_version).never
           endpoint = described_class.template_endpoint(plugin)
           expect(endpoint).to be_equal(LogStash::Outputs::ElasticSearch::TemplateManager::LEGACY_TEMPLATE_ENDPOINT)
@@ -157,11 +164,26 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
 
       describe "in version 8+" do
         it "should use legacy template API" do
+          expect(plugin).to receive(:serverless?).and_return(false)
           expect(plugin).to receive(:maximum_seen_major_version).never
           endpoint = described_class.template_endpoint(plugin)
-          expect(endpoint).to be_equal(LogStash::Outputs::ElasticSearch::TemplateManager:: INDEX_TEMPLATE_ENDPOINT)
+          expect(endpoint).to be_equal(LogStash::Outputs::ElasticSearch::TemplateManager::INDEX_TEMPLATE_ENDPOINT)
         end
       end
+    end
+
+    describe "in serverless" do
+      [:auto, :composable, :legacy].each do |api|
+        let(:plugin_settings) { {"manage_template" => true, "template_api" => api.to_s} }
+        let(:plugin) { LogStash::Outputs::ElasticSearch.new(plugin_settings) }
+
+        it "use index template API when template_api set to #{api}" do
+          expect(plugin).to receive(:serverless?).and_return(true)
+          endpoint = described_class.template_endpoint(plugin)
+          expect(endpoint).to be_equal(LogStash::Outputs::ElasticSearch::TemplateManager::INDEX_TEMPLATE_ENDPOINT)
+        end
+      end
+
     end
   end
 end

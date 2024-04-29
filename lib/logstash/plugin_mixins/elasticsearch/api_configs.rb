@@ -7,6 +7,7 @@ module LogStash; module PluginMixins; module ElasticSearch
     # This module defines common options that can be reused by alternate elasticsearch output plugins such as the elasticsearch_data_streams output.
 
     DEFAULT_HOST = ::LogStash::Util::SafeURI.new("//127.0.0.1")
+    DEFAULT_ZIP_LEVEL = 1
 
     CONFIG_PARAMS = {
         # Username to authenticate to a secure Elasticsearch cluster
@@ -148,7 +149,7 @@ module LogStash; module PluginMixins; module ElasticSearch
 
         # Defines the list of Elasticsearch errors that you don't want to log.
         # A useful example is when you want to skip all 409 errors
-        # which are `document_already_exists_exception`.
+        # which are `version_conflict_engine_exception`.
         # Deprecates `failure_type_logging_whitelist`.
         :silence_errors_in_log => { :validate => :array, :default => [] },
 
@@ -186,7 +187,14 @@ module LogStash; module PluginMixins; module ElasticSearch
         :validate_after_inactivity => { :validate => :number, :default => 10000 },
 
         # Enable gzip compression on requests. Note that response compression is on by default for Elasticsearch v5.0 and beyond
-        :http_compression => { :validate => :boolean, :default => false },
+        # Set `true` to enable compression with level 1
+        # Set `false` to disable compression with level 0
+        :http_compression => { :validate => :boolean, :default => true, :deprecated => "Set 'compression_level' instead." },
+
+        # Number `1` ~ `9` are the gzip compression level
+        # Set `0` to disable compression
+        # Set `1` (best speed) to `9` (best compression) to use compression
+        :compression_level => { :validate => [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ], :default => DEFAULT_ZIP_LEVEL },
 
         # Custom Headers to send on each request to elasticsearch nodes
         :custom_headers => { :validate => :hash, :default => {} },
@@ -213,7 +221,15 @@ module LogStash; module PluginMixins; module ElasticSearch
         :retry_initial_interval => { :validate => :number, :default => 2 },
 
         # Set max interval in seconds between bulk retries.
-        :retry_max_interval => { :validate => :number, :default => 64 }
+        :retry_max_interval => { :validate => :number, :default => 64 },
+
+        # List extra HTTP's error codes that are considered valid to move the events into the dead letter queue.
+        # It's considered a configuration error to re-use the same predefined codes for success, DLQ or conflict.
+        # The option accepts a list of natural numbers corresponding to HTTP errors codes.
+        :dlq_custom_codes => { :validate => :number, :list => true, :default => [] },
+
+        # if enabled, failed index name interpolation events go into dead letter queue.
+        :dlq_on_failed_indexname_interpolation => { :validate => :boolean, :default => true }
     }.freeze
 
     def self.included(base)

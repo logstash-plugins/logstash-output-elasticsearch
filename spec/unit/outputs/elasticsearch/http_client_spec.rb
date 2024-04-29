@@ -135,7 +135,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     }
 
     it "returns the hash response" do
-      expect(subject.pool).to receive(:get).with(path, nil).and_return(get_response)
+      expect(subject.pool).to receive(:get).with(path).and_return(get_response)
       expect(subject.get(path)["body"]).to eq(body)
     end
   end
@@ -183,6 +183,25 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
     end
   end
 
+  describe "compression_level?" do
+    subject { described_class.new(base_options) }
+    let(:base_options) { super().merge(:client_settings => {:compression_level => compression_level}) }
+
+    context "with client_settings `compression_level => 1`" do
+      let(:compression_level) { 1 }
+      it "gives true" do
+        expect(subject.compression_level?).to be_truthy
+      end
+    end
+
+    context "with client_settings `compression_level => 0`" do
+      let(:compression_level) { 0 }
+      it "gives false" do
+        expect(subject.compression_level?).to be_falsey
+      end
+    end
+  end
+
   describe "#bulk" do
     subject(:http_client) { described_class.new(base_options) }
 
@@ -192,13 +211,14 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message}],
     ]}
 
-    [true,false].each do |http_compression_enabled|
-      context "with `http_compression => #{http_compression_enabled}`" do
+    [0, 9].each do |compression_level|
+      context "with `compression_level => #{compression_level}`" do
 
-        let(:base_options) { super().merge(:client_settings => {:http_compression => http_compression_enabled}) }
+        let(:base_options) { super().merge(:client_settings => {:compression_level => compression_level}) }
+        let(:compression_level_enabled) { compression_level > 0 }
 
         before(:each) do
-          if http_compression_enabled
+          if compression_level_enabled
             expect(http_client).to receive(:gzip_writer).at_least(:once).and_call_original
           else
             expect(http_client).to_not receive(:gzip_writer)
@@ -212,7 +232,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
           it "should be handled properly" do
             allow(subject).to receive(:join_bulk_responses)
             expect(subject).to receive(:bulk_send).once do |data|
-              if !http_compression_enabled
+              if !compression_level_enabled
                 expect(data.size).to be > target_bulk_bytes
               else
                 expect(Zlib::gunzip(data.string).size).to be > target_bulk_bytes
@@ -222,12 +242,14 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
           end
         end
 
-        context "with two messages" do
-          let(:message1) { "hey" }
-          let(:message2) { "you" }
+        context "with multiple messages" do
+          let(:message_head) { "Spacecraft message" }
+          let(:message_tail) { "byte sequence" }
+          let(:invalid_utf_8_message) { "contains invalid \xAC" }
           let(:actions) { [
-            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message1}],
-            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message2}],
+            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message_head}],
+            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> invalid_utf_8_message}],
+            ["index", {:_id=>nil, :_index=>"logstash"}, {"message"=> message_tail}],
           ]}
           it "executes one bulk_send operation" do
             allow(subject).to receive(:join_bulk_responses)
@@ -237,7 +259,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
 
           context "if one exceeds TARGET_BULK_BYTES" do
             let(:target_bulk_bytes) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES }
-            let(:message1) { "a" * (target_bulk_bytes + 1) }
+            let(:message_head) { "a" * (target_bulk_bytes + 1) }
             it "executes two bulk_send operations" do
               allow(subject).to receive(:join_bulk_responses)
               expect(subject).to receive(:bulk_send).twice

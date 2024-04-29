@@ -145,6 +145,10 @@ module LogStash; module PluginMixins; module ElasticSearch
       client.maximum_seen_major_version
     end
 
+    def serverless?
+      client.serverless?
+    end
+
     def alive_urls_count
       client.alive_urls_count
     end
@@ -175,7 +179,9 @@ module LogStash; module PluginMixins; module ElasticSearch
       cluster_info = client.get('/')
       plugin_metadata.set(:cluster_uuid, cluster_info['cluster_uuid'])
     rescue => e
-      @logger.error("Unable to retrieve Elasticsearch cluster uuid", message: e.message, exception: e.class, backtrace: e.backtrace)
+      details = { message: e.message, exception: e.class, backtrace: e.backtrace }
+      details[:body] = e.response_body if e.respond_to?(:response_body)
+      @logger.error("Unable to retrieve Elasticsearch cluster uuid", details)
     end
 
     def retrying_submit(actions)
@@ -400,6 +406,15 @@ module LogStash; module PluginMixins; module ElasticSearch
       val = val[first_key]
       return val if rest_keys.empty? || val == nil
       dig_value(val, *rest_keys)
+    end
+
+    def register_termination_error?(e)
+      e.is_a?(LogStash::ConfigurationError) || e.is_a?(LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError)
+    end
+
+    def too_many_requests?(e)
+      e.is_a?(LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError) &&
+        e.too_many_requests?
     end
   end
 end; end; end
