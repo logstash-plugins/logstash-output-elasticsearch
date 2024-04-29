@@ -1,4 +1,4 @@
-## 11.15.8
+## 11.22.6
   - [DOC] Logstash output.elasticsearch index can be alias or datastream [#1136](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1136)
 
 ## 11.22.5
