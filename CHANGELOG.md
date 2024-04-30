@@ -1,3 +1,6 @@
+## 11.22.6
+  - [DOC] Logstash output.elasticsearch index can be alias or datastream [#1179](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1179)
+
 ## 11.22.5
   - [DOC] Correct default data stream name (`logs-generic-default`) [#1140](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1140)
 

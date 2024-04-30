@@ -800,7 +800,9 @@ NOTE: `ilm_rollover_alias` does NOT support dynamic variable substitution as
   ** ECS Compatibility disabled: `"logstash-%{+yyyy.MM.dd}"`
   ** ECS Compatibility enabled: `"ecs-logstash-%{+yyyy.MM.dd}"`
 
-The index to write events to. This can be dynamic using the `%{foo}` syntax.
+The indexing target to write events to. 
+Can point to an {ref}/index-mgmt.html[index], {ref}/aliases.html[alias], or {ref}/data-streams.html[data stream]. 
+This can be dynamic using the `%{foo}` syntax.
 The default value will partition your indices by day so you can more easily
 delete old data or only search specific date ranges.
 Indexes may not contain uppercase characters.
