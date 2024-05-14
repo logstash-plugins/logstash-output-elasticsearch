@@ -188,7 +188,15 @@ module LogStash; module Outputs; class ElasticSearch;
 
       case response.code
       when 200 # OK
-        LogStash::Json.load(response.body)
+        body = response.body
+        if body[0..40].match?(/"errors":false/)
+          # fake a successful bulk response
+          # {"took":7, "errors": false, "items":[{"index":{"_index":"test","_id":"1","_version":1,"result":"created","forced_refresh":false}}]}
+          {"errors": false, "items": []}
+        else
+          LogStash::Json.load(body)
+        end
+
       when 413 # Payload Too Large
         logger.warn("Bulk request rejected: `413 Payload Too Large`", :action_count => batch_actions.size, :content_length => body_stream.size)
         emulate_batch_error_response(batch_actions, response.code, 'payload_too_large')
