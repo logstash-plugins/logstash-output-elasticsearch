@@ -1,5 +1,5 @@
 ## 11.22.7
-  - [DOC] `ssl.key` requires PKCS#8 format
+  - [DOC] `ssl.key` requires PKCS#8 format [#1181](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1181)
 
 ## 11.22.6
   - [DOC] Logstash output.elasticsearch index can be alias or datastream [#1179](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1179)
