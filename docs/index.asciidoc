@@ -1101,7 +1101,15 @@ If no explicit protocol is specified plain HTTP will be used.
   * Value type is <<path,path>>
   * There is no default value for this setting.
 
-OpenSSL-style RSA private key that corresponds to the <<plugins-{type}s-{plugin}-ssl_certificate>>.
+SSL key to use.
+This key must be in the PKCS8 format and PEM encoded.
+You can use the https://www.openssl.org/docs/man1.1.1/man1/openssl-pkcs8.html[openssl pkcs8] command to complete the conversion.
+For example, the command to convert a PEM encoded PKCS1 private key to a PEM encoded, non-encrypted PKCS8 key is:
+
+[source,sh]
+-----
+openssl pkcs8 -inform PEM -in path/to/logstash.key -topk8 -nocrypt -outform PEM -out path/to/logstash.pkcs8.key
+-----
 
 NOTE: This setting can be used only if <<plugins-{type}s-{plugin}-ssl_certificate>> is set.
 
