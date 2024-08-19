@@ -1,5 +1,5 @@
 import:
-- logstash-plugins/.ci:travis/travis.yml@mashhur-patch-1
+- logstash-plugins/.ci:travis/travis.yml@mashhur-1.x
 
 env:
   - INTEGRATION=false ELASTIC_STACK_VERSION=7.x
