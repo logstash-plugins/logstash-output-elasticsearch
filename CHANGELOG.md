@@ -1,3 +1,6 @@
+## 11.22.9
+ - Vendor ECS template for Elasticsearch 9.x in built gem [#1188](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1188)
+
 ## 11.22.8
   - Added ECS template for Elasticsearch 9.x [#1187](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1187)
 

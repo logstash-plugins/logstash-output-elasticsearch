@@ -4,11 +4,13 @@ task :'vendor-ecs-schemata' do
   download_ecs_schemata(:v1, elasticsearch_major: 6, ecs_release_tag: 'v1.10.0') # WARNING: v1.11 breaks 6.x (see: https://github.com/elastic/ecs/issues/1649)
   download_ecs_schemata(:v1, elasticsearch_major: 7, ecs_release_tag: 'v1.12.1')
   download_ecs_schemata(:v1, elasticsearch_major: 8, ecs_release_tag: 'v1.12.1', generated_for: 7)
+  download_ecs_schemata(:v1, elasticsearch_major: 9, ecs_release_tag: 'v1.12.1', generated_for: 7)
 
   # PRERELEASE: 8.0 branch
   # when pinning to released tag, remove BETA warning.
   download_ecs_schemata(:v8, elasticsearch_major: 7, ecs_release_tag: '8.0')
   download_ecs_schemata(:v8, elasticsearch_major: 8, ecs_release_tag: '8.0')
+  download_ecs_schemata(:v8, elasticsearch_major: 9, ecs_release_tag: '8.0')
 end
 
 task :vendor => :'vendor-ecs-schemata'
