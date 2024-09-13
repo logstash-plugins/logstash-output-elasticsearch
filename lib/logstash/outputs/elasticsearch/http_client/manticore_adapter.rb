@@ -2,7 +2,7 @@ require 'manticore'
 require 'cgi'
 
 module LogStash; module Outputs; class ElasticSearch; class HttpClient;
-  DEFAULT_HEADERS = { "Content-Type" => "application/json" }
+  DEFAULT_HEADERS = { "Content-Type" => "application/json", "X-Elastic-Product-Origin": "logstash" }
   
   class ManticoreAdapter
     attr_reader :manticore, :logger
