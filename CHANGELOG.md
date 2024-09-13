@@ -1,3 +1,6 @@
+## 11.22.8
+  - Added ECS template for Elasticsearch 9.x [#1187](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1187)
+
 ## 11.22.7
   - [DOC] `ssl_key` requires PKCS#8 format [#1181](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1181)
 
