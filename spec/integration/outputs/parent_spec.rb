@@ -6,7 +6,7 @@ describe "join type field", :integration => true do
   shared_examples "a join field based parent indexer" do
     let(:index) { 10.times.collect { rand(10).to_s }.join("") }
 
-    let(:type) { ESHelper.es_version_satisfies?("< 7") ? "doc" : "_doc" }
+    let(:type) { "_doc" }
 
     let(:event_count) { 10000 + rand(500) }
     let(:parent) { "not_implemented" }
@@ -33,8 +33,7 @@ describe "join type field", :integration => true do
         }
       }
 
-      mapping = ESHelper.es_version_satisfies?('<7') ? { "mappings" => { type => properties } }
-                                                     : { "mappings" => properties}
+      mapping = { "mappings" => properties}
 
       Manticore.put("#{index_url}", {:body => mapping.to_json, :headers => default_headers}).call
       pdoc = { "message" => "ohayo", join_field => parent_relation }

@@ -127,7 +127,6 @@ module LogStash module Outputs class ElasticSearch
           value.to_s == 'true'
         when 'manage_template'
           value.to_s == 'false'
-        when 'ecs_compatibility' then true # required for LS <= 6.x
         else
           name.start_with?('data_stream_') ||
               shared_params.include?(name) ||
