@@ -367,7 +367,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
     let(:root_response) { MockResponse.new(200, {"tagline" => "You Know, for Search",
                                                   "version" => {
-                                                    "number" => '0.0.0',
+                                                    "number" => '7.0.0',
                                                     "build_flavor" => 'default'}
     }) }
     let(:root_response2) { MockResponse.new(200, {"tagline" => "You Know, for Search",
