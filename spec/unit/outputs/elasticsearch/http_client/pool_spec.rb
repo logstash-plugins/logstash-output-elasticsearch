@@ -370,11 +370,16 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
                                                     "number" => '7.0.0',
                                                     "build_flavor" => 'default'}
     }) }
-    let(:root_response2) { MockResponse.new(200, {"tagline" => "You Know, for Search",
-                                                  "version" => {
-                                                    "number" => '8.0.0',
-                                                    "build_flavor" => 'default'}
-    }) }
+    let(:root_response2) { MockResponse.new(200,
+                                            {
+                                              "tagline" => "You Know, for Search",
+                                              "version" => {
+                                                "number" => '8.0.0',
+                                                "build_flavor" => 'default'
+                                              }
+                                            },
+                                            { "x-elastic-product" => "Elasticsearch" }
+    ) }
 
     context "if there are nodes with multiple major versions" do
       before(:each) do
