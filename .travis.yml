@@ -9,6 +9,7 @@ jobs:
     - env: INTEGRATION=true SNAPSHOT=true LOG_LEVEL=info ELASTIC_STACK_VERSION=8.current
     - env: INTEGRATION=true SNAPSHOT=true LOG_LEVEL=info ELASTIC_STACK_VERSION=8.next
     - env: INTEGRATION=true SNAPSHOT=true LOG_LEVEL=info ELASTIC_STACK_VERSION=8.future
+    - env: INTEGRATION=true SNAPSHOT=true LOG_LEVEL=info ELASTIC_STACK_VERSION=main
     - stage: "Secure Integration Tests"
       env: SECURE_INTEGRATION=true INTEGRATION=true LOG_LEVEL=info ELASTIC_STACK_VERSION=8.current SNAPSHOT=true
     - env: SECURE_INTEGRATION=true INTEGRATION=true LOG_LEVEL=info ELASTIC_STACK_VERSION=7.current
