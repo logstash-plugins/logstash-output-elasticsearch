@@ -32,6 +32,13 @@ end
     let(:http_client) do
       Manticore::Client.new(http_client_options)
     end
+    let(:expected_headers) {
+      {
+        "Content-Encoding" => "gzip",
+        "Content-Type" => "application/json",
+        'x-elastic-product-origin' => 'logstash-output-elasticsearch'
+      }
+    }
 
     before do
       subject.register
@@ -64,7 +71,7 @@ end
 
     it "sets the correct content-encoding header and body is compressed" do
       expect(subject.client.pool.adapter.client).to receive(:send).
-        with(anything, anything, {:headers=>{"Content-Encoding"=>"gzip", "Content-Type"=>"application/json"}, :body => a_valid_gzip_encoded_string}).
+        with(anything, anything, {:headers=> expected_headers, :body => a_valid_gzip_encoded_string}).
         and_call_original
       subject.multi_receive(events)
     end

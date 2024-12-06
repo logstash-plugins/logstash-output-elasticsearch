@@ -214,10 +214,13 @@ describe "indexing" do
     end
 
     it "sets the correct content-type header" do
-      expected_manticore_opts = {:headers => {"Content-Type" => "application/json"}, :body => anything}
+      expected_manticore_opts = {
+        :headers => {"Content-Type" => "application/json", 'x-elastic-product-origin' => 'logstash-output-elasticsearch'},
+        :body => anything
+      }
       if secure
         expected_manticore_opts = {
-          :headers => {"Content-Type" => "application/json"},
+          :headers => {"Content-Type" => "application/json", 'x-elastic-product-origin' => 'logstash-output-elasticsearch'},
           :body => anything,
           :auth => {
             :user => user,
