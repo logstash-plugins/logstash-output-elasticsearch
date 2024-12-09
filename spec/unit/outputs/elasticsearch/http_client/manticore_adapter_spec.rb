@@ -34,7 +34,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::ManticoreAdapter do
       
       expect(subject.manticore).to receive(:get).
         with(expected_uri.to_s, {
-          :headers => {"Content-Type" => "application/json"},
+          :headers => LogStash::Outputs::ElasticSearch::HttpClient::DEFAULT_HEADERS,
           :auth => {
             :user => user,
             :password => password,
