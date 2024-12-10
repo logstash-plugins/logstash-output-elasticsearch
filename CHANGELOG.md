@@ -1,3 +1,15 @@
+## 12.0.0
+  - SSL settings that were marked deprecated in version `11.14.0` are now marked obsolete, and will prevent the plugin from starting.
+  - These settings are:
+    - `cacert`, which should be replaced by `ssl_certificate_authorities`
+    - `keystore`, which should be replaced by `ssl_keystore_path`
+    - `keystore_password`, which should be replaced by `ssl_keystore_password`
+    - `ssl`, which should be replaced by `ssl_enabled`
+    - `ssl_certificate_verification`, which should be replaced by `ssl_verification_mode`
+    - `truststore`, which should be replaced by `ssl_truststore_path`
+    - `truststore_password`, which should be replaced by `ssl_truststore_password`
+    - [#1197](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1197)
+
 ## 11.22.10
  - Add `x-elastic-product-origin` header to Elasticsearch requests [#1195](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1195)
 
