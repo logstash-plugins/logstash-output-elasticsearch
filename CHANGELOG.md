@@ -1,5 +1,5 @@
 ## 11.22.10
- - Add `x-elastic-product-origin` header to Elasticsearch requests [#1194](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1194)
+ - Add `x-elastic-product-origin` header to Elasticsearch requests [#1195](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1195)
 
 ## 11.22.9
  - Vendor ECS template for Elasticsearch 9.x in built gem [#1188](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1188)
