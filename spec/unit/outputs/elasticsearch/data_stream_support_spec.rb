@@ -286,29 +286,6 @@ describe LogStash::Outputs::ElasticSearch::DataStreamSupport do
       end
 
     end
-
-    context 'non-compatible ES' do
-
-      let(:es_version) { '6.8.11' }
-
-      it "prints an error (from after_successful_connection thread) on LS 7.x" do
-        change_constant :LOGSTASH_VERSION, '7.12.0' do
-          expect( subject.logger ).to receive(:error).with(/Elasticsearch version does not support data streams/,
-                                                           {:es_version=>"6.8.11"})
-          stub_plugin_register!
-        end
-      end
-
-      it "prints an error (from after_successful_connection thread) on LS 8.0" do
-        change_constant :LOGSTASH_VERSION, '8.0.5' do
-          expect( subject.logger ).to receive(:error).with(/Elasticsearch version does not support data streams/,
-                                                           {:es_version=>"6.8.11"})
-          stub_plugin_register!
-        end
-      end
-
-    end
-
   end
 
   describe "auto routing" do

@@ -4,11 +4,6 @@ require "logstash/outputs/elasticsearch/template_manager"
 describe LogStash::Outputs::ElasticSearch::TemplateManager do
 
   describe ".default_template_path" do
-    context "elasticsearch 6.x" do
-      it "chooses the 6x template" do
-        expect(described_class.default_template_path(6)).to end_with("/templates/ecs-disabled/elasticsearch-6x.json")
-      end
-    end
     context "elasticsearch 7.x" do
       it "chooses the 7x template" do
         expect(described_class.default_template_path(7)).to end_with("/templates/ecs-disabled/elasticsearch-7x.json")
@@ -52,7 +47,7 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
         end
       end
 
-      describe "in version < 8" do
+      describe "in version 7" do
         let(:file_path) { described_class.default_template_path(7) }
         let(:template) { described_class.read_template_file(file_path)}
 
@@ -96,7 +91,7 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
       describe "with `template_api => 'auto'`" do
         let(:template_api) { "auto" }
 
-        describe "with ES < 8 versions" do
+        describe "with ES 7" do
 
           it 'resolves legacy index template API compatible setting' do
             expect(plugin).to receive(:serverless?).and_return(false)
@@ -134,7 +129,7 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
         end
       end
 
-      describe "in version < 8" do
+      describe "in version 7" do
         it "should use legacy template API" do
           expect(plugin).to receive(:serverless?).and_return(false)
           expect(plugin).to receive(:maximum_seen_major_version).at_least(:once).and_return(7)
