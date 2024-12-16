@@ -30,8 +30,6 @@ module ESHelper
       nil
     elsif ESHelper.es_version_satisfies?(">=7")
       "_doc"
-    else
-      "doc"
     end
   end
 
@@ -70,7 +68,7 @@ module ESHelper
   end
 
   RSpec::Matchers.define :have_hits do |expected|
-    hits_count_path = ESHelper.es_version_satisfies?(">=7") ? %w(hits total value) : %w(hits total)
+    hits_count_path = %w(hits total value)
 
     match do |actual|
       @actual_hits_count = actual&.dig(*hits_count_path)
@@ -214,8 +212,6 @@ module ESHelper
       template['template']['mappings']
     elsif ESHelper.es_version_satisfies?(">=7")
       template['mappings']
-    else
-      template['mappings']["_default_"]
     end
   end
 end

@@ -13,7 +13,7 @@ describe "TARGET_BULK_BYTES", :integration => true do
       }
   }
   let(:index) { 10.times.collect { rand(10).to_s }.join("") }
-  let(:type) { ESHelper.es_version_satisfies?("< 7") ? "doc" : "_doc" }
+  let(:type) { "_doc" }
 
   subject { LogStash::Outputs::ElasticSearch.new(config) }
 
@@ -82,7 +82,7 @@ describe "indexing with sprintf resolution", :integration => true do
   let(:message) { "Hello from #{__FILE__}" }
   let(:event) { LogStash::Event.new("message" => message, "type" => type) }
   let (:index) { "%{[index_name]}_dynamic" }
-  let(:type) { ESHelper.es_version_satisfies?("< 7") ? "doc" : "_doc" }
+  let(:type) { "_doc" }
   let(:event_count) { 1 }
   let(:user) { "simpleuser" }
   let(:password) { "abc123" }
@@ -151,7 +151,7 @@ describe "indexing" do
   let(:message) { "Hello from #{__FILE__}" }
   let(:event) { LogStash::Event.new("message" => message, "type" => type) }
   let(:index) { 10.times.collect { rand(10).to_s }.join("") }
-  let(:type) { ESHelper.es_version_satisfies?("< 7") ? "doc" : "_doc" }
+  let(:type) { "_doc" }
   let(:event_count) { 1 + rand(2) }
   let(:config) { "not implemented" }
   let(:events) { event_count.times.map { event }.to_a }
@@ -204,10 +204,10 @@ describe "indexing" do
       result["hits"]["hits"].each do |doc|
         expect(doc["_source"]["message"]).to eq(message)
 
-        if ESHelper.es_version_satisfies?("< 8")
-          expect(doc["_type"]).to eq(type)
-        else
+        if ESHelper.es_version_satisfies?(">= 8")
           expect(doc).not_to include("_type")
+        else
+          expect(doc["_type"]).to eq(type)
         end
         expect(doc["_index"]).to eq(index)
       end
@@ -346,7 +346,7 @@ describe "indexing" do
   end
 
   describe "an indexer with no type value set (default to doc)", :integration => true do
-    let(:type) { ESHelper.es_version_satisfies?("< 7") ? "doc" : "_doc" }
+    let(:type) { "_doc" }
     let(:config) {
       {
         "hosts" => get_host_port,
