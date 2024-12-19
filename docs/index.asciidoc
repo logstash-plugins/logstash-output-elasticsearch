@@ -1341,3 +1341,8 @@ Elasticsearch documentation.
 +| truststore | <<plugins-{type}s-{plugin}-ssl_truststore_path>>
 +| truststore_password | <<plugins-{type}s-{plugin}-ssl_truststore_password>>
  |=======================================================================
+
+[id="plugins-{type}s-{plugin}-common-options"]
+include::{include_path}/{type}.asciidoc[]
+
+:no_codec!:
