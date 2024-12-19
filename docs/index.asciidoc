@@ -325,8 +325,7 @@ When a string value on an event contains one or more byte sequences that are not
 [id="plugins-{type}s-{plugin}-options"]
 ==== Elasticsearch Output Configuration Options
 
-This plugin supports the following configuration options plus the
-<<plugins-{type}s-{plugin}-common-options>> and the <<plugins-{type}s-{plugin}-deprecated-options>> described later.
+This plugin supports these configuration options plus the <<plugins-{type}s-{plugin}-common-options>> described later.
 
 [cols="<,<,<",options="header",]
 |=======================================================================
