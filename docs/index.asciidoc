@@ -1324,21 +1324,21 @@ blog] and {ref}/docs-index_.html#_version_types[Version types] in the
 Elasticsearch documentation.
 
 [id="plugins-{type}s-{plugin}-obsolete-options"]
-+==== Elasticsearch Output Obsolete Configuration Options
+==== Elasticsearch Output Obsolete Configuration Options
 
-+WARNING: As of version `12.0.0` of this plugin, some configuration options have been replaced.
-+The plugin will fail to start if it contains any of these obsolete options.
+WARNING: As of version `12.0.0` of this plugin, some configuration options have been replaced.
+The plugin will fail to start if it contains any of these obsolete options.
 
-+[cols="<,<",options="header",]
+[cols="<,<",options="header",]
  |=======================================================================
-+|Setting|Replaced by
-+| cacert | <<plugins-{type}s-{plugin}-ssl_certificate_authorities>>
-+| keystore | <<plugins-{type}s-{plugin}-ssl_keystore_path>>
-+| keystore_password | <<plugins-{type}s-{plugin}-ssl_keystore_password>>
-+| ssl | <<plugins-{type}s-{plugin}-ssl_enabled>>
-+| ssl_certificate_verification | <<plugins-{type}s-{plugin}-ssl_verification_mode>>
-+| truststore | <<plugins-{type}s-{plugin}-ssl_truststore_path>>
-+| truststore_password | <<plugins-{type}s-{plugin}-ssl_truststore_password>>
+|Setting|Replaced by
+| cacert | <<plugins-{type}s-{plugin}-ssl_certificate_authorities>>
+| keystore | <<plugins-{type}s-{plugin}-ssl_keystore_path>>
+| keystore_password | <<plugins-{type}s-{plugin}-ssl_keystore_password>>
+| ssl | <<plugins-{type}s-{plugin}-ssl_enabled>>
+| ssl_certificate_verification | <<plugins-{type}s-{plugin}-ssl_verification_mode>>
+| truststore | <<plugins-{type}s-{plugin}-ssl_truststore_path>>
+| truststore_password | <<plugins-{type}s-{plugin}-ssl_truststore_password>>
  |=======================================================================
 
 [id="plugins-{type}s-{plugin}-common-options"]
