@@ -327,6 +327,9 @@ When a string value on an event contains one or more byte sequences that are not
 
 This plugin supports these configuration options plus the <<plugins-{type}s-{plugin}-common-options>> described later.
 
+NOTE: As of version 12.0.0 of this plugin, a number of previously deprecated SSL settings have been removed.
+Please check out <<plugins-{type}s-{plugin}-obsolete-options>> for details.
+
 [cols="<,<,<",options="header",]
 |=======================================================================
 |Setting |Input type|Required
