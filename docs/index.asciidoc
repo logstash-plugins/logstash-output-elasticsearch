@@ -1330,7 +1330,7 @@ WARNING: As of version `12.0.0` of this plugin, some configuration options have 
 The plugin will fail to start if it contains any of these obsolete options.
 
 [cols="<,<",options="header",]
-=======================================================================
+|=======================================================================
 |Setting|Replaced by
 | cacert | <<plugins-{type}s-{plugin}-ssl_certificate_authorities>>
 | keystore | <<plugins-{type}s-{plugin}-ssl_keystore_path>>
