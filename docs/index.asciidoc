@@ -440,7 +440,7 @@ For more details on actions, check out the {ref}/docs-bulk.html[Elasticsearch bu
   * There is no default value for this setting.
 
 Authenticate using Elasticsearch API key.
-Note that this option also requires SSL/TLS, which can be enabled by supplying a <<plugins-{type}s-{plugin}-cloud_id>>, a list of HTTPS <<plugins-{type}s-{plugin}-hosts>>, or by setting <<plugins-{type}s-{plugin}-ssl,`ssl_enabled => true`>>.
+Note that this option also requires SSL/TLS, which can be enabled by supplying a <<plugins-{type}s-{plugin}-cloud_id>>, a list of HTTPS <<plugins-{type}s-{plugin}-hosts>>, or by setting <<plugins-{type}s-{plugin}-ssl_enabled,`ssl_enabled => true`>>.
 
 Format is `id:api_key` where `id` and `api_key` are as returned by the
 Elasticsearch {ref}/security-api-create-api-key.html[Create API key API].
