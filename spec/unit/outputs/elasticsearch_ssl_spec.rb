@@ -195,3 +195,25 @@ describe "SSL options" do
   end
 end
 
+# Move outside the SSL options describe block that has the after hook
+describe "SSL obsolete settings" do
+  let(:base_settings) { { "hosts" => "localhost", "pool_max" => 1, "pool_max_per_route" => 1 } }
+  [
+    {name: 'ssl', replacement: 'ssl_enabled'},
+    {name: 'ssl_certificate_verification', replacement: 'ssl_verification_mode'},
+    {name: 'cacert', replacement: 'ssl_certificate_authorities'},
+    {name: 'truststore', replacement: 'ssl_truststore_path'},
+    {name: 'keystore', replacement: 'ssl_keystore_path'},
+    {name: 'truststore_password', replacement: 'ssl_truststore_password'},
+    {name: 'keystore_password', replacement: 'ssl_keystore_password'}
+  ].each do |obsolete_setting|
+    context "with option #{obsolete_setting[:name]}" do
+      let(:settings) { base_settings.merge(obsolete_setting[:name] => "value") }
+
+      it "emits an error about the setting being obsolete" do
+        error_text = /The setting `#{obsolete_setting[:name]}` in plugin `elasticsearch` is obsolete and is no longer available. (Use|Set) '#{obsolete_setting[:replacement]}' instead/i
+        expect { LogStash::Outputs::ElasticSearch.new(settings) }.to raise_error LogStash::ConfigurationError, error_text
+      end
+    end
+  end
+end
