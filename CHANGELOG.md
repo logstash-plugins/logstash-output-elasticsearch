@@ -1,3 +1,6 @@
+## 12.0.1
+ - Remove irrelevant log warning about elastic stack version [#1200](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1200)
+
 ## 12.0.0
   - SSL settings that were marked deprecated in version `11.14.0` are now marked obsolete, and will prevent the plugin from starting.
   - These settings are:
