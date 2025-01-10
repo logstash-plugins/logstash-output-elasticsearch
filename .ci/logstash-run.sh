@@ -13,7 +13,7 @@ else
 fi
 
 # CentOS 7 using curl defaults does not enable TLSv1.3
-CURL_OPTS="-k --tlsv1.2 --tls-max 1.3"
+CURL_OPTS="-s -k --tlsv1.2 --tls-max 1.3"
 
 wait_for_es() {
   count=120
@@ -22,7 +22,7 @@ wait_for_es() {
     [[ $count -eq 0 ]] && exit 1
     sleep 1
   done
-  echo $(curl $CURL_OPTS -vi $ES_URL | jq -r .version.number)
+  echo $(curl $CURL_OPTS $ES_URL | jq -r .version.number)
 }
 
 if [[ "$INTEGRATION" != "true" ]]; then
