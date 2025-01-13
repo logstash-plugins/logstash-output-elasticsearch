@@ -515,18 +515,11 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       major = major_version(version)
       if @maximum_seen_major_version.nil?
         @logger.info("Elasticsearch version determined (#{version})", es_version: major)
-        set_maximum_seen_major_version(major)
+        @maximum_seen_major_version = major
       elsif major > @maximum_seen_major_version
         warn_on_higher_major_version(major, url)
         @maximum_seen_major_version = major
       end
-    end
-
-    def set_maximum_seen_major_version(major)
-      if major >= 6
-        @logger.warn("Detected a 6.x and above cluster: the `type` event field won't be used to determine the document _type", es_version: major)
-      end
-      @maximum_seen_major_version = major
     end
 
     def warn_on_higher_major_version(major, url)
