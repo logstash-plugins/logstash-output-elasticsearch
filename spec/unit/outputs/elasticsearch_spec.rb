@@ -915,7 +915,12 @@ describe LogStash::Outputs::ElasticSearch do
       allow(elasticsearch_output_instance.client.pool).to receive(:post) do |path, params, body|
         if body.length > max_bytes
           max_bytes *= 2 # ensure a successful retry
-          double("Response", :code => 413, :body => "")
+          raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(
+            413,
+            "test-url",
+            body,
+            ""
+          )
         else
           double("Response", :code => 200, :body => '{"errors":false,"items":[{"index":{"status":200,"result":"created"}}]}')
         end
