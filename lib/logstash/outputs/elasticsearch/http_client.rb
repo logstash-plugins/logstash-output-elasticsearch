@@ -184,6 +184,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
       begin
         response = @pool.post(@bulk_path, params, body_stream.string)
+        @bulk_response_metrics.increment(response.code.to_s)
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
         @bulk_response_metrics.increment(e.response_code.to_s)
         raise e unless e.response_code == 413
@@ -193,8 +194,6 @@ module LogStash; module Outputs; class ElasticSearch;
       rescue => e # it may be a network issue instead, re-raise
         raise e
       end
-
-      @bulk_response_metrics.increment(response.code.to_s)
 
       LogStash::Json.load(response.body)
     end
