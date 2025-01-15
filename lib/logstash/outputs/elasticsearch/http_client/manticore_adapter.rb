@@ -77,7 +77,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       end
 
       code = resp.code
-      if code < 200 || code > 299 #&& code != 404
+      if code < 200 || code > 299 # assume anything not 2xx is an error that the layer above needs to interpret
         raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(code, request_uri, body, resp.body)
       end
 
