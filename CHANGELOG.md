@@ -1,3 +1,6 @@
+## 11.22.11
+ - Remove irrelevant log warning about elastic stack version [#1202](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1202)
+
 ## 11.22.10
  - Add `x-elastic-product-origin` header to Elasticsearch requests [#1195](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1195)
 
