@@ -182,21 +182,18 @@ module LogStash; module Outputs; class ElasticSearch;
     def bulk_send(body_stream, batch_actions)
       params = compression_level? ? {:headers => {"Content-Encoding" => "gzip"}} : {}
 
-      response = @pool.post(@bulk_path, params, body_stream.string)
-
-      @bulk_response_metrics.increment(response.code.to_s)
-
-      case response.code
-      when 200 # OK
-        LogStash::Json.load(response.body)
-      when 413 # Payload Too Large
-        logger.warn("Bulk request rejected: `413 Payload Too Large`", :action_count => batch_actions.size, :content_length => body_stream.size)
-        emulate_batch_error_response(batch_actions, response.code, 'payload_too_large')
-      else
-        url = ::LogStash::Util::SafeURI.new(response.final_url)
-        raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(
-          response.code, url, body_stream.to_s, response.body
-        )
+      begin
+        response = @pool.post(@bulk_path, params, body_stream.string)
+      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        if response.code == 413 # special handling for 413, treat it as a document level issue
+          logger.warn("Bulk request rejected: `413 Payload Too Large`", :action_count => batch_actions.size, :content_length => body_stream.size)
+          emulate_batch_error_response(batch_actions, response.code, 'payload_too_large')
+        else
+          raise e
+        end
+      ensure
+        code = e ? e.code : response.code
+        @bulk_response_metrics.increment(code.to_s)
       end
     end
 
@@ -411,6 +408,9 @@ module LogStash; module Outputs; class ElasticSearch;
     def exists?(path, use_get=false)
       response = use_get ? @pool.get(path) : @pool.head(path)
       response.code >= 200 && response.code <= 299
+    rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+      return true if e.code == 404
+      raise e
     end
 
     def template_exists?(template_endpoint, name)
@@ -420,7 +420,10 @@ module LogStash; module Outputs; class ElasticSearch;
     def template_put(template_endpoint, name, template)
       path = "#{template_endpoint}/#{name}"
       logger.info("Installing Elasticsearch template", name: name)
-      @pool.put(path, nil, LogStash::Json.dump(template))
+      response = @pool.put(path, nil, LogStash::Json.dump(template))
+    rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+      return response if e.code == 404
+      raise e
     end
 
     # ILM methods
@@ -432,17 +435,15 @@ module LogStash; module Outputs; class ElasticSearch;
 
     # Create a new rollover alias
     def rollover_alias_put(alias_name, alias_definition)
-      begin
-        @pool.put(CGI::escape(alias_name), nil, LogStash::Json.dump(alias_definition))
-        logger.info("Created rollover alias", name: alias_name)
-        # If the rollover alias already exists, ignore the error that comes back from Elasticsearch
-      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-        if e.response_code == 400
-            logger.info("Rollover alias already exists, skipping", name: alias_name)
-            return
-        end
-        raise e
+      @pool.put(CGI::escape(alias_name), nil, LogStash::Json.dump(alias_definition))
+      logger.info("Created rollover alias", name: alias_name)
+      # If the rollover alias already exists, ignore the error that comes back from Elasticsearch
+    rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+      if e.response_code == 400
+        logger.info("Rollover alias already exists, skipping", name: alias_name)
+        return
       end
+      raise e
     end
 
     def get_xpack_info
