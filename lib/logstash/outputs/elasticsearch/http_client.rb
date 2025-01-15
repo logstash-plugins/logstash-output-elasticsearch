@@ -181,20 +181,15 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def bulk_send(body_stream, batch_actions)
       params = compression_level? ? {:headers => {"Content-Encoding" => "gzip"}} : {}
-
-      begin
-        response = @pool.post(@bulk_path, params, body_stream.string)
-      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-        if e.response_code == 413 # special handling for 413, treat it as a document level issue
-          logger.warn("Bulk request rejected: `413 Payload Too Large`", :action_count => batch_actions.size, :content_length => body_stream.size)
-          emulate_batch_error_response(batch_actions, 413, 'payload_too_large')
-        else
-          raise e
-        end
-      ensure
-        code = e ? e.response_code : response.code
-        @bulk_response_metrics.increment(code.to_s)
-      end
+      response = @pool.post(@bulk_path, params, body_stream.string)
+    rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+      raise e unless e.response_code == 413
+      # special handling for 413, treat it as a document level issue
+      logger.warn("Bulk request rejected: `413 Payload Too Large`", :action_count => batch_actions.size, :content_length => body_stream.size)
+      emulate_batch_error_response(batch_actions, 413, 'payload_too_large')
+    ensure
+      code = e ? e.response_code : response.code
+      @bulk_response_metrics.increment(code.to_s)
     end
 
     def emulate_batch_error_response(actions, http_code, reason)
