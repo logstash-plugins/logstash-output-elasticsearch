@@ -410,7 +410,7 @@ module LogStash; module Outputs; class ElasticSearch;
       response = use_get ? @pool.get(path) : @pool.head(path)
       response.code >= 200 && response.code <= 299
     rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-      return true if e.code == 404
+      return false if e.response_code == 404
       raise e
     end
 
@@ -421,10 +421,9 @@ module LogStash; module Outputs; class ElasticSearch;
     def template_put(template_endpoint, name, template)
       path = "#{template_endpoint}/#{name}"
       logger.info("Installing Elasticsearch template", name: name)
-      response = @pool.put(path, nil, LogStash::Json.dump(template))
+      @pool.put(path, nil, LogStash::Json.dump(template))
     rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-      return response if e.code == 404
-      raise e
+      raise e unless e.response_code == 404
     end
 
     # ILM methods
