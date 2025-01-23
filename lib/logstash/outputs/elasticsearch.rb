@@ -14,39 +14,16 @@ require "set"
 # .Compatibility Note
 # [NOTE]
 # ================================================================================
-# Starting with Elasticsearch 5.3, there's an {ref}modules-http.html[HTTP setting]
-# called `http.content_type.required`. If this option is set to `true`, and you
-# are using Logstash 2.4 through 5.2, you need to update the Elasticsearch output
-# plugin to version 6.2.5 or higher.
-#
-# ================================================================================
 #
 # This plugin is the recommended method of storing logs in Elasticsearch.
 # If you plan on using the Kibana web interface, you'll want to use this output.
 #
-# This output only speaks the HTTP protocol. HTTP is the preferred protocol for interacting with Elasticsearch as of Logstash 2.0.
-# We strongly encourage the use of HTTP over the node protocol for a number of reasons. HTTP is only marginally slower,
-# yet far easier to administer and work with. When using the HTTP protocol one may upgrade Elasticsearch versions without having
-# to upgrade Logstash in lock-step.
+# This output only speaks the HTTP protocol.
 #
 # You can learn more about Elasticsearch at <https://www.elastic.co/products/elasticsearch>
 #
-# ==== Template management for Elasticsearch 5.x
-# Index template for this version (Logstash 5.0) has been changed to reflect Elasticsearch's mapping changes in version 5.0.
-# Most importantly, the subfield for string multi-fields has changed from `.raw` to `.keyword` to match ES default
-# behavior.
-#
-# ** Users installing ES 5.x and LS 5.x **
-# This change will not affect you and you will continue to use the ES defaults.
-#
-# ** Users upgrading from LS 2.x to LS 5.x with ES 5.x **
-# LS will not force upgrade the template, if `logstash` template already exists. This means you will still use
-# `.raw` for sub-fields coming from 2.x. If you choose to use the new template, you will have to reindex your data after
-# the new template is installed.
-#
 # ==== Retry Policy
 #
-# The retry policy has changed significantly in the 2.2.0 release.
 # This plugin uses the Elasticsearch bulk API to optimize its imports into Elasticsearch. These requests may experience
 # either partial or total failures.
 #
@@ -129,8 +106,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # - delete: deletes a document by id (An id is required for this action)
   # - create: indexes a document, fails if a document by that id already exists in the index.
   # - update: updates a document by id. Update has a special case where you can upsert -- update a
-  #   document if not already present. See the `upsert` option. NOTE: This does not work and is not supported
-  #   in Elasticsearch 1.x. Please upgrade to ES 2.x or greater to use this feature with Logstash!
+  #   document if not already present. See the `upsert` option.
   # - A sprintf style string to change the action based on the content of the event. The value `%{[foo]}`
   #   would use the foo field for the action
   #
@@ -148,7 +124,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   config :document_type,
     :validate => :string,
-    :deprecated => "Document types are being deprecated in Elasticsearch 6.0, and removed entirely in 7.0. You should avoid this feature"
+    :deprecated => "Document types were deprecated in Elasticsearch 7.0, and no longer configurable since 8.0. You should avoid this feature."
 
   # From Logstash 1.3 onwards, a template is applied to Elasticsearch during
   # Logstash's startup if one with the name `template_name` does not already exist.
@@ -483,7 +459,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
         join_value = event.get(@join_field)
         parent_value = event.sprintf(@parent)
         event.set(@join_field, { "name" => join_value, "parent" => parent_value })
-        params[routing_field_name] = event.sprintf(@parent)
+        params[:routing] = event.sprintf(@parent)
       else
         params[:parent] = event.sprintf(@parent)
       end
@@ -495,7 +471,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     if action == 'update'
       params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
       params[:_script] = event.sprintf(@script) if @script != ""
-      params[retry_on_conflict_action_name] = @retry_on_conflict
+      params[:retry_on_conflict] = @retry_on_conflict
     end
 
     event_control = event.get("[@metadata][_ingest_document]")
@@ -552,7 +528,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     params = {
         :_id => resolve_document_id(event, event_id),
         :_index => resolve_index!(event, event_index),
-        routing_field_name => resolve_routing(event, event_routing)
+        :routing => resolve_routing(event, event_routing)
     }
 
     target_pipeline = resolve_pipeline(event, event_pipeline)
@@ -615,16 +591,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
     require "logstash/outputs/elasticsearch/#{name}"
   end
 
-  def retry_on_conflict_action_name
-    maximum_seen_major_version >= 7 ? :retry_on_conflict : :_retry_on_conflict
-  end
-
-  def routing_field_name
-    :routing
-  end
-
   # Determine the correct value for the 'type' field for the given event
-  DEFAULT_EVENT_TYPE_ES6 = "doc".freeze
   DEFAULT_EVENT_TYPE_ES7 = "_doc".freeze
 
   def get_event_type(event)
@@ -633,9 +600,7 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
              event.sprintf(@document_type)
            else
              major_version = maximum_seen_major_version
-             if major_version == 6
-               DEFAULT_EVENT_TYPE_ES6
-             elsif major_version == 7
+             if major_version == 7
                DEFAULT_EVENT_TYPE_ES7
              else
                nil
@@ -653,9 +618,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   # @param noop_required_client [nil]: required `nil` for legacy reasons.
   # @return [Boolean]
   def use_event_type?(noop_required_client)
-    # always set type for ES 6
-    # for ES 7 only set it if the user defined it
-    (maximum_seen_major_version < 7) || (maximum_seen_major_version == 7 && @document_type)
+    # never use event type unless
+    # ES is 7.x and the user defined it
+    maximum_seen_major_version == 7 && @document_type
   end
 
   def install_template

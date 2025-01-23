@@ -14,7 +14,7 @@ end
     let(:event_with_invalid_utf_8_bytes) { LogStash::Event.new("message" => "Message from spacecraft which contains \xAC invalid \xD7 byte sequences.", "type" => type) }
 
     let(:index) { 10.times.collect { rand(10).to_s }.join("") }
-    let(:type) { ESHelper.es_version_satisfies?("< 7") ? "doc" : "_doc" }
+    let(:type) { "_doc" }
     let(:event_count) { 10000 + rand(500) }
     # mix the events with valid and invalid UTF-8 payloads
     let(:events) { event_count.times.map { |i| i%3 == 0 ? event : event_with_invalid_utf_8_bytes }.to_a }
@@ -59,10 +59,10 @@ end
         response = http_client.get("#{index_url}/_search?q=*&size=1000")
         result = LogStash::Json.load(response.body)
         result["hits"]["hits"].each do |doc|
-          if ESHelper.es_version_satisfies?("< 8")
-            expect(doc["_type"]).to eq(type)
-          else
+          if ESHelper.es_version_satisfies?(">= 8")
             expect(doc).not_to include("_type")
+          else
+            expect(doc["_type"]).to eq(type)
           end
           expect(doc["_index"]).to eq(index)
         end

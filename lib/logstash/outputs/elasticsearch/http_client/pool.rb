@@ -52,7 +52,6 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     ROOT_URI_PATH = '/'.freeze
     LICENSE_PATH = '/_license'.freeze
 
-    VERSION_6_TO_7 = ::Gem::Requirement.new([">= 6.0.0", "< 7.0.0"])
     VERSION_7_TO_7_14 = ::Gem::Requirement.new([">= 7.0.0", "< 7.14.0"])
 
     DEFAULT_OPTIONS = {
@@ -550,11 +549,9 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       return false if version_info['version'].nil?
 
       version = ::Gem::Version.new(version_info["version"]['number'])
-      return false if version < ::Gem::Version.new('6.0.0')
+      return false if version < ::Gem::Version.new('7.0.0')
 
-      if VERSION_6_TO_7.satisfied_by?(version)
-        return valid_tagline?(version_info)
-      elsif VERSION_7_TO_7_14.satisfied_by?(version)
+      if VERSION_7_TO_7_14.satisfied_by?(version)
         build_flavor = version_info["version"]['build_flavor']
         return false if build_flavor.nil? || build_flavor != 'default' || !valid_tagline?(version_info)
       else

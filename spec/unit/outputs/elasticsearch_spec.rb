@@ -9,7 +9,7 @@ require 'rspec/collection_matchers'
 describe LogStash::Outputs::ElasticSearch do
   subject(:elasticsearch_output_instance) { described_class.new(options) }
   let(:options) { {} }
-  let(:maximum_seen_major_version) { [6,7,8].sample }
+  let(:maximum_seen_major_version) { [7,8,9].sample }
 
   let(:do_register) { true }
 
@@ -214,13 +214,6 @@ describe LogStash::Outputs::ElasticSearch do
           let(:maximum_seen_major_version) { 7 }
           it "should return '_doc'" do
             expect(subject.send(:get_event_type, LogStash::Event.new("type" => "foo"))).to eql("_doc")
-          end
-        end
-
-        context "for 6.x elasticsearch clusters" do
-          let(:maximum_seen_major_version) { 6 }
-          it "should return 'doc'" do
-            expect(subject.send(:get_event_type, LogStash::Event.new("type" => "foo"))).to eql("doc")
           end
         end
       end
@@ -694,7 +687,7 @@ describe LogStash::Outputs::ElasticSearch do
           expect{ subject.register }.to raise_error(LogStash::ConfigurationError, /configured while DLQ is not enabled/)
         end
       end
-    end if LOGSTASH_VERSION > '7.0'
+    end
 
     describe "#multi_receive" do
       let(:events) { [double("one"), double("two"), double("three")] }
@@ -1136,7 +1129,7 @@ describe LogStash::Outputs::ElasticSearch do
       it "should not set the retry_on_conflict parameter when creating an event_action_tuple" do
         allow(subject.client).to receive(:maximum_seen_major_version).and_return(maximum_seen_major_version)
         action, params, event_data = subject.send(:event_action_tuple, event)
-        expect(params).not_to include({subject.send(:retry_on_conflict_action_name) => num_retries})
+        expect(params).to_not include({:retry_on_conflict => num_retries})
       end
     end
 
@@ -1145,7 +1138,7 @@ describe LogStash::Outputs::ElasticSearch do
 
       it "should set the retry_on_conflict parameter when creating an event_action_tuple" do
         action, params, event_data = subject.send(:event_action_tuple, event)
-        expect(params).to include({subject.send(:retry_on_conflict_action_name) => num_retries})
+        expect(params).to include({:retry_on_conflict => num_retries})
       end
     end
 
@@ -1154,7 +1147,7 @@ describe LogStash::Outputs::ElasticSearch do
 
       it "should set the retry_on_conflict parameter when creating an event_action_tuple" do
         action, params, event_data = subject.send(:event_action_tuple, event)
-        expect(params).to include({subject.send(:retry_on_conflict_action_name) => num_retries})
+        expect(params).to include({:retry_on_conflict => num_retries})
         expect(action).to eq("update")
       end
     end
@@ -1318,7 +1311,7 @@ describe LogStash::Outputs::ElasticSearch do
         expect { subject.register }.to raise_error LogStash::ConfigurationError, /cloud_id and hosts/
       end
     end
-  end if LOGSTASH_VERSION > '6.0'
+  end
 
   describe "cloud.auth" do
     let(:do_register) { false }
@@ -1359,7 +1352,7 @@ describe LogStash::Outputs::ElasticSearch do
         expect { subject.register }.to raise_error LogStash::ConfigurationError, /Multiple authentication options are specified/
       end
     end
-  end if LOGSTASH_VERSION > '6.0'
+  end
 
   context 'handling elasticsearch document-level status meant for the DLQ' do
     let(:es_api_action) { "CUSTOM_ACTION" }
@@ -1498,7 +1491,7 @@ describe LogStash::Outputs::ElasticSearch do
         include_examples "should write event to DLQ"
       end
 
-    end if LOGSTASH_VERSION > '7.0'
+    end
   end
 
   describe "custom headers" do
@@ -1676,7 +1669,7 @@ describe LogStash::Outputs::ElasticSearch do
       subject.send :wait_for_successful_connection
 
       expect(logger).to have_received(:error).with(/Unable to retrieve Elasticsearch cluster uuid/i, anything)
-    end if LOGSTASH_VERSION >= '7.0.0'
+    end
 
     it "logs template install failure" do
       allow(subject).to receive(:discover_cluster_uuid)

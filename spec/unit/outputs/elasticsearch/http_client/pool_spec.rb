@@ -203,29 +203,6 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
     let(:ip_address) { "192.168.1.0"}
     let(:port) { 9200 }
 
-    context 'in Elasticsearch 1.x format' do
-      context 'with host and ip address' do
-        let(:publish_address) { "inet[#{host}/#{ip_address}:#{port}]"}
-        it 'should correctly extract the host' do
-          expect(subject.address_str_to_uri(publish_address)).to eq (LogStash::Util::SafeURI.new("#{host}:#{port}"))
-        end
-      end
-      context 'with ip address' do
-        let(:publish_address) { "inet[/#{ip_address}:#{port}]"}
-        it 'should correctly extract the ip address' do
-          expect(subject.address_str_to_uri(publish_address)).to eq (LogStash::Util::SafeURI.new("#{ip_address}:#{port}"))
-        end
-      end
-    end
-
-    context 'in Elasticsearch 2.x-6.x format' do
-      let(:publish_address) { "#{ip_address}:#{port}"}
-      it 'should correctly extract the ip address' do
-        expect(subject.address_str_to_uri(publish_address)).to eq (LogStash::Util::SafeURI.new("//#{ip_address}:#{port}"))
-      end
-    end
-
-    context 'in Elasticsearch 7.x'
     context 'with host and ip address' do
       let(:publish_address) { "#{host}/#{ip_address}:#{port}"}
       it 'should correctly extract the host' do
@@ -367,14 +344,19 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
     let(:root_response) { MockResponse.new(200, {"tagline" => "You Know, for Search",
                                                   "version" => {
-                                                    "number" => '0.0.0',
+                                                    "number" => '7.0.0',
                                                     "build_flavor" => 'default'}
     }) }
-    let(:root_response2) { MockResponse.new(200, {"tagline" => "You Know, for Search",
-                                                  "version" => {
-                                                    "number" => '6.0.0',
-                                                    "build_flavor" => 'default'}
-    }) }
+    let(:root_response2) { MockResponse.new(200,
+                                            {
+                                              "tagline" => "You Know, for Search",
+                                              "version" => {
+                                                "number" => '8.0.0',
+                                                "build_flavor" => 'default'
+                                              }
+                                            },
+                                            { "x-elastic-product" => "Elasticsearch" }
+    ) }
 
     context "if there are nodes with multiple major versions" do
       before(:each) do
@@ -383,7 +365,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
       end
 
       it "picks the largest major version" do
-        expect(subject.maximum_seen_major_version).to eq(6)
+        expect(subject.maximum_seen_major_version).to eq(8)
       end
     end
   end
@@ -538,30 +520,6 @@ describe "#elasticsearch?" do
   context "when connecting to a cluster which reply without 'version' field" do
     it "should fail" do
       resp = MockResponse.new(200, {"field" => "funky.com"} )
-      expect(subject.send(:elasticsearch?, resp)).to be false
-    end
-  end
-
-  context "when connecting to a cluster with version < 6.0.0" do
-    it "should fail" do
-      resp = MockResponse.new(200, {"version" => { "number" => "5.0.0" }})
-      expect(subject.send(:elasticsearch?, resp)).to be false
-    end
-  end
-
-  context "when connecting to a cluster with version in [6.0.0..7.0.0)" do
-    it "must be successful with valid 'tagline'" do
-      resp = MockResponse.new(200, {"version" => {"number" => "6.5.0"}, "tagline" => "You Know, for Search"} )
-      expect(subject.send(:elasticsearch?, resp)).to be true
-    end
-
-    it "should fail if invalid 'tagline'" do
-      resp = MockResponse.new(200, {"version" => {"number" => "6.5.0"}, "tagline" => "You don't know"} )
-      expect(subject.send(:elasticsearch?, resp)).to be false
-    end
-
-    it "should fail if 'tagline' is not present" do
-      resp = MockResponse.new(200, {"version" => {"number" => "6.5.0"}} )
       expect(subject.send(:elasticsearch?, resp)).to be false
     end
   end

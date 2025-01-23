@@ -81,9 +81,9 @@ cd .ci
 
 export BUILDKIT_PROGRESS=plain
 if [ "$INTEGRATION" == "true" ]; then
-    docker-compose down
-    docker-compose build --quiet
+    docker compose down
+    docker compose build
 else
-    docker-compose down
-    docker-compose build logstash --quiet
+    docker compose down
+    docker compose build logstash
 fi
