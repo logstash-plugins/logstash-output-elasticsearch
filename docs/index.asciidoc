@@ -196,7 +196,22 @@ This plugin uses the Elasticsearch bulk API to optimize its imports into Elastic
 either partial or total failures. The bulk API sends batches of requests to an HTTP endpoint. Error codes for the HTTP
 request are handled differently than error codes for individual documents.
 
-HTTP requests to the bulk API are expected to return a 200 response code. All other response codes are retried indefinitely.
+
+HTTP requests to the bulk API are expected to return a 200 response code. All other response codes are retried indefinitely,
+including 413 (Payload Too Large) responses.
+
+If you want to handle large payloads differently, you can configure 413 responses to go to the Dead Letter Queue instead:
+
+[source,ruby]
+-----
+output {
+  elasticsearch {
+    hosts => ["localhost:9200"]
+    dlq_custom_codes => [413]  # Send 413 errors to DLQ instead of retrying
+  }
+-----
+
+This will capture oversized payloads in the DLQ for analysis rather than retrying them.
 
 The following document errors are handled as follows:
 

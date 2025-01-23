@@ -253,13 +253,11 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def health_check_request(url)
       logger.debug("Running health check to see if an Elasticsearch connection is working",
                    :healthcheck_url => url.sanitized.to_s, :path => @healthcheck_path)
-      begin
-        response = perform_request_to_url(url, :head, @healthcheck_path)
-        return response, nil
-      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-        logger.warn("Health check failed", code: e.response_code, url: e.url, message: e.message)
-        return nil, e
-      end
+      response = perform_request_to_url(url, :head, @healthcheck_path)
+      return response, nil
+    rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+      logger.warn("Health check failed", code: e.response_code, url: e.url, message: e.message)
+      return nil, e
     end
 
     def healthcheck!(register_phase = true)
@@ -312,13 +310,11 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def get_root_path(url, params={})
-      begin
-        resp = perform_request_to_url(url, :get, ROOT_URI_PATH, params)
-        return resp, nil
-      rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-        logger.warn("Elasticsearch main endpoint returns #{e.response_code}", message: e.message, body: e.response_body)
-        return nil, e
-      end
+      resp = perform_request_to_url(url, :get, ROOT_URI_PATH, params)
+      return resp, nil
+    rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+      logger.warn("Elasticsearch main endpoint returns #{e.response_code}", message: e.message, body: e.response_body)
+      return nil, e
     end
 
     def test_serverless_connection(url, root_response)

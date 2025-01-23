@@ -76,11 +76,8 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
         raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new(e, request_uri_as_string)
       end
 
-      # 404s are excluded because they are valid codes in the case of
-      # template installation. We might need a better story around this later
-      # but for our current purposes this is correct
       code = resp.code
-      if code < 200 || code > 299 && code != 404
+      if code < 200 || code > 299 # assume anything not 2xx is an error that the layer above needs to interpret
         raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(code, request_uri, body, resp.body)
       end
 
