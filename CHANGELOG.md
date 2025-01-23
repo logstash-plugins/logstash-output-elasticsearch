@@ -1,3 +1,6 @@
+## 12.0.2
+ - Properly handle http code 413 (Payload Too Large) [#1199](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1199)
+
 ## 12.0.1
  - Remove irrelevant log warning about elastic stack version [#1200](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1200)
 
