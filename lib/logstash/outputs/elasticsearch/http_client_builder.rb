@@ -191,7 +191,7 @@ module LogStash; module Outputs; class ElasticSearch;
       return {} unless (api_key && api_key.value)
 
       # support key_id:key for b64(key_id:key)
-      api_key_b64 = api_key.value.match?(/:/) ? Base64.strict_encode64(api_key.value) : api_key
+      api_key_b64 = api_key.value.match?(/:/) ? Base64.strict_encode64(api_key.value) : api_key.value
 
       { "Authorization" => "ApiKey " + api_key_b64 }
     end
