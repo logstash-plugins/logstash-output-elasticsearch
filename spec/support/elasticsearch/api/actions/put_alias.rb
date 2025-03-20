@@ -15,7 +15,7 @@ module Elasticsearch
         method = HTTP_PUT
         path   = Utils.__pathify Utils.__escape(arguments[:name])
 
-        params = Utils.__validate_and_extract_params arguments
+        params = __extract_params(arguments)
         body   = arguments[:body]
         perform_request(method, path, params, body.to_json).body
       end
