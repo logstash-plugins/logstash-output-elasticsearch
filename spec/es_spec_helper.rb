@@ -1,11 +1,6 @@
 require_relative './spec_helper'
 
 require 'elasticsearch'
-require_relative "support/elasticsearch/api/actions/delete_ilm_policy"
-require_relative "support/elasticsearch/api/actions/get_alias"
-require_relative "support/elasticsearch/api/actions/put_alias"
-require_relative "support/elasticsearch/api/actions/get_ilm_policy"
-require_relative "support/elasticsearch/api/actions/put_ilm_policy"
 
 require 'json'
 require 'cabin'
@@ -130,31 +125,20 @@ module ESHelper
   end
 
   def get_policy(client, policy_name)
-    client.get_ilm_policy(name: policy_name)
+    client.index_lifecycle_management.get_lifecycle(policy: policy_name)
   end
 
   def put_policy(client, policy_name, policy)
-    client.put_ilm_policy({:name => policy_name, :body=> policy})
-  end
-
-  def put_alias(client, the_alias, index)
-    body = {
-        "aliases" => {
-            index => {
-                "is_write_index"=>  true
-            }
-        }
-    }
-    client.put_alias({name: the_alias, body: body})
+    client.index_lifecycle_management.put_lifecycle({:policy => policy_name, :body=> policy})
   end
 
   def clean_ilm(client)
-    client.get_ilm_policy.each_key { |key| client.delete_ilm_policy(name: key)  if key =~ /logstash-policy/ }
+    client.index_lifecycle_management.get_lifecycle.each_key { |key| client.index_lifecycle_management.delete_lifecycle(policy: key)  if key =~ /logstash-policy/ }
   end
 
   def supports_ilm?(client)
     begin
-      client.get_ilm_policy
+      client.index_lifecycle_management.get_lifecycle
       true
     rescue
       false
