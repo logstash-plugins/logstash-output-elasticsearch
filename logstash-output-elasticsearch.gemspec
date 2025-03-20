@@ -36,5 +36,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'webmock'
   s.add_development_dependency 'rspec-collection_matchers'
   # Still used in some specs, we should remove this ASAP
-  s.add_development_dependency 'elasticsearch'
+  # pinned to 7.x because 8.x causes failures (ಠoಠ
+  s.add_development_dependency 'elasticsearch', '~> 7.x'
 end
