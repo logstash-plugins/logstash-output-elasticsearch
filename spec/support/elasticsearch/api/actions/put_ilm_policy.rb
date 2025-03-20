@@ -15,7 +15,7 @@ module Elasticsearch
         method = HTTP_PUT
         path   = Utils.__pathify '_ilm/policy/', Utils.__escape(arguments[:name])
 
-        params = Utils.__validate_and_extract_params arguments
+        params = elastic_ruby_v8_client_available?? Utils.process_params(arguments): Utils.__validate_and_extract_params(arguments)
 
         body   = arguments[:body]
         perform_request(method, path, params, body.to_json).body

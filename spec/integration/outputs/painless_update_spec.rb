@@ -21,12 +21,9 @@ describe "Update actions using painless scripts", :integration => true, :update_
     @es.indices.delete_template(:name => "*")
     # This can fail if there are no indexes, ignore failure.
     @es.indices.delete(:index => "*") rescue nil
-    @es.index(
-      :index => 'logstash-update',
-      :type => doc_type,
-      :id => "123",
-      :body => { :message => 'Test', :counter => 1 }
-    )
+    params = generate_common_index_params('logstash-update', '123')
+    params[:body] = { :message => 'Test', :counter => 1 }
+    @es.index(params)
     @es.indices.refresh
   end
 
@@ -46,7 +43,7 @@ describe "Update actions using painless scripts", :integration => true, :update_
         subject = get_es_output(plugin_parameters)
         subject.register
         subject.multi_receive([LogStash::Event.new("count" => 4 )])
-        r = @es.get(:index => 'logstash-update', :type => doc_type, :id => "123", :refresh => true)
+        r = @es.get(:index => 'logstash-update', :id => "123", :refresh => true)
         expect(r["_source"]["counter"]).to eq(5)
       end
     end
@@ -57,7 +54,7 @@ describe "Update actions using painless scripts", :integration => true, :update_
       subject = get_es_output({ 'document_id' => "456", 'upsert' => '{"message": "upsert message"}' })
       subject.register
       subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-      r = @es.get(:index => 'logstash-update', :type => doc_type, :id => "456", :refresh => true)
+      r = @es.get(:index => 'logstash-update', :id => "456", :refresh => true)
       expect(r["_source"]["message"]).to eq('upsert message')
     end
 
@@ -65,7 +62,7 @@ describe "Update actions using painless scripts", :integration => true, :update_
       subject = get_es_output({ 'document_id' => "456", 'doc_as_upsert' => true })
       subject.register
       subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-      r = @es.get(:index => 'logstash-update', :type => doc_type, :id => "456", :refresh => true)
+      r = @es.get(:index => 'logstash-update', :id => "456", :refresh => true)
       expect(r["_source"]["message"]).to eq('sample message here')
     end
 
@@ -82,7 +79,7 @@ describe "Update actions using painless scripts", :integration => true, :update_
         subject.register
 
         subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-        r = @es.get(:index => 'logstash-update', :type => doc_type, :id => "456", :refresh => true)
+        r = @es.get(:index => 'logstash-update', :id => "456", :refresh => true)
         expect(r["_source"]["message"]).to eq('upsert message')
       end
 
@@ -91,7 +88,7 @@ describe "Update actions using painless scripts", :integration => true, :update_
         subject.register
         subject.multi_receive([LogStash::Event.new("counter" => 1)])
         @es.indices.refresh
-        r = @es.get(:index => 'logstash-update', :type => doc_type, :id => "456", :refresh => true)
+        r = @es.get(:index => 'logstash-update', :id => "456", :refresh => true)
         expect(r["_source"]["counter"]).to eq(1)
       end
     end

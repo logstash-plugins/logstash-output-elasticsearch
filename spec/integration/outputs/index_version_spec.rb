@@ -36,11 +36,11 @@ describe "Versioned indexing", :integration => true do
 
       it "should default to ES version" do
         subject.multi_receive([LogStash::Event.new("my_id" => "123", "message" => "foo")])
-        r = es.get(:index => 'logstash-index', :type => doc_type, :id => "123", :refresh => true)
+        r = es.get(generate_common_index_params('logstash-index', '123'))
         expect(r["_version"]).to eq(1)
         expect(r["_source"]["message"]).to eq('foo')
         subject.multi_receive([LogStash::Event.new("my_id" => "123", "message" => "foobar")])
-        r2 = es.get(:index => 'logstash-index', :type => doc_type, :id => "123", :refresh => true)
+        r2 = es.get(generate_common_index_params('logstash-index', '123'))
         expect(r2["_version"]).to eq(2)
         expect(r2["_source"]["message"]).to eq('foobar')
       end  
@@ -63,7 +63,7 @@ describe "Versioned indexing", :integration => true do
       it "should respect the external version" do
         id = "ev1"
         subject.multi_receive([LogStash::Event.new("my_id" => id, "my_version" => "99", "message" => "foo")])
-        r = es.get(:index => 'logstash-index', :type => doc_type, :id => id, :refresh => true)
+        r = es.get(generate_common_index_params('logstash-index', id))
         expect(r["_version"]).to eq(99)
         expect(r["_source"]["message"]).to eq('foo')
       end
@@ -71,12 +71,12 @@ describe "Versioned indexing", :integration => true do
       it "should ignore non-monotonic external version updates" do
         id = "ev2"
         subject.multi_receive([LogStash::Event.new("my_id" => id, "my_version" => "99", "message" => "foo")])
-        r = es.get(:index => 'logstash-index', :type => doc_type, :id => id, :refresh => true)
+        r = es.get(generate_common_index_params('logstash-index', id))
         expect(r["_version"]).to eq(99)
         expect(r["_source"]["message"]).to eq('foo')
 
         subject.multi_receive([LogStash::Event.new("my_id" => id, "my_version" => "98", "message" => "foo")])
-        r2 = es.get(:index => 'logstash-index', :type => doc_type, :id => id, :refresh => true)
+        r2 = es.get(generate_common_index_params('logstash-index', id))
         expect(r2["_version"]).to eq(99)
         expect(r2["_source"]["message"]).to eq('foo')
       end
@@ -84,12 +84,12 @@ describe "Versioned indexing", :integration => true do
       it "should commit monotonic external version updates" do
         id = "ev3"
         subject.multi_receive([LogStash::Event.new("my_id" => id, "my_version" => "99", "message" => "foo")])
-        r = es.get(:index => 'logstash-index', :type => doc_type, :id => id, :refresh => true)
+        r = es.get(generate_common_index_params('logstash-index', id))
         expect(r["_version"]).to eq(99)
         expect(r["_source"]["message"]).to eq('foo')
 
         subject.multi_receive([LogStash::Event.new("my_id" => id, "my_version" => "100", "message" => "foo")])
-        r2 = es.get(:index => 'logstash-index', :type => doc_type, :id => id, :refresh => true)
+        r2 = es.get(generate_common_index_params('logstash-index', id))
         expect(r2["_version"]).to eq(100)
         expect(r2["_source"]["message"]).to eq('foo')
       end

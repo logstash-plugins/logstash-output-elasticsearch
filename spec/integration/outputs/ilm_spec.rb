@@ -102,7 +102,7 @@ shared_examples_for 'an ILM disabled Logstash' do
   it 'should not install the default policy' do
     subject.register
     sleep(1)
-    expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+    expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(get_expected_error_class)
   end
 
   it 'should not write the ILM settings into the template' do
@@ -287,7 +287,7 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
       end
 
       it 'should install it if it is not present' do
-        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(get_expected_error_class)
         subject.register
         sleep(1)
         expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.not_to raise_error
@@ -340,14 +340,14 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
       let (:policy) { small_max_doc_policy }
 
       before do
-        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(get_expected_error_class)
         put_policy(@es,ilm_policy_name, policy)
       end
 
       it 'should not install the default policy if it is not used' do
         subject.register
         sleep(1)
-        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(get_expected_error_class)
       end
     end
 
@@ -357,14 +357,14 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
       let (:policy) { max_age_policy("1d") }
 
       before do
-        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(get_expected_error_class)
         put_policy(@es,ilm_policy_name, policy)
       end
 
       it 'should not install the default policy if it is not used' do
         subject.register
         sleep(1)
-        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(get_expected_error_class)
       end
     end
 
@@ -531,4 +531,9 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
     it_behaves_like 'an ILM disabled Logstash'
   end
 
+end
+
+def get_expected_error_class
+  return Elastic::Transport::Transport::Errors::NotFound if elastic_ruby_v8_client_available?
+  Elasticsearch::Transport::Transport::Errors::NotFound
 end
