@@ -1,14 +1,17 @@
 require_relative './spec_helper'
 
 require 'elasticsearch'
-require_relative "support/elasticsearch/api/actions/delete_ilm_policy"
-require_relative "support/elasticsearch/api/actions/get_alias"
-require_relative "support/elasticsearch/api/actions/put_alias"
-require_relative "support/elasticsearch/api/actions/get_ilm_policy"
-require_relative "support/elasticsearch/api/actions/put_ilm_policy"
 
 require 'json'
 require 'cabin'
+
+# remove this condition and support package once plugin starts consuming elasticsearch-ruby v8 client
+# in elasticsearch-ruby v7, ILM APIs were in a separate xpack gem, now directly available
+unless elastic_ruby_v8_client_available?
+  require_relative "support/elasticsearch/api/actions/delete_ilm_policy"
+  require_relative "support/elasticsearch/api/actions/get_ilm_policy"
+  require_relative "support/elasticsearch/api/actions/put_ilm_policy"
+end
 
 module ESHelper
   def get_host_port
@@ -20,8 +23,12 @@ module ESHelper
   end
 
   def get_client
-    Elasticsearch::Client.new(:hosts => [get_host_port]).tap do |client|
-      allow(client).to receive(:verify_elasticsearch).and_return(true) # bypass client side version checking
+    if elastic_ruby_v8_client_available?
+      Elasticsearch::Client.new(:hosts => [get_host_port])
+    else
+      Elasticsearch::Client.new(:hosts => [get_host_port]).tap do |client|
+        allow(client).to receive(:verify_elasticsearch).and_return(true) # bypass client side version checking
+      end
     end
   end
 
@@ -126,31 +133,36 @@ module ESHelper
   end
 
   def get_policy(client, policy_name)
-    client.get_ilm_policy(name: policy_name)
+    if elastic_ruby_v8_client_available?
+      client.index_lifecycle_management.get_lifecycle(policy: policy_name)
+    else
+      client.get_ilm_policy(name: policy_name)
+    end
   end
 
   def put_policy(client, policy_name, policy)
-    client.put_ilm_policy({:name => policy_name, :body=> policy})
-  end
-
-  def put_alias(client, the_alias, index)
-    body = {
-        "aliases" => {
-            index => {
-                "is_write_index"=>  true
-            }
-        }
-    }
-    client.put_alias({name: the_alias, body: body})
+    if elastic_ruby_v8_client_available?
+      client.index_lifecycle_management.put_lifecycle({:policy => policy_name, :body=> policy})
+    else
+      client.put_ilm_policy({:name => policy_name, :body=> policy})
+    end
   end
 
   def clean_ilm(client)
-    client.get_ilm_policy.each_key { |key| client.delete_ilm_policy(name: key)  if key =~ /logstash-policy/ }
+    if elastic_ruby_v8_client_available?
+      client.index_lifecycle_management.get_lifecycle.each_key { |key| client.index_lifecycle_management.delete_lifecycle(policy: key) if key =~ /logstash-policy/ }
+    else
+      client.get_ilm_policy.each_key { |key| client.delete_ilm_policy(name: key) if key =~ /logstash-policy/ }
+    end
   end
 
   def supports_ilm?(client)
     begin
-      client.get_ilm_policy
+      if elastic_ruby_v8_client_available?
+        client.index_lifecycle_management.get_lifecycle
+      else
+        client.get_ilm_policy
+      end
       true
     rescue
       false
