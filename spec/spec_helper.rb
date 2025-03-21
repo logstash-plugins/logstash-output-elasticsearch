@@ -9,7 +9,7 @@ RSpec.configure do |config|
   config.include LogStash::Outputs::ElasticSearch::SpecHelper
 end
 
-
+# remove once plugin starts consuming elasticsearch-ruby v8 client
 def elastic_ruby_v8_client_available?
   Elasticsearch::Transport
   false
