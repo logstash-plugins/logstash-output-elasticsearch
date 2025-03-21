@@ -102,7 +102,7 @@ shared_examples_for 'an ILM disabled Logstash' do
   it 'should not install the default policy' do
     subject.register
     sleep(1)
-    expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+    expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(get_expected_error_class)
   end
 
   it 'should not write the ILM settings into the template' do
@@ -282,12 +282,12 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
           subject.register
           sleep(1)
           expect(@es.indices.exists_alias(name: "logstash")).to be_truthy
-          expect(@es.get_alias(name: "logstash")).to include("logstash-000001")
+          expect(@es.indices.get_alias(name: "logstash")).to include("logstash-000001")
         end
       end
 
       it 'should install it if it is not present' do
-        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(get_expected_error_class)
         subject.register
         sleep(1)
         expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.not_to raise_error
@@ -298,7 +298,7 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
         subject.register
         sleep(1)
         expect(@es.indices.exists_alias(name: "logstash")).to be_truthy
-        expect(@es.get_alias(name: "logstash")).to include("logstash-#{todays_date}-000001")
+        expect(@es.indices.get_alias(name: "logstash")).to include("logstash-#{todays_date}-000001")
       end
 
       it 'should ingest into a single index' do
@@ -340,14 +340,14 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
       let (:policy) { small_max_doc_policy }
 
       before do
-        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(get_expected_error_class)
         put_policy(@es,ilm_policy_name, policy)
       end
 
       it 'should not install the default policy if it is not used' do
         subject.register
         sleep(1)
-        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(get_expected_error_class)
       end
     end
 
@@ -357,14 +357,14 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
       let (:policy) { max_age_policy("1d") }
 
       before do
-        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(get_expected_error_class)
         put_policy(@es,ilm_policy_name, policy)
       end
 
       it 'should not install the default policy if it is not used' do
         subject.register
         sleep(1)
-        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+        expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(get_expected_error_class)
       end
     end
 
@@ -374,7 +374,7 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
         subject.register
         sleep(1)
         expect(@es.indices.exists_alias(name: expected_index)).to be_truthy
-        expect(@es.get_alias(name: expected_index)).to include("#{expected_index}-#{todays_date}-000001")
+        expect(@es.indices.get_alias(name: expected_index)).to include("#{expected_index}-#{todays_date}-000001")
       end
 
       it 'should write the ILM settings into the template' do
@@ -443,17 +443,18 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
         subject.register
         sleep(1)
         expect(@es.indices.exists_alias(name: ilm_rollover_alias)).to be_truthy
-        expect(@es.get_alias(name: ilm_rollover_alias)).to include("#{ilm_rollover_alias}-#{todays_date}-000001")
+        expect(@es.indices.get_alias(name: ilm_rollover_alias)).to include("#{ilm_rollover_alias}-#{todays_date}-000001")
       end
 
       context 'when the custom rollover alias already exists' do
         it 'should ignore the already exists error' do
           expect(@es.indices.exists_alias(name: ilm_rollover_alias)).to be_falsey
-          put_alias(@es, "#{ilm_rollover_alias}-#{todays_date}-000001", ilm_rollover_alias)
+          @es.indices.create(index: "#{ilm_rollover_alias}-#{todays_date}-000001")
+          @es.indices.put_alias(name: ilm_rollover_alias, index: "#{ilm_rollover_alias}-#{todays_date}-000001")
           expect(@es.indices.exists_alias(name: ilm_rollover_alias)).to be_truthy
           subject.register
           sleep(1)
-          expect(@es.get_alias(name: ilm_rollover_alias)).to include("#{ilm_rollover_alias}-#{todays_date}-000001")
+          expect(@es.indices.get_alias(name: ilm_rollover_alias)).to include("#{ilm_rollover_alias}-#{todays_date}-000001")
         end
 
       end
@@ -531,4 +532,9 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
     it_behaves_like 'an ILM disabled Logstash'
   end
 
+end
+
+def get_expected_error_class
+  return Elastic::Transport::Transport::Errors::NotFound if elastic_ruby_v8_client_available?
+  Elasticsearch::Transport::Transport::Errors::NotFound
 end
