@@ -26,13 +26,23 @@ describe "Unsupported actions testing...", :integration => true do
     # This can fail if there are no indexes, ignore failure.
     @es.indices.delete(:index => "*") rescue nil
     # index single doc for update purpose
-    params_index = generate_common_index_params(INDEX, '2')
-    params_index[:body] = { :message => 'Test to doc indexing', :counter => 1 }
-    @es.index(params_index)
+    @es.index(
+      {
+        :index => INDEX,
+        :id => '2',
+        :body => { :message => 'Test to doc indexing', :counter => 1 },
+        :refresh => true
+      }
+    )
 
-    params_delete = generate_common_index_params(INDEX, '3')
-    params_delete[:body] = { :message => 'Test to doc deletion', :counter => 2 }
-    @es.index(params_delete)
+    @es.index(
+      {
+        :index => INDEX,
+        :id => '3',
+        :body => { :message => 'Test to doc deletion', :counter => 2 },
+        :refresh => true
+      }
+    )
     @es.indices.refresh
   end
 
@@ -58,12 +68,12 @@ describe "Unsupported actions testing...", :integration => true do
       rejected_events = events.select { |event| !index_or_update.call(event) }
 
       indexed_events.each do |event|
-        response = @es.get(generate_common_index_params(INDEX, event.get("doc_id")))
+        response = @es.get(:index => INDEX, :id => event.get("doc_id"), :refresh => true)
         expect(response['_source']['message']).to eq(event.get("message"))
       end
 
       rejected_events.each do |event|
-        expect {@es.get(generate_common_index_params(INDEX, event.get("doc_id")))}.to raise_error(get_expected_error_class)
+        expect {@es.get(:index => INDEX, :id => event.get("doc_id"), :refresh => true)}.to raise_error(get_expected_error_class)
       end
     end
   end

@@ -21,9 +21,13 @@ describe "Update actions using painless scripts", :integration => true, :update_
     @es.indices.delete_template(:name => "*")
     # This can fail if there are no indexes, ignore failure.
     @es.indices.delete(:index => "*") rescue nil
-    params = generate_common_index_params('logstash-update', '123')
-    params[:body] = { :message => 'Test', :counter => 1 }
-    @es.index(params)
+    @es.index(
+      {
+        :index => 'logstash-update',
+        :id => '123',
+        :body => { :message => 'Test', :counter => 1 },
+        :refresh => true
+      })
     @es.indices.refresh
   end
 

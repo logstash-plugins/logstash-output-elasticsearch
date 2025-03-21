@@ -39,12 +39,12 @@ describe "Versioned delete", :integration => true do
     it "should ignore non-monotonic external version updates" do
       id = "ev2"
       subject.multi_receive([LogStash::Event.new("my_id" => id, "my_action" => "index", "message" => "foo", "my_version" => 99)])
-      r = es.get(generate_common_index_params('logstash-delete', id))
+      r = es.get(:index => 'logstash-delete', :id => id, :refresh => true)
       expect(r['_version']).to eq(99)
       expect(r['_source']['message']).to eq('foo')
 
       subject.multi_receive([LogStash::Event.new("my_id" => id, "my_action" => "delete", "message" => "foo", "my_version" => 98)])
-      r2 = es.get(generate_common_index_params('logstash-delete', id))
+      r2 = es.get(:index => 'logstash-delete', :id => id, :refresh => true)
       expect(r2['_version']).to eq(99)
       expect(r2['_source']['message']).to eq('foo')
     end
@@ -52,12 +52,12 @@ describe "Versioned delete", :integration => true do
     it "should commit monotonic external version updates" do
       id = "ev3"
       subject.multi_receive([LogStash::Event.new("my_id" => id, "my_action" => "index", "message" => "foo", "my_version" => 99)])
-      r = es.get(generate_common_index_params('logstash-delete', id))
+      r = es.get(:index => 'logstash-delete', :id => id, :refresh => true)
       expect(r['_version']).to eq(99)
       expect(r['_source']['message']).to eq('foo')
 
       subject.multi_receive([LogStash::Event.new("my_id" => id, "my_action" => "delete", "message" => "foo", "my_version" => 100)])
-      expect { es.get(generate_common_index_params('logstash-delete', id)) }.to raise_error(get_expected_error_class)
+      expect { es.get(:index => 'logstash-delete', :id => id, :refresh => true) }.to raise_error(get_expected_error_class)
     end
   end
 end
