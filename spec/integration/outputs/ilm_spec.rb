@@ -282,7 +282,7 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
           subject.register
           sleep(1)
           expect(@es.indices.exists_alias(name: "logstash")).to be_truthy
-          expect(@es.get_alias(name: "logstash")).to include("logstash-000001")
+          expect(@es.indices.get_alias(name: "logstash")).to include("logstash-000001")
         end
       end
 
@@ -298,7 +298,7 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
         subject.register
         sleep(1)
         expect(@es.indices.exists_alias(name: "logstash")).to be_truthy
-        expect(@es.get_alias(name: "logstash")).to include("logstash-#{todays_date}-000001")
+        expect(@es.indices.get_alias(name: "logstash")).to include("logstash-#{todays_date}-000001")
       end
 
       it 'should ingest into a single index' do
@@ -374,7 +374,7 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
         subject.register
         sleep(1)
         expect(@es.indices.exists_alias(name: expected_index)).to be_truthy
-        expect(@es.get_alias(name: expected_index)).to include("#{expected_index}-#{todays_date}-000001")
+        expect(@es.indices.get_alias(name: expected_index)).to include("#{expected_index}-#{todays_date}-000001")
       end
 
       it 'should write the ILM settings into the template' do
@@ -443,17 +443,18 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
         subject.register
         sleep(1)
         expect(@es.indices.exists_alias(name: ilm_rollover_alias)).to be_truthy
-        expect(@es.get_alias(name: ilm_rollover_alias)).to include("#{ilm_rollover_alias}-#{todays_date}-000001")
+        expect(@es.indices.get_alias(name: ilm_rollover_alias)).to include("#{ilm_rollover_alias}-#{todays_date}-000001")
       end
 
       context 'when the custom rollover alias already exists' do
         it 'should ignore the already exists error' do
           expect(@es.indices.exists_alias(name: ilm_rollover_alias)).to be_falsey
-          put_alias(@es, "#{ilm_rollover_alias}-#{todays_date}-000001", ilm_rollover_alias)
+          @es.indices.create(index: "#{ilm_rollover_alias}-#{todays_date}-000001")
+          @es.indices.put_alias(name: ilm_rollover_alias, index: "#{ilm_rollover_alias}-#{todays_date}-000001")
           expect(@es.indices.exists_alias(name: ilm_rollover_alias)).to be_truthy
           subject.register
           sleep(1)
-          expect(@es.get_alias(name: ilm_rollover_alias)).to include("#{ilm_rollover_alias}-#{todays_date}-000001")
+          expect(@es.indices.get_alias(name: ilm_rollover_alias)).to include("#{ilm_rollover_alias}-#{todays_date}-000001")
         end
 
       end
