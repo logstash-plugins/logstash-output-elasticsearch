@@ -285,8 +285,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           raise health_bad_code_err if health_bad_code_err
           raise root_bad_code_err if root_bad_code_err
 
-          if !register_phase
-            # If no exception was raised it must have succeeded!
+          # If no exception was raised it must have succeeded!
+          if register_phase
+            logger.info("Connected to ES instance", url: url.sanitized.to_s)
+          else
             logger.warn("Restored connection to ES instance", url: url.sanitized.to_s)
           end
 
