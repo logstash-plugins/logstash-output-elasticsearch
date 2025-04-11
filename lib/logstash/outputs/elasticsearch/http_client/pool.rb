@@ -286,7 +286,11 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
           raise root_bad_code_err if root_bad_code_err
 
           # If no exception was raised it must have succeeded!
-          logger.warn("Restored connection to ES instance", url: url.sanitized.to_s)
+          if register_phase
+            logger.info("Connected to ES instance", url: url.sanitized.to_s)
+          else
+            logger.warn("Restored connection to ES instance", url: url.sanitized.to_s)
+          end
 
           # We check its ES version
           es_version, build_flavor = parse_es_version(root_response)
