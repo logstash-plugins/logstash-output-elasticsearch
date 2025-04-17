@@ -1,3 +1,6 @@
+## 12.0.3
+ - Demote connection log entry from WARN to INFO connection during register phase [#1211](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1211)
+
 ## 12.0.2
  - Properly handle http code 413 (Payload Too Large) [#1199](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1199)
 
