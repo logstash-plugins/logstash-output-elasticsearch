@@ -50,22 +50,22 @@ connecting to Elasticsearch 7.x.
 You can use this plugin to send your {ls} data to {es-serverless}.
 Some differences to note between {es-serverless} and self-managed {es}:
 
-* Use *API keys* to access {serverless-full} from {ls}. 
+* Use *API keys* to access {serverless-full} from {ls}.
 Any user-based security settings in your <<plugins-outputs-elasticsearch,{es} output plugin>> configuration are ignored and may cause errors.
-* {es-serverless} uses *data streams* and {ref}/data-stream-lifecycle.html[{dlm} ({dlm-init})] instead of {ilm} ({ilm-init}). 
+* {es-serverless} uses *data streams* and {ref}/data-stream-lifecycle.html[{dlm} ({dlm-init})] instead of {ilm} ({ilm-init}).
 Any {ilm-init} settings in your <<plugins-outputs-elasticsearch,{es} output plugin>> configuration are ignored and may cause errors.
 * *{ls} monitoring* is available through the https://github.com/elastic/integrations/blob/main/packages/logstash/_dev/build/docs/README.md[{ls} Integration] in {serverless-docs}/observability/what-is-observability-serverless[Elastic Observability] on {serverless-full}.
 
 .Known issue for {ls} to {es-serverless}
 ****
-The logstash-output-elasticsearch `hosts` setting on {serverless-short} defaults the port to 9200 when omitted. 
+The logstash-output-elasticsearch `hosts` setting on {serverless-short} defaults the port to 9200 when omitted.
 Set the value to port :443 instead.
 ****
 
 For more info on sending data from {ls} to {es-serverless}, check out the {serverless-docs}/elasticsearch/what-is-elasticsearch-serverless[{es-serverless} docs].
 
 [id="plugins-{type}s-{plugin}-ess"]
-==== Hosted {es} Service on Elastic Cloud
+==== {ech}
 
 {ess-leadin}
 
@@ -93,11 +93,11 @@ Use the data stream options for indexing time series datasets (such
 as logs, metrics, and events) into {es} and {es-serverless}:
 
 * <<plugins-{type}s-{plugin}-data_stream>>
-* <<plugins-{type}s-{plugin}-data_stream_auto_routing>> 
-* <<plugins-{type}s-{plugin}-data_stream_dataset>> 
+* <<plugins-{type}s-{plugin}-data_stream_auto_routing>>
+* <<plugins-{type}s-{plugin}-data_stream_dataset>>
 * <<plugins-{type}s-{plugin}-data_stream_namespace>>
 * <<plugins-{type}s-{plugin}-data_stream_sync_fields>>
-* <<plugins-{type}s-{plugin}-data_stream_type>> 
+* <<plugins-{type}s-{plugin}-data_stream_type>>
 
 IMPORTANT: <<plugins-{type}s-{plugin}-ecs_compatibility,ECS compatibility>> must be enabled (set to `v1` or `v8`) for data streams to work properly.
 
@@ -138,7 +138,7 @@ output {
 
 ==== Writing to different indices: best practices
 
-NOTE: You cannot use dynamic variable substitution when `ilm_enabled` is `true` 
+NOTE: You cannot use dynamic variable substitution when `ilm_enabled` is `true`
 and when using `ilm_rollover_alias`.
 
 If you're sending events to the same Elasticsearch cluster, but you're targeting different indices you can:
@@ -240,7 +240,7 @@ but should be used only in motivated cases.
 
 [NOTE]
 --
-* The {ilm-cap} ({ilm-init}) feature does not apply for {es-serverless}. 
+* The {ilm-cap} ({ilm-init}) feature does not apply for {es-serverless}.
 Any {ilm-init} settings in your plugin configuration are ignored and may cause errors.
 * The {ilm-init} feature requires plugin version `9.3.1` or higher.
 * This feature requires an {es} instance of 6.6.0 or higher with at least a Basic license
@@ -434,7 +434,7 @@ output plugins.
 ===== `action`
 
   * Value type is <<string,string>>
-  * Default value is `create` for data streams, and `index` for non-time series data. 
+  * Default value is `create` for data streams, and `index` for non-time series data.
 
 The Elasticsearch action to perform. Valid actions are:
 
@@ -445,7 +445,7 @@ The Elasticsearch action to perform. Valid actions are:
   document if not already present. See the `doc_as_upsert` option. NOTE: This does not work and is not supported
   in Elasticsearch 1.x. Please upgrade to ES 2.x or greater to use this feature with Logstash!
 - A sprintf style string to change the action based on the content of the event. The value `%{[foo]}`
-  would use the foo field for the action. 
+  would use the foo field for the action.
   If resolved action is not in [`index`, `delete`, `create`, `update`], the event will not be sent to {es}.
   Instead the event will be sent to the pipeline's {logstash-ref}/dead-letter-queues.html[dead-letter-queue (DLQ)] (if enabled), or it will be logged and dropped.
 
@@ -814,8 +814,8 @@ NOTE: `ilm_rollover_alias` does NOT support dynamic variable substitution as
   ** ECS Compatibility disabled: `"logstash-%{+yyyy.MM.dd}"`
   ** ECS Compatibility enabled: `"ecs-logstash-%{+yyyy.MM.dd}"`
 
-The indexing target to write events to. 
-Can point to an {ref}/index-mgmt.html[index], {ref}/aliases.html[alias], or {ref}/data-streams.html[data stream]. 
+The indexing target to write events to.
+Can point to an {ref}/index-mgmt.html[index], {ref}/aliases.html[alias], or {ref}/data-streams.html[data stream].
 This can be dynamic using the `%{foo}` syntax.
 The default value will partition your indices by day so you can more easily
 delete old data or only search specific date ranges.
