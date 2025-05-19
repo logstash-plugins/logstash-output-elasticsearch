@@ -65,7 +65,7 @@ Set the value to port :443 instead.
 For more info on sending data from {ls} to {es-serverless}, check out the {serverless-docs}/elasticsearch/what-is-elasticsearch-serverless[{es-serverless} docs].
 
 [id="plugins-{type}s-{plugin}-ess"]
-==== {ech}
+==== {ls} to {ech}
 
 {ess-leadin}
 
