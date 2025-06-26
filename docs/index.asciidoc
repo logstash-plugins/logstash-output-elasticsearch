@@ -67,7 +67,8 @@ For more info on sending data from {ls} to {es-serverless}, check out the {serve
 [id="plugins-{type}s-{plugin}-ess"]
 ==== {ls} to {ech}
 
-{ess-leadin}
+You can run Elasticsearch on your own hardware or use Elastic Cloud Hosted, available on AWS, GCP, and Azure.
+Try Elastic Cloud Hosted for free: https://cloud.elastic.co/registration.
 
 ==== Compatibility with the Elastic Common Schema (ECS)
 
