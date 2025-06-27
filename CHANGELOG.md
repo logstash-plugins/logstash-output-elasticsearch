@@ -1,5 +1,5 @@
 ## 12.0.4
- - [DOC] Update Cloud terminology [#1211](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1211)
+ - [DOC] Update Cloud terminology [#1212](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1212)
 
 ## 12.0.3
  - Demote connection log entry from WARN to INFO connection during register phase [#1211](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1211)
