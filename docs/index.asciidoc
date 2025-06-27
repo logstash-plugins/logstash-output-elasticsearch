@@ -65,9 +65,10 @@ Set the value to port :443 instead.
 For more info on sending data from {ls} to {es-serverless}, check out the {serverless-docs}/elasticsearch/what-is-elasticsearch-serverless[{es-serverless} docs].
 
 [id="plugins-{type}s-{plugin}-ess"]
-==== Hosted {es} Service on Elastic Cloud
+==== {ls} to {ech}
 
-{ess-leadin}
+You can run Elasticsearch on your own hardware or use Elastic Cloud Hosted, available on AWS, GCP, and Azure.
+Try Elastic Cloud Hosted for free: https://cloud.elastic.co/registration.
 
 ==== Compatibility with the Elastic Common Schema (ECS)
 
