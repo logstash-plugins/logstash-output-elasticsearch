@@ -190,7 +190,7 @@ Example:
     }
 
 
-==== Retry Policy
+==== Retry policy
 
 The retry policy has changed significantly in the 8.1.1 release.
 This plugin uses the Elasticsearch bulk API to optimize its imports into Elasticsearch. These requests may experience
@@ -223,7 +223,7 @@ Note that 409 exceptions are no longer retried. Please set a higher `retry_on_co
 It is more performant for Elasticsearch to retry these exceptions than this plugin.
 
 [id="plugins-{type}s-{plugin}-dlq-policy"]
-==== DLQ Policy
+==== DLQ policy
 
 Mapping (404) errors from Elasticsearch can lead to data loss. Unfortunately
 mapping errors cannot be handled without human intervention and without looking
@@ -231,8 +231,8 @@ at the field that caused the mapping mismatch. If the DLQ is enabled, the
 original events causing the mapping errors are stored in a file that can be
 processed at a later time. Often times, the offending field can be removed and
 re-indexed to Elasticsearch. If the DLQ is not enabled, and a mapping error
-happens, the problem is logged as a warning, and the event is dropped. See
-<<dead-letter-queues>> for more information about processing events in the DLQ.
+happens, the problem is logged as a warning, and the event is dropped. 
+Check out https://www.elastic.co/guide/en/logstash/current/dead-letter-queues.html[Dead letter queues (DLQ)] for more information about processing events in the DLQ.
 The list of error codes accepted for DLQ could be customized with <<plugins-{type}s-{plugin}-dlq_custom_codes>>
 but should be used only in motivated cases.
 
