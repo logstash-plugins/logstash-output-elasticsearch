@@ -1,3 +1,6 @@
+## 12.0.5
+ - [DOC] Fix link to Logstash DLQ docs [#1214](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1214)
+
 ## 12.0.4
  - [DOC] Update Cloud terminology [#1212](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1212)
 
