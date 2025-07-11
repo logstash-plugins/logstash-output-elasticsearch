@@ -1,5 +1,5 @@
 ## 12.0.6
- - [DOC] Remove outdated note about retry policy behaviour change that occurred in 2017
+ - [DOC] Remove outdated note about retry policy behaviour change that occurred in 2017 [#1215](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1215)
 
 ## 12.0.5
  - [DOC] Fix link to Logstash DLQ docs [#1214](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1214)
