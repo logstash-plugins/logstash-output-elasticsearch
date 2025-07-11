@@ -192,7 +192,6 @@ Example:
 
 ==== Retry policy
 
-The retry policy has changed significantly in the 8.1.1 release.
 This plugin uses the Elasticsearch bulk API to optimize its imports into Elasticsearch. These requests may experience
 either partial or total failures. The bulk API sends batches of requests to an HTTP endpoint. Error codes for the HTTP
 request are handled differently than error codes for individual documents.
