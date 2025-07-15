@@ -303,11 +303,16 @@ single request.
 ==== DNS Caching
 
 This plugin uses the JVM to lookup DNS entries and is subject to the value of
-https://docs.oracle.com/javase/7/docs/technotes/guides/net/properties.html[networkaddress.cache.ttl],
-a global setting for the JVM.
+https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/net/doc-files/net-properties.html#address-cache-heading[Address Cache settings]
+such as `networkaddress.cache.ttl` and `networkaddress.cache.negative.ttl`, global settings for the JVM.
 
 As an example, to set your DNS TTL to 1 second you would set
 the `LS_JAVA_OPTS` environment variable to `-Dnetworkaddress.cache.ttl=1`.
+
+The default value for `networkaddress.cache.ttl` depends on the JVM implementation,
+which is 30 seconds for the JDK bundled with Logstash. 
+The `networkaddress.cache.negative.ttl` setting, that controls how long Java caches
+the result of failed DNS lookups, defaults to 10 seconds.
 
 Keep in mind that a connection with keepalive enabled will
 not reevaluate its DNS value while the keepalive is in effect.
