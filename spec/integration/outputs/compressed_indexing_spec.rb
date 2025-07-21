@@ -36,7 +36,9 @@ end
       {
         "Content-Encoding" => "gzip",
         "Content-Type" => "application/json",
-        'x-elastic-product-origin' => 'logstash-output-elasticsearch'
+        'x-elastic-product-origin' => 'logstash-output-elasticsearch',
+        'X-Elastic-Event-Count' => anything,
+        'X-Elastic-Uncompressed-Request-Length' => anything,
       }
     }
 
