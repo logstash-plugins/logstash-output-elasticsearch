@@ -145,8 +145,8 @@ module LogStash; module Outputs; class ElasticSearch;
                        :content_length => body_stream.size,
                        :batch_offset => (index + 1 - batch_actions.size))
           headers = {
-            EVENT_COUNT_HEADER => batch_actions.size,
-            UNCOMPRESSED_LENGTH_HEADER => stream_writer.pos
+            EVENT_COUNT_HEADER => batch_actions.size.to_s,
+            UNCOMPRESSED_LENGTH_HEADER => stream_writer.pos.to_s
           }
           bulk_responses << bulk_send(body_stream, batch_actions, headers)
           body_stream.truncate(0) && body_stream.seek(0)
@@ -167,8 +167,8 @@ module LogStash; module Outputs; class ElasticSearch;
 
       if body_stream.size > 0
         headers = {
-          EVENT_COUNT_HEADER => batch_actions.size,
-          UNCOMPRESSED_LENGTH_HEADER => stream_writer.pos
+          EVENT_COUNT_HEADER => batch_actions.size.to_s,
+          UNCOMPRESSED_LENGTH_HEADER => stream_writer.pos.to_s
         }
         bulk_responses << bulk_send(body_stream, batch_actions, headers)
       end

@@ -301,9 +301,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
       it "carries bulk request's uncompressed size" do
         expect(pool).to receive(:post) do |path, params, body|
           headers = params.fetch(:headers, {})
-          expect(headers["X-Elastic-Event-Count"]).to be(3)
-          expect(headers["X-Elastic-Uncompressed-Request-Length"]).to eq messages_size + (action_overhead * 3)
-          expect(headers["X-Elastic-Uncompressed-Request-Length"]).to be > body.size
+          expect(headers["X-Elastic-Event-Count"]).to eq("3")
+          expect(headers["X-Elastic-Uncompressed-Request-Length"]).to eq (messages_size + (action_overhead * 3)).to_s
         end.and_return(response)
 
         subject.send(:bulk, actions)
@@ -313,9 +312,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
         it "carries bulk request's uncompressed size" do
           expect(pool).to receive(:post) do |path, params, body|
             headers = params.fetch(:headers, {})
-            expect(headers["X-Elastic-Event-Count"]).to be(3)
-            expect(headers["X-Elastic-Uncompressed-Request-Length"]).to eq messages_size + (action_overhead * 3)
-            expect(headers["X-Elastic-Uncompressed-Request-Length"]).to eq body.size
+            expect(headers["X-Elastic-Event-Count"]).to eq("3")
+            expect(headers["X-Elastic-Uncompressed-Request-Length"]).to eq (messages_size + (action_overhead * 3)).to_s
           end.and_return(response)
           subject.send(:bulk, actions)
         end
@@ -327,22 +325,22 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
           # only the first, tiny, message is sent first
           expect(pool).to receive(:post) do |path, params, body|
             headers = params.fetch(:headers, {})
-            expect(headers["X-Elastic-Uncompressed-Request-Length"]).to be == message_1.size + action_overhead
-            expect(headers["X-Elastic-Event-Count"]).to be(1)
+            expect(headers["X-Elastic-Uncompressed-Request-Length"]).to eq (message_1.size + action_overhead).to_s
+            expect(headers["X-Elastic-Event-Count"]).to eq("1")
           end.and_return(response)
 
           # huge message_2 is sent afterwards alone
           expect(pool).to receive(:post) do |path, params, body|
             headers = params.fetch(:headers, {})
-            expect(headers["X-Elastic-Uncompressed-Request-Length"]).to be >= message_2.size + action_overhead
-            expect(headers["X-Elastic-Event-Count"]).to be(1)
+            expect(headers["X-Elastic-Uncompressed-Request-Length"]).to eq (message_2.size + action_overhead).to_s
+            expect(headers["X-Elastic-Event-Count"]).to eq("1")
           end.and_return(response)
 
           # finally medium message_3 is sent alone as well
           expect(pool).to receive(:post) do |path, params, body|
             headers = params.fetch(:headers, {})
-            expect(headers["X-Elastic-Uncompressed-Request-Length"]).to be >= message_3.size + action_overhead
-            expect(headers["X-Elastic-Event-Count"]).to be(1)
+            expect(headers["X-Elastic-Uncompressed-Request-Length"]).to eq (message_3.size + action_overhead).to_s
+            expect(headers["X-Elastic-Event-Count"]).to eq("1")
           end.and_return(response)
 
           subject.send(:bulk, actions)
