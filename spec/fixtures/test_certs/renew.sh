@@ -3,8 +3,7 @@
 set -e
 cd "$(dirname "$0")"
 
-openssl x509 -x509toreq -in ca.crt -signkey ca.key -out ca.csr
-openssl x509 -req -days 365 -in ca.csr -set_serial 0x01 -signkey ca.key -out ca.crt && rm ca.csr
+openssl req -x509 -new -nodes -key ca.key -subj "/C=PT/ST=NA/L=Lisbon/O=MyLab/CN=root" -sha256 -days 3650 -out ca.crt
 openssl x509 -in ca.crt -outform der | sha256sum | awk '{print $1}' > ca.der.sha256
 
 openssl x509 -x509toreq -in test.crt -signkey test.key -out test.csr
