@@ -21,7 +21,8 @@ module LogStash; module Outputs; class ElasticSearch;
   # We wound up agreeing that a number greater than 10 MiB and less than 100MiB
   # made sense. We picked one on the lowish side to not use too much heap.
   TARGET_BULK_BYTES = 20 * 1024 * 1024 # 20MiB
-
+  EVENT_COUNT_HEADER = "X-Elastic-Event-Count".freeze
+  UNCOMPRESSED_LENGTH_HEADER = "X-Elastic-Uncompressed-Request-Length".freeze
 
   class HttpClient
     attr_reader :client, :options, :logger, :pool, :action_count, :recv_count
@@ -143,7 +144,11 @@ module LogStash; module Outputs; class ElasticSearch;
                        :payload_size => stream_writer.pos,
                        :content_length => body_stream.size,
                        :batch_offset => (index + 1 - batch_actions.size))
-          bulk_responses << bulk_send(body_stream, batch_actions)
+          headers = {
+            EVENT_COUNT_HEADER => batch_actions.size.to_s,
+            UNCOMPRESSED_LENGTH_HEADER => stream_writer.pos.to_s
+          }
+          bulk_responses << bulk_send(body_stream, batch_actions, headers)
           body_stream.truncate(0) && body_stream.seek(0)
           stream_writer = gzip_writer(body_stream) if compression_level?
           batch_actions.clear
@@ -159,7 +164,14 @@ module LogStash; module Outputs; class ElasticSearch;
                    :payload_size => stream_writer.pos,
                    :content_length => body_stream.size,
                    :batch_offset => (actions.size - batch_actions.size))
-      bulk_responses << bulk_send(body_stream, batch_actions) if body_stream.size > 0
+
+      if body_stream.size > 0
+        headers = {
+          EVENT_COUNT_HEADER => batch_actions.size.to_s,
+          UNCOMPRESSED_LENGTH_HEADER => stream_writer.pos.to_s
+        }
+        bulk_responses << bulk_send(body_stream, batch_actions, headers)
+      end
 
       body_stream.close unless compression_level?
       join_bulk_responses(bulk_responses)
@@ -179,8 +191,8 @@ module LogStash; module Outputs; class ElasticSearch;
       }
     end
 
-    def bulk_send(body_stream, batch_actions)
-      params = compression_level? ? {:headers => {"Content-Encoding" => "gzip"}} : {}
+    def bulk_send(body_stream, batch_actions, headers = {})
+      params = compression_level? ? {:headers => headers.merge("Content-Encoding" => "gzip") } : { :headers => headers }
 
       begin
         response = @pool.post(@bulk_path, params, body_stream.string)
