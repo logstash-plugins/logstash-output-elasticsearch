@@ -1520,14 +1520,22 @@ describe LogStash::Outputs::ElasticSearch do
   describe "API key" do
     let(:manticore_options) { subject.client.pool.adapter.manticore.instance_variable_get(:@options) }
     let(:api_key) { "some_id:some_api_key" }
-    let(:base64_api_key) { "ApiKey c29tZV9pZDpzb21lX2FwaV9rZXk=" }
+    let(:base64_api_key) { "c29tZV9pZDpzb21lX2FwaV9rZXk=" }
 
     shared_examples 'secure api-key authenticated client' do
       let(:do_register) { true }
 
       it 'adds the appropriate Authorization header to the manticore client' do
-        expect(manticore_options[:headers]).to eq({ "Authorization" => base64_api_key })
+        expect(manticore_options[:headers]).to eq({ "Authorization" => "ApiKey #{base64_api_key}" })
       end
+
+      context "when api_key is already base64 encoded" do
+        let(:api_key) { base64_api_key }
+        it 'passes the base64 encoded api to the headers as-is' do
+          expect(manticore_options[:headers]).to eq({ "Authorization" => "ApiKey #{base64_api_key}" })
+        end
+      end
+
       it 'is provides ssl_enabled=>true to the http client builder' do; aggregate_failures do
         expect(described_class::HttpClientBuilder).to have_received(:build).with(anything, anything, hash_including('ssl_enabled'=>true))
       end; end
