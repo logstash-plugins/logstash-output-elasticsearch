@@ -22,10 +22,12 @@ describe "Update actions without scripts", :integration => true do
     # This can fail if there are no indexes, ignore failure.
     @es.indices.delete(:index => "*") rescue nil
     @es.index(
-      :index => 'logstash-update',
-      :type => doc_type,
-      :id => "123",
-      :body => { :message => 'Test', :counter => 1 }
+      {
+        :index => 'logstash-update',
+        :id => '123',
+        :body => { :message => 'Test', :counter => 1 },
+        :refresh => true
+      }
     )
     @es.indices.refresh
   end
@@ -40,14 +42,14 @@ describe "Update actions without scripts", :integration => true do
       subject = get_es_output({ 'document_id' => "456" } )
       subject.register
       subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-      expect {@es.get(:index => 'logstash-update', :type => doc_type, :id => "456", :refresh => true)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+      expect {@es.get(:index => 'logstash-update', :id => '456', :refresh => true)}.to raise_error(get_expected_error_class)
     end
 
     it "should update existing document" do
       subject = get_es_output({ 'document_id' => "123" })
       subject.register
       subject.multi_receive([LogStash::Event.new("message" => "updated message here")])
-      r = @es.get(:index => 'logstash-update', :type => doc_type, :id => "123", :refresh => true)
+      r = @es.get(:index => 'logstash-update', :id => '123', :refresh => true)
       expect(r["_source"]["message"]).to eq('updated message here')
     end
 
@@ -57,7 +59,7 @@ describe "Update actions without scripts", :integration => true do
       subject = get_es_output({ 'document_id' => "123" })
       subject.register
       subject.multi_receive([LogStash::Event.new("data" => "updated message here", "message" => "foo")])
-      r = @es.get(:index => 'logstash-update', :type => doc_type, :id => "123", :refresh => true)
+      r = @es.get(:index => 'logstash-update', :id => '123', :refresh => true)
       expect(r["_source"]["data"]).to eq('updated message here')
       expect(r["_source"]["message"]).to eq('foo')
     end
@@ -94,7 +96,7 @@ describe "Update actions without scripts", :integration => true do
       subject = get_es_output({ 'document_id' => "456", 'upsert' => '{"message": "upsert message"}' })
       subject.register
       subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-      r = @es.get(:index => 'logstash-update', :type => doc_type, :id => "456", :refresh => true)
+      r = @es.get(:index => 'logstash-update', :id => '456', :refresh => true)
       expect(r["_source"]["message"]).to eq('upsert message')
     end
 
@@ -102,7 +104,7 @@ describe "Update actions without scripts", :integration => true do
       subject = get_es_output({ 'document_id' => "456", 'doc_as_upsert' => true })
       subject.register
       subject.multi_receive([LogStash::Event.new("message" => "sample message here")])
-      r = @es.get(:index => 'logstash-update', :type => doc_type, :id => "456", :refresh => true)
+      r = @es.get(:index => 'logstash-update', :id => '456', :refresh => true)
       expect(r["_source"]["message"]).to eq('sample message here')
     end
 

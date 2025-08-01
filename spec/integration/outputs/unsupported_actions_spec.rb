@@ -27,16 +27,21 @@ describe "Unsupported actions testing...", :integration => true do
     @es.indices.delete(:index => "*") rescue nil
     # index single doc for update purpose
     @es.index(
-      :index => INDEX,
-      :type => doc_type,
-      :id => "2",
-      :body => { :message => 'Test to doc indexing', :counter => 1 }
+      {
+        :index => INDEX,
+        :id => '2',
+        :body => { :message => 'Test to doc indexing', :counter => 1 },
+        :refresh => true
+      }
     )
+
     @es.index(
-      :index => INDEX,
-      :type => doc_type,
-      :id => "3",
-      :body => { :message => 'Test to doc deletion', :counter => 2 }
+      {
+        :index => INDEX,
+        :id => '3',
+        :body => { :message => 'Test to doc deletion', :counter => 2 },
+        :refresh => true
+      }
     )
     @es.indices.refresh
   end
@@ -63,12 +68,12 @@ describe "Unsupported actions testing...", :integration => true do
       rejected_events = events.select { |event| !index_or_update.call(event) }
 
       indexed_events.each do |event|
-        response = @es.get(:index => INDEX, :type => doc_type, :id => event.get("doc_id"), :refresh => true)
+        response = @es.get(:index => INDEX, :id => event.get("doc_id"), :refresh => true)
         expect(response['_source']['message']).to eq(event.get("message"))
       end
 
       rejected_events.each do |event|
-        expect {@es.get(:index => INDEX, :type => doc_type, :id => event.get("doc_id"), :refresh => true)}.to raise_error(Elasticsearch::Transport::Transport::Errors::NotFound)
+        expect {@es.get(:index => INDEX, :id => event.get("doc_id"), :refresh => true)}.to raise_error(get_expected_error_class)
       end
     end
   end

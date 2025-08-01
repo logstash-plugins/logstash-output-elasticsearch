@@ -270,6 +270,83 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
 
        end
      end
+    context "the 'user-agent' header" do
+      let(:pool) { double("pool") }
+      let(:compression_level) { 6 }
+      let(:base_options) { super().merge( :client_settings => {:compression_level => compression_level}) }
+      let(:actions) { [
+        ["index", {:_id=>nil, :_index=>"logstash"}, {"message_1"=> message_1}],
+        ["index", {:_id=>nil, :_index=>"logstash"}, {"message_2"=> message_2}],
+        ["index", {:_id=>nil, :_index=>"logstash"}, {"message_3"=> message_3}],
+      ]}
+      let(:message_1) { "hello" }
+      let(:message_2_size) { 1_000 }
+      let(:message_2) { SecureRandom.alphanumeric(message_2_size / 2 ) * 2 }
+      let(:message_3_size) { 1_000 }
+      let(:message_3) { "m" * message_3_size }
+      let(:messages_size) { message_1.size + message_2.size + message_3.size }
+      let(:action_overhead) { 42 + 16 + 2 } # header plus doc key size plus new line overhead per action
+
+      let(:response) do
+        response = double("response")
+        allow(response).to receive(:code).and_return(response)
+        allow(response).to receive(:body).and_return({"errors" => false}.to_json)
+        response
+      end
+
+      before(:each) do
+        subject.instance_variable_set("@pool", pool)
+      end
+
+      it "carries bulk request's uncompressed size" do
+        expect(pool).to receive(:post) do |path, params, body|
+          headers = params.fetch(:headers, {})
+          expect(headers["X-Elastic-Event-Count"]).to eq("3")
+          expect(headers["X-Elastic-Uncompressed-Request-Length"]).to eq (messages_size + (action_overhead * 3)).to_s
+        end.and_return(response)
+
+        subject.send(:bulk, actions)
+      end
+      context "without compression" do
+        let(:compression_level) { 0 }
+        it "carries bulk request's uncompressed size" do
+          expect(pool).to receive(:post) do |path, params, body|
+            headers = params.fetch(:headers, {})
+            expect(headers["X-Elastic-Event-Count"]).to eq("3")
+            expect(headers["X-Elastic-Uncompressed-Request-Length"]).to eq (messages_size + (action_overhead * 3)).to_s
+          end.and_return(response)
+          subject.send(:bulk, actions)
+        end
+      end
+
+      context "with compressed messages over 20MB" do
+        let(:message_2_size) { 21_000_000 }
+        it "carries bulk request's uncompressed size" do
+          # only the first, tiny, message is sent first
+          expect(pool).to receive(:post) do |path, params, body|
+            headers = params.fetch(:headers, {})
+            expect(headers["X-Elastic-Uncompressed-Request-Length"]).to eq (message_1.size + action_overhead).to_s
+            expect(headers["X-Elastic-Event-Count"]).to eq("1")
+          end.and_return(response)
+
+          # huge message_2 is sent afterwards alone
+          expect(pool).to receive(:post) do |path, params, body|
+            headers = params.fetch(:headers, {})
+            expect(headers["X-Elastic-Uncompressed-Request-Length"]).to eq (message_2.size + action_overhead).to_s
+            expect(headers["X-Elastic-Event-Count"]).to eq("1")
+          end.and_return(response)
+
+          # finally medium message_3 is sent alone as well
+          expect(pool).to receive(:post) do |path, params, body|
+            headers = params.fetch(:headers, {})
+            expect(headers["X-Elastic-Uncompressed-Request-Length"]).to eq (message_3.size + action_overhead).to_s
+            expect(headers["X-Elastic-Event-Count"]).to eq("1")
+          end.and_return(response)
+
+          subject.send(:bulk, actions)
+        end
+      end
+    end
   end
 
   describe "sniffing" do
