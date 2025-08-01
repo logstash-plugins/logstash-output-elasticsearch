@@ -13,7 +13,7 @@ else
 fi
 
 # CentOS 7 using curl defaults does not enable TLSv1.3
-CURL_OPTS="-k --tlsv1.2 --tls-max 1.3"
+CURL_OPTS="-k -u admin:elastic --tlsv1.2 --tls-max 1.3"
 
 wait_for_es() {
   count=120
