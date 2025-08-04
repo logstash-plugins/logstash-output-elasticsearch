@@ -12,9 +12,9 @@ pull_docker_snapshot() {
   if docker pull "$docker_image" ; then
     echo "docker pull successful"
   else
-    case "$ELASTIC_STACK_VERSION_ARG" in
-      "8.previous"|"8.current"|"8.next")
-        exit 1
+    case $stack_version_alias in
+      "8.previous"|"8.current"|"9.previous"|"9.current"|"9.next")
+        exit 99
         ;;
       *)
         exit 2
@@ -27,7 +27,7 @@ VERSION_URL="https://raw.githubusercontent.com/elastic/logstash/main/ci/logstash
 
 if [ -z "${ELASTIC_STACK_VERSION}" ]; then
     echo "Please set the ELASTIC_STACK_VERSION environment variable"
-    echo "For example: export ELASTIC_STACK_VERSION=7.x"
+    echo "For example: export ELASTIC_STACK_VERSION=9.x"
     exit 1
 fi
 
@@ -50,10 +50,10 @@ if [[ "$ELASTIC_STACK_RETRIEVED_VERSION" != "null" ]]; then
   ELASTIC_STACK_RETRIEVED_VERSION="${ELASTIC_STACK_RETRIEVED_VERSION#\"}"
   echo "Translated $ELASTIC_STACK_VERSION to ${ELASTIC_STACK_RETRIEVED_VERSION}"
   export ELASTIC_STACK_VERSION=$ELASTIC_STACK_RETRIEVED_VERSION
-elif [[ "$ELASTIC_STACK_VERSION" == "8.next" ]]; then
-  # we know "8.next" only exists between FF and GA of a minor
-  # exit 1 so the build is skipped
-  exit 1
+elif [[ "$ELASTIC_STACK_VERSION" == "9.next" ]]; then
+  # we know "9.next" only exists between FF and GA of a minor
+  # exit 99 so the build is skipped
+  exit 99
 fi
 
 case "${DISTRIBUTION}" in
