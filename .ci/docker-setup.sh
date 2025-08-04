@@ -12,9 +12,9 @@ pull_docker_snapshot() {
   if docker pull "$docker_image" ; then
     echo "docker pull successful"
   else
-    case "$ELASTIC_STACK_VERSION_ARG" in
+    case $stack_version_alias in
       "8.previous"|"8.current"|"9.previous"|"9.current"|"9.next")
-        exit 1
+        exit 99
         ;;
       *)
         exit 2
@@ -52,8 +52,8 @@ if [[ "$ELASTIC_STACK_RETRIEVED_VERSION" != "null" ]]; then
   export ELASTIC_STACK_VERSION=$ELASTIC_STACK_RETRIEVED_VERSION
 elif [[ "$ELASTIC_STACK_VERSION" == "9.next" ]]; then
   # we know "9.next" only exists between FF and GA of a minor
-  # exit 1 so the build is skipped
-  exit 1
+  # exit 99 so the build is skipped
+  exit 99
 fi
 
 case "${DISTRIBUTION}" in
