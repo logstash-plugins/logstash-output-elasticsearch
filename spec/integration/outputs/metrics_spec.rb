@@ -5,7 +5,8 @@ describe "metrics", :integration => true do
     require "logstash/outputs/elasticsearch"
     settings = {
       "manage_template" => false,
-      "hosts" => "#{get_host_port()}"
+      "hosts" => "#{get_host_port()}",
+      "index" => "custom_index_#{rand(10000)}"
     }
     plugin = LogStash::Outputs::ElasticSearch.new(settings)
   end
