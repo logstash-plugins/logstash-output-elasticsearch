@@ -34,26 +34,22 @@ fi
 # The ELASTIC_STACK_VERSION may be an alias, save the original before translating it
 ELASTIC_STACK_VERSION_ALIAS="$ELASTIC_STACK_VERSION"
 
-echo "Fetching versions from $VERSION_URL"
-VERSIONS=$(curl -s $VERSION_URL)
-
+echo "Computing latest stream version"
+VERSION_CONFIG_FILE="logstash-versions.yml"
 if [[ "$SNAPSHOT" = "true" ]]; then
-  ELASTIC_STACK_RETRIEVED_VERSION=$(echo $VERSIONS | jq '.snapshots."'"$ELASTIC_STACK_VERSION"'"')
-  echo $ELASTIC_STACK_RETRIEVED_VERSION
+  ELASTIC_STACK_RETRIEVED_VERSION=$(ruby -r yaml -e "puts YAML.load_file('$VERSION_CONFIG_FILE')['snapshots']['$ELASTIC_STACK_VERSION']")
 else
-  ELASTIC_STACK_RETRIEVED_VERSION=$(echo $VERSIONS | jq '.releases."'"$ELASTIC_STACK_VERSION"'"')
+  ELASTIC_STACK_RETRIEVED_VERSION=$(ruby -r yaml -e "puts YAML.load_file('$VERSION_CONFIG_FILE')['releases']['$ELASTIC_STACK_VERSION']")
 fi
 
-if [[ "$ELASTIC_STACK_RETRIEVED_VERSION" != "null" ]]; then
-  # remove starting and trailing double quotes
-  ELASTIC_STACK_RETRIEVED_VERSION="${ELASTIC_STACK_RETRIEVED_VERSION%\"}"
-  ELASTIC_STACK_RETRIEVED_VERSION="${ELASTIC_STACK_RETRIEVED_VERSION#\"}"
-  echo "Translated $ELASTIC_STACK_VERSION to ${ELASTIC_STACK_RETRIEVED_VERSION}"
+if [[ -n "$ELASTIC_STACK_RETRIEVED_VERSION" ]]; then
+  echo "Translating ELASTIC_STACK_VERSION to ${ELASTIC_STACK_RETRIEVED_VERSION}"
   export ELASTIC_STACK_VERSION=$ELASTIC_STACK_RETRIEVED_VERSION
 elif [[ "$ELASTIC_STACK_VERSION" == "9.next" ]]; then
-  # we know "9.next" only exists between FF and GA of a minor
-  # exit 99 so the build is skipped
   exit 99
+else
+  # CODEREVIEW: should this exit non zero? 
+  echo "Warning: No version found for $ELASTIC_STACK_VERSION, using as-is"
 fi
 
 case "${DISTRIBUTION}" in
