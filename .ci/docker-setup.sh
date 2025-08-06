@@ -35,7 +35,7 @@ fi
 ELASTIC_STACK_VERSION_ALIAS="$ELASTIC_STACK_VERSION"
 
 echo "Computing latest stream version"
-VERSION_CONFIG_FILE="logstash-versions.yml"
+VERSION_CONFIG_FILE="$(dirname "$0")/logstash-versions.yml"
 if [[ "$SNAPSHOT" = "true" ]]; then
   ELASTIC_STACK_RETRIEVED_VERSION=$(ruby -r yaml -e "puts YAML.load_file('$VERSION_CONFIG_FILE')['snapshots']['$ELASTIC_STACK_VERSION']")
 else
