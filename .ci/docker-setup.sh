@@ -48,8 +48,8 @@ if [[ -n "$ELASTIC_STACK_RETRIEVED_VERSION" ]]; then
 elif [[ "$ELASTIC_STACK_VERSION" == "9.next" ]]; then
   exit 99
 else
-  # CODEREVIEW: should this exit non zero? 
-  echo "Warning: No version found for $ELASTIC_STACK_VERSION, using as-is"
+  # No version translation found, assuming user provided explicit version
+  echo "No version found for $ELASTIC_STACK_VERSION, using as-is"
 fi
 
 case "${DISTRIBUTION}" in
