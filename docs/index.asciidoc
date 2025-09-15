@@ -136,6 +136,22 @@ output {
 }
 -----
 
+NOTE: Dynamic variable substitution using sprintf syntax, such as %{foo}, is not supported in the `data_stream` options
+      at this time. If you want to dynamically route to data streams, you can add the appropriate fields to events in
+      the configuration and take advantage of the (on by default) auto routing facility:
+
+[source,sh]
+-----
+filter {
+      mutate {
+              add_field => {
+                      "[data_stream][type]" => "logs"
+                      "[data_stream][dataset]" => "%{dataset_name}"
+                      "[data_stream][namespace]" => "%{namespace_name}"
+              }
+      }
+}
+-----
 
 ==== Writing to different indices: best practices
 
