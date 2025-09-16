@@ -188,9 +188,14 @@ module LogStash; module Outputs; class ElasticSearch;
     def self.setup_api_key(logger, params)
       api_key = params["api_key"]
 
-      return {} unless (api_key && api_key.value)
+      return {} unless (api_key&.value)
 
-      { "Authorization" => "ApiKey " + Base64.strict_encode64(api_key.value) }
+      api_key_value = api_key.value
+      if api_key_value =~ /\A[^:]+:[^:]+\z/
+        api_key_value = Base64.strict_encode64(api_key_value)
+      end
+
+      { "Authorization" => "ApiKey " + api_key_value }
     end
 
     private
