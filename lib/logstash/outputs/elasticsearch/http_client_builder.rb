@@ -190,12 +190,9 @@ module LogStash; module Outputs; class ElasticSearch;
 
       return {} unless (api_key&.value)
 
-      api_key_value = api_key.value
-      if api_key_value =~ /\A[^:]+:[^:]+\z/
-        api_key_value = Base64.strict_encode64(api_key_value)
-      end
+      value = self.is_base64?(api_key.value) ?  api_key.value : Base64.strict_encode64(api_key.value)
 
-      { "Authorization" => "ApiKey " + api_key_value }
+      { "Authorization" => "ApiKey #{value}" }
     end
 
     private
@@ -212,6 +209,14 @@ module LogStash; module Outputs; class ElasticSearch;
 
     def self.query_param_separator(url)
       url.match?(/\?[^\s#]+/) ? '&' : '?'
+    end
+
+    def self.is_base64?(string)
+      begin
+        string == Base64.strict_encode64(Base64.strict_decode64(string))
+      rescue ArgumentError
+        false
+      end
     end
   end
 end; end; end
