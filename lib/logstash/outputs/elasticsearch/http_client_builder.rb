@@ -188,25 +188,37 @@ module LogStash; module Outputs; class ElasticSearch;
     def self.setup_api_key(logger, params)
       api_key = params["api_key"]
 
-      return {} unless (api_key && api_key.value)
+      return {} unless (api_key&.value)
 
-      { "Authorization" => "ApiKey " + Base64.strict_encode64(api_key.value) }
+      value = is_base64?(api_key.value) ?  api_key.value : Base64.strict_encode64(api_key.value)
+
+      { "Authorization" => "ApiKey #{value}" }
     end
 
-    private
-    def self.dedup_slashes(url)
-      url.gsub(/\/+/, "/")
-    end
+    class << self
+      private
+      def dedup_slashes(url)
+        url.gsub(/\/+/, "/")
+      end
 
-    # Set a `filter_path` query parameter if it is not already set to be
-    # `filter_path=errors,items.*.error,items.*.status` to reduce the payload between Logstash and Elasticsearch
-    def self.resolve_filter_path(url)
-      return url if url.match?(/(?:[&|?])filter_path=/)
-      ("#{url}#{query_param_separator(url)}filter_path=errors,items.*.error,items.*.status")
-    end
+      # Set a `filter_path` query parameter if it is not already set to be
+      # `filter_path=errors,items.*.error,items.*.status` to reduce the payload between Logstash and Elasticsearch
+      def resolve_filter_path(url)
+        return url if url.match?(/(?:[&|?])filter_path=/)
+        ("#{url}#{query_param_separator(url)}filter_path=errors,items.*.error,items.*.status")
+      end
 
-    def self.query_param_separator(url)
-      url.match?(/\?[^\s#]+/) ? '&' : '?'
+      def query_param_separator(url)
+        url.match?(/\?[^\s#]+/) ? '&' : '?'
+      end
+
+      def is_base64?(string)
+        begin
+          string == Base64.strict_encode64(Base64.strict_decode64(string))
+        rescue ArgumentError
+          false
+        end
+      end
     end
   end
 end; end; end

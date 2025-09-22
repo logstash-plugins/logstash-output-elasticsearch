@@ -26,6 +26,44 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
     end
   end
 
+  describe "auth setup with api-key" do
+    let(:klass) { LogStash::Outputs::ElasticSearch::HttpClientBuilder }
+
+    context "when api-key is not encoded (id:api-key)" do
+      let(:api_key) { "id:api-key" }
+      let(:api_key_secured) do
+        secured = double("api_key")
+        allow(secured).to receive(:value).and_return(api_key)
+        secured
+      end
+      let(:options) { { "api_key" => api_key_secured } }
+      let(:logger) { double("logger") }
+      let(:api_key_header) { klass.setup_api_key(logger, options) }
+
+      it "returns the correct encoded api-key header" do
+        expected = "ApiKey #{Base64.strict_encode64(api_key)}"
+        expect(api_key_header["Authorization"]).to eql(expected)
+      end
+    end
+
+    context "when api-key is already encoded" do
+      let(:api_key) { Base64.strict_encode64("id:api-key") }
+      let(:api_key_secured) do
+        secured = double("api_key")
+        allow(secured).to receive(:value).and_return(api_key)
+        secured
+      end
+      let(:options) { { "api_key" => api_key_secured } }
+      let(:logger) { double("logger") }
+      let(:api_key_header) { klass.setup_api_key(logger, options) }
+
+      it "returns the api-key header as is" do
+        expected = "ApiKey #{api_key}"
+        expect(api_key_header["Authorization"]).to eql(expected)
+      end
+    end
+  end
+
   describe "customizing action paths" do
     let(:hosts) { [ ::LogStash::Util::SafeURI.new("http://localhost:9200") ] }
     let(:options) { {"hosts" => hosts } }
