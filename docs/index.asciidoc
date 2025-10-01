@@ -656,6 +656,13 @@ A warning message will be logged indicating that the request had failed, unless 
 listed in the <<plugins-{type}s-{plugin}-silence_errors_in_log>> config option.
 Note that the events are not added to the Dead Letter Queue (DLQ), regardless of whether one is enabled.
 
+[source,ruby]
+    output {
+      elasticsearch {
+        drop_error_types => ["role_restriction_exception"]
+      }
+    }
+
 [id="plugins-{type}s-{plugin}-ecs_compatibility"]
 ===== `ecs_compatibility`
 
