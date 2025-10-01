@@ -1501,7 +1501,9 @@ describe LogStash::Outputs::ElasticSearch do
 
   context 'drop_error_types config option' do
 
-    let(:options) { super().merge('drop_error_types' => ['role_restriction_exception']) }
+    let(:error_type) { 'role_restriction_exception' }
+
+    let(:options) { super().merge('drop_error_types' => [error_type]) }
 
     let(:events) { [ LogStash::Event.new("foo" => "bar") ] }
 
@@ -1514,7 +1516,7 @@ describe LogStash::Outputs::ElasticSearch do
         "took"=>1, "ingest_took"=>11, "errors"=>true, "items"=>
         [{
            "index"=>{"_index"=>"bar", "_type"=>"_doc", "_id"=>'bar', "status" => error_code,
-                     "error"=>{"type" => "role_restriction_exception", "reason" => "TEST" }
+                     "error"=>{"type" => error_type, "reason" => "TEST" }
            }
          }]
       }
@@ -1536,6 +1538,7 @@ describe LogStash::Outputs::ElasticSearch do
     end
 
     context 'DLQ is not enabled' do
+
       it 'does not write the event to the DLQ' do
         allow(subject).to receive(:dlq_enabled?).and_return(false)
         expect(dlq_writer).not_to receive(:write)
@@ -1561,7 +1564,7 @@ describe LogStash::Outputs::ElasticSearch do
 
       let(:logger) { subject.logger }
 
-      let(:options) { super().merge('silence_errors_in_log' => ['role_restriction_exception']) }
+      let(:options) { super().merge('silence_errors_in_log' => [error_type]) }
 
       it 'does not log the error' do
         expect(logger).not_to receive(:warn)
