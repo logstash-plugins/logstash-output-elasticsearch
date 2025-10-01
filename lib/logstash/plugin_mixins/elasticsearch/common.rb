@@ -278,16 +278,18 @@ module LogStash; module PluginMixins; module ElasticSearch
 
         status = action_props["status"]
         error  = action_props["error"]
+        type = error["type"] if error
         action = actions[idx]
 
         # Retry logic: If it is success, we move on. If it is a failure, we have 3 paths:
         # - For 409, we log and drop. there is nothing we can do
+        # - For any error types set in the 'drop_error_types' config, log and drop.
         # - For a mapping error, we send to dead letter queue for a human to intervene at a later point.
         # - For everything else there's mastercard. Yep, and we retry indefinitely. This should fix #572 and other transient network issues
         if DOC_SUCCESS_CODES.include?(status)
           @document_level_metrics.increment(:successes)
           next
-        elsif DOC_CONFLICT_CODE == status
+        elsif DOC_CONFLICT_CODE == status || @drop_error_types.include?(type)
           @document_level_metrics.increment(:non_retryable_failures)
           @logger.warn "Failed action", status: status, action: action, response: response if log_failure_type?(error)
           next

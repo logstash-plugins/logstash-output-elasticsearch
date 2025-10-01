@@ -204,6 +204,10 @@ module LogStash; module PluginMixins; module ElasticSearch
         # if enabled, failed index name interpolation events go into dead letter queue.
         :dlq_on_failed_indexname_interpolation => { :validate => :boolean, :default => true },
 
+        # The bulk request will not be retried for these error types; the events will be dropped.
+        # The events won't be added to the DLQ either.
+        :drop_error_types => { :validate => :string, :list => true, :default => [] },
+
         # Obsolete Settings
         :ssl => { :obsolete => "Set 'ssl_enabled' instead." },
         :ssl_certificate_verification => { :obsolete => "Set 'ssl_verification_mode' instead." },

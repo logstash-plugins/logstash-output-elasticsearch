@@ -644,6 +644,18 @@ If you don't set a value for this option:
 - for elasticsearch clusters 8.x: no value will be used;
 - for elasticsearch clusters 7.x: the value of '_doc' will be used.
 
+[id="plugins-{type}s-{plugin}-drop_error_types"]
+===== `drop_error_types`
+
+  * Value type is <<array,array>>
+  * Default value is `[]`
+
+In most cases, a bulk request is retried when Elasticsearch returns an error.
+This config option defines a list of error types for which the bulk request will not be retried.
+A warning message will be logged indicating that the request had failed, unless the error type is
+listed in the <<plugins-{type}s-{plugin}-silence_errors_in_log>> config option.
+Note that the events are not added to the Dead Letter Queue (DLQ), regardless of whether one is enabled.
+
 [id="plugins-{type}s-{plugin}-ecs_compatibility"]
 ===== `ecs_compatibility`
 
