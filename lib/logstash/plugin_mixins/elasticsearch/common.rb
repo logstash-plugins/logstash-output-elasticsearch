@@ -281,7 +281,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         type = error["type"] if error
         action = actions[idx]
 
-        # Retry logic: If it is success, we move on. If it is a failure, we have 3 paths:
+        # Retry logic: If it is success, we move on. If it is a failure, we have the following paths:
         # - For 409, we log and drop. there is nothing we can do
         # - For any error types set in the 'drop_error_types' config, log and drop.
         # - For a mapping error, we send to dead letter queue for a human to intervene at a later point.
