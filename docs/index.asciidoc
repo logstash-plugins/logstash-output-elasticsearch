@@ -373,6 +373,7 @@ Please check out <<plugins-{type}s-{plugin}-obsolete-options>> for details.
 | <<plugins-{type}s-{plugin}-doc_as_upsert>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-document_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-document_type>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-drop_error_types>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-ecs_compatibility>> | <<string,string>>|No
 | <<plugins-{type}s-{plugin}-failure_type_logging_whitelist>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-healthcheck_path>> |<<string,string>>|No
