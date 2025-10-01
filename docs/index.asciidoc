@@ -650,11 +650,10 @@ If you don't set a value for this option:
   * Value type is <<array,array>>
   * Default value is `[]`
 
-In most cases, a bulk request is retried when Elasticsearch returns an error.
-This config option defines a list of error types for which the bulk request will not be retried.
-A warning message will be logged indicating that the request had failed, unless the error type is
+Lists the set of error types for which individual bulk request actions will not be retried. Unless an individual - document level - action returns 409 or an error from this list, failures will be retried indefinitely.
+A warning message will be logged indicating that the action failed, unless the error type is
 listed in the <<plugins-{type}s-{plugin}-silence_errors_in_log>> config option.
-Note that the events are not added to the Dead Letter Queue (DLQ), regardless of whether one is enabled.
+Note that the events are not added to the Dead Letter Queue (DLQ), regardless of whether it is enabled.
 
 [source,ruby]
     output {
