@@ -659,7 +659,7 @@ Note that the events are not added to the Dead Letter Queue (DLQ), regardless of
 [source,ruby]
     output {
       elasticsearch {
-        drop_error_types => ["role_restriction_exception"]
+        drop_error_types => ["index_closed_exception"]
       }
     }
 
