@@ -1499,9 +1499,9 @@ describe LogStash::Outputs::ElasticSearch do
     end
   end
 
-  context 'drop_error_types config option' do
+  describe 'drop_error_types' do
 
-    let(:error_type) { 'role_restriction_exception' }
+    let(:error_type) { 'index_closed_exception' }
 
     let(:options) { super().merge('drop_error_types' => [error_type]) }
 
@@ -1510,6 +1510,10 @@ describe LogStash::Outputs::ElasticSearch do
     let(:dlq_writer) { subject.instance_variable_get(:@dlq_writer) }
 
     let(:error_code) { 403 }
+
+    let(:event_action_tuples) { subject.map_events(events) }
+
+    let(:logger) { subject.logger }
 
     let(:bulk_response) do
       {
@@ -1528,48 +1532,42 @@ describe LogStash::Outputs::ElasticSearch do
 
     context 'DLQ is enabled' do
 
-      it 'does not write the event to the DLQ' do
+      before(:each) do
         allow(subject).to receive(:dlq_enabled?).and_return(true)
-        expect(dlq_writer).not_to receive(:write)
+      end
 
-        event_action_tuples = subject.map_events(events)
+      it 'does not write the event to the DLQ' do
+        expect(dlq_writer).not_to receive(:write)
         subject.send(:submit, event_action_tuples)
       end
     end
 
     context 'DLQ is not enabled' do
 
-      it 'does not write the event to the DLQ' do
+      before(:each) do
         allow(subject).to receive(:dlq_enabled?).and_return(false)
-        expect(dlq_writer).not_to receive(:write)
+      end
 
-        event_action_tuples = subject.map_events(events)
+      it 'does not write the event to the DLQ' do
+        expect(dlq_writer).not_to receive(:write)
         subject.send(:submit, event_action_tuples)
       end
     end
 
     context 'the error type is not in `silence_errors_in_log`' do
 
-      let(:logger) { subject.logger }
-
       it 'logs the error' do
         expect(logger).to receive(:warn).with(a_string_including("Failed action"), anything).and_call_original
-
-        event_action_tuples = subject.map_events(events)
         subject.send(:submit, event_action_tuples)
       end
     end
 
     context 'the error type is in `silence_errors_in_log`' do
 
-      let(:logger) { subject.logger }
-
       let(:options) { super().merge('silence_errors_in_log' => [error_type]) }
 
       it 'does not log the error' do
         expect(logger).not_to receive(:warn)
-
-        event_action_tuples = subject.map_events(events)
         subject.send(:submit, event_action_tuples)
       end
     end
