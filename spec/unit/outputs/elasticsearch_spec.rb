@@ -1513,8 +1513,6 @@ describe LogStash::Outputs::ElasticSearch do
 
     let(:event_action_tuples) { subject.map_events(events) }
 
-    let(:logger) { subject.logger }
-
     let(:bulk_response) do
       {
         "took"=>1, "ingest_took"=>11, "errors"=>true, "items"=>
@@ -1532,9 +1530,7 @@ describe LogStash::Outputs::ElasticSearch do
 
     context 'DLQ is enabled' do
 
-      before(:each) do
-        allow(subject).to receive(:dlq_enabled?).and_return(true)
-      end
+      let(:options) { super().merge("dlq_custom_codes" => [403]) }
 
       it 'does not write the event to the DLQ' do
         expect(dlq_writer).not_to receive(:write)
@@ -1548,16 +1544,16 @@ describe LogStash::Outputs::ElasticSearch do
         allow(subject).to receive(:dlq_enabled?).and_return(false)
       end
 
-      it 'does not write the event to the DLQ' do
-        expect(dlq_writer).not_to receive(:write)
-        subject.send(:submit, event_action_tuples)
+      it 'does not retry indexing the event' do
+        expect(subject).to receive(:submit).with(event_action_tuples).once.and_call_original
+        subject.send(:retrying_submit, event_action_tuples)
       end
     end
 
     context 'the error type is not in `silence_errors_in_log`' do
 
       it 'logs the error' do
-        expect(logger).to receive(:warn).with(a_string_including("Failed action"), anything).and_call_original
+        expect(subject.logger).to receive(:warn).with(a_string_including("Failed action"), anything)
         subject.send(:submit, event_action_tuples)
       end
     end
@@ -1566,8 +1562,12 @@ describe LogStash::Outputs::ElasticSearch do
 
       let(:options) { super().merge('silence_errors_in_log' => [error_type]) }
 
+      before(:each) do
+        # ensure that neither warn nor info is called on the logger by using a test double
+        subject.instance_variable_set("@logger", double('logger'))
+      end
+
       it 'does not log the error' do
-        expect(logger).not_to receive(:warn)
         subject.send(:submit, event_action_tuples)
       end
     end
