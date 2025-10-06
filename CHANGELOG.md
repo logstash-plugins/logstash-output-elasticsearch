@@ -1,4 +1,4 @@
-## 12.0.8
+## 12.1.0
 - Add drop_error_types config option to not retry after certain error types [#1228](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1228)
 
 ## 12.0.7
