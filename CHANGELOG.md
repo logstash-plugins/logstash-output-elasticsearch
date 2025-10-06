@@ -1,3 +1,6 @@
+## 12.0.8
+- Add drop_error_types config option to not retry after certain error types [#1228](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1228)
+
 ## 12.0.7
  - Support both, encoded and non encoded api-key formats on plugin configuration [#1223](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1223)
 
