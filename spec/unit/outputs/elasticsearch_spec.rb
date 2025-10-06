@@ -1499,6 +1499,80 @@ describe LogStash::Outputs::ElasticSearch do
     end
   end
 
+  describe 'drop_error_types' do
+
+    let(:error_type) { 'index_closed_exception' }
+
+    let(:options) { super().merge('drop_error_types' => [error_type]) }
+
+    let(:events) { [ LogStash::Event.new("foo" => "bar") ] }
+
+    let(:dlq_writer) { subject.instance_variable_get(:@dlq_writer) }
+
+    let(:error_code) { 403 }
+
+    let(:event_action_tuples) { subject.map_events(events) }
+
+    let(:bulk_response) do
+      {
+        "took"=>1, "ingest_took"=>11, "errors"=>true, "items"=>
+        [{
+           "index"=>{"_index"=>"bar", "_type"=>"_doc", "_id"=>'bar', "status" => error_code,
+                     "error"=>{"type" => error_type, "reason" => "TEST" }
+           }
+         }]
+      }
+    end
+
+    before(:each) do
+      allow(subject.client).to receive(:bulk_send).and_return(bulk_response)
+    end
+
+    context 'DLQ is enabled' do
+
+      let(:options) { super().merge("dlq_custom_codes" => [403]) }
+
+      it 'does not write the event to the DLQ' do
+        expect(dlq_writer).not_to receive(:write)
+        subject.send(:submit, event_action_tuples)
+      end
+    end
+
+    context 'DLQ is not enabled' do
+
+      before(:each) do
+        allow(subject).to receive(:dlq_enabled?).and_return(false)
+      end
+
+      it 'does not retry indexing the event' do
+        expect(subject).to receive(:submit).with(event_action_tuples).once.and_call_original
+        subject.send(:retrying_submit, event_action_tuples)
+      end
+    end
+
+    context 'the error type is not in `silence_errors_in_log`' do
+
+      it 'logs the error' do
+        expect(subject.logger).to receive(:warn).with(a_string_including("Failed action"), anything)
+        subject.send(:submit, event_action_tuples)
+      end
+    end
+
+    context 'the error type is in `silence_errors_in_log`' do
+
+      let(:options) { super().merge('silence_errors_in_log' => [error_type]) }
+
+      before(:each) do
+        # ensure that neither warn nor info is called on the logger by using a test double
+        subject.instance_variable_set("@logger", double('logger'))
+      end
+
+      it 'does not log the error' do
+        subject.send(:submit, event_action_tuples)
+      end
+    end
+  end
+
   describe "custom headers" do
     let(:manticore_options) { subject.client.pool.adapter.manticore.instance_variable_get(:@options) }
 
