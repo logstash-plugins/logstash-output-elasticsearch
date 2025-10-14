@@ -5,7 +5,10 @@ describe "metrics", :integration => true do
     require "logstash/outputs/elasticsearch"
     settings = {
       "manage_template" => false,
-      "hosts" => "#{get_host_port()}"
+      "hosts" => "#{get_host_port()}",
+      # write data to a random non templated index to ensure the bulk partially fails
+      # don't use streams like "logs-*" as those have failure stores enabled, causing the bulk to succeed instead
+      "index" => "custom_index_#{rand(10000)}"
     }
     plugin = LogStash::Outputs::ElasticSearch.new(settings)
   end
