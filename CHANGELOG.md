@@ -1,3 +1,6 @@
+## 12.1.1
+ - Update documentation to state that that sprintf syntax is not supported for datastreams, and give a workaround [#1224](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1224)
+
 ## 12.1.0
  - Add drop_error_types config option to not retry after certain error types [#1228](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1228)
 
