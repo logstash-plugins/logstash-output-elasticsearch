@@ -373,6 +373,7 @@ Please check out <<plugins-{type}s-{plugin}-obsolete-options>> for details.
 | <<plugins-{type}s-{plugin}-doc_as_upsert>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-document_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-document_type>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-drop_error_types>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-ecs_compatibility>> | <<string,string>>|No
 | <<plugins-{type}s-{plugin}-failure_type_logging_whitelist>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-healthcheck_path>> |<<string,string>>|No
@@ -643,6 +644,24 @@ If you don't set a value for this option:
 
 - for elasticsearch clusters 8.x: no value will be used;
 - for elasticsearch clusters 7.x: the value of '_doc' will be used.
+
+[id="plugins-{type}s-{plugin}-drop_error_types"]
+===== `drop_error_types`
+
+  * Value type is <<array,array>>
+  * Default value is `[]`
+
+Lists the set of error types for which individual bulk request actions will not be retried. Unless an individual - document level - action returns 409 or an error from this list, failures will be retried indefinitely.
+A warning message will be logged indicating that the action failed, unless the error type is
+listed in the <<plugins-{type}s-{plugin}-silence_errors_in_log>> config option.
+Note that the events are not added to the Dead Letter Queue (DLQ), regardless of whether it is enabled.
+
+[source,ruby]
+    output {
+      elasticsearch {
+        drop_error_types => ["index_closed_exception"]
+      }
+    }
 
 [id="plugins-{type}s-{plugin}-ecs_compatibility"]
 ===== `ecs_compatibility`
