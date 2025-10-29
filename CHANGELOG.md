@@ -1,3 +1,6 @@
+## 12.1.1
+ - Remove duplicated deprecation log entry [#1232](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1232)
+
 ## 12.1.0
  - Add drop_error_types config option to not retry after certain error types [#1228](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1228)
 
