@@ -331,7 +331,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
         expect(subject.url_meta(u)[:state]).to eql(:dead)
         sleep subject.resurrect_delay + 1
-        expect(subject.url_meta(u)[:state]).to eql(:alive)
+        # try a few times with exponential backoff as timing is not 100% guaranteed during CI execution.
+        try(10) { expect(subject.url_meta(u)[:state]).to eql(:alive) }
       end
     end
   end
