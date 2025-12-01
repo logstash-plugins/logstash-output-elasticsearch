@@ -1,0 +1,74 @@
+name: Integration Tests
+
+on:
+  push:
+    branches:
+      - main
+      - "[0-9]+.[0-9]+"
+  pull_request:
+    branches:
+      - main
+      - "[0-9]+.[0-9]+"
+  workflow_dispatch:
+
+jobs:
+  integration-tests:
+    name: Integration Test - ES ${{ matrix.elastic_stack_version }} ${{ matrix.snapshot && '(Snapshot)' || '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        elastic_stack_version:
+          - "7.current"
+          - "8.previous"
+          - "8.current"
+          - "9.current"
+        snapshot: [false, true]
+        include:
+          - elastic_stack_version: "main"
+            snapshot: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up environment variables
+        run: |
+          echo "INTEGRATION=true" >> $GITHUB_ENV
+          echo "LOG_LEVEL=info" >> $GITHUB_ENV
+          echo "ELASTIC_STACK_VERSION=${{ matrix.elastic_stack_version }}" >> $GITHUB_ENV
+          if [ "${{ matrix.snapshot }}" = "true" ]; then
+            echo "SNAPSHOT=true" >> $GITHUB_ENV
+          fi
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run docker-setup.sh
+        id: docker_setup
+        run: |
+          set -e
+          bash .ci/docker-setup.sh
+        continue-on-error: true
+
+      - name: Check if test should be skipped
+        id: check_skip
+        if: steps.docker_setup.outcome == 'failure'
+        run: |
+          if [ ${{ steps.docker_setup.outputs.exit_code }} -eq 99 ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Test skipped - Docker image not available for this configuration"
+          else
+            exit 1
+          fi
+
+      - name: Run integration tests
+        if: steps.check_skip.outputs.skip != 'true'
+        run: |
+          bash .ci/docker-run.sh
+
+      - name: Cleanup
+        if: always()
+        run: |
+          cd .ci
+          docker compose down -v || true
