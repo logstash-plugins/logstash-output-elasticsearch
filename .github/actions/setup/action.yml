@@ -1,0 +1,86 @@
+name: 'Setup Integration Test Environment'
+description: 'Common setup steps for integration and secure integration tests'
+
+inputs:
+  elastic_stack_version:
+    description: 'Elasticsearch stack version to test against'
+    required: true
+  snapshot:
+    description: 'Whether to use snapshot version'
+    required: false
+    default: 'false'
+  secure_integration:
+    description: 'Enable secure integration testing'
+    required: false
+    default: 'false'
+  es_ssl_key_invalid:
+    description: 'Use invalid SSL key for testing'
+    required: false
+    default: 'false'
+  es_ssl_supported_protocols:
+    description: 'SSL/TLS protocols to test'
+    required: false
+    default: ''
+
+outputs:
+  skip:
+    description: 'Whether the test should be skipped'
+    value: ${{ steps.check_skip.outputs.skip }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up environment variables
+      shell: bash
+      env:
+        ELASTIC_STACK_VERSION: ${{ inputs.elastic_stack_version }}
+        SNAPSHOT: ${{ inputs.snapshot }}
+        SECURE_INTEGRATION: ${{ inputs.secure_integration }}
+        ES_SSL_KEY_INVALID: ${{ inputs.es_ssl_key_invalid }}
+        ES_SSL_SUPPORTED_PROTOCOLS: ${{ inputs.es_ssl_supported_protocols }}
+      run: |
+        echo "INTEGRATION=true" >> $GITHUB_ENV
+        echo "LOG_LEVEL=info" >> $GITHUB_ENV
+        echo "ELASTIC_STACK_VERSION=${ELASTIC_STACK_VERSION}" >> $GITHUB_ENV
+        
+        if [ "${SNAPSHOT}" = "true" ]; then
+          echo "SNAPSHOT=true" >> $GITHUB_ENV
+        fi
+        
+        if [ "${SECURE_INTEGRATION}" = "true" ]; then
+          echo "SECURE_INTEGRATION=true" >> $GITHUB_ENV
+        fi
+        
+        if [ "${ES_SSL_KEY_INVALID}" = "true" ]; then
+          echo "ES_SSL_KEY_INVALID=true" >> $GITHUB_ENV
+        fi
+        
+        if [ -n "${ES_SSL_SUPPORTED_PROTOCOLS}" ]; then
+          echo "ES_SSL_SUPPORTED_PROTOCOLS=${ES_SSL_SUPPORTED_PROTOCOLS}" >> $GITHUB_ENV
+        fi
+
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Run docker-setup.sh
+      id: docker_setup
+      shell: bash
+      run: |
+        set -e
+        cd .ci
+        wget -q https://raw.githubusercontent.com/elastic/logstash/main/.ci/docker-setup.sh -O .ci/docker-setup.shhttps://raw.githubusercontent.com/logstash-plugins/.ci/refs/heads/1.x/docker-setup.sh || exit 1
+        chmod 755 docker-setup.sh
+        bash .ci/docker-setup.sh
+      continue-on-error: true
+
+    - name: Check if test should be skipped
+      id: check_skip
+      if: steps.docker_setup.outcome == 'failure'
+      shell: bash
+      run: |
+        if [ ${{ steps.docker_setup.outputs.exit_code }} -eq 99 ]; then
+          echo "skip=true" >> $GITHUB_OUTPUT
+          echo "Test skipped - Docker image not available for this configuration"
+        else
+          exit 1
+        fi

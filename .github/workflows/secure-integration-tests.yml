@@ -2,103 +2,41 @@ name: Secure Integration Tests
 
 on:
   push:
-    branches:
-      - main
-      - "[0-9]+.[0-9]+"
   pull_request:
     branches:
       - main
-      - "[0-9]+.[0-9]+"
   workflow_dispatch:
 
 jobs:
   secure-integration-tests:
-    name: Secure Integration Test - ES ${{ matrix.elastic_stack_version }} ${{ matrix.snapshot && '(Snapshot)' || '' }} ${{ matrix.es_ssl_key_invalid && '(Invalid SSL)' || '' }} ${{ matrix.es_ssl_supported_protocols && format('({0})', matrix.es_ssl_supported_protocols) || '' }}
+    name: Secure Integration Test - ES ${{ matrix.elastic_stack_version }} ${{ matrix.snapshot && '(Snapshot)' || '' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
+        elastic_stack_version:
+          - "7.current"
+          - "8.current"
+          - "9.current"
+        snapshot: [false, true]
         include:
-          # Regular secure integration tests
-          - elastic_stack_version: "7.current"
-            snapshot: false
-          - elastic_stack_version: "8.current"
-            snapshot: false
-          - elastic_stack_version: "9.current"
-            snapshot: false
-          
-          # SSL configuration tests for 8.current
-          - elastic_stack_version: "8.current"
-            snapshot: false
-            es_ssl_key_invalid: true
-          - elastic_stack_version: "8.current"
-            snapshot: false
-            es_ssl_supported_protocols: "TLSv1.3"
-          
-          # SSL configuration tests for 9.current
-          - elastic_stack_version: "9.current"
-            snapshot: false
-            es_ssl_key_invalid: true
-          - elastic_stack_version: "9.current"
-            snapshot: false
-            es_ssl_supported_protocols: "TLSv1.3"
-          
-          # Snapshot tests
-          - elastic_stack_version: "8.current"
-            snapshot: true
-          - elastic_stack_version: "9.current"
-            snapshot: true
           - elastic_stack_version: "main"
             snapshot: true
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Set up environment variables
-        run: |
-          echo "SECURE_INTEGRATION=true" >> $GITHUB_ENV
-          echo "INTEGRATION=true" >> $GITHUB_ENV
-          echo "LOG_LEVEL=info" >> $GITHUB_ENV
-          echo "ELASTIC_STACK_VERSION=${{ matrix.elastic_stack_version }}" >> $GITHUB_ENV
-          if [ "${{ matrix.snapshot }}" = "true" ]; then
-            echo "SNAPSHOT=true" >> $GITHUB_ENV
-          fi
-          if [ "${{ matrix.es_ssl_key_invalid }}" = "true" ]; then
-            echo "ES_SSL_KEY_INVALID=true" >> $GITHUB_ENV
-          fi
-          if [ -n "${{ matrix.es_ssl_supported_protocols }}" ]; then
-            echo "ES_SSL_SUPPORTED_PROTOCOLS=${{ matrix.es_ssl_supported_protocols }}" >> $GITHUB_ENV
-          fi
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Run docker-setup.sh
-        id: docker_setup
-        run: |
-          set -e
-          bash .ci/docker-setup.sh
-        continue-on-error: true
-
-      - name: Check if test should be skipped
-        id: check_skip
-        if: steps.docker_setup.outcome == 'failure'
-        run: |
-          if [ ${{ steps.docker_setup.outputs.exit_code }} -eq 99 ]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-            echo "Test skipped - Docker image not available for this configuration"
-          else
-            exit 1
-          fi
+      - name: Setup test environment
+        id: setup
+        uses: ./.github/actions/setup
+        with:
+          elastic_stack_version: ${{ matrix.elastic_stack_version }}
+          snapshot: ${{ matrix.snapshot }}
+          secure_integration: true
 
       - name: Run secure integration tests
-        if: steps.check_skip.outputs.skip != 'true'
-        run: |
-          bash .ci/docker-run.sh
+        if: steps.setup.outputs.skip != 'true'
+        run: .ci/docker-run.sh
 
-      - name: Cleanup
-        if: always()
-        run: |
-          cd .ci
-          docker compose down -v || true
+      # NOTE: no cleanup needed when running on ephemeral runners
