@@ -34,9 +34,11 @@ jobs:
         with:
           elastic_stack_version: ${{ matrix.elastic_stack_version }}
           snapshot: ${{ matrix.snapshot }}
+          integration: true
 
       - name: Run integration tests
         if: steps.setup.outputs.skip != 'true'
-        run: .ci/docker-run.sh
+        run: |
+          bash .ci/docker-run.sh
 
       # NOTE: no cleanup needed when running on ephemeral runners

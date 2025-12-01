@@ -37,6 +37,7 @@ jobs:
 
       - name: Run secure integration tests
         if: steps.setup.outputs.skip != 'true'
-        run: .ci/docker-run.sh
+        run: |
+          bash .ci/docker-run.sh
 
       # NOTE: no cleanup needed when running on ephemeral runners
