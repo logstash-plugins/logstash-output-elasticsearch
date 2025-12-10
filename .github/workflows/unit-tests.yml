@@ -8,48 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  unit-tests:
-    name: Unit Test - ES ${{ matrix.elastic-stack-version }} ${{ matrix.snapshot && '(Snapshot)' || '' }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        elastic-stack-version:
-          - "9.current"
-          - "9.previous"
-          - "8.current"
-          - "8.previous"
-          - "7.current"
-        docker-env: ["dockerjdk21.env"]
-        snapshot: [false]
-        exclude:
-          # 7.x doesn't support JDK 21, use default JDK
-          - elastic-stack-version: "7.current"
-            docker-env: "dockerjdk21.env"
-        include:
-          # 7.current with default JDK
-          - elastic-stack-version: "7.current"
-            docker-env: ""
-            snapshot: false
-          # Main snapshot with JDK 21
-          - elastic-stack-version: "main"
-            docker-env: "dockerjdk21.env"
-            snapshot: true
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup test environment
-        id: setup
-        uses: logstash-plugins/.ci/setup@feature/github-actions
-        with:
-          elastic-stack-version: ${{ matrix.elastic-stack-version }}
-          snapshot: ${{ matrix.snapshot || false }}
-          docker-env: ${{ matrix.docker-env || '' }}
-
-      - name: Run unit tests
-        if: steps.setup.outputs.skip != 'true'
-        run: bash .ci/docker-run.sh
-
-      # NOTE: no cleanup needed when running on ephemeral runners
+  tests:
+    uses: logstash-plugins/.ci/.github/workflows/test.yml@feature/github-actions
+    permissions:
+      contents: read
