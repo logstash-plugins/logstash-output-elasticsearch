@@ -9,31 +9,31 @@ on:
 
 jobs:
   unit-tests:
-    name: Unit Test - ES ${{ matrix.elastic_stack_version }} ${{ matrix.snapshot && '(Snapshot)' || '' }}
+    name: Unit Test - ES ${{ matrix.elastic-stack-version }} ${{ matrix.snapshot && '(Snapshot)' || '' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        elastic_stack_version:
+        elastic-stack-version:
           - "9.current"
           - "9.previous"
           - "8.current"
           - "8.previous"
           - "7.current"
-        docker_env: ["dockerjdk21.env"]
+        docker-env: ["dockerjdk21.env"]
         snapshot: [false]
         exclude:
           # 7.x doesn't support JDK 21, use default JDK
-          - elastic_stack_version: "7.current"
-            docker_env: "dockerjdk21.env"
+          - elastic-stack-version: "7.current"
+            docker-env: "dockerjdk21.env"
         include:
           # 7.current with default JDK
-          - elastic_stack_version: "7.current"
-            docker_env: ""
+          - elastic-stack-version: "7.current"
+            docker-env: ""
             snapshot: false
           # Main snapshot with JDK 21
-          - elastic_stack_version: "main"
-            docker_env: "dockerjdk21.env"
+          - elastic-stack-version: "main"
+            docker-env: "dockerjdk21.env"
             snapshot: true
     
     steps:
@@ -42,11 +42,11 @@ jobs:
 
       - name: Setup test environment
         id: setup
-        uses: ./.github/actions/setup
+        uses: logstash-plugins/.ci/setup@feature/github-actions
         with:
-          elastic_stack_version: ${{ matrix.elastic_stack_version }}
+          elastic-stack-version: ${{ matrix.elastic-stack-version }}
           snapshot: ${{ matrix.snapshot || false }}
-          docker_env: ${{ matrix.docker_env || '' }}
+          docker-env: ${{ matrix.docker-env || '' }}
 
       - name: Run unit tests
         if: steps.setup.outputs.skip != 'true'

@@ -9,18 +9,18 @@ on:
 
 jobs:
   secure-integration-tests:
-    name: Secure Integration Test - ES ${{ matrix.elastic_stack_version }} ${{ matrix.snapshot && '(Snapshot)' || '' }}
+    name: Secure Integration Test - ES ${{ matrix.elastic-stack-version }} ${{ matrix.snapshot && '(Snapshot)' || '' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        elastic_stack_version:
+        elastic-stack-version:
           - "7.current"
           - "8.current"
           - "9.current"
         snapshot: [false, true]
         include:
-          - elastic_stack_version: "main"
+          - elastic-stack-version: "main"
             snapshot: true
     
     steps:
@@ -29,11 +29,11 @@ jobs:
 
       - name: Setup test environment
         id: setup
-        uses: ./.github/actions/setup
+        uses: logstash-plugins/.ci/setup@feature/github-actions
         with:
-          elastic_stack_version: ${{ matrix.elastic_stack_version }}
+          elastic-stack-version: ${{ matrix.elastic-stack-version }}
           snapshot: ${{ matrix.snapshot }}
-          secure_integration: true
+          secure-integration: true
 
       - name: Run secure integration tests
         if: steps.setup.outputs.skip != 'true'
