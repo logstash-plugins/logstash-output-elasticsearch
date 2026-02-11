@@ -1,3 +1,6 @@
+## 11.22.14
+ - Fix: replace deprecated `File.exists?` with `File.exist?` for Ruby 3.4 (JRuby 10) compatibility [#1238](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1238)
+
 ## 11.22.13
  - Add headers reporting uncompressed size and doc count for bulk requests [#1217](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1217)
 
