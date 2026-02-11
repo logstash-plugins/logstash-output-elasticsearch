@@ -52,7 +52,7 @@ def download_and_transform(source_url:, ecs_major:, es_major:)
     response = http.get(source_url)
     fail "#{response.code} #{response.message}" unless (200...300).cover?(response.code.to_i)
     template_directory = File.expand_path("../lib/logstash/outputs/elasticsearch/templates/ecs-#{ecs_major}", __FILE__)
-    Dir.mkdir(template_directory) unless File.exists?(template_directory)
+    Dir.mkdir(template_directory) unless File.exist?(template_directory)
     File.open(File.join(template_directory, "/elasticsearch-#{es_major}x.json"), "w") do |handle|
       template = JSON.load(response.body)
       replace_index_patterns!(template, ECS_LOGSTASH_INDEX_PATTERNS)
