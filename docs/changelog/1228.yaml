@@ -87,4 +87,6 @@ type: other
 products:
 - product: logstash
   target: 9.3.0
+areas:
+- Elasticsearch Output
 title: Add drop_error_types config option to not retry after certain error types

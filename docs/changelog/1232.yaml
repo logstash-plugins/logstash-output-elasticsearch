@@ -85,4 +85,6 @@ type: other
 products:
 - product: logstash
   target: 9.3.0
+areas:
+- Elasticsearch Output
 title: Remove duplicated deprecation log entry
