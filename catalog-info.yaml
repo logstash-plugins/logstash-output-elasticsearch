@@ -1,0 +1,53 @@
+# ***********************************
+# SECTION START: Pull Request pipeline
+# ***********************************
+
+---
+# yaml-language-server: $schema=https://gist.githubusercontent.com/elasticmachine/988b80dae436cafea07d9a4a460a011d/raw/rre.schema.json
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: logstash-output-elasticsearch-pull-request
+  description: 'A pull request pipeline for Logstash elasticsearch output plugin'
+  links:
+    - title: 'Logstash elasticsearch output pull request pipeline'
+      url: https://buildkite.com/logstash-plugins/logstash-output-elasticsearch-pull-request
+spec:
+  owner: group:logstash-core
+  type: buildkite-pipeline
+  system: platform-ingest
+  implementation:
+    apiVersion: buildkite.elastic.dev/v1
+    kind: Pipeline
+    metadata:
+      description: ':logstash: `elasticsearch output` pull request tests :pipeline:'
+      name: logstash-output-elasticsearch-pull-request
+    spec:
+      pipeline_file: .buildkite/pull-request-pipeline.yml
+      maximum_timeout_in_minutes: 120
+      repository: logstash-plugins/logstash-output-elasticsearch
+      provider_settings:
+        build_pull_requests: true
+        build_pull_request_forks: false
+        build_branches: false
+        build_tags: false
+        filter_enabled: true
+        filter_condition: >-
+          build.pull_request.id != null
+      cancel_intermediate_builds: true
+      skip_intermediate_builds: true
+      env:
+        ELASTIC_PR_COMMENTS_ENABLED: 'true'
+        SLACK_NOTIFICATIONS_ON_SUCCESS: 'false'
+        SLACK_NOTIFICATIONS_SKIP_FOR_RETRIES: 'true'
+      teams:
+        logstash-core:
+          access_level: MANAGE_BUILD_AND_READ
+        logstash:
+          access_level: MANAGE_BUILD_AND_READ
+        ingest-fp:
+          access_level: MANAGE_BUILD_AND_READ
+        ingest-eng-prod:
+          access_level: MANAGE_BUILD_AND_READ
+        everyone:
+          access_level: READ_ONLY
