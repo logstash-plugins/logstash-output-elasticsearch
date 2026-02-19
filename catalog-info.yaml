@@ -41,13 +41,7 @@ spec:
         SLACK_NOTIFICATIONS_ON_SUCCESS: 'false'
         SLACK_NOTIFICATIONS_SKIP_FOR_RETRIES: 'true'
       teams:
-        logstash-core:
-          access_level: MANAGE_BUILD_AND_READ
         logstash:
-          access_level: MANAGE_BUILD_AND_READ
-        ingest-fp:
-          access_level: MANAGE_BUILD_AND_READ
-        ingest-eng-prod:
-          access_level: MANAGE_BUILD_AND_READ
-        everyone:
-          access_level: READ_ONLY
+          role: Maintain
+        employees:
+          role: Read
