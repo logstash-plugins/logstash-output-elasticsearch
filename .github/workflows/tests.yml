@@ -17,7 +17,38 @@ permissions:
   contents: read
 
 jobs:
-  tests:
-    uses: logstash-plugins/.ci/.github/workflows/test.yml@feature/github-actions
-    permissions:
-      contents: read
+  test:
+    name: Test - ES ${{ matrix.elastic-stack-version }}${{ matrix.snapshot && ' (Snapshot)' || '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        elastic-stack-version:
+          - '8.current'
+          - '9.previous'
+          - '9.current'
+          - 'main'
+        snapshot: [false, true]
+        docker-env: ['dockerjdk21.env']
+        exclude:
+          # main only runs as snapshot
+          - elastic-stack-version: 'main'
+            snapshot: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup test environment
+        id: setup
+        uses: logstash-plugins/.ci/setup@feature/github-actions
+        with:
+          elastic-stack-version: ${{ matrix.elastic-stack-version }}
+          snapshot: ${{ matrix.snapshot }}
+          docker-env: ${{ matrix.docker-env }}
+
+      - name: Run tests
+        if: steps.setup.outputs.skip != 'true'
+        timeout-minutes: 60
+        run: bash .ci/docker-run.sh
