@@ -4,6 +4,7 @@ services:
 
   logstash:
     command: /usr/share/plugins/plugin/.ci/logstash-run.sh
+    tty: false
     build:
       args:
         - ELASTIC_STACK_VERSION=$ELASTIC_STACK_VERSION
@@ -27,7 +28,7 @@ services:
     environment:
       - ES_JAVA_OPTS=-Xms640m -Xmx640m
     command: /usr/share/elasticsearch/elasticsearch-run.sh
-    tty: true
+    tty: false
     ports:
       - "9200:9200"
     user: elasticsearch
