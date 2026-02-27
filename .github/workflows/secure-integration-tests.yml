@@ -73,6 +73,7 @@ jobs:
         with:
           elastic-stack-version: ${{ matrix.elastic-stack-version }}
           snapshot: ${{ matrix.snapshot }}
+          integration: true
           secure-integration: true
           es-ssl-key-invalid: ${{ matrix.es-ssl-key-invalid }}
           es-ssl-supported-protocols: ${{ matrix.es-ssl-supported-protocols }}
