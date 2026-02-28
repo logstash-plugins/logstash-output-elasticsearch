@@ -185,6 +185,21 @@ describe LogStash::Outputs::ElasticSearch do
 
         it_behaves_like 'raise an abort error'
       end
+
+      context "with HostUnreachableError" do
+        let(:error) do
+          ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError.new(
+            StandardError.new("connection refused"), "http://localhost:9200/"
+          )
+        end
+
+        # HostUnreachableError only checked @stopping, not pipeline_shutdown_requested?.
+        # On unfixed code, multi_receive retries indefinitely even after pipeline shutdown
+        # is requested (pipeline_shutdown_requested? = true, @stopping = false).
+        # The fix adds abort_batch_if_available! when pipeline_shutdown_requested? is true,
+        # consistent with how NoConnectionAvailableError is handled.
+        it_behaves_like 'raise an abort error'
+      end
     end
   end if LOGSTASH_VERSION >= '8.8'
 

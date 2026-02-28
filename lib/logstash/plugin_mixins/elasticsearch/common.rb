@@ -331,6 +331,11 @@ module LogStash; module PluginMixins; module ElasticSearch
         # We retry until there are no errors! Errors should all go to the retry queue
         sleep_interval = sleep_for_interval(sleep_interval)
         @bulk_request_metrics.increment(:failures)
+        if pipeline_shutdown_requested?
+          # In case ES becomes unreachable while a pipeline reload/shutdown is triggered
+          # abort the batch so Logstash can handle it (retry on restart)
+          abort_batch_if_available!
+        end
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::NoConnectionAvailableError => e
         @logger.error(
