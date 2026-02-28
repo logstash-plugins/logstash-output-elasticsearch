@@ -201,7 +201,7 @@ describe LogStash::Outputs::ElasticSearch do
         it_behaves_like 'raise an abort error'
       end
     end
-  end if LOGSTASH_VERSION >= '8.8'
+  end if Gem::Version.new(LOGSTASH_VERSION) >= Gem::Version.new('8.8.0')
 
   context "with an active instance" do
     let(:options) {
