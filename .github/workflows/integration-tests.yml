@@ -46,6 +46,6 @@ jobs:
 
       - name: Run integration tests
         if: steps.setup.outputs.skip != 'true'
-        run: script -q -e -c "bash .ci/docker-run.sh" /dev/null
+        run: bash .ci/docker-run.sh
 
       # NOTE: no cleanup needed when running on ephemeral runners

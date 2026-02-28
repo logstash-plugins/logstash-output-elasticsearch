@@ -51,4 +51,4 @@ jobs:
       - name: Run tests
         if: steps.setup.outputs.skip != 'true'
         timeout-minutes: 60
-        run: script -q -e -c "bash .ci/docker-run.sh" /dev/null
+        run: bash .ci/docker-run.sh

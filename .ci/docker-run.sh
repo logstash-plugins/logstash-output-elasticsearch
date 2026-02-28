@@ -9,5 +9,7 @@ if [ "$INTEGRATION" == "true" ]; then
     # remove the `--attach logstash` if you want to see all logs including elasticsearch container logs
     docker compose up --exit-code-from logstash --attach logstash
 else
-    docker compose up --exit-code-from logstash logstash
+    # Use `docker compose run` for unit tests to avoid Docker Compose v2
+    # `--exit-code-from` bugs with stdout buffering and container exit detection.
+    docker compose run --rm -T logstash
 fi
