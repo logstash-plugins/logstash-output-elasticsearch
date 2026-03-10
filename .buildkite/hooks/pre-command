@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+echo "--- Downloading shared CI scripts"
+mkdir -p .ci
+curl -sL --retry 5 --retry-delay 5 https://github.com/logstash-plugins/.ci/archive/mashhurs-1.x.tar.gz \
+  | tar zxf - --strip-components=1 -C .ci --skip-old-files
