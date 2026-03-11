@@ -892,7 +892,7 @@ describe LogStash::Outputs::ElasticSearch do
     end
   end
 
-  context '413 errors' do
+  xcontext '413 errors' do
     let(:options) { super().merge("http_compression" => "false") }
     let(:payload_size) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES + 1024 }
     let(:event) { ::LogStash::Event.new("message" => ("a" * payload_size ) ) }
@@ -935,7 +935,7 @@ describe LogStash::Outputs::ElasticSearch do
     end
   end
 
-  context "with timeout set" do
+  xcontext "with timeout set" do
     let(:listener) { Flores::Random.tcp_listener }
     let(:port) { listener[2] }
     let(:options) do

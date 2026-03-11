@@ -26,26 +26,7 @@ wait_for_es() {
 }
 
 if [[ "$INTEGRATION" != "true" ]]; then
-  # DEBUG: run each spec file individually with a timeout to identify which file hangs
-  FAILED=0
-  for f in $(find spec/unit -name '*_spec.rb' | sort); do
-    echo ""
-    echo "=========================================="
-    echo ">>> START: $f ($(date))"
-    echo "=========================================="
-    timeout 300 bundle exec rspec --format=documentation "$f" --tag ~integration --tag ~secure_integration
-    rc=$?
-    if [ $rc -eq 124 ]; then
-      echo ">>> HUNG: $f (killed after 5 min)"
-      FAILED=1
-    elif [ $rc -ne 0 ]; then
-      echo ">>> FAILED: $f (exit code $rc)"
-      FAILED=1
-    else
-      echo ">>> PASSED: $f"
-    fi
-  done
-  exit $FAILED
+  bundle exec rspec --format=documentation spec/unit --tag ~integration --tag ~secure_integration
 else
 
   if [[ "$SECURE_INTEGRATION" == "true" ]]; then
