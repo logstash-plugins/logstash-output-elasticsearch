@@ -7,12 +7,11 @@ on:
       - main
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
-
 jobs:
   tests:
     uses: logstash-plugins/.ci/.github/workflows/test.yml@feature/github-actions
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     with:
       timeout-minutes: 60
