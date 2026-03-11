@@ -7,47 +7,12 @@ on:
       - main
   workflow_dispatch:
 
-## Concurrency only allowed in the main branch.
-## So old builds running for old commits within the same Pull Request are cancelled
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
-permissions:
-  contents: read
-
 jobs:
   integration-tests:
-    name: Integration Test - ES ${{ matrix.elastic-stack-version }} ${{ matrix.snapshot && '(Snapshot)' || '' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        elastic-stack-version:
-          - '8.current'
-          - '9.current'
-        snapshot: [false, true]
-        include:
-          - elastic-stack-version: '9.next'
-            snapshot: true
-          - elastic-stack-version: 'main'
-            snapshot: true
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup test environment
-        id: setup
-        uses: logstash-plugins/.ci/setup@feature/github-actions
-        with:
-          elastic-stack-version: ${{ matrix.elastic-stack-version }}
-          snapshot: ${{ matrix.snapshot }}
-          integration: true
-
-      - name: Run integration tests
-        if: steps.setup.outputs.skip != 'true'
-        run: bash .ci/docker-run.sh
-
-      # NOTE: no cleanup needed when running on ephemeral runners
+    uses: logstash-plugins/.ci/.github/workflows/integration-tests.yml@feature/github-actions
+    with:
+      timeout-minutes: 60

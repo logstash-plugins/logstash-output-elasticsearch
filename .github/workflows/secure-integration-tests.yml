@@ -7,83 +7,12 @@ on:
       - main
   workflow_dispatch:
 
-## Concurrency only allowed in the main branch.
-## So old builds running for old commits within the same Pull Request are cancelled
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
-permissions:
-  contents: read
-
 jobs:
   secure-integration-tests:
-    name: Secure Integration Test - ES ${{ matrix.elastic-stack-version }} ${{ matrix.snapshot && '(Snapshot)' || '' }}${{ matrix.es-ssl-key-invalid == 'true' && ' (Invalid SSL)' || '' }}${{ matrix.es-ssl-supported-protocols != '' && format(' ({0})', matrix.es-ssl-supported-protocols) || '' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        elastic-stack-version:
-          - '8.current'
-          - '9.current'
-        snapshot: [false]
-        es-ssl-key-invalid: ['false']
-        es-ssl-supported-protocols: ['']
-        include:
-          # SSL key invalid variants
-          - elastic-stack-version: '8.current'
-            snapshot: false
-            es-ssl-key-invalid: 'true'
-            es-ssl-supported-protocols: ''
-          - elastic-stack-version: '9.current'
-            snapshot: false
-            es-ssl-key-invalid: 'true'
-            es-ssl-supported-protocols: ''
-          # TLSv1.3 variants
-          - elastic-stack-version: '8.current'
-            snapshot: false
-            es-ssl-key-invalid: 'false'
-            es-ssl-supported-protocols: 'TLSv1.3'
-          - elastic-stack-version: '9.current'
-            snapshot: false
-            es-ssl-key-invalid: 'false'
-            es-ssl-supported-protocols: 'TLSv1.3'
-          # Snapshot variants
-          - elastic-stack-version: '8.current'
-            snapshot: true
-            es-ssl-key-invalid: 'false'
-            es-ssl-supported-protocols: ''
-          - elastic-stack-version: '9.current'
-            snapshot: true
-            es-ssl-key-invalid: 'false'
-            es-ssl-supported-protocols: ''
-          - elastic-stack-version: '9.next'
-            snapshot: true
-            es-ssl-key-invalid: 'false'
-            es-ssl-supported-protocols: ''
-          - elastic-stack-version: 'main'
-            snapshot: true
-            es-ssl-key-invalid: 'false'
-            es-ssl-supported-protocols: ''
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup test environment
-        id: setup
-        uses: logstash-plugins/.ci/setup@feature/github-actions
-        with:
-          elastic-stack-version: ${{ matrix.elastic-stack-version }}
-          snapshot: ${{ matrix.snapshot }}
-          integration: true
-          secure-integration: true
-          es-ssl-key-invalid: ${{ matrix.es-ssl-key-invalid }}
-          es-ssl-supported-protocols: ${{ matrix.es-ssl-supported-protocols }}
-
-      - name: Run secure integration tests
-        if: steps.setup.outputs.skip != 'true'
-        run: bash .ci/docker-run.sh
-
-      # NOTE: no cleanup needed when running on ephemeral runners
+    uses: logstash-plugins/.ci/.github/workflows/secure-integration-tests.yml@feature/github-actions
+    with:
+      timeout-minutes: 60
