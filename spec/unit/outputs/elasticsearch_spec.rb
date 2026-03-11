@@ -892,7 +892,7 @@ describe LogStash::Outputs::ElasticSearch do
     end
   end
 
-  xcontext '413 errors' do
+  context '413 errors' do
     let(:options) { super().merge("http_compression" => "false") }
     let(:payload_size) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES + 1024 }
     let(:event) { ::LogStash::Event.new("message" => ("a" * payload_size ) ) }
@@ -921,13 +921,13 @@ describe LogStash::Outputs::ElasticSearch do
     end
 
     it 'retries the 413 until it goes away' do
-      elasticsearch_output_instance.multi_receive([event])
+      Timeout.timeout(30) { elasticsearch_output_instance.multi_receive([event]) }
 
       expect(elasticsearch_output_instance.client).to have_received(:bulk).twice
     end
 
     it 'logs about payload quantity and size' do
-      elasticsearch_output_instance.multi_receive([event])
+      Timeout.timeout(30) { elasticsearch_output_instance.multi_receive([event]) }
 
       expect(logger_stub).to have_received(:warn)
                                  .with(a_string_matching(/413 Payload Too Large/),
@@ -935,7 +935,7 @@ describe LogStash::Outputs::ElasticSearch do
     end
   end
 
-  xcontext "with timeout set" do
+  context "with timeout set" do
     let(:listener) { Flores::Random.tcp_listener }
     let(:port) { listener[2] }
     let(:options) do
@@ -954,10 +954,11 @@ describe LogStash::Outputs::ElasticSearch do
 
     it "should fail after the timeout" do
       #pending("This is tricky now that we do healthchecks on instantiation")
-      Thread.new { subject.multi_receive([LogStash::Event.new]) }
+      th = Thread.new { subject.multi_receive([LogStash::Event.new]) }
 
       # Allow the timeout to occur
       sleep 6
+      th.join(30) || raise("Thread did not finish within 30 seconds")
     end
   end
 
