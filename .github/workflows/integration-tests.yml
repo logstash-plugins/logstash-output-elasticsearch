@@ -29,6 +29,8 @@ jobs:
           - '9.current'
         snapshot: [false, true]
         include:
+          - elastic-stack-version: '9.next'
+            snapshot: true
           - elastic-stack-version: 'main'
             snapshot: true
 

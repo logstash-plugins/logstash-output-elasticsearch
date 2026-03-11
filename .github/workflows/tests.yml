@@ -28,11 +28,14 @@ jobs:
           - '8.current'
           - '9.previous'
           - '9.current'
+          - '9.next'
           - 'main'
         snapshot: [false, true]
         docker-env: ['dockerjdk21.env']
         exclude:
-          # main only runs as snapshot
+          # 9.next and main only run as snapshot
+          - elastic-stack-version: '9.next'
+            snapshot: false
           - elastic-stack-version: 'main'
             snapshot: false
 
