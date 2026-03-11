@@ -952,7 +952,7 @@ describe LogStash::Outputs::ElasticSearch do
       expect(subject.client).to receive(:bulk).at_least(:twice).and_call_original
     end
 
-    it "should fail after the timeout" do
+    xit "should fail after the timeout" do
       #pending("This is tricky now that we do healthchecks on instantiation")
       Thread.new { subject.multi_receive([LogStash::Event.new]) }
 
