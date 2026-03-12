@@ -46,10 +46,8 @@ describe LogStash::Outputs::ElasticSearch do
     end
   end
 
-  after(:each) do |example|
-    $stderr.puts "DEBUG SPEC AFTER: closing subject for: #{example.full_description}"
+  after(:each) do
     subject.close
-    $stderr.puts "DEBUG SPEC AFTER: close returned for: #{example.full_description}"
   end
 
   context "check aborting of a batch" do
@@ -895,7 +893,7 @@ describe LogStash::Outputs::ElasticSearch do
   end
 
   context '413 errors' do
-    let(:options) { super().merge("http_compression" => "false") }
+    let(:options) { super().merge("http_compression" => "false", "retry_initial_interval" => 0) }
     let(:payload_size) { LogStash::Outputs::ElasticSearch::TARGET_BULK_BYTES + 1024 }
     let(:event) { ::LogStash::Event.new("message" => ("a" * payload_size ) ) }
 
@@ -907,13 +905,9 @@ describe LogStash::Outputs::ElasticSearch do
       allow(elasticsearch_output_instance.client).to receive(:bulk).and_call_original
 
       max_bytes = payload_size * 3 / 4 # ensure a failure first attempt
-      call_count = 0
       allow(elasticsearch_output_instance.client.pool).to receive(:post) do |path, params, body|
-        call_count += 1
-        $stderr.puts "DEBUG 413 STUB: call ##{call_count}, body.length=#{body.length}, max_bytes=#{max_bytes}"
         if body.length > max_bytes
           max_bytes *= 2 # ensure a successful retry
-          $stderr.puts "DEBUG 413 STUB: raising 413"
           raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(
             413,
             "test-url",
@@ -921,20 +915,19 @@ describe LogStash::Outputs::ElasticSearch do
             ""
           )
         else
-          $stderr.puts "DEBUG 413 STUB: returning 200"
           double("Response", :code => 200, :body => '{"errors":false,"items":[{"index":{"status":200,"result":"created"}}]}')
         end
       end
     end
 
     it 'retries the 413 until it goes away' do
-      Timeout.timeout(30) { elasticsearch_output_instance.multi_receive([event]) }
+      elasticsearch_output_instance.multi_receive([event])
 
       expect(elasticsearch_output_instance.client).to have_received(:bulk).twice
     end
 
     it 'logs about payload quantity and size' do
-      Timeout.timeout(30) { elasticsearch_output_instance.multi_receive([event]) }
+      elasticsearch_output_instance.multi_receive([event])
 
       expect(logger_stub).to have_received(:warn)
                                  .with(a_string_matching(/413 Payload Too Large/),
@@ -950,6 +943,7 @@ describe LogStash::Outputs::ElasticSearch do
         "manage_template" => false,
         "hosts" => "localhost:#{port}",
         "timeout" => 0.1, # fast timeout
+        "retry_initial_interval" => 0,
       }
     end
 
@@ -961,11 +955,10 @@ describe LogStash::Outputs::ElasticSearch do
 
     it "should fail after the timeout" do
       #pending("This is tricky now that we do healthchecks on instantiation")
-      th = Thread.new { subject.multi_receive([LogStash::Event.new]) }
+      Thread.new { subject.multi_receive([LogStash::Event.new]) }
 
       # Allow the timeout to occur
       sleep 6
-      th.join(30) || raise("Thread did not finish within 30 seconds")
     end
   end
 

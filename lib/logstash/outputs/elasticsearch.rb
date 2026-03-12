@@ -433,12 +433,9 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   private :wait_for_successful_connection
 
   def close
-    $stderr.puts "DEBUG OUTPUT CLOSE: close called, @stopping=#{@stopping}, thread=#{Thread.current}"
     @stopping.make_true if @stopping
     stop_after_successful_connection_thread
-    $stderr.puts "DEBUG OUTPUT CLOSE: about to close client"
     @client.close if @client
-    $stderr.puts "DEBUG OUTPUT CLOSE: client closed"
   end
 
   private
