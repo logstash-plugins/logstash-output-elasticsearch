@@ -32,19 +32,12 @@ jobs:
           snapshot: false
           docker-env: 'dockerjdk21.env'
 
-      - name: Build test container
-        if: steps.setup.outputs.skip != 'true'
-        run: |
-          cd .ci
-          export BUILDKIT_PROGRESS=plain
-          docker compose build
-
       - name: Start tests in background
         if: steps.setup.outputs.skip != 'true'
         run: |
           cd .ci
           docker compose up &
-          echo "Tests started in background (PID $!). Use 'docker compose logs -f' in .ci/ to watch."
+          echo "Tests started in background. Use 'cd .ci && docker compose logs -f' to watch."
           sleep 5
 
       - name: Setup tmate session
