@@ -258,7 +258,7 @@ describe LogStash::Outputs::ElasticSearch::HttpClient::Pool do
 
     it "should wait for in use connections to terminate" do
       expect(subject).to have_received(:wait_for_in_use_connections).once
-      expect(subject).to have_received(:in_use_connections).at_least(:twice)
+      expect(subject).to have_received(:in_use_connections).twice
     end
   end
 
