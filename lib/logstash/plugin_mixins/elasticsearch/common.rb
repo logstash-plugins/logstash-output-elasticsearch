@@ -189,15 +189,15 @@ module LogStash; module PluginMixins; module ElasticSearch
       submit_actions = actions
 
       sleep_interval = @retry_initial_interval
-      $stderr.puts "DEBUG RETRYING_SUBMIT: entering loop, actions=#{submit_actions&.size}"
+      $stderr.puts "DEBUG RETRYING_SUBMIT: entering loop, actions=#{submit_actions&.size}"; $stderr.flush
 
       while submit_actions && submit_actions.size > 0
 
         # We retry with whatever is didn't succeed
         begin
-          $stderr.puts "DEBUG RETRYING_SUBMIT: calling submit, actions=#{submit_actions.size}"
+          $stderr.puts "DEBUG RETRYING_SUBMIT: calling submit, actions=#{submit_actions.size}"; $stderr.flush
           submit_actions = submit(submit_actions)
-          $stderr.puts "DEBUG RETRYING_SUBMIT: submit returned, remaining=#{submit_actions&.size}"
+          $stderr.puts "DEBUG RETRYING_SUBMIT: submit returned, remaining=#{submit_actions&.size}"; $stderr.flush
           if submit_actions && submit_actions.size > 0
             @logger.info("Retrying individual bulk actions that failed or were rejected by the previous bulk request", count: submit_actions.size)
           end
@@ -215,44 +215,44 @@ module LogStash; module PluginMixins; module ElasticSearch
         # Everything was a success!
         break if !submit_actions || submit_actions.empty?
 
-        $stderr.puts "DEBUG RETRYING_SUBMIT: about to sleep_for_interval(#{sleep_interval}), @stopping=#{@stopping}"
+        $stderr.puts "DEBUG RETRYING_SUBMIT: about to sleep_for_interval(#{sleep_interval}), @stopping=#{@stopping}"; $stderr.flush
         # If we're retrying the action sleep for the recommended interval
         # Double the interval for the next time through to achieve exponential backoff
         sleep_interval = sleep_for_interval(sleep_interval)
-        $stderr.puts "DEBUG RETRYING_SUBMIT: sleep done, new interval=#{sleep_interval}"
+        $stderr.puts "DEBUG RETRYING_SUBMIT: sleep done, new interval=#{sleep_interval}"; $stderr.flush
       end
     end
 
     def sleep_for_interval(sleep_interval)
-      $stderr.puts "DEBUG SLEEP_FOR_INTERVAL: entering, interval=#{sleep_interval}"
+      $stderr.puts "DEBUG SLEEP_FOR_INTERVAL: entering, interval=#{sleep_interval}"; $stderr.flush
       stoppable_sleep(sleep_interval)
-      $stderr.puts "DEBUG SLEEP_FOR_INTERVAL: stoppable_sleep returned"
+      $stderr.puts "DEBUG SLEEP_FOR_INTERVAL: stoppable_sleep returned"; $stderr.flush
       next_sleep_interval(sleep_interval)
     end
 
     def stoppable_sleep(interval)
-      $stderr.puts "DEBUG STOPPABLE_SLEEP: manual impl, interval=#{interval}, @stopping.true?=#{@stopping&.true?}"
+      $stderr.puts "DEBUG STOPPABLE_SLEEP: manual impl, interval=#{interval}, @stopping.true?=#{@stopping&.true?}"; $stderr.flush; $stderr.flush
       sleep_start = Time.now
       iteration = 0
       while (remaining = (interval - (Time.now - sleep_start))) >= 1.0
         iteration += 1
-        $stderr.puts "DEBUG STOPPABLE_SLEEP: iteration=#{iteration}, remaining=#{remaining}, about to sleep(1.0)"
+        $stderr.puts "DEBUG STOPPABLE_SLEEP: iteration=#{iteration}, remaining=#{remaining}, about to sleep(1.0)"; $stderr.flush; $stderr.flush
         sleep(1.0)
-        $stderr.puts "DEBUG STOPPABLE_SLEEP: sleep(1.0) returned, elapsed=#{Time.now - sleep_start}"
+        $stderr.puts "DEBUG STOPPABLE_SLEEP: sleep(1.0) returned, elapsed=#{Time.now - sleep_start}"; $stderr.flush; $stderr.flush
         if @stopping&.true?
-          $stderr.puts "DEBUG STOPPABLE_SLEEP: stopping=true, breaking"
+          $stderr.puts "DEBUG STOPPABLE_SLEEP: stopping=true, breaking"; $stderr.flush; $stderr.flush
           return
         end
         if iteration > 10
-          $stderr.puts "DEBUG STOPPABLE_SLEEP: SAFETY BREAK after 10 iterations"
+          $stderr.puts "DEBUG STOPPABLE_SLEEP: SAFETY BREAK after 10 iterations"; $stderr.flush; $stderr.flush
           return
         end
       end
       if remaining > 0.0
-        $stderr.puts "DEBUG STOPPABLE_SLEEP: final sleep(#{remaining})"
+        $stderr.puts "DEBUG STOPPABLE_SLEEP: final sleep(#{remaining})"; $stderr.flush; $stderr.flush
         sleep(remaining)
       end
-      $stderr.puts "DEBUG STOPPABLE_SLEEP: done, total=#{Time.now - sleep_start}"
+      $stderr.puts "DEBUG STOPPABLE_SLEEP: done, total=#{Time.now - sleep_start}"; $stderr.flush; $stderr.flush
     end
 
     def next_sleep_interval(current_interval)
@@ -345,11 +345,11 @@ module LogStash; module PluginMixins; module ElasticSearch
     # @return response [Hash] which contains 'errors' and processed 'items' entries
     def safe_bulk(actions)
       sleep_interval = @retry_initial_interval
-      $stderr.puts "DEBUG SAFE_BULK: called with #{actions.size} actions"
+      $stderr.puts "DEBUG SAFE_BULK: called with #{actions.size} actions"; $stderr.flush
       begin
-        $stderr.puts "DEBUG SAFE_BULK: calling @client.bulk"
+        $stderr.puts "DEBUG SAFE_BULK: calling @client.bulk"; $stderr.flush
         result = @client.bulk(actions) # returns { 'errors': ..., 'items': ... }
-        $stderr.puts "DEBUG SAFE_BULK: @client.bulk returned successfully"
+        $stderr.puts "DEBUG SAFE_BULK: @client.bulk returned successfully"; $stderr.flush
         result
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError => e
         # If we can't even connect to the server let's just print out the URL (:hosts is actually a URL)
@@ -380,7 +380,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         end
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
-        $stderr.puts "DEBUG SAFE_BULK: BadResponseCodeError #{e.response_code}, will retry after sleep"
+        $stderr.puts "DEBUG SAFE_BULK: BadResponseCodeError #{e.response_code}, will retry after sleep"; $stderr.flush
         @bulk_request_metrics.increment(:failures)
         log_hash = {:code => e.response_code, :url => e.url.sanitized.to_s,
                     :content_length => e.request_body.bytesize, :body => e.response_body}
@@ -397,7 +397,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         end
 
         sleep_interval = sleep_for_interval(sleep_interval)
-        $stderr.puts "DEBUG SAFE_BULK: sleep done, about to retry"
+        $stderr.puts "DEBUG SAFE_BULK: sleep done, about to retry"; $stderr.flush
         if pipeline_shutdown_requested?
           # In case ES side changes access credentials and a pipeline reload is triggered
           # this error becomes a retry on restart
