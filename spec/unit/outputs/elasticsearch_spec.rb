@@ -902,10 +902,31 @@ describe LogStash::Outputs::ElasticSearch do
     before(:each) do
       allow(elasticsearch_output_instance.client).to receive(:logger).and_return(logger_stub)
 
-      allow(elasticsearch_output_instance.client).to receive(:bulk).and_call_original
+      # Use and_wrap_original with a safety valve to prevent infinite retry loops
+      # (e.g. if sleep hangs in the CI environment). After 3 bulk calls, force @stopping
+      # so any retry loop will terminate cleanly.
+      @bulk_call_count = 0
+      allow(elasticsearch_output_instance.client).to receive(:bulk).and_wrap_original do |m, *args|
+        $stderr.puts "DEBUG 413-test: bulk call ##{@bulk_call_count + 1} starting, stopping=#{elasticsearch_output_instance.instance_variable_get(:@stopping)&.true?}"
+        begin
+          result = m.call(*args)
+          $stderr.puts "DEBUG 413-test: bulk call ##{@bulk_call_count + 1} returned normally, result_errors=#{result&.dig('errors')}"
+          result
+        rescue => e
+          $stderr.puts "DEBUG 413-test: bulk call ##{@bulk_call_count + 1} raised #{e.class}: #{e.message[0..100]}"
+          raise
+        ensure
+          @bulk_call_count += 1
+          if @bulk_call_count >= 3
+            $stderr.puts "DEBUG 413-test: safety valve triggered at call ##{@bulk_call_count}, setting @stopping=true"
+            elasticsearch_output_instance.instance_variable_get(:@stopping).make_true
+          end
+        end
+      end
 
       max_bytes = payload_size * 3 / 4 # ensure a failure first attempt
       allow(elasticsearch_output_instance.client.pool).to receive(:post) do |path, params, body|
+        $stderr.puts "DEBUG 413-test: pool.post called, body.length=#{body.length}, max_bytes=#{max_bytes}, will_413=#{body.length > max_bytes}"
         if body.length > max_bytes
           max_bytes *= 2 # ensure a successful retry
           raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(
@@ -921,13 +942,17 @@ describe LogStash::Outputs::ElasticSearch do
     end
 
     it 'retries the 413 until it goes away' do
+      $stderr.puts "DEBUG 413-test: starting 'retries the 413 until it goes away'"
       elasticsearch_output_instance.multi_receive([event])
+      $stderr.puts "DEBUG 413-test: multi_receive returned, bulk_call_count=#{@bulk_call_count}"
 
       expect(elasticsearch_output_instance.client).to have_received(:bulk).twice
     end
 
     it 'logs about payload quantity and size' do
+      $stderr.puts "DEBUG 413-test: starting 'logs about payload quantity and size'"
       elasticsearch_output_instance.multi_receive([event])
+      $stderr.puts "DEBUG 413-test: multi_receive returned, bulk_call_count=#{@bulk_call_count}"
 
       expect(logger_stub).to have_received(:warn)
                                  .with(a_string_matching(/413 Payload Too Large/),
@@ -953,15 +978,26 @@ describe LogStash::Outputs::ElasticSearch do
       expect(subject.logger).to receive(:error).with(/Attempted to send a bulk request/i, anything).at_least(:once)
 
       expect(subject.client).to receive(:bulk).at_least(:twice).and_wrap_original do |m, *args|
+        $stderr.puts "DEBUG timeout-test: bulk call ##{call_count + 1} starting, stopping=#{subject.instance_variable_get(:@stopping)&.true?}"
         begin
-          m.call(*args)
+          result = m.call(*args)
+          $stderr.puts "DEBUG timeout-test: bulk call ##{call_count + 1} returned normally"
+          result
+        rescue => e
+          $stderr.puts "DEBUG timeout-test: bulk call ##{call_count + 1} raised #{e.class}: #{e.message[0..100]}"
+          raise
         ensure
           call_count += 1
-          subject.instance_variable_get(:@stopping).make_true if call_count >= 3
+          if call_count >= 3
+            $stderr.puts "DEBUG timeout-test: safety valve triggered at call ##{call_count}, setting @stopping=true"
+            subject.instance_variable_get(:@stopping).make_true
+          end
         end
       end
 
+      $stderr.puts "DEBUG timeout-test: starting multi_receive"
       subject.multi_receive([LogStash::Event.new])
+      $stderr.puts "DEBUG timeout-test: multi_receive returned, call_count=#{call_count}"
     end
   end
 
