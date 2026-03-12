@@ -118,14 +118,23 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
       stop_resurrectionist
 
       logger.debug  "Waiting for in use manticore connections"
+      $stderr.puts "DEBUG POOL CLOSE: about to wait_for_in_use_connections, url_info=#{@state_mutex.synchronize { @url_info.map {|u,m| [u.to_s, m] } }}"
       wait_for_in_use_connections
+      $stderr.puts "DEBUG POOL CLOSE: wait_for_in_use_connections done"
 
       logger.debug("Closing adapter #{@adapter}")
       @adapter.close
     end
 
     def wait_for_in_use_connections
+      count = 0
       until in_use_connections.empty?
+        $stderr.puts "DEBUG POOL: blocked on in_use connections (iteration #{count}): #{in_use_connections.inspect}"
+        count += 1
+        if count > 30
+          $stderr.puts "DEBUG POOL: GIVING UP after 30 iterations, connections still in use!"
+          break
+        end
         logger.info "Blocked on shutdown to in use connections #{@state_mutex.synchronize {@url_info}}"
         sleep 1
       end
@@ -481,6 +490,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
 
         pick, pick_meta = eligible_set.sample
         pick_meta[:in_use] += 1
+        $stderr.puts "DEBUG POOL GET_CONNECTION: #{pick} in_use now #{pick_meta[:in_use]}, thread=#{Thread.current}"
 
         [pick, pick_meta]
       end
@@ -489,7 +499,10 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     def return_connection(url)
       @state_mutex.synchronize do
         info = @url_info[url]
-        info[:in_use] -= 1 if info # Guard against the condition where the connection has already been deleted
+        if info
+          info[:in_use] -= 1
+          $stderr.puts "DEBUG POOL RETURN_CONNECTION: #{url} in_use now #{info[:in_use]}, thread=#{Thread.current}"
+        end
       end
     end
 

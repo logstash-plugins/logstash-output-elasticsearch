@@ -46,8 +46,10 @@ describe LogStash::Outputs::ElasticSearch do
     end
   end
 
-  after(:each) do
+  after(:each) do |example|
+    $stderr.puts "DEBUG SPEC AFTER: closing subject for: #{example.full_description}"
     subject.close
+    $stderr.puts "DEBUG SPEC AFTER: close returned for: #{example.full_description}"
   end
 
   context "check aborting of a batch" do
