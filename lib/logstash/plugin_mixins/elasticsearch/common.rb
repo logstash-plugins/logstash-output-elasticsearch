@@ -189,12 +189,15 @@ module LogStash; module PluginMixins; module ElasticSearch
       submit_actions = actions
 
       sleep_interval = @retry_initial_interval
+      $stderr.puts "DEBUG RETRYING_SUBMIT: entering loop, actions=#{submit_actions&.size}"
 
       while submit_actions && submit_actions.size > 0
 
         # We retry with whatever is didn't succeed
         begin
+          $stderr.puts "DEBUG RETRYING_SUBMIT: calling submit, actions=#{submit_actions.size}"
           submit_actions = submit(submit_actions)
+          $stderr.puts "DEBUG RETRYING_SUBMIT: submit returned, remaining=#{submit_actions&.size}"
           if submit_actions && submit_actions.size > 0
             @logger.info("Retrying individual bulk actions that failed or were rejected by the previous bulk request", count: submit_actions.size)
           end
@@ -317,8 +320,12 @@ module LogStash; module PluginMixins; module ElasticSearch
     # @return response [Hash] which contains 'errors' and processed 'items' entries
     def safe_bulk(actions)
       sleep_interval = @retry_initial_interval
+      $stderr.puts "DEBUG SAFE_BULK: called with #{actions.size} actions"
       begin
-        @client.bulk(actions) # returns { 'errors': ..., 'items': ... }
+        $stderr.puts "DEBUG SAFE_BULK: calling @client.bulk"
+        result = @client.bulk(actions) # returns { 'errors': ..., 'items': ... }
+        $stderr.puts "DEBUG SAFE_BULK: @client.bulk returned successfully"
+        result
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::HostUnreachableError => e
         # If we can't even connect to the server let's just print out the URL (:hosts is actually a URL)
         # and let the user sort it out from there
@@ -348,6 +355,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         end
         retry unless @stopping.true?
       rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
+        $stderr.puts "DEBUG SAFE_BULK: BadResponseCodeError #{e.response_code}, will retry after sleep"
         @bulk_request_metrics.increment(:failures)
         log_hash = {:code => e.response_code, :url => e.url.sanitized.to_s,
                     :content_length => e.request_body.bytesize, :body => e.response_body}
@@ -364,6 +372,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         end
 
         sleep_interval = sleep_for_interval(sleep_interval)
+        $stderr.puts "DEBUG SAFE_BULK: sleep done, about to retry"
         if pipeline_shutdown_requested?
           # In case ES side changes access credentials and a pipeline reload is triggered
           # this error becomes a retry on restart

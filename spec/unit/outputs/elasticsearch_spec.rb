@@ -907,9 +907,13 @@ describe LogStash::Outputs::ElasticSearch do
       allow(elasticsearch_output_instance.client).to receive(:bulk).and_call_original
 
       max_bytes = payload_size * 3 / 4 # ensure a failure first attempt
+      call_count = 0
       allow(elasticsearch_output_instance.client.pool).to receive(:post) do |path, params, body|
+        call_count += 1
+        $stderr.puts "DEBUG 413 STUB: call ##{call_count}, body.length=#{body.length}, max_bytes=#{max_bytes}"
         if body.length > max_bytes
           max_bytes *= 2 # ensure a successful retry
+          $stderr.puts "DEBUG 413 STUB: raising 413"
           raise ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError.new(
             413,
             "test-url",
@@ -917,6 +921,7 @@ describe LogStash::Outputs::ElasticSearch do
             ""
           )
         else
+          $stderr.puts "DEBUG 413 STUB: returning 200"
           double("Response", :code => 200, :body => '{"errors":false,"items":[{"index":{"status":200,"result":"created"}}]}')
         end
       end
