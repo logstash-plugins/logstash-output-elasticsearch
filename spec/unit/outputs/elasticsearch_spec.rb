@@ -947,18 +947,21 @@ describe LogStash::Outputs::ElasticSearch do
       }
     end
 
-    before do
-      # Expect a timeout to be logged.
-      expect(subject.logger).to receive(:error).with(/Attempted to send a bulk request/i, anything).at_least(:once)
-      expect(subject.client).to receive(:bulk).at_least(:twice).and_call_original
-    end
-
     it "should fail after the timeout" do
-      #pending("This is tricky now that we do healthchecks on instantiation")
-      Thread.new { subject.multi_receive([LogStash::Event.new]) }
+      call_count = 0
 
-      # Allow the timeout to occur
-      sleep 6
+      expect(subject.logger).to receive(:error).with(/Attempted to send a bulk request/i, anything).at_least(:once)
+
+      expect(subject.client).to receive(:bulk).at_least(:twice).and_wrap_original do |m, *args|
+        begin
+          m.call(*args)
+        ensure
+          call_count += 1
+          subject.instance_variable_get(:@stopping).make_true if call_count >= 3
+        end
+      end
+
+      subject.multi_receive([LogStash::Event.new])
     end
   end
 
