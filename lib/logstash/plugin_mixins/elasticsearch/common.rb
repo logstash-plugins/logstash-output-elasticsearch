@@ -231,9 +231,28 @@ module LogStash; module PluginMixins; module ElasticSearch
     end
 
     def stoppable_sleep(interval)
-      $stderr.puts "DEBUG STOPPABLE_SLEEP: calling Stud.stoppable_sleep(#{interval}), @stopping=#{@stopping}, @stopping.true?=#{@stopping&.true?}"
-      Stud.stoppable_sleep(interval) { @stopping.true? }
-      $stderr.puts "DEBUG STOPPABLE_SLEEP: returned"
+      $stderr.puts "DEBUG STOPPABLE_SLEEP: manual impl, interval=#{interval}, @stopping.true?=#{@stopping&.true?}"
+      sleep_start = Time.now
+      iteration = 0
+      while (remaining = (interval - (Time.now - sleep_start))) >= 1.0
+        iteration += 1
+        $stderr.puts "DEBUG STOPPABLE_SLEEP: iteration=#{iteration}, remaining=#{remaining}, about to sleep(1.0)"
+        sleep(1.0)
+        $stderr.puts "DEBUG STOPPABLE_SLEEP: sleep(1.0) returned, elapsed=#{Time.now - sleep_start}"
+        if @stopping&.true?
+          $stderr.puts "DEBUG STOPPABLE_SLEEP: stopping=true, breaking"
+          return
+        end
+        if iteration > 10
+          $stderr.puts "DEBUG STOPPABLE_SLEEP: SAFETY BREAK after 10 iterations"
+          return
+        end
+      end
+      if remaining > 0.0
+        $stderr.puts "DEBUG STOPPABLE_SLEEP: final sleep(#{remaining})"
+        sleep(remaining)
+      end
+      $stderr.puts "DEBUG STOPPABLE_SLEEP: done, total=#{Time.now - sleep_start}"
     end
 
     def next_sleep_interval(current_interval)
