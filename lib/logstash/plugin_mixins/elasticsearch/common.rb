@@ -215,19 +215,25 @@ module LogStash; module PluginMixins; module ElasticSearch
         # Everything was a success!
         break if !submit_actions || submit_actions.empty?
 
+        $stderr.puts "DEBUG RETRYING_SUBMIT: about to sleep_for_interval(#{sleep_interval}), @stopping=#{@stopping}"
         # If we're retrying the action sleep for the recommended interval
         # Double the interval for the next time through to achieve exponential backoff
         sleep_interval = sleep_for_interval(sleep_interval)
+        $stderr.puts "DEBUG RETRYING_SUBMIT: sleep done, new interval=#{sleep_interval}"
       end
     end
 
     def sleep_for_interval(sleep_interval)
+      $stderr.puts "DEBUG SLEEP_FOR_INTERVAL: entering, interval=#{sleep_interval}"
       stoppable_sleep(sleep_interval)
+      $stderr.puts "DEBUG SLEEP_FOR_INTERVAL: stoppable_sleep returned"
       next_sleep_interval(sleep_interval)
     end
 
     def stoppable_sleep(interval)
+      $stderr.puts "DEBUG STOPPABLE_SLEEP: calling Stud.stoppable_sleep(#{interval}), @stopping=#{@stopping}, @stopping.true?=#{@stopping&.true?}"
       Stud.stoppable_sleep(interval) { @stopping.true? }
+      $stderr.puts "DEBUG STOPPABLE_SLEEP: returned"
     end
 
     def next_sleep_interval(current_interval)
