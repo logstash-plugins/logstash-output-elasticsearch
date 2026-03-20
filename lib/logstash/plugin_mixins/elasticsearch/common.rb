@@ -1,4 +1,5 @@
 require "logstash/outputs/elasticsearch/template_manager"
+require "logstash/json"
 
 module LogStash; module PluginMixins; module ElasticSearch
   module Common
@@ -237,8 +238,8 @@ module LogStash; module PluginMixins; module ElasticSearch
 
       if @dlq_writer
         # TODO: Change this to send a map with { :status => status, :action => action } in the future
-        detailed_message = "#{message} status: #{status}, action: #{action_params}, response: #{response}"
-        @dlq_writer.write(event, "#{detailed_message}")
+        detailed_message = "#{message} status: #{status}, action: #{LogStash::Json.dump(action_params)}, response: #{LogStash::Json.dump(response)}"
+        @dlq_writer.write(event, detailed_message)
       else
         log_level = dig_value(response, 'index', 'error', 'type') == 'invalid_index_name_exception' ? :error : :warn
 
