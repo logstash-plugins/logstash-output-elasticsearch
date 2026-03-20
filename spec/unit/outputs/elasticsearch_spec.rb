@@ -1475,7 +1475,7 @@ describe LogStash::Outputs::ElasticSearch do
             expect( event ).to be_a LogStash::Event
             expect( event ).to be events.first
             expect( reason ).to start_with "Could not index event to Elasticsearch. status: #{error_code}, action: [\"index\""
-            expect( reason ).to match /_id\s?=>\s?"bar".*"foo"\s?=>\s?"bar".*response:.*"reason"\s?=>\?"TEST"/
+            expect( reason ).to match /_id\s?=>\s?"bar".*"foo"\s?=>\s?"bar".*response:.*"reason"\s?=>\s?"TEST"/
 
             method.call(*args) # won't hurt to call LogStash::Util::DummyDeadLetterQueueWriter
           end.once
