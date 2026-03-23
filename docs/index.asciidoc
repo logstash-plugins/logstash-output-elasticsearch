@@ -139,6 +139,15 @@ output {
 
 ==== Writing to different indices: best practices
 
+.Important considerations for time-based routing
+****
+Time-based routing in this plugin follows *one* model at a time. _Do not_ mix models.
+
+* *Data streams.* Use <<plugins-{type}s-{plugin}-data_stream,`data_stream`>> and related settings.
+* *Index lifecycle management (ILM) rollover.* The value you set using <<plugins-{type}s-{plugin}-ilm_pattern,`ilm_pattern`>> is used for naming, and should align with {ref}/indices-rollover-index.html#_using_date_math_with_the_rollover_api[Elasticsearch rollover naming].
+* *Explicit index names.* Use the <<plugins-{type}s-{plugin}-index,`index`>> setting and `%{+...}` syntax for daily (or other) rotation. 
+****
+
 NOTE: You cannot use dynamic variable substitution when `ilm_enabled` is `true` 
 and when using `ilm_rollover_alias`.
 
