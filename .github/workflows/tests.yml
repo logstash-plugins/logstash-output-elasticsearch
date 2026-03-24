@@ -1,0 +1,17 @@
+name: Unit Tests
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  tests:
+    uses: logstash-plugins/.ci/.github/workflows/test.yml@feature/github-actions
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+    with:
+      timeout-minutes: 60

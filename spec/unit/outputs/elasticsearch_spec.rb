@@ -901,6 +901,9 @@ describe LogStash::Outputs::ElasticSearch do
 
     before(:each) do
       allow(elasticsearch_output_instance.client).to receive(:logger).and_return(logger_stub)
+      # Stub the output plugin's own @logger to prevent submit()/retrying_submit()
+      # from logging the full 15MB action payload on each retry, which floods stdout.
+      elasticsearch_output_instance.instance_variable_set(:@logger, logger_stub)
 
       allow(elasticsearch_output_instance.client).to receive(:bulk).and_call_original
 
