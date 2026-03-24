@@ -238,7 +238,12 @@ module LogStash; module PluginMixins; module ElasticSearch
       if @dlq_writer
         # TODO: Change this to send a map with { :status => status, :action => action } in the future
         detailed_message = "#{message} status: #{status}, action: #{action_params}, response: #{response}"
-        @dlq_writer.write(event, "#{detailed_message}")
+        begin
+          @dlq_writer.write(event, "#{detailed_message}")
+        rescue => e
+          @logger.error("Failed to write event to DLQ",
+                        error_message: e.message, exception: e.class,
+                        status: status, action: action_params, response: response)
       else
         log_level = dig_value(response, 'index', 'error', 'type') == 'invalid_index_name_exception' ? :error : :warn
 
@@ -273,6 +278,7 @@ module LogStash; module PluginMixins; module ElasticSearch
       end
 
       actions_to_retry = []
+      dlq_count = 0
       responses.each_with_index do |response,idx|
         action_type, action_props = response.first
 
@@ -296,6 +302,7 @@ module LogStash; module PluginMixins; module ElasticSearch
         elsif @dlq_codes.include?(status)
           handle_dlq_response("Could not index event to Elasticsearch.", action, status, response)
           @document_level_metrics.increment(:dlq_routed)
+          dlq_count += 1
           next
         else
           # only log what the user whitelisted
@@ -303,6 +310,10 @@ module LogStash; module PluginMixins; module ElasticSearch
           @logger.info "Retrying failed action", status: status, action: action, error: error if log_failure_type?(error)
           actions_to_retry << action
         end
+      end
+
+      if @dlq_writer && dlq_count > 0
+        @logger.warn("Events could not be indexed and routed to DLQ, count: #{dlq_count}")
       end
 
       actions_to_retry
