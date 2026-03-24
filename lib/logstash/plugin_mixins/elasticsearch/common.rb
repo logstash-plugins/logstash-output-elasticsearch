@@ -244,6 +244,7 @@ module LogStash; module PluginMixins; module ElasticSearch
           @logger.error("Failed to write event to DLQ",
                         error_message: e.message, exception: e.class,
                         status: status, action: action_params, response: response)
+        end
       else
         log_level = dig_value(response, 'index', 'error', 'type') == 'invalid_index_name_exception' ? :error : :warn
 
