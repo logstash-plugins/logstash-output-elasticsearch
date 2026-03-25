@@ -280,7 +280,7 @@ module LogStash; module PluginMixins; module ElasticSearch
       end
 
       actions_to_retry = []
-      dlq_count = 0
+      dlq_reouted_stats = {}
       responses.each_with_index do |response,idx|
         action_type, action_props = response.first
 
@@ -304,7 +304,11 @@ module LogStash; module PluginMixins; module ElasticSearch
         elsif @dlq_codes.include?(status)
           handle_dlq_response("Could not index event to Elasticsearch.", action, status, response)
           @document_level_metrics.increment(:dlq_routed)
-          dlq_count += 1
+          if dlq_reouted_stats.key?(status)
+            dlq_reouted_stats[status][:count] += 1
+          else
+            dlq_reouted_stats[status] = { :count => 1, :sample_event => { :action => action, :response => response } }
+          end
           next
         else
           # only log what the user whitelisted
@@ -314,8 +318,9 @@ module LogStash; module PluginMixins; module ElasticSearch
         end
       end
 
-      if @dlq_writer && dlq_count > 0
-        @logger.warn("Events could not be indexed and routed to DLQ, count: #{dlq_count}")
+      if @dlq_writer && !dlq_reouted_stats.empty?
+        total = dlq_reouted_stats.values.sum { |entry| entry[:count] }
+        @logger.warn("Events could not be indexed and routing to DLQ", :count => total, :dlq_reouted_stats => dlq_reouted_stats)
       end
 
       actions_to_retry
