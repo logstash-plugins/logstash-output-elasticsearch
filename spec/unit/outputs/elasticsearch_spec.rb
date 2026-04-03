@@ -264,6 +264,58 @@ describe LogStash::Outputs::ElasticSearch do
       end
     end
 
+    describe "dynamic ILM resolution" do
+      let(:options) do
+        super().merge(
+          "ilm_enabled" => true,
+          "ilm_rollover_alias" => "%{[service]}",
+          "ilm_policy" => "%{[service]}-policy"
+        )
+      end
+
+      let(:event) { LogStash::Event.new("service" => "checkout") }
+
+      before do
+        allow(subject).to receive(:ilm_in_use?).and_return(true)
+      end
+
+      it "uses resolved rollover alias as the target index" do
+        allow(subject.client).to receive(:ilm_policy_exists?).with("checkout-policy").and_return(true)
+        allow(subject.client).to receive(:rollover_alias_exists?).with("checkout").and_return(true)
+
+        expect(subject.send(:event_action_tuple, event)[1]).to include(:_index => "checkout")
+      end
+
+      it "validates dynamic policy and alias once per resolved combination" do
+        expect(subject.client).to receive(:ilm_policy_exists?).with("checkout-policy").once.and_return(true)
+        expect(subject.client).to receive(:rollover_alias_exists?).with("checkout").once.and_return(true)
+
+        subject.send(:event_action_tuple, event)
+        subject.send(:event_action_tuple, event)
+      end
+
+      it "raises an event mapping error when policy is missing" do
+        allow(subject.client).to receive(:ilm_policy_exists?).with("checkout-policy").and_return(false)
+
+        expect { subject.send(:event_action_tuple, event) }
+          .to raise_error(LogStash::Outputs::ElasticSearch::EventMappingError, /Dynamic ILM policy 'checkout-policy' does not exist/)
+      end
+
+      it "raises an event mapping error when placeholders are unresolved" do
+        unresolved_event = LogStash::Event.new({})
+
+        expect { subject.send(:event_action_tuple, unresolved_event) }
+          .to raise_error(LogStash::Outputs::ElasticSearch::EventMappingError, /contains unresolved placeholders/)
+      end
+
+      it "skips startup ILM bootstrap in dynamic mode" do
+        expect(subject).not_to receive(:maybe_create_rollover_alias)
+        expect(subject).not_to receive(:maybe_create_ilm_policy)
+
+        subject.send(:setup_ilm)
+      end
+    end
+
     describe "with event integration metadata" do
       let(:event_fields) {{}}
       let(:event) { LogStash::Event.new(event_fields)}
