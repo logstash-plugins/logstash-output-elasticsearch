@@ -570,7 +570,6 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   def resolve_index!(event, event_index)
     if ilm_in_use? && ilm_has_sprintf?
       dynamic_alias = resolve_dynamic_ilm_rollover_alias!(event)
-      raise IndexInterpolationError, dynamic_alias if dynamic_alias.match(/%{.*?}/) && dlq_on_failed_indexname_interpolation
       return dynamic_alias
     end
 
