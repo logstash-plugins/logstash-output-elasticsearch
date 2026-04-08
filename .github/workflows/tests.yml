@@ -2,9 +2,16 @@ name: Unit Tests
 
 on:
   push:
+    branches:
+      - main
+      - '11.x'
   pull_request:
     branches:
       - main
+      - '11.x'
+  schedule:
+    # Run daily at 08:00 UTC on active branches
+    - cron: '0 8 * * *'
   workflow_dispatch:
 
 jobs:
@@ -12,6 +19,6 @@ jobs:
     uses: logstash-plugins/.ci/.github/workflows/test.yml@feature/github-actions
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/11.x' }}
     with:
       timeout-minutes: 60
