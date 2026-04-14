@@ -241,7 +241,6 @@ module LogStash; module PluginMixins; module ElasticSearch
         @dlq_writer.write(event, "#{detailed_message}")
       else
         log_level = dig_value(response, 'index', 'error', 'type') == 'invalid_index_name_exception' ? :error : :warn
-
         @logger.public_send(log_level, message, status: status, action: action_params, response: response)
       end
     end
@@ -273,7 +272,7 @@ module LogStash; module PluginMixins; module ElasticSearch
       end
 
       actions_to_retry = []
-      dlq_reouted_stats = {}
+      dlq_routed_stats = {}
       responses.each_with_index do |response,idx|
         action_type, action_props = response.first
 
@@ -297,10 +296,10 @@ module LogStash; module PluginMixins; module ElasticSearch
         elsif @dlq_codes.include?(status)
           handle_dlq_response("Could not index event to Elasticsearch.", action, status, response)
           @document_level_metrics.increment(:dlq_routed)
-          if dlq_reouted_stats.key?(status)
-            dlq_reouted_stats[status][:count] += 1
+          if dlq_routed_stats.key?(status)
+            dlq_routed_stats[status][:count] += 1
           else
-            dlq_reouted_stats[status] = { :count => 1, :sample_event => { :action => action, :response => response } }
+            dlq_routed_stats[status] = { :count => 1, :sample_event => { :action => action, :response => response } }
           end
           next
         else
@@ -311,9 +310,9 @@ module LogStash; module PluginMixins; module ElasticSearch
         end
       end
 
-      if @dlq_writer && !dlq_reouted_stats.empty?
-        total = dlq_reouted_stats.values.sum { |entry| entry[:count] }
-        @logger.warn("Events could not be indexed and routing to DLQ", :count => total, :dlq_reouted_stats => dlq_reouted_stats)
+      if @dlq_writer && !dlq_routed_stats.empty?
+        total = dlq_routed_stats.values.sum { |entry| entry[:count] }
+        @logger.warn("Events could not be indexed and routing to DLQ", :count => total, :dlq_routed_stats => dlq_routed_stats)
       end
 
       actions_to_retry
