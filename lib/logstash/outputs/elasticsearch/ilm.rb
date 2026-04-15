@@ -4,10 +4,53 @@ module LogStash; module Outputs; class ElasticSearch
     ILM_POLICY_PATH = "default-ilm-policy.json"
 
     def setup_ilm
+      return if ilm_has_sprintf?
+
       logger.warn("Overwriting supplied index #{@index} with rollover alias #{@ilm_rollover_alias}") unless default_index?(@index)
       @index = @ilm_rollover_alias
       maybe_create_rollover_alias
       maybe_create_ilm_policy
+    end
+
+    def ilm_has_sprintf?
+      (@ilm_rollover_alias && @ilm_rollover_alias.match(/%{.*?}/)) ||
+        (@ilm_policy && @ilm_policy.match(/%{.*?}/))
+    end
+
+    def resolve_dynamic_ilm_rollover_alias!(event)
+      resolve_dynamic_ilm_value!(event, @ilm_rollover_alias, "ilm_rollover_alias")
+    end
+
+    def resolve_dynamic_ilm_policy!(event)
+      resolve_dynamic_ilm_value!(event, @ilm_policy, "ilm_policy")
+    end
+
+    def ensure_dynamic_ilm_resources!(event)
+      return unless ilm_in_use? && ilm_has_sprintf?
+
+      resolved_alias = resolve_dynamic_ilm_rollover_alias!(event)
+      resolved_policy = resolve_dynamic_ilm_policy!(event)
+
+      @dynamic_ilm_validation_lock ||= Mutex.new
+      @dynamic_ilm_validated_keys ||= {}
+      validation_key = "#{resolved_alias}|#{resolved_policy}"
+      return if @dynamic_ilm_validated_keys[validation_key]
+
+      @dynamic_ilm_validation_lock.synchronize do
+        return if @dynamic_ilm_validated_keys[validation_key]
+
+        unless client.ilm_policy_exists?(resolved_policy)
+          raise EventMappingError, "Dynamic ILM policy '#{resolved_policy}' does not exist. " \
+            "Pre-create policy, template, and rollover alias resources before using dynamic ILM."
+        end
+
+        unless client.rollover_alias_exists?(resolved_alias)
+          raise EventMappingError, "Dynamic ILM rollover alias '#{resolved_alias}' does not exist. " \
+            "Pre-create policy, template, and rollover alias resources before using dynamic ILM."
+        end
+
+        @dynamic_ilm_validated_keys[validation_key] = true
+      end
     end
 
     def ilm_in_use?
@@ -31,6 +74,20 @@ module LogStash; module Outputs; class ElasticSearch
     end
 
     private
+
+    def resolve_dynamic_ilm_value!(event, pattern, setting_name)
+      resolved = event.sprintf(pattern)
+
+      if resolved.nil? || resolved.empty?
+        raise EventMappingError, "#{setting_name} resolved to empty value from pattern: #{pattern}"
+      end
+
+      if resolved.match(/%{.*?}/)
+        raise EventMappingError, "#{setting_name} contains unresolved placeholders: #{resolved}"
+      end
+
+      resolved
+    end
 
     def ilm_alias_set?
       default_index?(@index) || !default_rollover_alias?(@ilm_rollover_alias)

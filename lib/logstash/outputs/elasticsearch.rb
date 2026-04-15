@@ -450,6 +450,8 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
 
   # Convert the event into a 3-tuple of action, params and event hash
   def event_action_tuple(event)
+    ensure_dynamic_ilm_resources!(event) if ilm_in_use? && ilm_has_sprintf?
+
     params = common_event_params(event)
     params[:_type] = get_event_type(event) if use_event_type?(nil)
 
@@ -566,6 +568,11 @@ class LogStash::Outputs::ElasticSearch < LogStash::Outputs::Base
   private :resolve_document_id
 
   def resolve_index!(event, event_index)
+    if ilm_in_use? && ilm_has_sprintf?
+      dynamic_alias = resolve_dynamic_ilm_rollover_alias!(event)
+      return dynamic_alias
+    end
+
     sprintf_index = @event_target.call(event)
     raise IndexInterpolationError, sprintf_index if sprintf_index.match(/%{.*?}/) && dlq_on_failed_indexname_interpolation
     # if it's not a data stream, sprintf_index is the @index with resolved placeholders.
