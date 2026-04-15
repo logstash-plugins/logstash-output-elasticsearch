@@ -1039,7 +1039,10 @@ Define the type of script referenced by "script" variable
   * Value type is <<string,string>>
   * Default value is `"event"`
 
-Set variable name passed to script (scripted update)
+Set variable name passed to script (scripted update).
+
+Logstash will send the content of the event in a variable inside the `params`.
+See https://www.elastic.co/guide/en/elasticsearch/reference/master/modules-scripting-using.html#_script_parameters
 
 [id="plugins-{type}s-{plugin}-scripted_upsert"]
 ===== `scripted_upsert`
