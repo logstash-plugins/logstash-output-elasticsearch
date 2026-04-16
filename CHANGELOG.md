@@ -1,3 +1,6 @@
+## 12.1.3
+ - [DOC] Update docs to present time-based routing models, and clarify that only one model can be in use at a time [#1252](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1252)
+
 ## 12.1.2
  - Fix: replace deprecated `File.exists?` with `File.exist?` for Ruby 3.4 (JRuby 10) compatibility [#1238](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1238)
 
