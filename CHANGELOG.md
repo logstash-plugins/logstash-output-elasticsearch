@@ -1,3 +1,6 @@
+## 12.1.3
+ - Improves the logging experience when DLQ used [#1253](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1253)
+
 ## 12.1.2
  - Fix: replace deprecated `File.exists?` with `File.exist?` for Ruby 3.4 (JRuby 10) compatibility [#1238](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1238)
 
