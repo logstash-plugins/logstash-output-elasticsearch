@@ -237,7 +237,7 @@ module LogStash; module Outputs; class ElasticSearch;
       @pool.close
     end
 
-    def calculate_property(uris, property, default, sniff_check)
+    def calculate_property(uris, property, default, sniff_check, allow_empty_string = false)
       values = uris.map(&property).uniq
 
       if sniff_check && values.size > 1
@@ -246,8 +246,8 @@ module LogStash; module Outputs; class ElasticSearch;
 
       uri_value = values.first
 
-      default = nil if default.is_a?(String) && default.empty? # Blanks are as good as nil
-      uri_value = nil if uri_value.is_a?(String) && uri_value.empty?
+      default = nil if !allow_empty_string && default.is_a?(String) && default.empty? # Blanks are as good as nil
+      uri_value = nil if !allow_empty_string && uri_value.is_a?(String) && uri_value.empty?
 
       if default && uri_value && (default != uri_value)
         raise LogStash::ConfigurationError, "Explicit value for '#{property}' was declared, but it is different in one of the URLs given! Please make sure your URLs are inline with explicit values. The URLs have the property set to '#{uri_value}', but it was also set to '#{default}' explicitly"
@@ -265,7 +265,7 @@ module LogStash; module Outputs; class ElasticSearch;
     end
 
     def password
-      calculate_property(uris, :password, @options[:password], sniffing)
+      calculate_property(uris, :password, @options[:password], sniffing, true)
     end
 
     def path
