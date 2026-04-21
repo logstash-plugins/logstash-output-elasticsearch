@@ -1,0 +1,27 @@
+# Plugin-specific tests for logstash-integration-kafka.
+#
+# The base matrix (unit + integration) is applied automatically by the shared CI.
+# Only declare additional plugin-specific test groups here.
+#
+# Kafka-specific test behaviour (Kafka/Confluent version pairs) is handled
+# by the plugin's own .ci/run.sh which overrides the shared run.sh.
+
+jobs:
+  - group: "Integration Tests"
+    steps:
+      - env: INTEGRATION=true LOG_LEVEL=info ELASTIC_STACK_VERSION=8.current
+      - env: INTEGRATION=true LOG_LEVEL=info ELASTIC_STACK_VERSION=9.current
+      - env: INTEGRATION=true SNAPSHOT=true LOG_LEVEL=info ELASTIC_STACK_VERSION=8.current
+      - env: INTEGRATION=true SNAPSHOT=true LOG_LEVEL=info ELASTIC_STACK_VERSION=9.current
+      - env: INTEGRATION=true SNAPSHOT=true LOG_LEVEL=info ELASTIC_STACK_VERSION=main
+  - group: "Secure Integration Tests"
+    steps:
+      - env: SECURE_INTEGRATION=true INTEGRATION=true LOG_LEVEL=info ELASTIC_STACK_VERSION=8.current
+      - env: SECURE_INTEGRATION=true INTEGRATION=true LOG_LEVEL=info ELASTIC_STACK_VERSION=8.current ES_SSL_KEY_INVALID=true
+      - env: SECURE_INTEGRATION=true INTEGRATION=true LOG_LEVEL=info ELASTIC_STACK_VERSION=8.current ES_SSL_SUPPORTED_PROTOCOLS=TLSv1.3
+      - env: SECURE_INTEGRATION=true INTEGRATION=true LOG_LEVEL=info ELASTIC_STACK_VERSION=9.current
+      - env: SECURE_INTEGRATION=true INTEGRATION=true LOG_LEVEL=info ELASTIC_STACK_VERSION=9.current ES_SSL_KEY_INVALID=true
+      - env: SECURE_INTEGRATION=true INTEGRATION=true LOG_LEVEL=info ELASTIC_STACK_VERSION=9.current ES_SSL_SUPPORTED_PROTOCOLS=TLSv1.3
+      - env: SECURE_INTEGRATION=true INTEGRATION=true LOG_LEVEL=info SNAPSHOT=true ELASTIC_STACK_VERSION=8.current
+      - env: SECURE_INTEGRATION=true INTEGRATION=true LOG_LEVEL=info SNAPSHOT=true ELASTIC_STACK_VERSION=9.current
+      - env: SECURE_INTEGRATION=true INTEGRATION=true LOG_LEVEL=info SNAPSHOT=true ELASTIC_STACK_VERSION=main
