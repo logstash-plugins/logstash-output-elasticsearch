@@ -1,4 +1,4 @@
-name: Secure Integration Tests
+name: Plugin Secure Integration Tests
 
 on:
   push:
@@ -16,7 +16,7 @@ on:
 
 jobs:
   secure-integration-tests:
-    uses: logstash-plugins/.ci/.github/workflows/secure-integration-tests.yml@feature/github-actions
+    uses: logstash-plugins/.ci/.github/workflows/secure-integration-tests.yml@1.x
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/11.x' }}
