@@ -1,5 +1,0 @@
-- label: "Pull request pipeline"
-  command: |
-    #!/usr/bin/env bash
-    set -eo pipefail
-    echo "--- Pull request pipeline starting..."
