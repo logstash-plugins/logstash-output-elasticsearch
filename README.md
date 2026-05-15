@@ -1,6 +1,6 @@
 # Logstash Plugin
 
-[![Unit Tests](https://github.com/logstash-plugins/logstash-output-elasticsearch/actions/workflows/tests.yml/badge.svg)](https://github.com/logstash-plugins/logstash-output-elasticsearch/actions/workflows/tests.yml)
+[![Unit Tests](https://github.com/logstash-plugins/logstash-output-elasticsearch/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/logstash-plugins/logstash-output-elasticsearch/actions/workflows/unit-tests.yml)
 [![Secure Integration Tests](https://github.com/logstash-plugins/logstash-output-elasticsearch/actions/workflows/secure-integration-tests.yml/badge.svg)](https://github.com/logstash-plugins/logstash-output-elasticsearch/actions/workflows/secure-integration-tests.yml)
 [![Integration Tests](https://github.com/logstash-plugins/logstash-output-elasticsearch/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/logstash-plugins/logstash-output-elasticsearch/actions/workflows/integration-tests.yml)
 
