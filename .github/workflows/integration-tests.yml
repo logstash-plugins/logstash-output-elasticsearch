@@ -17,6 +17,7 @@ on:
 jobs:
   integration-tests:
     uses: logstash-plugins/.ci/.github/workflows/integration-tests.yml@1.x
+    secrets: inherit
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/11.x' }}
