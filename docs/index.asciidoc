@@ -117,6 +117,21 @@ output {
 }
 -----
 
+**Example: Configuration for Winlogbeats to Output to Winlogbeat created Data Stream**
+
+[source,sh]
+-----
+output {
+    elasticsearch {
+        hosts => "hostname"
+        index => "winlogbeat-8.4.3"
+        pipeline => "winlogbeat-8.4.3-routing"
+        action => "create"
+    }
+}
+-----
+
+
 This example shows the minimal settings for processing data streams. Events
 with `data_stream.*`` fields are routed to the appropriate data streams. If the
 fields are missing, routing defaults to `logs-generic-default`.
