@@ -843,9 +843,9 @@ The indexing target to write events to.
 Can point to an {ref}/index-mgmt.html[index], {ref}/aliases.html[alias], or {ref}/data-streams.html[data stream]. 
 This can be dynamic using the `%{foo}` syntax.
 
-Dynamic syntax might make sense with data streams and aliases, but results should be
-validated against cluster index templates and Index lifecycle management (ILM) setup.
-Placeholder date math should not normally be used with aliases nor data streams.
+NOTE: When using dynamic syntax, verify that the resolved index names align with your cluster index templates and Index Lifecycle Management (ILM) configuration.
+
+WARNING: Date math (e.g. `%{+yyyy.MM.dd}`) is not recommended for use with aliases or data streams.
 
 The default value will partition your indices by day so you can more easily
 delete old data or only search specific date ranges.
