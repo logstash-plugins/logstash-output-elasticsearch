@@ -842,10 +842,15 @@ NOTE: `ilm_rollover_alias` does NOT support dynamic variable substitution as
 The indexing target to write events to. 
 Can point to an {ref}/index-mgmt.html[index], {ref}/aliases.html[alias], or {ref}/data-streams.html[data stream]. 
 This can be dynamic using the `%{foo}` syntax.
+
+NOTE: When using dynamic syntax, verify that the resolved index names align with your cluster index templates and Index Lifecycle Management (ILM) configuration.
+
+WARNING: Date math (e.g. `%{+yyyy.MM.dd}`) is not recommended for use with aliases or data streams.
+
 The default value will partition your indices by day so you can more easily
 delete old data or only search specific date ranges.
 Indexes may not contain uppercase characters.
-For weekly indexes ISO 8601 format is recommended, eg. logstash-%{+xxxx.ww}.
+For weekly indexes ISO 8601 format is recommended, eg. `logstash-%{+xxxx.ww}`.
 Logstash uses
 http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html[Joda
 formats] and the `@timestamp` field of each event is being used as source for the date.
