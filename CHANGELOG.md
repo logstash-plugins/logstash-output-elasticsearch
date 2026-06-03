@@ -1,3 +1,6 @@
+## 12.1.4
+  - [Doc] Add note for index option [#1269](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1269)
+
 ## 12.1.3
  - Improves the logging experience when DLQ used [#1253](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1253)
 
