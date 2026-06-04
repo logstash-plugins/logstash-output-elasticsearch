@@ -10,15 +10,30 @@ on:
       - main
       - '11.x'
   schedule:
-    # Run daily at 08:00 UTC on active branches
+    # Daily run that fans out across every active branch via the matrix job
+    # below. A `schedule:` trigger only fires from the workflow file on the
+    # default branch, so this block lives here and the matrix supplies the
+    # per-branch ref.
     - cron: '0 8 * * *'
   workflow_dispatch:
 
 jobs:
   integration-tests:
+    if: github.event_name != 'schedule'
     uses: logstash-plugins/.ci/.github/workflows/integration-tests.yml@1.x
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/11.x' }}
     with:
+      timeout-minutes: 60
+
+  scheduled:
+    if: github.event_name == 'schedule'
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ['main', '11.x']
+    uses: logstash-plugins/.ci/.github/workflows/integration-tests.yml@1.x
+    with:
+      ref: ${{ matrix.branch }}
       timeout-minutes: 60
