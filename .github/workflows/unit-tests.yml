@@ -21,6 +21,7 @@ jobs:
   unit-tests:
     if: github.event_name != 'schedule'
     uses: logstash-plugins/.ci/.github/workflows/unit-tests.yml@1.x
+    secrets: inherit
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/11.x' }}
@@ -34,6 +35,7 @@ jobs:
       matrix:
         branch: ['main', '11.x']
     uses: logstash-plugins/.ci/.github/workflows/unit-tests.yml@1.x
+    secrets: inherit
     with:
       ref: ${{ matrix.branch }}
       timeout-minutes: 60
