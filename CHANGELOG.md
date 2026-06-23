@@ -1,3 +1,6 @@
+## 12.1.5
+  - Support Elastic Cloud API keys (`essu_` prefixed) in the `api_key` option by passing them verbatim instead of base64 re-encoding them [#1274](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1274)
+
 ## 12.1.4
   - [Doc] Add note for index option [#1269](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1269)
 

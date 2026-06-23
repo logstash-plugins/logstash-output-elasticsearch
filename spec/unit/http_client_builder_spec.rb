@@ -62,6 +62,23 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
         expect(api_key_header["Authorization"]).to eql(expected)
       end
     end
+
+    context "when api-key is an Elastic Cloud API key (essu_ prefix)" do
+      let(:api_key) { "essu_VFZGblZreFhTekJ4ZDB4M2NHUnZRMEU2YzNWd1pYSnpaV055WlhRPQ==AAAAAAAA" }
+      let(:api_key_secured) do
+        secured = double("api_key")
+        allow(secured).to receive(:value).and_return(api_key)
+        secured
+      end
+      let(:options) { { "api_key" => api_key_secured } }
+      let(:logger) { double("logger") }
+      let(:api_key_header) { klass.setup_api_key(logger, options) }
+
+      it "returns the cloud api-key header verbatim without re-encoding" do
+        expected = "ApiKey #{api_key}"
+        expect(api_key_header["Authorization"]).to eql(expected)
+      end
+    end
   end
 
   describe "customizing action paths" do

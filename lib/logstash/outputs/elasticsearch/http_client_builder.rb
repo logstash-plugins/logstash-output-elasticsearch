@@ -190,7 +190,9 @@ module LogStash; module Outputs; class ElasticSearch;
 
       return {} unless (api_key&.value)
 
-      value = is_base64?(api_key.value) ?  api_key.value : Base64.strict_encode64(api_key.value)
+      # Elastic Cloud API keys (`essu_` prefixed) and already base64-encoded
+      # keys are passed verbatim; a raw `id:api_key` pair is encoded here.
+      value = (cloud_api_key?(api_key.value) || is_base64?(api_key.value)) ? api_key.value : Base64.strict_encode64(api_key.value)
 
       { "Authorization" => "ApiKey #{value}" }
     end
@@ -210,6 +212,14 @@ module LogStash; module Outputs; class ElasticSearch;
 
       def query_param_separator(url)
         url.match?(/\?[^\s#]+/) ? '&' : '?'
+      end
+
+      # Elastic Cloud API keys scoped for Elasticsearch (such as the unified
+      # Serverless keys) are opaque `essu_` prefixed tokens that Elasticsearch
+      # accepts verbatim in the `Authorization: ApiKey` header, with no base64
+      # encoding.
+      def cloud_api_key?(string)
+        string.start_with?("essu_")
       end
 
       def is_base64?(string)
