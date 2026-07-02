@@ -64,6 +64,8 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
     end
 
     context "when api-key is an Elastic Cloud API key (essu_ prefix)" do
+      # The suffix is intentionally not canonical base64: a Cloud key is opaque
+      # and must be forwarded verbatim regardless of its payload encoding.
       let(:api_key) { "essu_VFZGblZreFhTekJ4ZDB4M2NHUnZRMEU2YzNWd1pYSnpaV055WlhRPQ==AAAAAAAA" }
       let(:api_key_secured) do
         secured = double("api_key")
@@ -77,6 +79,21 @@ describe LogStash::Outputs::ElasticSearch::HttpClientBuilder do
       it "returns the cloud api-key header verbatim without re-encoding" do
         expected = "ApiKey #{api_key}"
         expect(api_key_header["Authorization"]).to eql(expected)
+      end
+    end
+
+    context "when api-key has an unrecognized format" do
+      let(:api_key) { "not-a-valid-key" }
+      let(:api_key_secured) do
+        secured = double("api_key")
+        allow(secured).to receive(:value).and_return(api_key)
+        secured
+      end
+      let(:options) { { "api_key" => api_key_secured } }
+      let(:logger) { double("logger") }
+
+      it "raises a configuration error" do
+        expect { klass.setup_api_key(logger, options) }.to raise_error(LogStash::ConfigurationError, /Invalid api_key format/)
       end
     end
   end
