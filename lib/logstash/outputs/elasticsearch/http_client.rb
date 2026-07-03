@@ -433,7 +433,7 @@ module LogStash; module Outputs; class ElasticSearch;
     def template_put(template_endpoint, name, template)
       path = "#{template_endpoint}/#{name}"
       logger.info("Installing Elasticsearch template", name: name)
-      @pool.put(path, nil, LogStash::Json.dump(template))
+      @pool.put(path, {}, LogStash::Json.dump(template))
     rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
       raise e unless e.response_code == 404
     end
@@ -447,7 +447,7 @@ module LogStash; module Outputs; class ElasticSearch;
 
     # Create a new rollover alias
     def rollover_alias_put(alias_name, alias_definition)
-      @pool.put(CGI::escape(alias_name), nil, LogStash::Json.dump(alias_definition))
+      @pool.put(CGI::escape(alias_name), {}, LogStash::Json.dump(alias_definition))
       logger.info("Created rollover alias", name: alias_name)
       # If the rollover alias already exists, ignore the error that comes back from Elasticsearch
     rescue ::LogStash::Outputs::ElasticSearch::HttpClient::Pool::BadResponseCodeError => e
@@ -473,7 +473,7 @@ module LogStash; module Outputs; class ElasticSearch;
     def ilm_policy_put(name, policy)
       path = "_ilm/policy/#{name}"
       logger.info("Installing ILM policy #{policy}", name: name)
-      @pool.put(path, nil, LogStash::Json.dump(policy))
+      @pool.put(path, {}, LogStash::Json.dump(policy))
     end
 
 
