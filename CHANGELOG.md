@@ -1,3 +1,6 @@
+## 12.1.5
+  - Support Elastic Cloud API keys in the `api_key` option, which now accepts an `id:api_key` pair, its base64-encoded form, or an `essu_` Cloud API key, and rejects an unrecognized format at startup [#1274](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1274)
+
 ## 12.1.4
   - [Doc] Add note for index option [#1269](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1269)
 
