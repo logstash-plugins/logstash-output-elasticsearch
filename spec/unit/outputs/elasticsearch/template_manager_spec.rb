@@ -181,4 +181,75 @@ describe LogStash::Outputs::ElasticSearch::TemplateManager do
 
     end
   end
+
+  describe ".strip_serverless_incompatible_settings" do
+    context "with composable template (template.settings)" do
+      let(:template) do
+        {
+          "template" => {
+            "settings" => {
+              "index.refresh_interval" => "5s",
+              "number_of_shards" => 1,
+              "number_of_replicas" => 0
+            }
+          }
+        }
+      end
+
+      it "removes number_of_shards and number_of_replicas" do
+        described_class.strip_serverless_incompatible_settings(template)
+        expect(template["template"]["settings"]).not_to have_key("number_of_shards")
+        expect(template["template"]["settings"]).not_to have_key("number_of_replicas")
+      end
+
+      it "preserves compatible settings" do
+        described_class.strip_serverless_incompatible_settings(template)
+        expect(template["template"]["settings"]["index.refresh_interval"]).to eq("5s")
+      end
+    end
+
+    context "with index-prefixed setting keys" do
+      let(:template) do
+        {
+          "template" => {
+            "settings" => {
+              "index.number_of_shards" => 1,
+              "index.number_of_replicas" => 0
+            }
+          }
+        }
+      end
+
+      it "removes index-prefixed variants" do
+        described_class.strip_serverless_incompatible_settings(template)
+        expect(template["template"]["settings"]).not_to have_key("index.number_of_shards")
+        expect(template["template"]["settings"]).not_to have_key("index.number_of_replicas")
+      end
+    end
+
+    context "with legacy template (top-level settings)" do
+      let(:template) do
+        {
+          "settings" => {
+            "index.refresh_interval" => "5s",
+            "number_of_shards" => 1
+          }
+        }
+      end
+
+      it "removes incompatible settings from top-level settings" do
+        described_class.strip_serverless_incompatible_settings(template)
+        expect(template["settings"]).not_to have_key("number_of_shards")
+        expect(template["settings"]["index.refresh_interval"]).to eq("5s")
+      end
+    end
+
+    context "with no settings" do
+      let(:template) { { "mappings" => {} } }
+
+      it "does not raise" do
+        expect { described_class.strip_serverless_incompatible_settings(template) }.not_to raise_error
+      end
+    end
+  end
 end
