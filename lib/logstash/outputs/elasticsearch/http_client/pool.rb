@@ -347,6 +347,7 @@ module LogStash; module Outputs; class ElasticSearch; class HttpClient;
     end
 
     def perform_request_to_url(url, method, path, params={}, body=nil)
+      params ||= {}
       params[:headers] = DEFAULT_EAV_HEADER.merge(params[:headers] || {}) if serverless?
       @adapter.perform_request(url, method, path, params, body)
     end
