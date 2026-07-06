@@ -1,3 +1,6 @@
+## 11.22.16
+ - Fix serverless compatibility: guard against nil params in pool requests and strip unsupported template settings (number_of_shards, number_of_replicas) on serverless
+
 ## 11.22.15
  - Improves the logging experience when DLQ used [#1258](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1258)
 

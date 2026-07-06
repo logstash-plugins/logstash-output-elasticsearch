@@ -28,6 +28,7 @@ module LogStash; module Outputs; class ElasticSearch
       end
 
       add_ilm_settings_to_template(plugin, template) if plugin.ilm_in_use?
+      strip_serverless_incompatible_settings(template) if plugin.serverless?
       plugin.logger.debug("Attempting to install template", template: template)
       install(plugin.client, template_endpoint(plugin), template_name(plugin), template, plugin.template_overwrite)
     end
@@ -127,6 +128,20 @@ module LogStash; module Outputs; class ElasticSearch
           true
         end
       end
+    end
+
+    SERVERLESS_INCOMPATIBLE_SETTINGS = %w[
+      number_of_shards
+      index.number_of_shards
+      number_of_replicas
+      index.number_of_replicas
+    ].freeze
+
+    def self.strip_serverless_incompatible_settings(template)
+      settings = template.dig('template', 'settings') || template['settings']
+      return unless settings
+
+      SERVERLESS_INCOMPATIBLE_SETTINGS.each { |s| settings.delete(s) }
     end
 
   end
