@@ -1,3 +1,6 @@
+## 12.1.6
+  - Fix serverless compatibility: nil params in pool requests and unsupported template settings [#1276](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1276)
+
 ## 12.1.5
   - Support Elastic Cloud API keys in the `api_key` option, which now accepts an `id:api_key` pair, its base64-encoded form, or an `essu_` Cloud API key, and rejects an unrecognized format at startup [#1274](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1274)
 
