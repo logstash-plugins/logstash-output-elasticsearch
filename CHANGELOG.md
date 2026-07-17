@@ -1,3 +1,6 @@
+## 11.22.17
+  - Support base64-encoded and Elastic Cloud (`essu_`-prefixed) API keys in the `api_key` option; reject unrecognized formats at startup. [#1278](https://github.com/logstash-plugins/logstash-output-elasticsearch/pull/1278)
+
 ## 11.22.16
  - Fix serverless compatibility: guard against nil params in pool requests and strip unsupported template settings (number_of_shards, number_of_replicas) on serverless
 
