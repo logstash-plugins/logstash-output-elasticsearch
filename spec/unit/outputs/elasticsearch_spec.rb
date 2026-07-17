@@ -1618,6 +1618,32 @@ describe LogStash::Outputs::ElasticSearch do
       end; end
     end
 
+    context "with an already base64-encoded API key" do
+      let(:api_key) { Base64.strict_encode64("some_id:some_api_key") }
+      let(:options) { { "ssl_enabled" => true, "api_key" => ::LogStash::Util::Password.new(api_key) } }
+      let(:base64_api_key) { "ApiKey #{api_key}" }
+
+      it_behaves_like 'secure api-key authenticated client'
+    end
+
+    context "with an Elastic Cloud API key (essu_ prefix)" do
+      let(:api_key) { "essu_VFZGblZreFhTekJ4ZDB4M2NHUnZRMEU2YzNWd1pYSnpaV055WlhRPQ==AAAAAAAA" }
+      let(:options) { { "ssl_enabled" => true, "api_key" => ::LogStash::Util::Password.new(api_key) } }
+
+      it "sets the Authorization header verbatim without re-encoding" do
+        expect(manticore_options[:headers]).to eq({ "Authorization" => "ApiKey #{api_key}" })
+      end
+    end
+
+    context "with an unrecognized api_key format" do
+      let(:do_register) { false }
+      let(:options) { { "ssl_enabled" => true, "api_key" => ::LogStash::Util::Password.new("not-a-valid-key") } }
+
+      it "fails registration with a configuration error" do
+        expect { subject.register }.to raise_error(LogStash::ConfigurationError, /Invalid api_key format/)
+      end
+    end
+
     context "when set without ssl_enabled => true" do
       let(:do_register) { false } # this is what we want to test, so we disable the before(:each) call
       let(:options) { { "api_key" => api_key } }
