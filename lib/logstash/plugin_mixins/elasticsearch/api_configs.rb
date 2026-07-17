@@ -16,7 +16,8 @@ module LogStash; module PluginMixins; module ElasticSearch
         :password => { :validate => :password },
 
         # Authenticate using Elasticsearch API key.
-        # format is id:api_key (as returned by https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html[Create API key])
+        # Format is either the `id:api_key` pair (as returned by https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html[Create API key]),
+        # its base64-encoded form, or an https://www.elastic.co/docs/deploy-manage/api-keys/elastic-cloud-api-keys[Elastic Cloud API key] (prefixed with `essu_`) can be used.
         :api_key => { :validate => :password },
 
         # Cloud authentication string ("<username>:<password>" format) is an alternative for the `user`/`password` configuration.
