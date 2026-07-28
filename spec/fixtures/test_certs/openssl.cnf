@@ -1,0 +1,35 @@
+[req]
+default_bits       = 4096
+default_md         = sha256
+distinguished_name = req_dn
+prompt             = no
+
+[req_dn]
+C  = PT
+ST = NA
+L  = Lisbon
+O  = MyLab
+
+[v3_ca]
+basicConstraints     = critical, CA:TRUE
+keyUsage             = keyCertSign, cRLSign
+subjectKeyIdentifier = hash
+
+[server_cert]
+basicConstraints       = CA:FALSE
+extendedKeyUsage       = serverAuth
+subjectAltName         = DNS:localhost, DNS:elasticsearch, IP:127.0.0.1
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid,issuer
+
+[server_cert_invalid]
+basicConstraints       = CA:FALSE
+extendedKeyUsage       = serverAuth
+subjectAltName         = DNS:localhost
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid,issuer
+
+[self_signed_cert]
+basicConstraints     = CA:FALSE
+extendedKeyUsage     = serverAuth
+subjectKeyIdentifier = hash
