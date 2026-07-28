@@ -95,6 +95,10 @@ openssl pkcs12 -export \
 # Cleanup
 rm -f ca.srl
 
+# Ensure all generated files are world-readable so Docker containers
+# running as a different uid can access them via volume mount
+chmod 644 *.key *.crt *.p12 *.der.sha256
+
 # Timestamp
 date -Iseconds > GENERATED_AT
 
