@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Generates all SSL test certificates from scratch.
-# Idempotent: skips if ca.crt exists and is not expired (use --force to override).
+# Idempotent: skips if all certs exist and are not expired (use --force to override).
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -20,13 +20,18 @@ sha256() {
   fi
 }
 
-if [[ "${1:-}" != "--force" ]] && [[ -f ca.crt ]]; then
-  if openssl x509 -in ca.crt -checkend 0 -noout 2>/dev/null && \
-     openssl x509 -in test.crt -checkend 0 -noout 2>/dev/null; then
-    echo "Certs exist and are not expired. Use --force to regenerate."
-    exit 0
-  fi
-  echo "Existing certs are expired. Regenerating all certs."
+LEAF_CERTS=(ca.crt test.crt test_invalid.crt test_self_signed.crt)
+
+certs_valid() {
+  for cert in "${LEAF_CERTS[@]}"; do
+    [[ -f "$cert" ]] || return 1
+    openssl x509 -in "$cert" -checkend 0 -noout 2>/dev/null || return 1
+  done
+}
+
+if [[ "${1:-}" != "--force" ]] && certs_valid; then
+  echo "Certs exist and are not expired. Use --force to regenerate."
+  exit 0
 fi
 
 echo "Generating SSL test certificates..."
