@@ -11,6 +11,8 @@ services:
         - SECURE_INTEGRATION=${SECURE_INTEGRATION:-false}
         - ES_SSL_KEY_INVALID=${ES_SSL_KEY_INVALID:-false}
         - ES_SSL_SUPPORTED_PROTOCOLS=$ES_SSL_SUPPORTED_PROTOCOLS
+    volumes:
+      - ../spec/fixtures/test_certs:/usr/share/plugins/plugin/spec/fixtures/test_certs
 
   elasticsearch:
     build:
@@ -25,6 +27,8 @@ services:
     environment:
       - ES_JAVA_OPTS=-Xms640m -Xmx640m
     command: /usr/share/elasticsearch/elasticsearch-run.sh
+    volumes:
+      - ../spec/fixtures/test_certs:/usr/share/elasticsearch/config/test_certs
     tty: true
     ports:
       - "9200:9200"
