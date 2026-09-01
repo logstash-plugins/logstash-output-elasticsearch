@@ -289,7 +289,10 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
       it 'should install it if it is not present' do
         expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(get_expected_error_class)
         subject.register
-        sleep(1)
+        Stud::try(5.times) do
+          get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)
+        end
+
         expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.not_to raise_error
       end
 
