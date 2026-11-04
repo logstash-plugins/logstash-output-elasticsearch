@@ -7,6 +7,13 @@ shared_examples_for 'an ILM enabled Logstash' do
     let (:ilm_policy_name) { "logstash-policy-custom"}
     let (:settings) { super().merge("ilm_policy" => ilm_policy_name)}
 
+    # ILM rolls over asynchronously (polled), so wait for the new index instead of sleeping a fixed time
+    def wait_for_rollover_to(index)
+      Stud::try(20.times) do
+        raise "ILM has not rolled over to #{index} yet" unless @es.indices.exists(index: index)
+      end
+    end
+
     it 'should rollover when the policy max docs is reached' do
       put_policy(@es, ilm_policy_name, policy)
       subject.register
@@ -17,7 +24,7 @@ shared_examples_for 'an ILM enabled Logstash' do
                                 LogStash::Event.new("somevalue" => 100),
                             ])
 
-      sleep(6)
+      wait_for_rollover_to("#{expected_index}-#{todays_date}-000002")
 
       subject.multi_receive([
                                 LogStash::Event.new("country" => "us"),
@@ -25,7 +32,7 @@ shared_examples_for 'an ILM enabled Logstash' do
                                 LogStash::Event.new("geoip" => { "location" => [ 0.0, 0.0 ] })
                             ])
 
-      sleep(6)
+      wait_for_rollover_to("#{expected_index}-#{todays_date}-000003")
 
       subject.multi_receive([
                                 LogStash::Event.new("country" => "uk"),
@@ -289,7 +296,7 @@ describe 'Elasticsearch has index lifecycle management enabled', :integration =>
       it 'should install it if it is not present' do
         expect{get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)}.to raise_error(get_expected_error_class)
         subject.register
-        Stud::try(5.times) do
+        Stud::try(20.times) do
           get_policy(@es, LogStash::Outputs::ElasticSearch::DEFAULT_POLICY)
         end
 
