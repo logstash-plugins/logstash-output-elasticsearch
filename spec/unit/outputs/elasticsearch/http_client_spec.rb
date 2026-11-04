@@ -345,6 +345,22 @@ describe LogStash::Outputs::ElasticSearch::HttpClient do
 
           subject.send(:bulk, actions)
         end
+
+        it "sends each request as gzip of its own actions" do
+          sent_sources = []
+          allow(pool).to receive(:post) do |path, params, body|
+            # partial requests are sync-flushed without a gzip trailer, so inflate instead of gunzip
+            lines = Zlib::Inflate.new(16 + Zlib::MAX_WBITS).inflate(body).lines
+            expect(lines.size).to eq(2)
+            expect(JSON.parse(lines[0])).to eq("index" => {"_id" => nil, "_index" => "logstash"})
+            sent_sources << JSON.parse(lines[1])
+            response
+          end
+
+          subject.send(:bulk, actions)
+
+          expect(sent_sources).to eq([{"message_1" => message_1}, {"message_2" => message_2}, {"message_3" => message_3}])
+        end
       end
     end
   end

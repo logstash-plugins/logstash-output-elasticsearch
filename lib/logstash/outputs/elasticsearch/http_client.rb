@@ -1,6 +1,7 @@
 require "logstash/outputs/elasticsearch"
 require 'logstash/outputs/elasticsearch/http_client/pool'
 require 'logstash/outputs/elasticsearch/http_client/manticore_adapter'
+require 'logstash/outputs/elasticsearch/http_client/gzip_writer'
 require 'cgi'
 require 'zlib'
 require 'stringio'
@@ -149,6 +150,7 @@ module LogStash; module Outputs; class ElasticSearch;
             UNCOMPRESSED_LENGTH_HEADER => stream_writer.pos.to_s
           }
           bulk_responses << bulk_send(body_stream, batch_actions, headers)
+          stream_writer.finish if compression_level? # frees native memory; truncate drops the trailer it writes
           body_stream.truncate(0) && body_stream.seek(0)
           stream_writer = gzip_writer(body_stream) if compression_level?
           batch_actions.clear
@@ -181,7 +183,7 @@ module LogStash; module Outputs; class ElasticSearch;
       fail(ArgumentError, "Cannot create gzip writer on IO with unread bytes") unless io.eof?
       fail(ArgumentError, "Cannot create gzip writer on non-empty IO") unless io.pos == 0
 
-      Zlib::GzipWriter.new(io, client_settings.fetch(:compression_level), Zlib::DEFAULT_STRATEGY)
+      GzipWriter.new(io, client_settings.fetch(:compression_level))
     end
 
     def join_bulk_responses(bulk_responses)
